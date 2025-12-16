@@ -1,0 +1,50 @@
+[gd_scene load_steps=7 format=3 uid="uid://bvn8c3a3q4hrb"]
+
+[ext_resource type="Script" uid="uid://byugj41smggx3" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_customer_a.gd" id="1_ov3iq"]
+[ext_resource type="Texture2D" uid="uid://o3ayq5n0wx6n" path="res://assets/sprites/NPC/Yuheng/teashop_keeper.png" id="2_2hbkr"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hpexa"]
+size = Vector2(66, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ov3iq"]
+atlas = ExtResource("2_2hbkr")
+region = Rect2(327, 250, 163, 125)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ohi11"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ov3iq")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b2bde"]
+size = Vector2(159.25, 226.125)
+
+[node name="tea_shop_keeper" type="CharacterBody2D"]
+script = ExtResource("1_ov3iq")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(9, 63.91)
+shape = SubResource("RectangleShape2D_hpexa")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(9.13, -0.795)
+sprite_frames = SubResource("SpriteFrames_ohi11")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.213017
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(9, 64)
+rotation = 0.820305
+skew = -0.00872665
+shape = SubResource("RectangleShape2D_b2bde")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

@@ -1,0 +1,302 @@
+[gd_scene load_steps=13 format=3 uid="uid://bqa7bwydf6gxp"]
+
+[ext_resource type="Script" uid="uid://cmsitrldg0lw6" path="res://scripts/battlescripts/BattleController.gd" id="1_idkgt"]
+[ext_resource type="Script" uid="uid://jco5aqxhv8fi" path="res://scripts/battlescripts/BattleUI.gd" id="2_kinr6"]
+[ext_resource type="Script" uid="uid://1mjd56d38eyw" path="res://scripts/battlescripts/SkillExecutor.gd" id="2_rca61"]
+[ext_resource type="Script" uid="uid://cu05s38f3jiwv" path="res://scripts/battlescripts/TurnManager.gd" id="2_svpld"]
+[ext_resource type="Script" uid="uid://w5mkkmvvvq26" path="res://scripts/battlescripts/PopupSkillSelect.gd" id="4_8qdv8"]
+[ext_resource type="FontFile" uid="uid://dpnhv7778sg1k" path="res://assets/fonts/DotGothic16-Regular.ttf" id="5_1i8jf"]
+[ext_resource type="Script" uid="uid://b4cc072wxnf5v" path="res://scripts/battlescripts/CharacterSkill.gd" id="5_pxwbd"]
+[ext_resource type="Script" uid="uid://ckjdi3rw2odbp" path="res://scripts/battlescripts/InnerForcePopup.gd" id="7_rum4d"]
+[ext_resource type="Script" uid="uid://8spm5wo3w8ev" path="res://scripts/battlescripts/ItemListPopup.gd" id="8_0gp0h"]
+[ext_resource type="Script" uid="uid://dd0tcn4aq72kq" path="res://scripts/battlescripts/DefenseConfirmPopup.gd" id="8_3oc74"]
+[ext_resource type="Script" uid="uid://qrekdvvb231j" path="res://scripts/battlescripts/LogPanel.gd" id="10_tttxe"]
+[ext_resource type="Script" uid="uid://bca4ab7nipbv8" path="res://scripts/battlescripts/EnemyAI.gd" id="11_g72on"]
+
+[node name="BattleScene" type="Node"]
+
+[node name="BattleController" type="Node" parent="."]
+script = ExtResource("1_idkgt")
+
+[node name="JSONLoader" type="Node" parent="BattleController"]
+
+[node name="TurnManager" type="Node" parent="BattleController"]
+script = ExtResource("2_svpld")
+
+[node name="SkillResolver" type="Node" parent="BattleController"]
+
+[node name="EmotionModulator" type="Node" parent="BattleController"]
+
+[node name="InventorySync" type="Node" parent="BattleController"]
+
+[node name="VictoryHandler" type="Node" parent="BattleController"]
+
+[node name="SkillExecutor" type="Node" parent="BattleController"]
+script = ExtResource("2_rca61")
+
+[node name="BattleUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("2_kinr6")
+
+[node name="AllyPanel" type="VBoxContainer" parent="BattleUI"]
+layout_mode = 0
+offset_right = 288.0
+offset_bottom = 374.0
+
+[node name="ActionPanel" type="VBoxContainer" parent="BattleUI"]
+layout_mode = 0
+offset_top = 460.0
+offset_right = 249.0
+offset_bottom = 644.0
+
+[node name="PopupSkillSelect" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 350)
+script = ExtResource("4_8qdv8")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/PopupSkillSelect"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+
+[node name="SkillList" type="ItemList" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer"]
+custom_minimum_size = Vector2(0.08, 158.24)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+max_text_lines = 8
+
+[node name="Description" type="RichTextLabel" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer"]
+custom_minimum_size = Vector2(0, 138.19)
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer"]
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer/ButtonRow"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer/ButtonRow"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="InnerForcePopup" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 350)
+script = ExtResource("7_rum4d")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/InnerForcePopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+
+[node name="ForceList" type="ItemList" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 158.24)
+layout_mode = 2
+
+[node name="Description" type="RichTextLabel" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 138.19)
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer/ButtonRow"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer/ButtonRow"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="ItemListPopup" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 377)
+visible = true
+script = ExtResource("8_0gp0h")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/ItemListPopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 373.0
+
+[node name="ItemListPopup" type="ItemList" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 158.24)
+layout_mode = 2
+item_count = 1
+
+[node name="Description" type="RichTextLabel" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 119.48)
+layout_mode = 2
+
+[node name="QuantityLabel" type="Label" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 32.735)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="DefenseConfirmPopup" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 150)
+script = ExtResource("8_3oc74")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/DefenseConfirmPopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 146.0
+
+[node name="Label" type="Label" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 25
+text = "確定進行防禦?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="BtnSkill" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "出招"
+
+[node name="BtnInnerForce" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "內功"
+
+[node name="BtnItem" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "道具"
+
+[node name="BtnDefend" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "防禦"
+
+[node name="LogPanel" type="RichTextLabel" parent="BattleUI"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 0
+offset_left = 306.0
+offset_top = 32.0
+offset_right = 864.0
+offset_bottom = 614.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/normal_font = ExtResource("5_1i8jf")
+theme_override_font_sizes/bold_italics_font_size = 20
+theme_override_font_sizes/italics_font_size = 20
+theme_override_font_sizes/mono_font_size = 20
+theme_override_font_sizes/normal_font_size = 20
+theme_override_font_sizes/bold_font_size = 20
+script = ExtResource("10_tttxe")
+
+[node name="EnemyPanel" type="VBoxContainer" parent="BattleUI"]
+layout_mode = 0
+offset_left = 883.0
+offset_top = 77.0
+offset_right = 1143.0
+offset_bottom = 585.0
+
+[node name="BattleAudio" type="Node" parent="."]
+
+[node name="BGMPlayer" type="AudioStreamPlayer2D" parent="BattleAudio"]
+
+[node name="SEPlayer" type="AudioStreamPlayer2D" parent="BattleAudio"]
+
+[node name="FXManager" type="Node2D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="FXManager"]
+
+[node name="Background" type="Sprite2D" parent="."]
+
+[node name="CharacterDataManager" type="Node" parent="."]
+script = ExtResource("5_pxwbd")
+
+[node name="EnemyAI" type="Node" parent="."]
+script = ExtResource("11_g72on")
+
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnSkill" to="BattleUI" method="_on_btn_skill_pressed"]
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnInnerForce" to="BattleUI" method="_on_btn_inner_force_pressed"]
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnItem" to="BattleUI" method="_on_btn_item_pressed"]
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnDefend" to="BattleUI" method="_on_btn_defend_pressed"]

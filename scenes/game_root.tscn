@@ -1,0 +1,91 @@
+[gd_scene load_steps=8 format=3 uid="uid://c0tcakfx6rp7p"]
+
+[ext_resource type="Script" uid="uid://dbqmtd8i0eqbc" path="res://scripts/game_root.gd" id="1_78s5d"]
+[ext_resource type="Script" uid="uid://b2pn6bbrveql5" path="res://scripts/DialogManager.gd" id="2_ni5ms"]
+[ext_resource type="Texture2D" uid="uid://b7wj4n6cgfh1d" path="res://assets/UI/DialogueBox.png" id="3_uebra"]
+[ext_resource type="FontFile" uid="uid://dpnhv7778sg1k" path="res://assets/fonts/DotGothic16-Regular.ttf" id="4_jb3nc"]
+[ext_resource type="Script" uid="uid://bnhrorjs3uy8" path="res://scripts/choice_box.gd" id="5_a1rh6"]
+[ext_resource type="PackedScene" uid="uid://bej0tcj5nhy3k" path="res://scenes/Liu_Yu.tscn" id="5_iusj4"]
+[ext_resource type="Script" uid="uid://b4psv6nsujqt6" path="res://scripts/camera_2d.gd" id="7_j7aru"]
+
+[node name="GameRoot" type="Node2D"]
+script = ExtResource("1_78s5d")
+
+[node name="DialogManager" type="CanvasLayer" parent="."]
+script = ExtResource("2_ni5ms")
+
+[node name="DialogBox1" type="TextureRect" parent="DialogManager"]
+offset_left = -2.0
+offset_top = 33.5
+offset_right = 1088.0
+offset_bottom = 255.5
+texture = ExtResource("3_uebra")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="DialogManager/DialogBox1"]
+z_index = 999
+layout_mode = 0
+offset_left = 61.0
+offset_top = 43.0
+offset_right = 101.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("4_jb3nc")
+theme_override_font_sizes/font_size = 28
+
+[node name="HeadShot1" type="Sprite2D" parent="DialogManager/DialogBox1"]
+position = Vector2(986.47, 100.875)
+scale = Vector2(1.25, 1.25)
+
+[node name="DialogBox2" type="TextureRect" parent="DialogManager"]
+offset_left = 74.63
+offset_top = 416.245
+offset_right = 1151.63
+offset_bottom = 641.245
+texture = ExtResource("3_uebra")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="DialogManager/DialogBox2"]
+layout_mode = 0
+offset_left = 203.365
+offset_top = 47.0
+offset_right = 243.365
+offset_bottom = 89.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("4_jb3nc")
+theme_override_font_sizes/font_size = 28
+
+[node name="HeadShot2" type="Sprite2D" parent="DialogManager/DialogBox2"]
+position = Vector2(101.265, 171.26)
+
+[node name="ChoiceBox" type="VBoxContainer" parent="DialogManager"]
+z_index = 5
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -136.0
+offset_top = -92.0
+offset_right = 177.0
+offset_bottom = -52.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+script = ExtResource("5_a1rh6")
+
+[node name="CurrentScene" type="Node" parent="."]
+
+[node name="LiuYu" parent="." instance=ExtResource("5_iusj4")]
+position = Vector2(606, 281)
+scale = Vector2(0.3, 0.3)
+
+[node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]
+
+[node name="MainCamera" type="Camera2D" parent="."]
+position = Vector2(584, 316)
+script = ExtResource("7_j7aru")

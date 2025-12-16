@@ -1,0 +1,61 @@
+{
+  "id": "main_001_intro",
+  "scene": "yuheng_inn_room_01",
+  "dialogue": [
+    {
+      "speaker": "劉語塵",
+      "text": "……",
+      "portrait": "liu_base.png"
+    },
+    {
+      "speaker": "劉語塵",
+      "text": "飲月山莊的左飲……",
+      "portrait": "liu_base.png"
+    },
+    {
+      "speaker": "劉語塵",
+      "text": "玉衡鎮最有頭有臉的人物，傳聞手眼通天、消息靈通……",
+      "portrait": "liu_base.png"
+    },
+    {
+      "speaker": "劉語塵",
+      "text": "若真有人知道『那物』的下落，非他莫屬。",
+      "portrait": "liu_base.png"
+    },
+    {
+      "speaker": "劉語塵",
+      "text": "不過，我不過一介過客，冒然上門，怕是吃閉門羹吧……",
+      "portrait": "liu_base.png"
+    },
+    {
+      "speaker": "旁白",
+      "text": "……",
+      "portrait": ""
+    },
+    {
+      "speaker": "旁白",
+      "text": "（微頓，眼神轉為堅定）",
+      "portrait": ""
+    },
+    {
+      "speaker": "劉語塵",
+      "text": "哼，與其在這裡想東想西躊躇不前…",
+      "portrait": "liu_serious.png"
+    },
+    {
+      "speaker": "劉語塵",
+      "text": "不如直接去飲月山莊碰碰運氣！",
+      "portrait": "liu_serious.png"
+    }
+  ],
+  "on_complete": {
+    "advance_main_quest": {
+      "stage": 1,
+      "description": "到飲月山莊拜訪左飲"
+    },
+    "set_flags": [
+      "intro_done",
+      "mission_01_updated"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+id,stage,title,description,condition_type,condition_value,next_stage,reward,speaker_id,map_hint
+quest_001,1,貓咪在哪裡?,幫小奈找走失的貓咪,talk_to,xiaonai,2,"ethics:5,grudge:-3,affection:10",1,玉衡鎮-北方小路
+quest_001,2,貓咪在哪裡?,小奈說貓最後出現在井邊,enter_area,well_area,3,,1,玉衡鎮-水井旁
+quest_001,3,貓咪在哪裡?,找到了貓咪！回去找小奈,talk_to,xiaonai,0,"exp:100,item:apple,ethics:15,grudge:-12,affection:10",1,回報給小奈

@@ -1,0 +1,65 @@
+[gd_scene load_steps=9 format=3 uid="uid://rmvdqsxilwwu"]
+
+[ext_resource type="Script" uid="uid://cah5pvimgyyak" path="res://scripts/yuheng/yuheng_outside/old_man_a.gd" id="1_fples"]
+[ext_resource type="Texture2D" uid="uid://c1kcpf1kv4xp4" path="res://assets/sprites/NPC/Yuheng/Pen_girl_idle.png" id="2_fples"]
+[ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="3_kaglr"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hpexa"]
+size = Vector2(66, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ragb2"]
+atlas = ExtResource("2_fples")
+region = Rect2(53, 383, 153, 152)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fples"]
+atlas = ExtResource("2_fples")
+region = Rect2(197, 383, 154, 149)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ohi11"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ragb2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fples")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b2bde"]
+size = Vector2(176.25, 237.125)
+
+[node name="Pen_girl" type="CharacterBody2D"]
+script = ExtResource("1_fples")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(9, 63.91)
+shape = SubResource("RectangleShape2D_hpexa")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(4, 4)
+sprite_frames = SubResource("SpriteFrames_ohi11")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.602515
+
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -77.0
+offset_top = -380.0
+offset_right = 1123.0
+offset_bottom = 1720.0
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_kaglr")
+metadata/_edit_use_anchors_ = true
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(0, 64)
+shape = SubResource("RectangleShape2D_b2bde")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

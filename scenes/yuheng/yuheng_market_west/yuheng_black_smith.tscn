@@ -1,0 +1,68 @@
+[gd_scene load_steps=8 format=3 uid="uid://d4glgfipuxq3p"]
+
+[ext_resource type="Texture2D" uid="uid://di7x5w1xxwfia" path="res://assets/sprites/NPC/Yuheng/Yuheng_blacksmith.png" id="1_c6xjq"]
+[ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="2_7lxxl"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hpexa"]
+size = Vector2(66, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_chmyr"]
+atlas = ExtResource("1_c6xjq")
+region = Rect2(0, 10, 123, 119)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e4u4l"]
+atlas = ExtResource("1_c6xjq")
+region = Rect2(369, 10, 123, 119)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ohi11"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_chmyr")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e4u4l")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e4u4l")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b2bde"]
+size = Vector2(151.718, 133.838)
+
+[node name="yuheng_black_smith" type="CharacterBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(9, 63.91)
+shape = SubResource("RectangleShape2D_hpexa")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(1.28, 1.28)
+sprite_frames = SubResource("SpriteFrames_ohi11")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.0609471
+
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -73.62
+offset_top = -372.005
+offset_right = 1126.38
+offset_bottom = 1727.99
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_7lxxl")
+metadata/_edit_use_anchors_ = true
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(14.5353, 87.285)
+rotation = -0.443314
+skew = -0.267035
+shape = SubResource("RectangleShape2D_b2bde")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

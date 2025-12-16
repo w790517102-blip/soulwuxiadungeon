@@ -1,0 +1,101 @@
+[gd_scene load_steps=11 format=3 uid="uid://dduaamdu6fajx"]
+
+[ext_resource type="Script" uid="uid://d084dflsvn8jj" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_shop_servant.gd" id="1_sr47e"]
+[ext_resource type="Texture2D" uid="uid://cwpubdv3oqd4e" path="res://assets/sprites/NPC/Yuheng/tea_house_servant.png" id="2_ror21"]
+[ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="3_efaev"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hpexa"]
+size = Vector2(66, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dts35"]
+atlas = ExtResource("2_ror21")
+region = Rect2(353, 31, 311, 441)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jhy3c"]
+atlas = ExtResource("2_ror21")
+region = Rect2(42, 472, 311, 441)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2yr52"]
+atlas = ExtResource("2_ror21")
+region = Rect2(664, 1354, 311, 441)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j4i6x"]
+atlas = ExtResource("2_ror21")
+region = Rect2(42, 913, 311, 441)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ohi11"]
+animations = [{
+"frames": [],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dts35")
+}],
+"loop": true,
+"name": &"idle_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jhy3c")
+}],
+"loop": true,
+"name": &"idle_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2yr52")
+}],
+"loop": true,
+"name": &"idle_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_j4i6x")
+}],
+"loop": true,
+"name": &"idle_up",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b2bde"]
+size = Vector2(123.111, 157.898)
+
+[node name="tea_shop_servant" type="CharacterBody2D"]
+script = ExtResource("1_sr47e")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(9, 63.91)
+shape = SubResource("RectangleShape2D_hpexa")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(9.13, -0.795)
+scale = Vector2(0.31, 0.31)
+sprite_frames = SubResource("SpriteFrames_ohi11")
+animation = &"idle_down"
+autoplay = "idle"
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(7.94189, 38.6323)
+rotation = 0.251327
+skew = 0.354302
+shape = SubResource("RectangleShape2D_b2bde")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -57.0
+offset_top = -299.0
+offset_right = 1143.0
+offset_bottom = 1801.0
+scale = Vector2(0.405, 0.405)
+texture = ExtResource("3_efaev")
+metadata/_edit_use_anchors_ = true
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

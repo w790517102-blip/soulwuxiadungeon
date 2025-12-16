@@ -1,0 +1,178 @@
+[gd_scene load_steps=16 format=3 uid="uid://hhdqqttuga74"]
+
+[ext_resource type="Texture2D" uid="uid://c1spahttykpoo" path="res://assets/sprites/NPC/Yuheng/richMan.png" id="1_iruyi"]
+[ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="2_v7kef"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_anrab"]
+size = Vector2(130, 43)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_v7kef"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(330, 214, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e3h8x"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(165, 9, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wvqyw"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(660, 214, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q0b1a"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(495, 9, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_raogu"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(0, 9, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jwaca"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(0, 214, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q3jr1"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(0, 214, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kbb3h"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(825, 214, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mplpa"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(165, 419, 165, 205)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hgcok"]
+atlas = ExtResource("1_iruyi")
+region = Rect2(0, 419, 165, 205)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_rfg11"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_v7kef")
+}],
+"loop": true,
+"name": &"givemoney_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e3h8x")
+}],
+"loop": true,
+"name": &"givemoney_left_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wvqyw")
+}],
+"loop": true,
+"name": &"givemoney_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q0b1a")
+}],
+"loop": true,
+"name": &"givemoney_right_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_raogu")
+}],
+"loop": true,
+"name": &"idle_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jwaca")
+}],
+"loop": true,
+"name": &"idle_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_raogu")
+}],
+"loop": true,
+"name": &"idle_left_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q3jr1")
+}],
+"loop": true,
+"name": &"idle_left_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kbb3h")
+}],
+"loop": true,
+"name": &"idle_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kbb3h")
+}],
+"loop": true,
+"name": &"idle_right_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mplpa")
+}],
+"loop": true,
+"name": &"idle_right_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hgcok")
+}],
+"loop": true,
+"name": &"idle_up",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_sl5av"]
+size = Vector2(508, 478)
+
+[node name="Bookstore_guestC" type="CharacterBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-4.165, 162.5)
+shape = SubResource("RectangleShape2D_anrab")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(3.27, 0)
+scale = Vector2(1.845, 1.845)
+sprite_frames = SubResource("SpriteFrames_rfg11")
+animation = &"idle_left"
+
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -164.0
+offset_top = -711.0
+offset_right = 1036.0
+offset_bottom = 1389.0
+texture = ExtResource("2_v7kef")
+metadata/_edit_use_anchors_ = true
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(-6, 150)
+shape = SubResource("RectangleShape2D_sl5av")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

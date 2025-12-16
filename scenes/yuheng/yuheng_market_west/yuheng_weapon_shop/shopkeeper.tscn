@@ -1,0 +1,130 @@
+[gd_scene load_steps=12 format=3 uid="uid://dkgahyf82byos"]
+
+[ext_resource type="Script" uid="uid://cpjbhujilskr2" path="res://scripts/xiao_ming.gd" id="1_1ysu2"]
+[ext_resource type="Texture2D" uid="uid://c2e3iw5sok1nf" path="res://assets/sprites/NPC/Yuheng/yuheng_wapon_storekeeper.png" id="2_evqtj"]
+[ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="3_o1ek2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_326i1"]
+size = Vector2(130, 43)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lqfwx"]
+atlas = ExtResource("2_evqtj")
+region = Rect2(162, 165, 162, 165)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d0uuh"]
+atlas = ExtResource("2_evqtj")
+region = Rect2(324, 0, 162, 165)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_a5rg5"]
+atlas = ExtResource("2_evqtj")
+region = Rect2(162, 165, 162, 165)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sbdma"]
+atlas = ExtResource("2_evqtj")
+region = Rect2(0, 165, 162, 165)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8r3jg"]
+atlas = ExtResource("2_evqtj")
+region = Rect2(324, 162, 162, 162)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_3qs5v"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lqfwx")
+}],
+"loop": true,
+"name": &"idle_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_d0uuh")
+}],
+"loop": true,
+"name": &"idle_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_a5rg5")
+}],
+"loop": true,
+"name": &"idle_left_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sbdma")
+}],
+"loop": true,
+"name": &"idle_left_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8r3jg")
+}],
+"loop": true,
+"name": &"idle_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lqfwx")
+}],
+"loop": true,
+"name": &"idle_right_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sbdma")
+}],
+"loop": true,
+"name": &"idle_right_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sbdma")
+}],
+"loop": true,
+"name": &"idle_up",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0w47q"]
+size = Vector2(224.006, 196)
+
+[node name="shopkeeper" type="CharacterBody2D"]
+script = ExtResource("1_1ysu2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-4.315, 74.63)
+scale = Vector2(0.54, 0.54)
+shape = SubResource("RectangleShape2D_326i1")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_3qs5v")
+animation = &"idle_down"
+
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -90.51
+offset_top = -394.945
+offset_right = 1109.49
+offset_bottom = 1705.05
+scale = Vector2(0.53, 0.53)
+texture = ExtResource("3_o1ek2")
+metadata/_edit_use_anchors_ = true
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(35.418, 131.884)
+rotation = -0.253073
+skew = -0.331613
+shape = SubResource("RectangleShape2D_0w47q")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

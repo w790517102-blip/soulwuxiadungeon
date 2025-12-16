@@ -1,0 +1,912 @@
+[gd_scene load_steps=73 format=3 uid="uid://bqa7bwydf6gxp"]
+
+[ext_resource type="Script" uid="uid://cmsitrldg0lw6" path="res://scripts/battlescripts/BattleController.gd" id="1_idkgt"]
+[ext_resource type="Script" uid="uid://jco5aqxhv8fi" path="res://scripts/battlescripts/BattleUI.gd" id="2_kinr6"]
+[ext_resource type="Script" uid="uid://1mjd56d38eyw" path="res://scripts/battlescripts/SkillExecutor.gd" id="2_rca61"]
+[ext_resource type="Script" uid="uid://cu05s38f3jiwv" path="res://scripts/battlescripts/TurnManager.gd" id="2_svpld"]
+[ext_resource type="Script" uid="uid://w5mkkmvvvq26" path="res://scripts/battlescripts/PopupSkillSelect.gd" id="4_8qdv8"]
+[ext_resource type="FontFile" uid="uid://dpnhv7778sg1k" path="res://assets/fonts/DotGothic16-Regular.ttf" id="5_1i8jf"]
+[ext_resource type="Script" uid="uid://b4cc072wxnf5v" path="res://scripts/battlescripts/CharacterSkill.gd" id="5_pxwbd"]
+[ext_resource type="Script" uid="uid://c747gfhv5jsun" path="res://scripts/battlescripts/TargetSelectPopup.gd" id="5_ti0og"]
+[ext_resource type="Script" uid="uid://di1n4fdr4eftg" path="res://scripts/battlescripts/TeamMateSlot.gd" id="5_yt3ua"]
+[ext_resource type="Texture2D" uid="uid://dxcg3vsxgdjd0" path="res://assets/fx/fx_slash_sword.png" id="6_3xrod"]
+[ext_resource type="Texture2D" uid="uid://bnv5xrl8ffdkf" path="res://assets/fx/fx_brush_stroke.png" id="6_7mjbx"]
+[ext_resource type="Texture2D" uid="uid://blrewhf5lp55i" path="res://assets/fx/123.png" id="6_jrwob"]
+[ext_resource type="Texture2D" uid="uid://bov0d0ixgbeoa" path="res://assets/fx/fx_hit_small.png" id="6_sjku2"]
+[ext_resource type="Texture2D" uid="uid://c24e37rpo5uuc" path="res://assets/fx/fx_qin_mist_pillar.png" id="7_7mjbx"]
+[ext_resource type="Script" uid="uid://ckjdi3rw2odbp" path="res://scripts/battlescripts/InnerForcePopup.gd" id="7_rum4d"]
+[ext_resource type="Script" uid="uid://8spm5wo3w8ev" path="res://scripts/battlescripts/ItemListPopup.gd" id="8_0gp0h"]
+[ext_resource type="Script" uid="uid://dd0tcn4aq72kq" path="res://scripts/battlescripts/DefenseConfirmPopup.gd" id="8_3oc74"]
+[ext_resource type="Texture2D" uid="uid://cnwle55riaf88" path="res://assets/fx/fx_slash_blade.png" id="8_jrwob"]
+[ext_resource type="Script" uid="uid://qrekdvvb231j" path="res://scripts/battlescripts/LogPanel.gd" id="10_tttxe"]
+[ext_resource type="Script" uid="uid://bca4ab7nipbv8" path="res://scripts/battlescripts/EnemyAI.gd" id="11_g72on"]
+[ext_resource type="Texture2D" uid="uid://cg1lwk7wbmat7" path="res://assets/fx/recovery.png" id="12_porms"]
+[ext_resource type="Script" uid="uid://bh605afdh8gwr" path="res://scripts/battlescripts/EnemySlot.gd" id="13_yt3ua"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yt3ua"]
+bg_color = Color(0.376471, 0.0627451, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3xrod"]
+bg_color = Color(0.690196, 0, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_05s0e"]
+bg_color = Color(0.364706, 0.364706, 0.243137, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j0cvo"]
+bg_color = Color(0.886275, 0.831373, 0.592157, 1)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_k2d6m"]
+atlas = ExtResource("6_jrwob")
+region = Rect2(0, 0, 313, 344)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hcmo8"]
+atlas = ExtResource("6_jrwob")
+region = Rect2(428, 0, 313, 344)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qg24k"]
+atlas = ExtResource("6_jrwob")
+region = Rect2(910, 0, 313, 344)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fpcek"]
+atlas = ExtResource("6_jrwob")
+region = Rect2(1409, 0, 313, 344)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_36ivb"]
+atlas = ExtResource("12_porms")
+region = Rect2(788, 450, 394, 450)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gh42v"]
+atlas = ExtResource("12_porms")
+region = Rect2(778, 0, 389, 520)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_johx4"]
+atlas = ExtResource("12_porms")
+region = Rect2(0, 457, 400, 442)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ywwa6"]
+atlas = ExtResource("12_porms")
+region = Rect2(398, 0, 398, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_72ej4"]
+atlas = ExtResource("12_porms")
+region = Rect2(0, 0, 400, 481)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2ihny"]
+atlas = ExtResource("6_7mjbx")
+region = Rect2(0, 0, 256, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dcn0f"]
+atlas = ExtResource("6_7mjbx")
+region = Rect2(768, 0, 256, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yn2ap"]
+atlas = ExtResource("6_7mjbx")
+region = Rect2(256, 500, 256, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_v8541"]
+atlas = ExtResource("6_7mjbx")
+region = Rect2(0, 1000, 256, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_vnhh6"]
+atlas = ExtResource("6_7mjbx")
+region = Rect2(256, 1000, 256, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j86qt"]
+atlas = ExtResource("6_7mjbx")
+region = Rect2(512, 1000, 256, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_porms"]
+atlas = ExtResource("6_sjku2")
+region = Rect2(0, 0, 278, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0hs4o"]
+atlas = ExtResource("6_sjku2")
+region = Rect2(349, 0, 349, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g6hvt"]
+atlas = ExtResource("6_sjku2")
+region = Rect2(780, 0, 390, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y8gcu"]
+atlas = ExtResource("7_7mjbx")
+region = Rect2(0, 0, 384, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_31luo"]
+atlas = ExtResource("7_7mjbx")
+region = Rect2(384, 0, 384, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dm2tv"]
+atlas = ExtResource("7_7mjbx")
+region = Rect2(768, 0, 384, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_16mmc"]
+atlas = ExtResource("7_7mjbx")
+region = Rect2(1152, 0, 384, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fg2lh"]
+atlas = ExtResource("7_7mjbx")
+region = Rect2(0, 500, 384, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tr5ov"]
+atlas = ExtResource("7_7mjbx")
+region = Rect2(384, 500, 384, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c6fjk"]
+atlas = ExtResource("8_jrwob")
+region = Rect2(903, 512, 301, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wflg7"]
+atlas = ExtResource("8_jrwob")
+region = Rect2(650, 512, 325, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3rlly"]
+atlas = ExtResource("8_jrwob")
+region = Rect2(1196, 0, 273, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_iy28q"]
+atlas = ExtResource("8_jrwob")
+region = Rect2(652, 0, 274, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_165gl"]
+atlas = ExtResource("8_jrwob")
+region = Rect2(362, 0, 258, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_arw3n"]
+atlas = ExtResource("8_jrwob")
+region = Rect2(61, 0, 255, 509)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_05s0e"]
+atlas = ExtResource("6_3xrod")
+region = Rect2(0, 0, 320, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j0cvo"]
+atlas = ExtResource("6_3xrod")
+region = Rect2(333, 0, 301, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sjku2"]
+atlas = ExtResource("6_3xrod")
+region = Rect2(659, 0, 301, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7mjbx"]
+atlas = ExtResource("6_3xrod")
+region = Rect2(978, 0, 301, 500)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jrwob"]
+atlas = ExtResource("6_3xrod")
+region = Rect2(1308, 0, 292, 500)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_porms"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_k2d6m")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hcmo8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qg24k")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fpcek")
+}],
+"loop": true,
+"name": &"GuardShield",
+"speed": 7.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_36ivb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gh42v")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_johx4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ywwa6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_72ej4")
+}],
+"loop": true,
+"name": &"ItemHeal",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2ihny")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dcn0f")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yn2ap")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_v8541")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_vnhh6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_j86qt")
+}],
+"loop": true,
+"name": &"fx_brush_stroke",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_porms")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0hs4o")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g6hvt")
+}],
+"loop": true,
+"name": &"fx_hit_fist",
+"speed": 7.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_y8gcu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_31luo")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dm2tv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_16mmc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fg2lh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tr5ov")
+}],
+"loop": true,
+"name": &"fx_qin_pillar",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_c6fjk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wflg7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3rlly")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_iy28q")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_165gl")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_arw3n")
+}],
+"loop": true,
+"name": &"fx_slash_blade",
+"speed": 9.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_05s0e")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_j0cvo")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sjku2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7mjbx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jrwob")
+}],
+"loop": true,
+"name": &"fx_slash_sword",
+"speed": 9.0
+}]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sjku2"]
+bg_color = Color(0.376471, 0.0627451, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7mjbx"]
+bg_color = Color(0.690196, 0, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jrwob"]
+bg_color = Color(0.364706, 0.364706, 0.243137, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_porms"]
+bg_color = Color(0.886275, 0.831373, 0.592157, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0hs4o"]
+bg_color = Color(0.376471, 0.0627451, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g6hvt"]
+bg_color = Color(0.690196, 0, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_y8gcu"]
+bg_color = Color(0.364706, 0.364706, 0.243137, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_31luo"]
+bg_color = Color(0.886275, 0.831373, 0.592157, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dm2tv"]
+bg_color = Color(0.376471, 0.0627451, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_16mmc"]
+bg_color = Color(0.690196, 0, 0.0627451, 1)
+
+[node name="BattleScene" type="Node"]
+
+[node name="BattleController" type="Node" parent="."]
+script = ExtResource("1_idkgt")
+
+[node name="JSONLoader" type="Node" parent="BattleController"]
+
+[node name="TurnManager" type="Node" parent="BattleController"]
+script = ExtResource("2_svpld")
+
+[node name="SkillResolver" type="Node" parent="BattleController"]
+
+[node name="EmotionModulator" type="Node" parent="BattleController"]
+
+[node name="InventorySync" type="Node" parent="BattleController"]
+
+[node name="VictoryHandler" type="Node" parent="BattleController"]
+
+[node name="SkillExecutor" type="Node" parent="BattleController"]
+script = ExtResource("2_rca61")
+
+[node name="BattleUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("2_kinr6")
+
+[node name="AllyPanel" type="VBoxContainer" parent="BattleUI"]
+layout_mode = 0
+offset_right = 306.0
+offset_bottom = 445.0
+
+[node name="TeamMate_1" type="HBoxContainer" parent="BattleUI/AllyPanel"]
+custom_minimum_size = Vector2(306, 148)
+layout_mode = 2
+script = ExtResource("5_yt3ua")
+
+[node name="Portrait" type="TextureRect" parent="BattleUI/AllyPanel/TeamMate_1"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+
+[node name="StatusUI" type="VBoxContainer" parent="BattleUI/AllyPanel/TeamMate_1"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleUI/AllyPanel/TeamMate_1/StatusUI"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="BattleUI/AllyPanel/TeamMate_1/StatusUI"]
+layout_mode = 2
+
+[node name="HPBar" type="ProgressBar" parent="BattleUI/AllyPanel/TeamMate_1/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_yt3ua")
+theme_override_styles/fill = SubResource("StyleBoxFlat_3xrod")
+show_percentage = false
+
+[node name="MPLabel" type="Label" parent="BattleUI/AllyPanel/TeamMate_1/StatusUI"]
+layout_mode = 2
+
+[node name="MPBar" type="ProgressBar" parent="BattleUI/AllyPanel/TeamMate_1/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_05s0e")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j0cvo")
+show_percentage = false
+
+[node name="FxHit" type="AnimatedSprite2D" parent="BattleUI/AllyPanel/TeamMate_1"]
+position = Vector2(52, 90)
+scale = Vector2(0.37, 0.37)
+sprite_frames = SubResource("SpriteFrames_porms")
+animation = &"ItemHeal"
+frame_progress = 0.395146
+
+[node name="TeamMate_2" type="HBoxContainer" parent="BattleUI/AllyPanel"]
+custom_minimum_size = Vector2(0, 148)
+layout_mode = 2
+script = ExtResource("5_yt3ua")
+
+[node name="Portrait" type="TextureRect" parent="BattleUI/AllyPanel/TeamMate_2"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+
+[node name="StatusUI" type="VBoxContainer" parent="BattleUI/AllyPanel/TeamMate_2"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleUI/AllyPanel/TeamMate_2/StatusUI"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="BattleUI/AllyPanel/TeamMate_2/StatusUI"]
+layout_mode = 2
+
+[node name="HPBar" type="ProgressBar" parent="BattleUI/AllyPanel/TeamMate_2/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_sjku2")
+theme_override_styles/fill = SubResource("StyleBoxFlat_7mjbx")
+show_percentage = false
+
+[node name="MPLabel" type="Label" parent="BattleUI/AllyPanel/TeamMate_2/StatusUI"]
+layout_mode = 2
+
+[node name="MPBar" type="ProgressBar" parent="BattleUI/AllyPanel/TeamMate_2/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_jrwob")
+theme_override_styles/fill = SubResource("StyleBoxFlat_porms")
+show_percentage = false
+
+[node name="FxHit" type="AnimatedSprite2D" parent="BattleUI/AllyPanel/TeamMate_2"]
+position = Vector2(52, 90)
+scale = Vector2(0.37, 0.37)
+sprite_frames = SubResource("SpriteFrames_porms")
+animation = &"GuardShield"
+
+[node name="TeamMate_3" type="HBoxContainer" parent="BattleUI/AllyPanel"]
+custom_minimum_size = Vector2(0, 148)
+layout_mode = 2
+script = ExtResource("5_yt3ua")
+
+[node name="Portrait" type="TextureRect" parent="BattleUI/AllyPanel/TeamMate_3"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+
+[node name="StatusUI" type="VBoxContainer" parent="BattleUI/AllyPanel/TeamMate_3"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleUI/AllyPanel/TeamMate_3/StatusUI"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="BattleUI/AllyPanel/TeamMate_3/StatusUI"]
+layout_mode = 2
+
+[node name="HPBar" type="ProgressBar" parent="BattleUI/AllyPanel/TeamMate_3/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_0hs4o")
+theme_override_styles/fill = SubResource("StyleBoxFlat_g6hvt")
+show_percentage = false
+
+[node name="MPLabel" type="Label" parent="BattleUI/AllyPanel/TeamMate_3/StatusUI"]
+layout_mode = 2
+
+[node name="MPBar" type="ProgressBar" parent="BattleUI/AllyPanel/TeamMate_3/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_y8gcu")
+theme_override_styles/fill = SubResource("StyleBoxFlat_31luo")
+show_percentage = false
+
+[node name="FxHit" type="AnimatedSprite2D" parent="BattleUI/AllyPanel/TeamMate_3"]
+position = Vector2(52, 90)
+scale = Vector2(0.37, 0.37)
+sprite_frames = SubResource("SpriteFrames_porms")
+animation = &"fx_hit_fist"
+frame_progress = 0.943972
+
+[node name="ActionPanel" type="VBoxContainer" parent="BattleUI"]
+layout_mode = 0
+offset_top = 460.0
+offset_right = 249.0
+offset_bottom = 644.0
+
+[node name="TargetSelectPopup" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 350)
+script = ExtResource("5_ti0og")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/TargetSelectPopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+
+[node name="TargetList" type="ItemList" parent="BattleUI/ActionPanel/TargetSelectPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 158.24)
+layout_mode = 2
+
+[node name="Description" type="RichTextLabel" parent="BattleUI/ActionPanel/TargetSelectPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 138.2)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BattleUI/ActionPanel/TargetSelectPopup/VBoxContainer"]
+custom_minimum_size = Vector2(492, 38)
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/TargetSelectPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/TargetSelectPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="PopupSkillSelect" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 350)
+script = ExtResource("4_8qdv8")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/PopupSkillSelect"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+
+[node name="SkillList" type="ItemList" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer"]
+custom_minimum_size = Vector2(0.08, 158.24)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+max_text_lines = 8
+
+[node name="Description" type="RichTextLabel" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer"]
+custom_minimum_size = Vector2(0, 138.19)
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer"]
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer/ButtonRow"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/PopupSkillSelect/VBoxContainer/ButtonRow"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="InnerForcePopup" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 350)
+script = ExtResource("7_rum4d")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/InnerForcePopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+
+[node name="ForceList" type="ItemList" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 158.24)
+layout_mode = 2
+
+[node name="Description" type="RichTextLabel" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 138.19)
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer/ButtonRow"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/InnerForcePopup/VBoxContainer/ButtonRow"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="ItemListPopup" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 377)
+script = ExtResource("8_0gp0h")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/ItemListPopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 373.0
+
+[node name="ItemListPopup" type="ItemList" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 158.24)
+layout_mode = 2
+item_count = 1
+
+[node name="Description" type="RichTextLabel" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 119.48)
+layout_mode = 2
+
+[node name="QuantityLabel" type="Label" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 32.735)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/ItemListPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="DefenseConfirmPopup" type="PopupPanel" parent="BattleUI/ActionPanel"]
+size = Vector2i(500, 150)
+script = ExtResource("8_3oc74")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ActionPanel/DefenseConfirmPopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 146.0
+
+[node name="Label" type="Label" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 25
+text = "確定進行防禦?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+
+[node name="Confirm" type="Button" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "確定"
+
+[node name="Cancel" type="Button" parent="BattleUI/ActionPanel/DefenseConfirmPopup/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 38)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "取消"
+
+[node name="BtnSkill" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "出招"
+
+[node name="BtnInnerForce" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "內功"
+
+[node name="BtnItem" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "道具"
+
+[node name="BtnDefend" type="Button" parent="BattleUI/ActionPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_1i8jf")
+theme_override_font_sizes/font_size = 20
+text = "防禦"
+
+[node name="LogPanel" type="RichTextLabel" parent="BattleUI"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 0
+offset_left = 306.0
+offset_top = 32.0
+offset_right = 864.0
+offset_bottom = 614.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/normal_font = ExtResource("5_1i8jf")
+theme_override_font_sizes/bold_italics_font_size = 20
+theme_override_font_sizes/italics_font_size = 20
+theme_override_font_sizes/mono_font_size = 20
+theme_override_font_sizes/normal_font_size = 20
+theme_override_font_sizes/bold_font_size = 20
+bbcode_enabled = true
+script = ExtResource("10_tttxe")
+
+[node name="EnemyPanel" type="VBoxContainer" parent="BattleUI"]
+layout_mode = 0
+offset_left = 864.0
+offset_top = 77.0
+offset_right = 1168.0
+offset_bottom = 585.0
+
+[node name="Enemy_1" type="HBoxContainer" parent="BattleUI/EnemyPanel"]
+layout_mode = 2
+script = ExtResource("13_yt3ua")
+
+[node name="Portrait" type="TextureRect" parent="BattleUI/EnemyPanel/Enemy_1"]
+custom_minimum_size = Vector2(120, 148)
+layout_mode = 2
+
+[node name="StatusUI" type="VBoxContainer" parent="BattleUI/EnemyPanel/Enemy_1"]
+custom_minimum_size = Vector2(163.02, 0)
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleUI/EnemyPanel/Enemy_1/StatusUI"]
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="BattleUI/EnemyPanel/Enemy_1/StatusUI"]
+layout_mode = 2
+
+[node name="HPBar" type="ProgressBar" parent="BattleUI/EnemyPanel/Enemy_1/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_dm2tv")
+theme_override_styles/fill = SubResource("StyleBoxFlat_16mmc")
+show_percentage = false
+
+[node name="ElementLabel" type="Label" parent="BattleUI/EnemyPanel/Enemy_1/StatusUI"]
+layout_mode = 2
+
+[node name="FxHit" type="AnimatedSprite2D" parent="BattleUI/EnemyPanel/Enemy_1"]
+position = Vector2(52, 90)
+scale = Vector2(0.37, 0.37)
+sprite_frames = SubResource("SpriteFrames_porms")
+animation = &"GuardShield"
+frame_progress = 0.621039
+
+[node name="Enemy_2" type="HBoxContainer" parent="BattleUI/EnemyPanel"]
+layout_mode = 2
+script = ExtResource("13_yt3ua")
+
+[node name="Portrait" type="TextureRect" parent="BattleUI/EnemyPanel/Enemy_2"]
+custom_minimum_size = Vector2(120, 148)
+layout_mode = 2
+
+[node name="StatusUI" type="VBoxContainer" parent="BattleUI/EnemyPanel/Enemy_2"]
+custom_minimum_size = Vector2(163.02, 0)
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleUI/EnemyPanel/Enemy_2/StatusUI"]
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="BattleUI/EnemyPanel/Enemy_2/StatusUI"]
+layout_mode = 2
+
+[node name="HPBar" type="ProgressBar" parent="BattleUI/EnemyPanel/Enemy_2/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_dm2tv")
+theme_override_styles/fill = SubResource("StyleBoxFlat_16mmc")
+show_percentage = false
+
+[node name="ElementLabel" type="Label" parent="BattleUI/EnemyPanel/Enemy_2/StatusUI"]
+layout_mode = 2
+
+[node name="FxHit" type="AnimatedSprite2D" parent="BattleUI/EnemyPanel/Enemy_2"]
+position = Vector2(52, 90)
+scale = Vector2(0.37, 0.37)
+sprite_frames = SubResource("SpriteFrames_porms")
+animation = &"fx_brush_stroke"
+frame_progress = 0.492613
+
+[node name="Enemy_3" type="HBoxContainer" parent="BattleUI/EnemyPanel"]
+layout_mode = 2
+script = ExtResource("13_yt3ua")
+
+[node name="Portrait" type="TextureRect" parent="BattleUI/EnemyPanel/Enemy_3"]
+custom_minimum_size = Vector2(120, 148)
+layout_mode = 2
+
+[node name="StatusUI" type="VBoxContainer" parent="BattleUI/EnemyPanel/Enemy_3"]
+custom_minimum_size = Vector2(163.02, 0)
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleUI/EnemyPanel/Enemy_3/StatusUI"]
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="BattleUI/EnemyPanel/Enemy_3/StatusUI"]
+layout_mode = 2
+
+[node name="HPBar" type="ProgressBar" parent="BattleUI/EnemyPanel/Enemy_3/StatusUI"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_dm2tv")
+theme_override_styles/fill = SubResource("StyleBoxFlat_16mmc")
+show_percentage = false
+
+[node name="ElementLabel" type="Label" parent="BattleUI/EnemyPanel/Enemy_3/StatusUI"]
+layout_mode = 2
+
+[node name="FxHit" type="AnimatedSprite2D" parent="BattleUI/EnemyPanel/Enemy_3"]
+position = Vector2(52, 90)
+scale = Vector2(0.37, 0.37)
+sprite_frames = SubResource("SpriteFrames_porms")
+animation = &"fx_brush_stroke"
+
+[node name="BattleAudio" type="Node" parent="."]
+
+[node name="BGMPlayer" type="AudioStreamPlayer2D" parent="BattleAudio"]
+
+[node name="SEPlayer" type="AudioStreamPlayer2D" parent="BattleAudio"]
+
+[node name="FXManager" type="Node2D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="FXManager"]
+
+[node name="Background" type="Sprite2D" parent="."]
+
+[node name="CharacterDataManager" type="Node" parent="."]
+script = ExtResource("5_pxwbd")
+
+[node name="EnemyAI" type="Node" parent="."]
+script = ExtResource("11_g72on")
+
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnSkill" to="BattleUI" method="_on_btn_skill_pressed"]
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnInnerForce" to="BattleUI" method="_on_btn_inner_force_pressed"]
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnItem" to="BattleUI" method="_on_btn_item_pressed"]
+[connection signal="pressed" from="BattleUI/ActionPanel/BtnDefend" to="BattleUI" method="_on_btn_defend_pressed"]

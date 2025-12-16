@@ -1,0 +1,80 @@
+[gd_scene load_steps=10 format=3 uid="uid://c7a6rqxnldo7s"]
+
+[ext_resource type="Texture2D" uid="uid://cfei6uiedsd4s" path="res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin.png" id="1_uur71"]
+[ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="4_6mlmy"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_xtot4"]
+size = Vector2(38, 14)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oi6f5"]
+atlas = ExtResource("1_uur71")
+region = Rect2(461, 0, 461, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uur71"]
+atlas = ExtResource("1_uur71")
+region = Rect2(0, 0, 461, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_47ljs"]
+atlas = ExtResource("1_uur71")
+region = Rect2(0, 512, 461, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_plqab"]
+atlas = ExtResource("1_uur71")
+region = Rect2(461, 512, 461, 512)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_jf2vu"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oi6f5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uur71")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_47ljs")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_plqab")
+}],
+"loop": true,
+"name": &"play_qin",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_h70ke"]
+size = Vector2(196.5, 239.75)
+
+[node name="Hong_Huei_Yin" type="CharacterBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -87.975)
+shape = SubResource("RectangleShape2D_xtot4")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(7.62939e-06, -87.975)
+scale = Vector2(0.3, 0.3)
+sprite_frames = SubResource("SpriteFrames_jf2vu")
+animation = &"play_qin"
+autoplay = "play_qin"
+frame_progress = 0.855843
+
+[node name="TextureRect" type="TextureRect" parent="."]
+visible = false
+offset_left = -46.56
+offset_top = -214.58
+offset_right = 1153.44
+offset_bottom = 1885.42
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("4_6mlmy")
+
+[node name="Area2D" type="Area2D" parent="."]
+position = Vector2(14, -87.975)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(-48, 76.975)
+rotation = 0.50091
+shape = SubResource("RectangleShape2D_h70ke")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

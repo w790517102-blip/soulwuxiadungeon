@@ -1,0 +1,139 @@
+[gd_scene load_steps=15 format=3 uid="uid://c7k6hgosf2w70"]
+
+[ext_resource type="Script" uid="uid://bfw32lav1pect" path="res://scripts/yuheng/yuheng_inn/yuheng_inn_man_a.gd" id="1_xvj28"]
+[ext_resource type="Texture2D" uid="uid://d2aert3ovqigr" path="res://assets/sprites/NPC/Yuheng/yuheng_inn_man_A.png" id="2_sdhe8"]
+[ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="3_sdhe8"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yfr7y"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(21, 7, 116, 161)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b3ca7"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(253, 168, 116, 161)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dh4pv"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(253, 7, 116, 161)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xbas6"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(21, 168, 116, 161)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_khl5b"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(369, 168, 116, 161)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bi0xu"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(369, 7, 116, 161)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sqiks"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(137, 168, 116, 161)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dvj2g"]
+atlas = ExtResource("2_sdhe8")
+region = Rect2(137, 7, 116, 161)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_iimqo"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yfr7y")
+}],
+"loop": true,
+"name": &"idle_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_b3ca7")
+}],
+"loop": true,
+"name": &"idle_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dh4pv")
+}],
+"loop": true,
+"name": &"idle_left_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xbas6")
+}],
+"loop": true,
+"name": &"idle_left_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_khl5b")
+}],
+"loop": true,
+"name": &"idle_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bi0xu")
+}],
+"loop": true,
+"name": &"idle_right_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sqiks")
+}],
+"loop": true,
+"name": &"idle_right_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dvj2g")
+}],
+"loop": true,
+"name": &"idle_up",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_nxyb7"]
+size = Vector2(55, 17)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_yfr7y"]
+size = Vector2(181.5, 251)
+
+[node name="yuheng_inn_man_A" type="CharacterBody2D"]
+script = ExtResource("1_xvj28")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_iimqo")
+animation = &"idle_right_down"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-4.5, 73.5)
+shape = SubResource("RectangleShape2D_nxyb7")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -74.905
+offset_top = -235.485
+offset_right = 1425.09
+offset_bottom = 1864.52
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("3_sdhe8")
+metadata/_edit_use_anchors_ = true
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(-4, 72)
+shape = SubResource("RectangleShape2D_yfr7y")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]
