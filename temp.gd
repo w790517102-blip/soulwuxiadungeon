@@ -1,94 +1,73 @@
-func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionary = {}) -> void:
-	var effect: String = str(skill_data.get("effect", ""))
-	var scope: String  = str(skill_data.get("target_scope", "single"))
-	var side: String   = str(skill_data.get("target_side", "enemy"))
+	match effect:
+		# === 神速符 ===
+		"haste_talisman":
+			var amount_haste: int = int(item.get("amount", 0))
+			var amount_haste_str := "[color=#ffd000]%d[/color]" % amount_haste
+			var is_ally: bool = target in player_party
 
-	# =========================
-	# 0️⃣ 支援 / 補血技能分流（保持剛剛那段）
-	# =========================
-	if effect == "heal_hp" or effect == "mp_heal" or side == "ally":
-		await _execute_support_heal_action(actor, skill_data, target)
-		check_battle_status()
-		return
+			if tone_map != null:
+				var use_line := tone_map.get_tone_text("item_use", "haste_talisman", user_id)
+				if use_line != "":
+					_log(use_line)
 
-	# =========================
-	# 1️⃣ AOE：全體敵方（例：翔龍十八掌）
-	# =========================
-	if scope == "enemy_all" and side == "enemy":
-		if enemy_party.is_empty():
-			push_warning("❗ execute_action：敵方隊伍為空，AOE 無目標。")
-			return
+			if is_ally:
+				target["speed"] = target.get("speed", 0) + amount_haste
+				_log("%s 身上貼上%s，腳下似有風生，速度提升了 %s 點。" % [
+					target_name, item_name, amount_haste_str
+				])
+			else:
+				target["element"] = "快"
+				_log("%s 被%s貼中，氣脈驟然加速，屬性轉為「快」。" % [
+					target_name, item_name
+				])
 
-		var inner_force = actor.get("inner_force", {})
+		# === 烈火符：我方 atk+ / 敵方固定傷害 ===
+		"fire_talisman":
+			var amount_atk: int = int(item.get("amount", 15))
+			var amount_atk_str := "[color=#ff8080]%d[/color]" % amount_atk
 
-		# 🎭 決定顯示用招式名稱（含 prefix）
-		var display_skill_name: String = str(skill_data.get("name", "???"))
-		if inner_force.has("prefix") and inner_force.has("boost_weapon"):
-			var bw: String = str(inner_force.get("boost_weapon", ""))
-			var wt: String = str(skill_data.get("weapon_type", ""))
-			if bw == wt:
-				display_skill_name = "%s%s" % [
-					str(inner_force.get("prefix", "")),
-					display_skill_name
-				]
+			if target in player_party:
+				target["atk"] = target.get("atk", 0) + amount_atk
 
-		var actor_name: String = str(actor.get("name", "???"))
+				if tone_map != null:
+					var use_line := tone_map.get_tone_text("item_use", "fire_talisman_ally", user_id)
+					if use_line != "":
+						_log(use_line)
 
-		# 🌊 先打一句「全場級」描述，賦予 AOE 感
-		# （這句你之後想改成別的招式專屬語氣也可以在這裡客製）
-		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
-			actor_name,
-			display_skill_name
-		])
+					var suffer_line := tone_map.get_tone_text("item_suffer", "fire_talisman_ally", target_id)
+					if suffer_line != "":
+						_log(suffer_line)
 
-		var any_down := false
+				_log("%s 身上貼上%s，攻擊力提升 %s。" % [
+					target_name, item_name, amount_atk_str
+				])
 
-		# 逐一對「還活著的敵人」結算（連環多段演出）
-		for enemy in enemy_party:
-			if typeof(enemy) != TYPE_DICTIONARY:
-				continue
-			if int(enemy.get("hp", 0)) <= 0:
-				continue
+			elif target in enemy_party:
+				if tone_map != null:
+					var use_line2 := tone_map.get_tone_text("item_use", "fire_talisman_enemy", user_id)
+					if use_line2 != "":
+						_log(use_line2)
 
-			var result = skill_executor.execute(actor, enemy, skill_data, inner_force)
+				# ✅ 不改你的整套傷害系統：直接走你現有的「固定傷害套用」 helper
+				var dmg_item := item.duplicate()
+				dmg_item["amount"] = int(item.get("enemy_damage", 30))
+				_apply_bomb_damage_to_target(user, dmg_item, target, "fire_talisman_enemy")
 
-			# 🎬 每個目標各跑一次敘事＋受擊動畫
-			await _play_attack_cinematic(actor, enemy, skill_data, result)
+		# === 霹靂彈：單體固定傷害 ===
+		"bomb_single":
+			if target.is_empty():
+				_log("%s 丟出了 %s。" % [user_name, item_name])
+			else:
+				_log("%s 對 %s 丟出了 %s。" % [user_name, target_name, item_name])
 
-			if result.get("target_down", false):
-				enemy["hp"] = 0
-				enemy["is_dead"] = true
-				any_down = true
+			_apply_bomb_single(user, item, target)
 
-		# ⭐ 更新敵方 UI
-		if any_down and battle_ui:
-			battle_ui.update_enemy_panel()
+		# === 轟雷霹靂彈：敵方全體固定傷害 ===
+		"bomb_aoe":
+			_log("%s 拋出了 %s，準備在敵陣中引爆。" % [user_name, item_name])
+			_apply_bomb_aoe(user, item)
 
-		check_battle_status()
-		return
-
-	# =========================
-	# 2️⃣ 原本的單體攻擊流程（維持你原本那段）
-	# =========================
-	if enemy_party.is_empty() and target.is_empty():
-		push_warning("❗ execute_action 被呼叫時沒有敵人可以攻擊")
-		return
-
-	var actual_target: Dictionary
-	if target.is_empty():
-		actual_target = enemy_party[0]
-	else:
-		actual_target = target
-
-	var inner_force_single = actor.get("inner_force", {})
-	var result_single = skill_executor.execute(actor, actual_target, skill_data, inner_force_single)
-
-	await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
-
-	if result_single.target_down:
-		actual_target["hp"] = 0
-		actual_target["is_dead"] = true
-		if battle_ui:
-			battle_ui.update_enemy_panel()
-
-	check_battle_status()
+		_:
+			_log("%s 使用了 %s，但目前尚未實作 effect：%s。" % [
+				user_name, item_name, effect
+			])

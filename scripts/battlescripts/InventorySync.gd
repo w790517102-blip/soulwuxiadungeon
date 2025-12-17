@@ -68,15 +68,15 @@ var inventory: Array = [
 		"quantity": 3,
 		"target_scope": "enemy_all"  # ✅ 敵方全體
 	},
-        {
-                "id": "item_fire_talisman",
-                "name": "烈火符",
-                "effect": "fire_talisman",
-                "amount": 15,
-                "enemy_damage": 30,
-                "quantity": 3,
-                "target_scope": "all_single" # 可指定敵／我方的單體
-        },
+	{
+		"id": "item_fire_talisman",
+		"name": "烈火符",
+		"effect": "fire_talisman",
+		"amount": 15,
+		"enemy_damage": 30,
+		"quantity": 3,
+		"target_scope": "all_single" # 可指定敵／我方的單體
+	},
 
 ]
 
