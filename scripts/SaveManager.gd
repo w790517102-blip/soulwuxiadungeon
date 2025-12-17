@@ -91,73 +91,76 @@ func save_to_slot(slot_index: int) -> void:
 
 # 載入遊戲資料並套用（包含向下相容）
 func load_from_slot(slot_index: int) -> void:
-	if not _valid_slot(slot_index):
-		push_error("Invalid save slot index.")
-		return
+        if not _valid_slot(slot_index):
+                push_error("Invalid save slot index.")
+                return
 
-	var path: String = _slot_path(slot_index)
-	if not FileAccess.file_exists(path):
-		print("No save found in slot %d" % slot_index)
-		return
+        var path: String = _slot_path(slot_index)
+        if not FileAccess.file_exists(path):
+                print("No save found in slot %d" % slot_index)
+                return
 
-	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if f == null:
-		push_error("Failed to open file for reading: %s" % path)
-		return
-	var data: Dictionary = f.get_var() as Dictionary
-	f.close()
+        var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+        if f == null:
+                push_error("Failed to open file for reading: %s" % path)
+                return
+        var data: Dictionary = f.get_var() as Dictionary
+        f.close()
 
-	# --- 套用資料（提供預設，避免老存檔缺欄位報錯） ---
-	var version: int = int(data.get("version", 0))
-	if version > SAVE_VERSION:
-		push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
+        # --- 套用資料（提供預設，避免老存檔缺欄位報錯） ---
+        var version: int = int(data.get("version", 0))
+        if version > SAVE_VERSION:
+                push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
 
-	# Managers
-	SideQuestManager.load_all(data.get("side_quests", {}))
+        # Managers
+        SideQuestManager.load_all(data.get("side_quests", {}))
 
-	# GlobalState
-	GlobalState.triggered_flags = data.get("flags", {})
-	GlobalState.relationship = data.get("relationships", {})
-	GlobalState.ethics = int(data.get("ethics", 0))
-	GlobalState.grudge = int(data.get("grudge", 0))
-	GlobalState.affection = int(data.get("affection", 0))
-	GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
+        # GlobalState
+        GlobalState.triggered_flags = data.get("flags", {})
+        GlobalState.relationship = data.get("relationships", {})
+        GlobalState.ethics = int(data.get("ethics", 0))
+        GlobalState.grudge = int(data.get("grudge", 0))
+        GlobalState.affection = int(data.get("affection", 0))
+        GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
 
-	# Player snapshot
-	var player: Node2D = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
-	if player:
-		player.global_position = data.get("player_position", player.global_position)
+        # Scene snapshot（如果你有自己的場景管理器，這邊可以交給它處理）
+        var scene_path: String = data.get("current_scene_path", "")
+        var player: Node2D = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+        if scene_path != "":
+                var game_root := get_node_or_null("/root/GameRoot")
+                if game_root and game_root.has_method("change_map_to"):
+                        await game_root.change_map_to(scene_path)
+                        player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+                else:
+                        push_warning("GameRoot 缺少 change_map_to，無法切換到保存場景：%s" % scene_path)
 
-	# Scene snapshot（如果你有自己的場景管理器，這邊可以交給它處理）
-	var scene_path: String = data.get("current_scene_path", "")
-	if scene_path != "":
-		# 這裡僅提供接口示範：
-		# 如果你有 SceneManager，可改成 SceneManager.change_scene_to_file(scene_path)
-		# get_tree().change_scene_to_file(scene_path)  // 小心在讀檔流程中的呼叫時機
-		pass
+        # Player snapshot（放在切換場景之後，以便正確取得玩家節點）
+        if player:
+                player.global_position = data.get("player_position", player.global_position)
 
-	print("Loaded from slot %d" % slot_index)
+        print("Loaded from slot %d" % slot_index)
 
 # 讀取存檔的摘要（例如做選單顯示）
 func get_slot_summary(slot_index: int) -> Dictionary:
-	if not _valid_slot(slot_index):
-		return {}
-	var path: String = _slot_path(slot_index)
-	if not FileAccess.file_exists(path):
-		return {}
-	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if f == null:
-		return {}
-	var data: Dictionary = f.get_var() as Dictionary
-	f.close()
-	return {
-		"timestamp": data.get("timestamp", 0),
-		"ethics": data.get("ethics", 0),
-		"grudge": data.get("grudge", 0),
-		"affection": data.get("affection", 0),
-		"flags_count": (data.get("flags", {}) as Dictionary).size(),
-		"quests_count": (data.get("side_quests", {}) as Dictionary).size(),
-	}
+        if not _valid_slot(slot_index):
+                return {}
+        var path: String = _slot_path(slot_index)
+        if not FileAccess.file_exists(path):
+                return {}
+        var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+        if f == null:
+                return {}
+        var data: Dictionary = f.get_var() as Dictionary
+        f.close()
+        return {
+                "timestamp": data.get("timestamp", 0),
+                "ethics": data.get("ethics", 0),
+                "grudge": data.get("grudge", 0),
+                "affection": data.get("affection", 0),
+                "flags_count": (data.get("flags", {}) as Dictionary).size(),
+                "quests_count": (data.get("side_quests", {}) as Dictionary).size(),
+                "current_scene_path": data.get("current_scene_path", ""),
+        }
 
 # 小幫手：確認事件是否觸發過（範例）
 func has_triggered_market_melody_event() -> bool:
