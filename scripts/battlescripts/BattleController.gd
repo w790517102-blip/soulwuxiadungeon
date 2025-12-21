@@ -15,6 +15,7 @@ var action_log_ui: LogPanel = null  # ✅ LogPanel 掛的腳本
 @onready var inventory_sync = $InventorySync
 @onready var victory_handler = $VictoryHandler
 @onready var skill_executor = $SkillExecutor
+@onready var item_dispatcher: ItemEffectDispatcher = ItemEffectDispatcher.new()
 @onready var team_data_manager := get_node("/root/BattleScene/TeamDataManager")
 @onready var turn_manager := $TurnManager
 @onready var enemy_ai := get_parent().get_node_or_null("EnemyAI") # 敵人 AI 掛載
@@ -729,7 +730,9 @@ func _apply_bomb_damage_to_target(
 
 	var power: int = int(item.get("amount", 0))
 	if power <= 0:
-		push_warning("⚠️ 炸彈道具 %s 的 amount <= 0，沒有造成傷害。" % str(item.get("id", "unknown_item")))
+		var warn_item_id := str(item.get("id", "unknown_item"))
+		push_warning("⚠️ 炸彈道具 %s 的 amount <= 0，沒有造成傷害。" % warn_item_id)
+		_log("WARN: item missing amount: %s" % warn_item_id)
 		return
 
 	var before_hp: int = int(target.get("hp", 0))
@@ -737,6 +740,7 @@ func _apply_bomb_damage_to_target(
 		return
 
 	var after_hp: int = max(before_hp - power, 0)
+
 	var dmg: int = before_hp - after_hp
 	target["hp"] = after_hp
 
@@ -765,6 +769,7 @@ func _apply_bomb_damage_to_target(
 		_log("%s 倒下了，已無力再戰。" % tname)
 
 	_update_ui_for_actor(target)
+
 
 # 單體霹靂彈：打指定 target，沒選就打第一隻敵人
 func _apply_bomb_single(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
@@ -808,260 +813,8 @@ func use_item(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
 	# ✅ 先消耗道具
 	InventorySync.consume_item(item.get("id", ""))
 
-	var effect: String      = item.get("effect", "")
-	var user_name: String   = user.get("name", "???")
-	var target_name: String = target.get("name", "???")
-	var item_name: String   = item.get("name", "???")
-	var user_id: String     = user.get("id", "")
-	var target_id: String   = target.get("id", "")
-
-	match effect:
-		# === 回復 HP ===
-		"heal", "heal_hp":
-			var amount: int = item.get("amount", 0)
-
-			var before_hp: int = target.get("hp", 0)
-			var max_hp: int = target.get("max_hp", before_hp)
-			var after_hp: int = min(before_hp + amount, max_hp)
-
-			var restored: int = after_hp - before_hp
-			target["hp"] = after_hp
-
-			if restored <= 0:
-				# ✅ 沒補到：只有吐槽，不講 item_use 的文青藥香
-				var line_no_effect: String
-				if user_name == target_name:
-					line_no_effect = "%s 看了看 %s，還是吞了下去——反正都帶在身上了，只是這一回似乎派不上用場。" % [
-						user_name,
-						item_name
-					]
-				else:
-					line_no_effect = "%s 好心替 %s 用上 %s，結果傷勢早已無礙，藥力幾乎只是圖個心安。" % [
-						user_name,
-						target_name,
-						item_name
-					]
-				_log(line_no_effect)
-			else:
-				# ✅ 有補到：先講 ToneMap 敘事，再講戰報
-				if tone_map != null:
-					var extra_hp := tone_map.get_tone_text("item_use", "heal", user_id)
-					if extra_hp != "":
-						_log(extra_hp)
-
-				var amount_str := "[color=#80ff80]%d[/color]" % restored
-
-				var line: String
-				if user_name == target_name:
-					line = "%s 使用了 %s，恢復了 %s 點生命。" % [
-						user_name,
-						item_name,
-						amount_str
-					]
-				else:
-					line = "%s 對 %s 使用了 %s，恢復了 %s 點生命。" % [
-						user_name,
-						target_name,
-						item_name,
-						amount_str
-					]
-
-				_log(line)
-
-				# ✨ 有實際回復才播綠光特效
-				if battle_ui and battle_ui.has_method("play_heal_react"):
-					battle_ui.play_heal_react(target)
-
-		# === 回復 MP（內力）===
-		"mp_heal":
-			var amount_mp: int = item.get("amount", 0)
-
-			var before_mp: int = target.get("mp", 0)
-			var max_mp: int = target.get("max_mp", before_mp)
-			var after_mp: int = min(before_mp + amount_mp, max_mp)
-
-			var restored_mp: int = after_mp - before_mp
-			target["mp"] = after_mp
-
-			if restored_mp <= 0:
-				# ✅ 沒補到內力：只有吐槽，不講 item_use 的 mp 敘事
-				var line_no_mp: String
-				if user_name == target_name:
-					line_no_mp = "%s 喝下了 %s，但真氣早已盈滿，只剩苦澀的味道在舌尖空打轉。" % [
-						user_name,
-						item_name
-					]
-				else:
-					line_no_mp = "%s 對 %s 使用了 %s，但對方的內力早已飽和，頂多算潤潤嗓子。" % [
-						user_name,
-						target_name,
-						item_name
-					]
-				_log(line_no_mp)
-			else:
-				# ✅ 有補到內力：正常 item_use 敘事 + 戰報
-				if tone_map != null:
-					var extra_mp := tone_map.get_tone_text("item_use", "mp_heal", user_id)
-					if extra_mp != "":
-						_log(extra_mp)
-
-				var amount_mp_str := "[color=#80ffe0]%d[/color]" % restored_mp
-
-				var line2: String
-				if user_name == target_name:
-					line2 = "%s 使用了 %s，恢復了 %s 點內力。" % [
-						user_name,
-						item_name,
-						amount_mp_str
-					]
-				else:
-					line2 = "%s 對 %s 使用了 %s，恢復了 %s 點內力。" % [
-						user_name,
-						target_name,
-						item_name,
-						amount_mp_str
-					]
-
-				_log(line2)
-
-				# ✨ 有實際回復才播綠光特效
-				if battle_ui and battle_ui.has_method("play_heal_react"):
-					battle_ui.play_heal_react(target)
-
-		# === 純速度 BUFF ===
-		"buff_speed":
-			var amount_spd: int = item.get("amount", 0)
-
-	# 1️⃣ 先算數值
-			var before_spd: int = target.get("speed", 0)
-			var after_spd: int = before_spd + amount_spd
-			target["speed"] = after_spd
-
-	# 2️⃣ 敘事：施術者（item_use）＋ 被加持者（item_suffer）
-			if tone_map != null:
-		# 出手那個人：把輕身散／奇物交出去的動作
-				var use_line := tone_map.get_tone_text("item_use", "buff_speed", user_id)
-				if use_line != "":
-					_log(use_line)
-
-		# 受術者：身體變輕的感覺
-				var suffer_line := tone_map.get_tone_text("item_suffer", "buff_speed", target_id)
-				if suffer_line != "":
-					_log(suffer_line)
-
-	# 3️⃣ 最後是戰報數字
-			var amount_spd_str := "[color=#ffd000]%d[/color]" % amount_spd
-			var line_spd := "%s 受到 %s 加持，速度提升了 %s 點。" % [
-				target_name,
-				item_name,
-				amount_spd_str
-			]
-			_log(line_spd)
-
-
-		# === 降速 DEBUFF（例如雞爪釘）===
-		"debuff_speed":
-			var amount_speed: int = item.get("amount", 0)
-
-			# 1️⃣ 出手者視角：item_use（劉語塵丟雞爪釘那句）
-			if tone_map != null:
-				var use_line := tone_map.get_tone_text("item_use", "debuff_speed", user_id)
-				if use_line != "":
-					_log(use_line)
-
-			# 2️⃣ 實際套用數值（支援 speed / spd 兩種欄位名）
-			var before_spd: int = 0
-			if target.has("speed"):
-				before_spd = int(target.get("speed", 0))
-			elif target.has("spd"):
-				before_spd = int(target.get("spd", 0))
-
-			var after_spd: int = max(before_spd - amount_speed, 0)
-			var reduced: int = before_spd - after_spd
-
-			if target.has("speed"):
-				target["speed"] = after_spd
-			elif target.has("spd"):
-				target["spd"] = after_spd
-
-			# 3️⃣ 中招者視角：item_suffer（「腳下氣勁一滯…」）
-			if tone_map != null:
-				var suffer_line := tone_map.get_tone_text("item_suffer", "debuff_speed", target_id)
-				if suffer_line != "":
-					_log(suffer_line)
-
-			# 4️⃣ 戰報
-			if reduced > 0:
-				var amount_str := "[color=#ffcc66]%d[/color]" % reduced
-				var line3 := "%s 對 %s 使用了 %s，%s 的速度降低了 %s 點。" % [
-					user_name,
-					target_name,
-					item_name,
-					target_name,
-					amount_str
-				]
-				_log(line3)
-			else:
-				var line_no_effect2 := "%s 使出 %s 想絆住 %s 的腳步，但對方氣勢如虹，幾乎沒被拖慢。" % [
-					user_name,
-					item_name,
-					target_name
-				]
-				_log(line_no_effect2)
-
-		# === 神速符 ===
-		"haste_talisman":
-			var amount_haste: int = item.get("amount", 0)
-			var amount_haste_str := "[color=#ffd000]%d[/color]" % amount_haste
-			var is_ally: bool = target in player_party
-
-			if is_ally:
-				target["speed"] = target.get("speed", 0) + amount_haste
-
-				if tone_map != null:
-					var extra_haste := tone_map.get_tone_text("item_use", "haste_talisman", user_id)
-					if extra_haste != "":
-						_log(extra_haste)
-
-				_log("%s 身上貼上%s，腳下似有風生，速度提升了 %s 點。" % [
-					target_name,
-					item_name,
-					amount_haste_str
-				])
-			else:
-				target["element"] = "快"
-
-				if tone_map != null:
-					var extra_haste2 := tone_map.get_tone_text("item_use", "haste_talisman", user_id)
-					if extra_haste2 != "":
-						_log(extra_haste2)
-
-				_log("%s 被%s貼中，氣脈驟然加速，屬性轉為「快」。" % [
-					target_name,
-					item_name
-				])
-		# === 霹靂彈：單體固定傷害 ===
-		"bomb_single":
-			# 先打一句基本戰報
-			if target.is_empty():
-				_log("%s 丟出了 %s。" % [user_name, item_name])
-			else:
-				_log("%s 對 %s 丟出了 %s。" % [user_name, target_name, item_name])
-
-			_apply_bomb_single(user, item, target)
-
-		# === 轟雷霹靂彈：敵方全體固定傷害 ===
-		"bomb_aoe":
-			_log("%s 拋出了 %s，準備在敵陣中引爆。" % [user_name, item_name])
-			_apply_bomb_aoe(user, item)
-
-		# === 預留：未實作效果 ===
-		_:
-			_log("%s 使用了 %s，但目前尚未實作 effect：%s。" % [
-				user_name,
-				item_name,
-				effect
-			])
+	# ✅ 套用效果（dispatcher）
+	item_dispatcher.apply(self, user, item, target)
 
 	# ✅ 道具效果跑完後，同步 UI（避免自補 / 互補更新不同步）
 	_update_ui_for_actor(target)

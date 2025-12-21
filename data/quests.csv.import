@@ -3,11 +3,13 @@
 importer="csv_translation"
 type="Translation"
 uid="uid://bo6j8v6yldclw"
-valid=false
 
 [deps]
 
+files=["res://data/quests.stage.translation", "res://data/quests.title.translation", "res://data/quests.description.translation", "res://data/quests.condition.translation", "res://data/quests.condition.translation", "res://data/quests.next.translation", "res://data/quests.reward.translation", "res://data/quests.speaker.translation", "res://data/quests.map.translation"]
+
 source_file="res://data/quests.csv"
+dest_files=["res://data/quests.stage.translation", "res://data/quests.title.translation", "res://data/quests.description.translation", "res://data/quests.condition.translation", "res://data/quests.condition.translation", "res://data/quests.next.translation", "res://data/quests.reward.translation", "res://data/quests.speaker.translation", "res://data/quests.map.translation"]
 
 [params]
 

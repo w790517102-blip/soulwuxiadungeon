@@ -11,34 +11,35 @@ var selected := false
 signal slot_selected(index: int)
 
 func _ready():
-	select_button.text = "選取"
-	select_button.pressed.connect(_on_select_pressed)
-	_refresh_label()
+        select_button.text = "選取"
+        select_button.pressed.connect(_on_select_pressed)
+        _refresh_label()
 
 func _on_select_pressed():
-	emit_signal("slot_selected", slot_index)
+        emit_signal("slot_selected", slot_index)
 
 func _refresh_label():
-	var path = "user://save/slot_%02d.save" % slot_index
-	if FileAccess.file_exists(path):
-		var file = FileAccess.open(path, FileAccess.READ)
-		if file:
-			var data = file.get_var()
-			file.close()
+        var summary := SaveManager.get_slot_summary(slot_index)
+        if summary.is_empty():
+                label.text = "存檔 %d｜尚無資料" % slot_index
+                return
 
-			if data.has("summary"):
-				label.text = "存檔 %d｜%s" % [slot_index, data["summary"]]
-			else:
-				label.text = "存檔 %d｜（無摘要）" % slot_index
-		else:
-			label.text = "存檔 %d｜讀取失敗" % slot_index
-	else:
-		label.text = "存檔 %d｜尚無資料" % slot_index
+        var timestamp := int(summary.get("timestamp", 0))
+        var timestamp_text := ""
+        if timestamp > 0:
+                timestamp_text = Time.get_datetime_string_from_unix_time(timestamp, true)
+        else:
+                timestamp_text = "未知時間"
+
+        var scene_path := String(summary.get("current_scene_path", ""))
+        var scene_name := scene_path.get_file().get_basename() if scene_path != "" else "未知場景"
+
+        label.text = "存檔 %d｜%s｜%s" % [slot_index, timestamp_text, scene_name]
 
 func mark_selected():
-	selected = true
-	select_button.text = "✔ 選取中"
+        selected = true
+        select_button.text = "✔ 選取中"
 
 func unmark_selected():
-	selected = false
-	select_button.text = "選取"
+        selected = false
+        select_button.text = "選取"
