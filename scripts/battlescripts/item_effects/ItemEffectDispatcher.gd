@@ -59,7 +59,7 @@ func _handle_heal_hp(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log(line_no_effect)
 	else:
 		if controller.tone_map != null:
-			var extra_hp := controller.tone_map.get_tone_text("item_use", "heal", user_id)
+			var extra_hp = controller.tone_map.get_tone_text("item_use", "heal", user_id)
 			if extra_hp != "":
 				controller._log(extra_hp)
 
@@ -120,7 +120,7 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log(line_no_mp)
 	else:
 		if controller.tone_map != null:
-			var extra_mp := controller.tone_map.get_tone_text("item_use", "mp_heal", user_id)
+			var extra_mp = controller.tone_map.get_tone_text("item_use", "mp_heal", user_id)
 			if extra_mp != "":
 				controller._log(extra_mp)
 
@@ -164,11 +164,11 @@ func _handle_buff_speed(controller, user: Dictionary, item: Dictionary, target: 
 	target["speed"] = after_spd
 
 	if controller.tone_map != null:
-		var use_line := controller.tone_map.get_tone_text("item_use", "buff_speed", user_id)
+		var use_line = controller.tone_map.get_tone_text("item_use", "buff_speed", user_id)
 		if use_line != "":
 			controller._log(use_line)
 
-		var suffer_line := controller.tone_map.get_tone_text("item_suffer", "buff_speed", target_id)
+		var suffer_line = controller.tone_map.get_tone_text("item_suffer", "buff_speed", target_id)
 		if suffer_line != "":
 			controller._log(suffer_line)
 
@@ -195,7 +195,7 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 	var target_id: String = target.get("id", "")
 
 	if controller.tone_map != null:
-		var use_line := controller.tone_map.get_tone_text("item_use", "debuff_speed", user_id)
+		var use_line = controller.tone_map.get_tone_text("item_use", "debuff_speed", user_id)
 		if use_line != "":
 			controller._log(use_line)
 
@@ -214,7 +214,7 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 		target["spd"] = after_spd
 
 	if controller.tone_map != null:
-		var suffer_line := controller.tone_map.get_tone_text("item_suffer", "debuff_speed", target_id)
+		var suffer_line = controller.tone_map.get_tone_text("item_suffer", "debuff_speed", target_id)
 		if suffer_line != "":
 			controller._log(suffer_line)
 
@@ -255,7 +255,7 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 		target["speed"] = int(target.get("speed", 0)) + amount_haste
 
 		if controller.tone_map != null:
-			var use_line := controller.tone_map.get_tone_text("item_use", "haste_talisman", user_id)
+			var use_line = controller.tone_map.get_tone_text("item_use", "haste_talisman", user_id)
 			if use_line != "":
 				controller._log(use_line)
 
@@ -273,7 +273,7 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 		target["element"] = enemy_element
 
 		if controller.tone_map != null:
-			var use_line2 := controller.tone_map.get_tone_text("item_use", "haste_talisman", user_id)
+			var use_line2 = controller.tone_map.get_tone_text("item_use", "haste_talisman", user_id)
 			if use_line2 != "":
 				controller._log(use_line2)
 
@@ -302,11 +302,11 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 		target["atk"] = target.get("atk", 0) + amount_atk
 
 		if controller.tone_map != null:
-			var use_line := controller.tone_map.get_tone_text("item_use", "fire_talisman_ally", user_id)
+			var use_line = controller.tone_map.get_tone_text("item_use", "fire_talisman_ally", user_id)
 			if use_line != "":
 				controller._log(use_line)
 
-			var suffer_line := controller.tone_map.get_tone_text("item_suffer", "fire_talisman_ally", target_id)
+			var suffer_line = controller.tone_map.get_tone_text("item_suffer", "fire_talisman_ally", target_id)
 			if suffer_line != "":
 				controller._log(suffer_line)
 
@@ -322,7 +322,7 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 			return
 
 		if controller.tone_map != null:
-			var use_line := controller.tone_map.get_tone_text("item_use", "fire_talisman_enemy", user_id)
+			var use_line = controller.tone_map.get_tone_text("item_use", "fire_talisman_enemy", user_id)
 			if use_line != "":
 				controller._log(use_line)
 

@@ -728,18 +728,19 @@ func _apply_bomb_damage_to_target(
 	if target.is_empty():
 		return
 
-        var power: int = int(item.get("amount", 0))
-        if power <= 0:
-                var warn_item_id := str(item.get("id", "unknown_item"))
-                push_warning("⚠️ 炸彈道具 %s 的 amount <= 0，沒有造成傷害。" % warn_item_id)
-                _log("WARN: item missing amount: %s" % warn_item_id)
-                return
+	var power: int = int(item.get("amount", 0))
+	if power <= 0:
+		var warn_item_id := str(item.get("id", "unknown_item"))
+		push_warning("⚠️ 炸彈道具 %s 的 amount <= 0，沒有造成傷害。" % warn_item_id)
+		_log("WARN: item missing amount: %s" % warn_item_id)
+		return
 
 	var before_hp: int = int(target.get("hp", 0))
 	if before_hp <= 0:
 		return
 
 	var after_hp: int = max(before_hp - power, 0)
+
 	var dmg: int = before_hp - after_hp
 	target["hp"] = after_hp
 
@@ -768,6 +769,7 @@ func _apply_bomb_damage_to_target(
 		_log("%s 倒下了，已無力再戰。" % tname)
 
 	_update_ui_for_actor(target)
+
 
 # 單體霹靂彈：打指定 target，沒選就打第一隻敵人
 func _apply_bomb_single(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
