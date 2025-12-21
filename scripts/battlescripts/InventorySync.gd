@@ -73,8 +73,9 @@ var inventory: Array = [
 		"name": "烈火符",
 		"effect": "fire_talisman",
 		"amount": 15,
+		"enemy_damage": 30,
 		"quantity": 3,
-		"target_scope": "all_single" # 你可以自訂一個代表「可指定敵／我方」
+		"target_scope": "all_single" # 可指定敵／我方的單體
 	},
 
 ]

@@ -811,6 +811,7 @@ func use_item(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
 	# ✅ 先消耗道具
 	InventorySync.consume_item(item.get("id", ""))
 
+	# ✅ 套用效果（dispatcher）
 	item_dispatcher.apply(self, user, item, target)
 
 	# ✅ 道具效果跑完後，同步 UI（避免自補 / 互補更新不同步）
