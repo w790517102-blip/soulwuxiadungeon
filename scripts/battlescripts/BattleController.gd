@@ -204,7 +204,13 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
-	await _play_attack_cinematic(enemy, target, skill, result)
+	var enemy_logs := await _play_attack_cinematic(enemy, target, skill, result)
+
+	if enemy_logs.size() > 0:
+		for line in enemy_logs:
+			_log(line)
+		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+			await action_log_ui.wait_for_all_logs()
 
 	check_battle_status()
 	enemy["acted_this_turn"] = true
@@ -273,8 +279,8 @@ func _get_fx_id_for_skill(skill_data: Dictionary, attacker: Dictionary) -> Strin
 			return "fx_hit_fist"       # 萬用打擊
 
 
-# ⭐ 核心：攻擊演出流程（動畫 → 血量更新 → 敘事）
-func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+# ⭐ 核心：攻擊演出流程（動畫 → 血量更新）
+func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> Array:
 	var logs: Array = []
 	if result.has("log"):
 		logs = result.log
@@ -303,13 +309,7 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(attacker)
 
-	# ❸ 播放 log（包含「擊中 %s，造成 %d 點傷害！」）
-	if logs.size() > 0:
-		for line in logs:
-			_log(line)
-
-		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
-			action_log_ui.wait_for_all_logs()
+	return logs
 
 
 # ✅ 改版：可以接受指定 target，給玩家選目標用
@@ -509,7 +509,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var result_single = skill_executor.execute(actor, actual_target, damage_skill_data, inner_force_single)
 
 	# 🎬 單體：照舊跑 cinematic（描述＋動畫）
-	await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
+	var attack_logs := await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
 
 	if not effects.is_empty():
 		for entry in effects:
@@ -571,6 +571,12 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 					_log("WARN: unsupported skill effect: %s" % effect_type)
 
 			_update_ui_for_actor(effect_target)
+
+	if attack_logs.size() > 0:
+		for line in attack_logs:
+			_log(line)
+		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+			await action_log_ui.wait_for_all_logs()
 
 	if result_single.target_down:
 		actual_target["hp"] = 0
