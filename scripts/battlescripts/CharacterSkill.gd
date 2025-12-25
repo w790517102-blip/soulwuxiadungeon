@@ -56,6 +56,7 @@ func get_skills(character_id: String) -> Array:
 					"weapon_type": "筆",
 					"power": 1.1,
 					"category":"全體攻擊",
+					"mp_cost": 10,
 					"target_scope": "enemy_all",  # ⭐ 關鍵：全體敵人
 					"target_side": "enemy",
 					"desc": "以筆破風，掃出詩意煙霞，傷敵於無形。"
@@ -74,6 +75,45 @@ func get_skills(character_id: String) -> Array:
 					"power": 1.3,
 					"desc": "扎穩馬步，屏除雜念，用堅定的信念揮出一拳。"
 				},
+				{
+	"id": "skill_buff_speed_test",
+	"name": "提氣輕身",
+	"weapon_type": "掌",
+	"effect": "buff_speed",
+	"category": "單體增益",
+	"amount": 3,              # 速度 +3（你可調）
+	"turns": 3,               # 持續 3 回合
+	"mp_cost": 5,             # ✅ Phase I MP gating 會吃這個
+	"target_scope": "single",
+	"target_side": "ally",
+	"desc": "運氣提身，腳下如風。"
+},
+{
+	"id": "skill_debuff_speed_test",
+	"name": "凝滯封脈",
+	"weapon_type": "掌",
+	"effect": "debuff_speed",
+	"category": "單體減益",
+	"amount": 3,              # 速度 -3（你可調）
+	"turns": 3,
+	"mp_cost": 5,
+	"target_scope": "single",
+	"target_side": "enemy",
+	"desc": "封住敵人經脈，使其身形遲鈍。"
+},
+{
+	"id": "skill_force_element_test",
+	"name": "轉性訣",
+	"weapon_type": "掌",
+	"effect": "force_element",
+	"category": "屬性變化",
+	"element": "柔",        # ✅ 這裡填你系統吃的 element 字串
+	"turns": 2,
+	"mp_cost": 8,
+	"target_scope": "single",
+	"target_side": "enemy",
+	"desc": "以真氣扭轉敵人體內屬性流向。"
+},
 				{
 					"id": "skill_mobishuxin",
 					"name": "墨筆舒心",
