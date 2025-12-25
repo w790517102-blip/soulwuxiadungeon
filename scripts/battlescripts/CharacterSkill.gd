@@ -101,6 +101,62 @@ func get_skills(character_id: String) -> Array:
 					"power": 1.1,
 					"category":"單體攻擊",
 					"desc": "激昂琴音化為利刃，震懾敵人心魄。"
+				},
+				{
+					"id": "skill_huagu_mianzhang",
+					"name": "化骨綿掌",
+					"mp_cost": 12,
+					"weapon_type": "掌",
+					"category": "單體攻擊",
+					"target_scope": "single",
+					"target_side": "enemy",
+					"effects": [
+						{"type": "damage", "power": 0.95},
+						{"type": "force_element", "element": "柔", "turns": 3}
+					],
+					"desc": "掌勁入骨，綿裡藏勁，並強行將敵之屬性轉為柔。"
+				},
+				{
+					"id": "skill_huanbu_zhang",
+					"name": "緩步掌",
+					"mp_cost": 10,
+					"weapon_type": "掌",
+					"category": "單體攻擊",
+					"target_scope": "single",
+					"target_side": "enemy",
+					"effects": [
+						{"type": "damage", "power": 0.90},
+						{"type": "debuff_speed", "amount": 5, "turns": 2}
+					],
+					"desc": "掌風黏滯如泥，令敵身法遲緩。"
+				},
+				{
+					"id": "skill_liumai_shenjian",
+					"name": "六脈神劍",
+					"mp_cost": 18,
+					"weapon_type": "劍",
+					"category": "單體攻擊",
+					"target_scope": "single",
+					"target_side": "enemy",
+					"effects": [
+						{"type": "damage", "power": 1.15},
+						{"type": "buff_speed", "amount": 6, "turns": 2, "target": "self"}
+					],
+					"desc": "劍氣化脈，疾如驟雨，出手更快。"
+				},
+				{
+					"id": "skill_bagua_gunfa",
+					"name": "八卦棍法",
+					"mp_cost": 12,
+					"weapon_type": "棍",
+					"category": "單體攻擊",
+					"target_scope": "single",
+					"target_side": "enemy",
+					"effects": [
+						{"type": "damage", "power": 1.00},
+						{"type": "debuff_speed", "amount": 4, "turns": 2}
+					],
+					"desc": "棍走八卦，纏步鎖身，令敵動作遲滯。"
 				}
 
 			]
