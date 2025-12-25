@@ -1,7 +1,9 @@
 extends Node
 
 const ToneMapScript := preload("res://scripts/battlestyles/ToneMap.gd")
+const StatusEffectManagerScript := preload("res://scripts/battle/StatusEffectManager.gd")
 var tone_map := ToneMapScript.new()
+var status_manager := StatusEffectManagerScript.new()
 
 var player_party: Array = []
 var enemy_party: Array = []
@@ -193,6 +195,8 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	if action.is_empty():
 		push_warning("❗ 敵人 AI 回傳空值，略過此回合")
 		await get_tree().create_timer(0.3).timeout
+		enemy["acted_this_turn"] = true
+		_maybe_end_turn()
 		return
 
 	var skill = action.skill
@@ -203,6 +207,8 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	await _play_attack_cinematic(enemy, target, skill, result)
 
 	check_battle_status()
+	enemy["acted_this_turn"] = true
+	_maybe_end_turn()
 	print("🔚 %s 結束行動，交棒給下一位" % enemy.get("name", "???"))
 
 
@@ -216,6 +222,31 @@ func check_battle_status() -> void:
 		victory_handler.defeat()
 	elif enemy_party.all(func(e): return e["hp"] <= 0):
 		victory_handler.victory()
+
+
+func _maybe_end_turn() -> void:
+	var alive: Array = []
+	for a in (player_party + enemy_party):
+		if typeof(a) == TYPE_DICTIONARY and int(a.get("hp", 0)) > 0:
+			alive.append(a)
+
+	if alive.is_empty():
+		return
+
+	for a in alive:
+		if not bool(a.get("acted_this_turn", false)):
+			return
+
+	status_manager.tick_end_of_turn(alive)
+
+	for a in alive:
+		_update_ui_for_actor(a)
+
+	if battle_ui:
+		battle_ui.update_enemy_panel()
+
+	for a in alive:
+		a["acted_this_turn"] = false
 
 
 # ⭐ 決定這招要用哪個 FX 動畫
@@ -242,19 +273,13 @@ func _get_fx_id_for_skill(skill_data: Dictionary, attacker: Dictionary) -> Strin
 			return "fx_hit_fist"       # 萬用打擊
 
 
-# ⭐ 核心：攻擊演出流程（攻擊描述 → 動畫 → 傷害文字）
+# ⭐ 核心：攻擊演出流程（動畫 → 血量更新 → 敘事）
 func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
 	var logs: Array = []
 	if result.has("log"):
 		logs = result.log
 
-	# ❶ weapon_openers：先播第一行描述
-	if logs.size() > 0:
-		_log(logs[0])
-		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
-			await action_log_ui.wait_for_all_logs()
-
-	# ❷ 攻擊方前傾 → FX → 受擊閃爍
+	# ❶ 攻擊方前傾 → FX → 受擊閃爍
 	if battle_ui and not target.is_empty():
 		# 攻擊方動作
 		battle_ui.play_attack_motion(attacker)
@@ -274,14 +299,14 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 
 		await get_tree().create_timer(0.25).timeout
 
-	# ❸ 在這一刻才更新血條 / MP（SkillExecutor 早就算完，但 UI 延後刷新）
+	# ❷ 在這一刻才更新血條 / MP（SkillExecutor 早就算完，但 UI 延後刷新）
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(attacker)
 
-	# ❹ 播放剩下的 log（包含「擊中 %s，造成 %d 點傷害！」）
-	if logs.size() > 1:
-		for i in range(1, logs.size()):
-			_log(logs[i])
+	# ❸ 播放 log（包含「擊中 %s，造成 %d 點傷害！」）
+	if logs.size() > 0:
+		for line in logs:
+			_log(line)
 
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 			await action_log_ui.wait_for_all_logs()
@@ -292,13 +317,27 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var effect: String = str(skill_data.get("effect", ""))
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
+	var support_status_effects := ["buff_speed", "debuff_speed", "force_element"]
+	var mp_cost := int(skill_data.get("mp_cost", 0))
+	var actor_mp := int(actor.get("mp", 0))
+	var user_name := str(actor.get("name", "???"))
+
+	if mp_cost > 0 and actor_mp < mp_cost:
+		_log("%s 真氣不足，無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
+		return
+
+	if mp_cost > 0:
+		actor["mp"] = actor_mp - mp_cost
+		_update_ui_for_actor(actor)
 
 	# =========================
 	# 0️⃣ 支援 / 補血技能分流（保持你現在的回血邏輯）
 	# =========================
-	if effect == "heal_hp" or effect == "mp_heal" or side == "ally":
+	if effect == "heal_hp" or effect == "mp_heal" or side == "ally" or support_status_effects.has(effect):
 		await _execute_support_heal_action(actor, skill_data, target)
 		check_battle_status()
+		actor["acted_this_turn"] = true
+		_maybe_end_turn()
 		return
 
 	# =========================
@@ -323,12 +362,6 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				]
 
 		var actor_name: String = str(actor.get("name", "???"))
-
-		# 🌊 全場級起手描述
-		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
-			actor_name,
-			display_skill_name
-		])
 
 		# 先把每個敵人的結果算好
 		var aoe_results: Array = []  # [ { "enemy": enemy_dict, "result": result_dict }, ... ]
@@ -361,6 +394,12 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		var any_down := false
 
+		# 🌊 全場級起手描述
+		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
+			actor_name,
+			display_skill_name
+		])
+
 		# 💥 全體受擊動畫＋每隻各自敘事＋傷害數字
 		for entry in aoe_results:
 			var enemy: Dictionary = entry["enemy"]
@@ -369,6 +408,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			# 動畫：敵人抖一下（幾乎同時）
 			if battle_ui and battle_ui.has_method("play_damage_react"):
 				battle_ui.play_damage_react(enemy)
+
+			_update_ui_for_actor(enemy)
 
 			var name_e: String = str(enemy.get("name", "???"))
 			var dmg_int: int = int(r.get("damage", 0))
@@ -433,6 +474,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			battle_ui.update_enemy_panel()
 
 		check_battle_status()
+		actor["acted_this_turn"] = true
+		_maybe_end_turn()
 		return
 
 	# =========================
@@ -461,12 +504,16 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			battle_ui.update_enemy_panel()
 
 	check_battle_status()
+	actor["acted_this_turn"] = true
+	_maybe_end_turn()
 
 
 
 func defend_action(actor: Dictionary) -> void:
 	actor["defending"] = true
 	_log("%s 採取了防禦姿態。" % actor.get("name", "???"))
+	actor["acted_this_turn"] = true
+	_maybe_end_turn()
 
 # =========================
 #  支援系技能：回血 / 回內力
@@ -479,6 +526,14 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	var skill_name: String = skill_data.get("name", "???")
 	var effect: String     = str(skill_data.get("effect", "heal_hp"))
 	var scope: String      = str(skill_data.get("target_scope", "single"))  # "single" / "ally_all"
+
+	# 狀態類支援：速度增減、屬性強制
+	if effect == "buff_speed" or effect == "debuff_speed" or effect == "force_element":
+		var ok := _execute_support_status_action(user, skill_data, target)
+		if not ok:
+			_log("WARN: support status failed: %s" % effect)
+			return
+		return
 
 	# 如果是補內力型技能，丟給專門的處理
 	if effect == "mp_heal":
@@ -718,6 +773,79 @@ func _execute_support_mp_heal(user: Dictionary, skill_data: Dictionary, target: 
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(user)
 
+
+func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> bool:
+	var effect: String = str(skill_data.get("effect", ""))
+	var skill_name: String = str(skill_data.get("name", "???"))
+	var turns := int(skill_data.get("turns", 3))
+	if turns <= 0:
+		_log("WARN: support status missing turns: %s" % skill_name)
+		return false
+
+	if target.is_empty() and (effect == "debuff_speed" or effect == "force_element"):
+		_log("WARN: support status %s missing target: %s" % [effect, skill_name])
+		return false
+
+	var actual_target: Dictionary = target
+	if actual_target.is_empty():
+		actual_target = user
+
+	var user_name: String = user.get("name", "???")
+	var target_name: String = actual_target.get("name", "???")
+
+	match effect:
+		"buff_speed":
+			var amt := int(skill_data.get("amount", skill_data.get("power", 0)))
+			if amt <= 0:
+				_log("WARN: support buff_speed missing amount: %s" % skill_name)
+				return false
+			var ok := status_manager.apply_effect(actual_target, "speed_buff", {"speed_delta": amt}, turns)
+			if not ok:
+				return false
+			_log("%s 對 %s 施展「%s」，速度提升 %d，持續 %d 回合。" % [
+				user_name,
+				target_name,
+				skill_name,
+				amt,
+				turns
+			])
+		"debuff_speed":
+			var slow_amt := int(skill_data.get("amount", skill_data.get("power", 0)))
+			if slow_amt <= 0:
+				_log("WARN: support debuff_speed missing amount: %s" % skill_name)
+				return false
+			var ok2 := status_manager.apply_effect(actual_target, "speed_debuff", {"slow_delta": slow_amt}, turns)
+			if not ok2:
+				return false
+			_log("%s 對 %s 施展「%s」，速度降低 %d，持續 %d 回合。" % [
+				user_name,
+				target_name,
+				skill_name,
+				slow_amt,
+				turns
+			])
+		"force_element":
+			var new_ele := str(skill_data.get("element", skill_data.get("target_element", "")))
+			if new_ele == "":
+				_log("WARN: support force_element missing element: %s" % skill_name)
+				return false
+			var ok3 := status_manager.apply_effect(actual_target, "force_element", {"element": new_ele}, turns)
+			if not ok3:
+				return false
+			_log("%s 對 %s 施展「%s」，屬性轉為「%s」，持續 %d 回合。" % [
+				user_name,
+				target_name,
+				skill_name,
+				new_ele,
+				turns
+			])
+		_:
+			_log("WARN: unsupported support status effect: %s" % effect)
+			return false
+
+	_update_ui_for_actor(actual_target)
+	return true
+
 # 固定傷害炸彈：扣固定數值，不吃防禦／剋制
 func _apply_bomb_damage_to_target(
 	user: Dictionary,
@@ -810,17 +938,20 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 
 
 func use_item(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
-	# ✅ 先消耗道具
-	InventorySync.consume_item(item.get("id", ""))
-
 	# ✅ 套用效果（dispatcher）
-	item_dispatcher.apply(self, user, item, target)
+	var ok := item_dispatcher.apply(self, user, item, target)
+
+	# ✅ 套用成功才消耗道具
+	if ok:
+		InventorySync.consume_item(item.get("id", ""))
 
 	# ✅ 道具效果跑完後，同步 UI（避免自補 / 互補更新不同步）
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(user)
 
 	check_battle_status()
+	user["acted_this_turn"] = true
+	_maybe_end_turn()
 
 
 # ✅ 回傳某道具可以選的目標清單，給 BattleUI / TargetSelectPopup 用
