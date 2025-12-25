@@ -273,19 +273,13 @@ func _get_fx_id_for_skill(skill_data: Dictionary, attacker: Dictionary) -> Strin
 			return "fx_hit_fist"       # 萬用打擊
 
 
-# ⭐ 核心：攻擊演出流程（攻擊描述 → 動畫 → 傷害文字）
+# ⭐ 核心：攻擊演出流程（動畫 → 血量更新 → 敘事）
 func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
 	var logs: Array = []
 	if result.has("log"):
 		logs = result.log
 
-	# ❶ weapon_openers：先播第一行描述
-	if logs.size() > 0:
-		_log(logs[0])
-		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
-			await action_log_ui.wait_for_all_logs()
-
-	# ❷ 攻擊方前傾 → FX → 受擊閃爍
+	# ❶ 攻擊方前傾 → FX → 受擊閃爍
 	if battle_ui and not target.is_empty():
 		# 攻擊方動作
 		battle_ui.play_attack_motion(attacker)
@@ -305,14 +299,14 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 
 		await get_tree().create_timer(0.25).timeout
 
-	# ❸ 在這一刻才更新血條 / MP（SkillExecutor 早就算完，但 UI 延後刷新）
+	# ❷ 在這一刻才更新血條 / MP（SkillExecutor 早就算完，但 UI 延後刷新）
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(attacker)
 
-	# ❹ 播放剩下的 log（包含「擊中 %s，造成 %d 點傷害！」）
-	if logs.size() > 1:
-		for i in range(1, logs.size()):
-			_log(logs[i])
+	# ❸ 播放 log（包含「擊中 %s，造成 %d 點傷害！」）
+	if logs.size() > 0:
+		for line in logs:
+			_log(line)
 
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 			await action_log_ui.wait_for_all_logs()
@@ -369,12 +363,6 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		var actor_name: String = str(actor.get("name", "???"))
 
-		# 🌊 全場級起手描述
-		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
-			actor_name,
-			display_skill_name
-		])
-
 		# 先把每個敵人的結果算好
 		var aoe_results: Array = []  # [ { "enemy": enemy_dict, "result": result_dict }, ... ]
 
@@ -406,6 +394,12 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		var any_down := false
 
+		# 🌊 全場級起手描述
+		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
+			actor_name,
+			display_skill_name
+		])
+
 		# 💥 全體受擊動畫＋每隻各自敘事＋傷害數字
 		for entry in aoe_results:
 			var enemy: Dictionary = entry["enemy"]
@@ -414,6 +408,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			# 動畫：敵人抖一下（幾乎同時）
 			if battle_ui and battle_ui.has_method("play_damage_react"):
 				battle_ui.play_damage_react(enemy)
+
+			_update_ui_for_actor(enemy)
 
 			var name_e: String = str(enemy.get("name", "???"))
 			var dmg_int: int = int(r.get("damage", 0))
