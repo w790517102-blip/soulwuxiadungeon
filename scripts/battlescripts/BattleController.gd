@@ -309,7 +309,7 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 			_log(line)
 
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
-			await action_log_ui.wait_for_all_logs()
+			action_log_ui.wait_for_all_logs()
 
 
 # ✅ 改版：可以接受指定 target，給玩家選目標用
@@ -455,7 +455,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 			# 🔢 數字戰報
 			if dmg_int > 0:
-				var dmg_str := "[color=#ff8080]%d[/color]" % dmg_int
+				var dmg_str := "[color=#ffd447]%d[/color]" % dmg_int
 				_log("%s 受到 %s 點傷害。" % [
 					name_e,
 					dmg_str
@@ -537,6 +537,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 							amt,
 							turns
 						])
+					else:
+						_log("WARN: skill buff_speed apply failed: %s" % str(skill_data.get("name", "???")))
 				"debuff_speed":
 					var slow_amt := int(entry.get("amount", 0))
 					if slow_amt <= 0 or turns <= 0:
@@ -549,6 +551,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 							slow_amt,
 							turns
 						])
+					else:
+						_log("WARN: skill debuff_speed apply failed: %s" % str(skill_data.get("name", "???")))
 				"force_element":
 					var new_ele := str(entry.get("element", ""))
 					if new_ele == "" or turns <= 0:
@@ -561,6 +565,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 							new_ele,
 							turns
 						])
+					else:
+						_log("WARN: skill force_element apply failed: %s" % str(skill_data.get("name", "???")))
 				_:
 					_log("WARN: unsupported skill effect: %s" % effect_type)
 
@@ -958,7 +964,7 @@ func _apply_bomb_damage_to_target(
 			_log(suffer_line)
 
 	# 數字戰報
-	var dmg_str := "[color=#ff8080]%d[/color]" % dmg
+	var dmg_str := "[color=#ffd447]%d[/color]" % dmg
 	_log("%s 受到 %s 點傷害。" % [tname, dmg_str])
 
 	if after_hp <= 0:
