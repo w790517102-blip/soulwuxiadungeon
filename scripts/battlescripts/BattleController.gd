@@ -204,7 +204,13 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
-	await _play_attack_cinematic(enemy, target, skill, result)
+	var enemy_logs := await _play_attack_cinematic(enemy, target, skill, result)
+
+	if enemy_logs.size() > 0:
+		for line in enemy_logs:
+			_log(line)
+		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+			await action_log_ui.wait_for_all_logs()
 
 	check_battle_status()
 	enemy["acted_this_turn"] = true
@@ -273,8 +279,8 @@ func _get_fx_id_for_skill(skill_data: Dictionary, attacker: Dictionary) -> Strin
 			return "fx_hit_fist"       # 萬用打擊
 
 
-# ⭐ 核心：攻擊演出流程（動畫 → 血量更新 → 敘事）
-func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+# ⭐ 核心：攻擊演出流程（動畫 → 血量更新）
+func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> Array:
 	var logs: Array = []
 	if result.has("log"):
 		logs = result.log
@@ -303,13 +309,7 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(attacker)
 
-	# ❸ 播放 log（包含「擊中 %s，造成 %d 點傷害！」）
-	if logs.size() > 0:
-		for line in logs:
-			_log(line)
-
-		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
-			await action_log_ui.wait_for_all_logs()
+	return logs
 
 
 # ✅ 改版：可以接受指定 target，給玩家選目標用
@@ -455,7 +455,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 			# 🔢 數字戰報
 			if dmg_int > 0:
-				var dmg_str := "[color=#ff8080]%d[/color]" % dmg_int
+				var dmg_str := "[color=#ffd447]%d[/color]" % dmg_int
 				_log("%s 受到 %s 點傷害。" % [
 					name_e,
 					dmg_str
@@ -492,10 +492,91 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		actual_target = target
 
 	var inner_force_single = actor.get("inner_force", {})
-	var result_single = skill_executor.execute(actor, actual_target, skill_data, inner_force_single)
+	var effects: Array = []
+	if skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
+		effects = skill_data.get("effects", [])
+
+	var damage_skill_data: Dictionary = skill_data
+	if not effects.is_empty():
+		for entry in effects:
+			if typeof(entry) != TYPE_DICTIONARY:
+				continue
+			if str(entry.get("type", "")) == "damage":
+				damage_skill_data = skill_data.duplicate(true)
+				damage_skill_data["power"] = float(entry.get("power", skill_data.get("power", 1.0)))
+				break
+
+	var result_single = skill_executor.execute(actor, actual_target, damage_skill_data, inner_force_single)
 
 	# 🎬 單體：照舊跑 cinematic（描述＋動畫）
-	await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
+	var attack_logs := await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
+
+	if not effects.is_empty():
+		for entry in effects:
+			if typeof(entry) != TYPE_DICTIONARY:
+				continue
+			var effect_type := str(entry.get("type", ""))
+			if effect_type == "damage":
+				continue
+
+			var effect_target: Dictionary = actual_target
+			if str(entry.get("target", "")) == "self":
+				effect_target = actor
+
+			var turns := int(entry.get("turns", 0))
+			match effect_type:
+				"buff_speed":
+					var amt := int(entry.get("amount", 0))
+					if amt <= 0 or turns <= 0:
+						_log("WARN: skill buff_speed missing data: %s" % str(skill_data.get("name", "???")))
+						continue
+					var ok_buff := status_manager.apply_effect(effect_target, "speed_buff", {"speed_delta": amt}, turns)
+					if ok_buff:
+						_log("%s 的速度提升 %d，持續 %d 回合。" % [
+							effect_target.get("name", "???"),
+							amt,
+							turns
+						])
+					else:
+						_log("WARN: skill buff_speed apply failed: %s" % str(skill_data.get("name", "???")))
+				"debuff_speed":
+					var slow_amt := int(entry.get("amount", 0))
+					if slow_amt <= 0 or turns <= 0:
+						_log("WARN: skill debuff_speed missing data: %s" % str(skill_data.get("name", "???")))
+						continue
+					var ok_debuff := status_manager.apply_effect(effect_target, "speed_debuff", {"slow_delta": slow_amt}, turns)
+					if ok_debuff:
+						_log("%s 的速度降低 %d，持續 %d 回合。" % [
+							effect_target.get("name", "???"),
+							slow_amt,
+							turns
+						])
+					else:
+						_log("WARN: skill debuff_speed apply failed: %s" % str(skill_data.get("name", "???")))
+				"force_element":
+					var new_ele := str(entry.get("element", ""))
+					if new_ele == "" or turns <= 0:
+						_log("WARN: skill force_element missing data: %s" % str(skill_data.get("name", "???")))
+						continue
+					var ok_force := status_manager.apply_effect(effect_target, "force_element", {"element": new_ele}, turns)
+					if ok_force:
+						_log("%s 的屬性轉為「%s」，持續 %d 回合。" % [
+							effect_target.get("name", "???"),
+							new_ele,
+							turns
+						])
+					else:
+						_log("WARN: skill force_element apply failed: %s" % str(skill_data.get("name", "???")))
+				_:
+					_log("WARN: unsupported skill effect: %s" % effect_type)
+
+			_update_ui_for_actor(effect_target)
+
+	if attack_logs.size() > 0:
+		for line in attack_logs:
+			_log(line)
+		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+			await action_log_ui.wait_for_all_logs()
 
 	if result_single.target_down:
 		actual_target["hp"] = 0
@@ -889,7 +970,7 @@ func _apply_bomb_damage_to_target(
 			_log(suffer_line)
 
 	# 數字戰報
-	var dmg_str := "[color=#ff8080]%d[/color]" % dmg
+	var dmg_str := "[color=#ffd447]%d[/color]" % dmg
 	_log("%s 受到 %s 點傷害。" % [tname, dmg_str])
 
 	if after_hp <= 0:
