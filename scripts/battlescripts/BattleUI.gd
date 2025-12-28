@@ -3,25 +3,25 @@ extends Control
 signal player_action_complete(actor: Dictionary)
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
-var tone := ToneMap.new()
+var tone = ToneMap.new()
 
-@onready var ally_panel := $AllyPanel
-@onready var action_panel := $ActionPanel
-@onready var log_panel := $LogPanel as LogPanel
-@onready var enemy_panel := $EnemyPanel
-@onready var skill_list_popup := $ActionPanel/PopupSkillSelect
-@onready var inner_force_popup := $ActionPanel/InnerForcePopup
-@onready var item_list_popup := $ActionPanel/ItemListPopup
-@onready var defense_confirm_popup := $ActionPanel/DefenseConfirmPopup
-@onready var target_select_popup := $ActionPanel/TargetSelectPopup
+@onready var ally_panel = $AllyPanel
+@onready var action_panel = $ActionPanel
+@onready var log_panel = $LogPanel as LogPanel
+@onready var enemy_panel = $EnemyPanel
+@onready var skill_list_popup = $ActionPanel/PopupSkillSelect
+@onready var inner_force_popup = $ActionPanel/InnerForcePopup
+@onready var item_list_popup = $ActionPanel/ItemListPopup
+@onready var defense_confirm_popup = $ActionPanel/DefenseConfirmPopup
+@onready var target_select_popup = $ActionPanel/TargetSelectPopup
 
 var character_skill_db: Node = null
 var skill_provider : Node = null
 var current_actor: Dictionary = {}
-var on_action_selection := false
-var waiting_for_action := false
+var on_action_selection = false
+var waiting_for_action = false
 var combat_controller: Node = null
-var current_turn_id := ""
+var current_turn_id = ""
 var current_target_focus: Dictionary = {}  # ⭐ 目前在 TargetSelect 中被選中的那個
 
 # 用來暫存「還沒真正結算」的指令
@@ -98,7 +98,7 @@ func play_hit_fx_on_actor(actor: Dictionary, fx_name: String) -> void:
 		return
 
 	# 先找是不是我方
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("play_hit_fx"):
@@ -151,14 +151,14 @@ func update_ally_panel() -> void:
 
 ## 整隊敵方 UI 刷新
 func update_enemy_panel() -> void:
-	var total_slots := enemy_slots.size()
+	var total_slots = enemy_slots.size()
 
 	for i in range(total_slots):
 		var slot = enemy_slots[i]
 
 		if i < enemies.size():
 			var actor: Dictionary = enemies[i]
-			var hp := int(actor.get("hp", 0))
+			var hp = int(actor.get("hp", 0))
 
 			if hp > 0:
 				# 還活著 → 正常顯示
@@ -205,7 +205,7 @@ func play_attack_motion(actor: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("play_attack_motion"):
@@ -223,7 +223,7 @@ func play_defend_motion(actor: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("play_defend_pose"):
@@ -240,7 +240,7 @@ func clear_defend_motion(actor: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("clear_defend_pose"):
@@ -260,7 +260,7 @@ func play_hit_fx_on_target(target: Dictionary, fx_id: String) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := enemies.find(target)
+	var idx = enemies.find(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_hit_fx"):
@@ -277,7 +277,7 @@ func play_damage_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := enemies.find(target)
+	var idx = enemies.find(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_damage_react"):
@@ -294,7 +294,7 @@ func play_heal_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(target)
+	var idx = allies.find(target)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("play_heal_react"):
@@ -312,7 +312,7 @@ func play_guard_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := enemies.find(target)
+	var idx = enemies.find(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_guard_react"):
@@ -371,9 +371,9 @@ func _on_btn_skill_pressed() -> void:
 
 # ⭐ 根據技能的 effect / target_scope / target_side 來決定候選目標
 func _start_target_select_for_skill(user: Dictionary, skill_data: Dictionary) -> void:
-	var effect := str(skill_data.get("effect", "damage"))
-	var scope  := str(skill_data.get("target_scope", "single"))  # "single" / "ally_all" / ...
-	var side   := str(skill_data.get("target_side", ""))         # "ally" / "enemy" / "self"
+	var effect = str(skill_data.get("effect", "damage"))
+	var scope  = str(skill_data.get("target_scope", "single"))  # "single" / "ally_all" / ...
+	var side   = str(skill_data.get("target_side", ""))         # "ally" / "enemy" / "self"
 
 	# 🧠 自動推論目標陣營
 	if side == "":
@@ -516,7 +516,7 @@ func _on_DefenseConfirmPopup_confirmed() -> void:
 
 	_log_system("你選擇了防禦姿態。該回合結束。")
 
-	var extra := tone.get_tone_text("defend", "", current_actor.get("id", ""))
+	var extra = tone.get_tone_text("defend", "", current_actor.get("id", ""))
 	if extra == "":
 		var actor_name: String = current_actor.get("name", "？？")
 		extra = "%s 收招後氣沉丹田，雙臂微抬，小心提防對手動向。" % actor_name
@@ -544,7 +544,7 @@ func _on_ItemListPopup_item_selected(item) -> void:
 	on_action_selection = false
 
 	# ⭐ 讀道具的 target_scope，預設還是 ally_single
-	var scope := String(item.get("target_scope", "ally_single"))
+	var scope = String(item.get("target_scope", "ally_single"))
 
 	var item_name: String = item.name if item is Object and item.has_method("get") == false else str(item.get("name", "???"))
 	_log_system("你使用了「%s」。" % item_name)
@@ -642,7 +642,7 @@ func _set_actor_target_focus(actor: Dictionary, active: bool) -> void:
 	if actor.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("set_target_focus"):
@@ -730,7 +730,7 @@ func _set_target_highlight_for_actor(actor: Dictionary, is_active: bool) -> void
 		return
 
 	# 先找我方
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("set_target_highlight"):

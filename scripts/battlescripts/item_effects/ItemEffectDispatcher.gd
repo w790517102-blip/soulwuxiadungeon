@@ -63,7 +63,7 @@ func _handle_heal_hp(controller, user: Dictionary, item: Dictionary, target: Dic
 			if extra_hp != "":
 				controller._log(extra_hp)
 
-		var amount_str := "[color=#80ff80]%d[/color]" % restored
+		var amount_str = "[color=#80ff80]%d[/color]" % restored
 
 		var line: String
 		if user_name == target_name:
@@ -125,7 +125,7 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 			if extra_mp != "":
 				controller._log(extra_mp)
 
-		var amount_mp_str := "[color=#80ffe0]%d[/color]" % restored_mp
+		var amount_mp_str = "[color=#80ffe0]%d[/color]" % restored_mp
 
 		var line2: String
 		if user_name == target_name:
@@ -155,17 +155,17 @@ func _handle_buff_speed(controller, user: Dictionary, item: Dictionary, target: 
 		controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 		return false
 
-	var turns := int(item.get("turns", 3))
+	var turns = int(item.get("turns", 3))
 	if turns <= 0:
 		controller._log("WARN: buff_speed missing turns: %s" % item.get("id", ""))
 		return false
 
-	var before_spd := int(target.get("speed", 0))
-	var ok := controller.status_manager.apply_effect(target, "speed_buff", {"speed_delta": amount_spd}, turns)
+	var before_spd = int(target.get("speed", 0))
+	var ok = controller.status_manager.apply_effect(target, "speed_buff", {"speed_delta": amount_spd}, turns)
 	if not ok:
 		return false
-	var after_spd := int(target.get("speed", before_spd))
-	var added := after_spd - before_spd
+	var after_spd = int(target.get("speed", before_spd))
+	var added = after_spd - before_spd
 
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
@@ -182,7 +182,7 @@ func _handle_buff_speed(controller, user: Dictionary, item: Dictionary, target: 
 		if suffer_line != "":
 			controller._log(suffer_line)
 
-	var amount_spd_str := "[color=#ffd000]%d[/color]" % added
+	var amount_spd_str = "[color=#ffd000]%d[/color]" % added
 	controller._log("%s 對 %s 使用了 %s，%s 的速度提升了 %s 點。" % [
 		user_name,
 		target_name,
@@ -199,17 +199,17 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 		controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 		return false
 
-	var turns := int(item.get("turns", 3))
+	var turns = int(item.get("turns", 3))
 	if turns <= 0:
 		controller._log("WARN: debuff_speed missing turns: %s" % item.get("id", ""))
 		return false
 
-	var before_spd := int(target.get("speed", 0))
-	var ok := controller.status_manager.apply_effect(target, "speed_debuff", {"slow_delta": amount_speed}, turns)
+	var before_spd = int(target.get("speed", 0))
+	var ok = controller.status_manager.apply_effect(target, "speed_debuff", {"slow_delta": amount_speed}, turns)
 	if not ok:
 		return false
-	var after_spd := int(target.get("speed", before_spd))
-	var reduced := before_spd - after_spd
+	var after_spd = int(target.get("speed", before_spd))
+	var reduced = before_spd - after_spd
 
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
@@ -228,8 +228,8 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 			controller._log(suffer_line)
 
 	if reduced > 0:
-		var amount_str := "[color=#ffcc66]%d[/color]" % reduced
-		var line3 := "%s 對 %s 使用了 %s，%s 的速度降低了 %s 點。" % [
+		var amount_str = "[color=#ffcc66]%d[/color]" % reduced
+		var line3 = "%s 對 %s 使用了 %s，%s 的速度降低了 %s 點。" % [
 				user_name,
 				target_name,
 				item_name,
@@ -238,7 +238,7 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 		]
 		controller._log(line3)
 	else:
-		var line_no_effect2 := "%s 使出 %s 想絆住 %s 的腳步，但對方氣勢如虹，幾乎沒被拖慢。" % [
+		var line_no_effect2 = "%s 使出 %s 想絆住 %s 的腳步，但對方氣勢如虹，幾乎沒被拖慢。" % [
 				user_name,
 				item_name,
 				target_name
@@ -254,7 +254,7 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 	var user_id: String = user.get("id", "")
 
 	var is_ally: bool = target in controller.player_party
-	var turns := int(item.get("turns", 3))
+	var turns = int(item.get("turns", 3))
 	if turns <= 0:
 		controller._log("WARN: haste_talisman missing turns: %s" % str(item.get("id", "")))
 		return false
@@ -265,8 +265,8 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 			controller._log("WARN: haste_talisman missing amount: %s" % str(item.get("id", "")))
 			return false
 
-		var before_speed := int(target.get("speed", 0))
-		var ok := controller.status_manager.apply_effect(
+		var before_speed = int(target.get("speed", 0))
+		var ok = controller.status_manager.apply_effect(
 			target,
 			"speed_buff",
 			{"speed_delta": amount_haste},
@@ -275,8 +275,8 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 		if not ok:
 			return false
 
-		var after_speed := int(target.get("speed", before_speed))
-		var amount_haste_str := "[color=#ffd000]%d[/color]" % (after_speed - before_speed)
+		var after_speed = int(target.get("speed", before_speed))
+		var amount_haste_str = "[color=#ffd000]%d[/color]" % (after_speed - before_speed)
 
 		if controller.tone_map != null:
 			var use_line = controller.tone_map.get_tone_text("item_use", "haste_talisman", user_id)
@@ -289,11 +289,11 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 				amount_haste_str
 		])
 	else:
-		var enemy_element := str(item.get("enemy_element", ""))
+		var enemy_element = str(item.get("enemy_element", ""))
 		if enemy_element == "":
 			enemy_element = "快"
 
-		var ok_enemy := controller.status_manager.apply_effect(
+		var ok_enemy = controller.status_manager.apply_effect(
 			target,
 			"force_element",
 			{"element": enemy_element},
@@ -328,7 +328,7 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 			controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 			return false
 
-		var amount_atk_str := "[color=#ff8080]%d[/color]" % amount_atk
+		var amount_atk_str = "[color=#ff8080]%d[/color]" % amount_atk
 
 		target["atk"] = target.get("atk", 0) + amount_atk
 
@@ -347,7 +347,7 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 				amount_atk_str
 		])
 	elif target in controller.enemy_party:
-		var enemy_damage := int(item.get("enemy_damage", 0))
+		var enemy_damage = int(item.get("enemy_damage", 0))
 		if enemy_damage <= 0:
 			controller._log("WARN: item missing enemy_damage: %s" % item.get("id", ""))
 			return false
@@ -357,7 +357,7 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 			if use_line != "":
 				controller._log(use_line)
 
-		var dmg_item := item.duplicate()
+		var dmg_item = item.duplicate()
 		dmg_item["amount"] = enemy_damage
 
 		controller._apply_bomb_damage_to_target(user, dmg_item, target, "fire_talisman_enemy")
@@ -367,7 +367,7 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 
 
 func _handle_bomb_single(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
-	var bomb_amount := int(item.get("amount", 0))
+	var bomb_amount = int(item.get("amount", 0))
 	if bomb_amount <= 0:
 		controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 		return false
@@ -387,7 +387,7 @@ func _handle_bomb_single(controller, user: Dictionary, item: Dictionary, target:
 
 
 func _handle_bomb_aoe(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
-	var bomb_amount_aoe := int(item.get("amount", 0))
+	var bomb_amount_aoe = int(item.get("amount", 0))
 	if bomb_amount_aoe <= 0:
 		controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 		return false

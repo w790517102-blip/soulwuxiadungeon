@@ -21,7 +21,7 @@ func get_action(enemy: Dictionary, player_party: Array, skill_list: Array) -> Di
 		return {}
 
 	# ✅ 基礎普通攻擊（給「沒有任何技能」的敵人用）
-	var basic_skill := {
+	var basic_skill = {
 		"id": "basic_attack",
 		"name": "普通攻擊",
 		"power": 1.0,

@@ -13,7 +13,7 @@ var round_count: int = 1
 var turn_queue: Array = []
 var current_index: int = 0
 var active_actor: Dictionary = {}
-var is_waiting_for_player := false
+var is_waiting_for_player = false
 
 # 外部資料來源（從 BattleController 注入）
 var player_party: Array = []
@@ -24,7 +24,7 @@ func _compare_speed(a: Dictionary, b: Dictionary) -> bool:
 	return a.get("speed", 0) > b.get("speed", 0)
 
 # === 記憶阿達雷勒現象 ===
-var round_in_progress := false
+var round_in_progress = false
 
 # 初始化並開始第一回合
 func start_battle(players: Array, enemies: Array) -> void:

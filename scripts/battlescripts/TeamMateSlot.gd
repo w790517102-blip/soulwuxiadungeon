@@ -69,7 +69,7 @@ func _update_all(actor: Dictionary) -> void:
 	# --- 頭像 ---
 	var portrait_path = actor.get("portrait_path", "")
 	if portrait_path != "":
-		var tex := load(portrait_path)
+		var tex = load(portrait_path)
 		if tex:
 			portrait.texture = tex
 
@@ -108,7 +108,7 @@ func play_guard_fx() -> void:
 	if fx_hit.sprite_frames == null:
 		return
 	
-	var anim := "GuardShield"   # 👈 你 AnimatedSprite2D 裡的動畫名稱
+	var anim = "GuardShield"   # 👈 你 AnimatedSprite2D 裡的動畫名稱
 	if not fx_hit.sprite_frames.has_animation(anim):
 		push_warning("TeamMateSlot: GuardShield animation not found")
 		return
@@ -187,7 +187,7 @@ func set_target_focus(is_active: bool) -> void:
 # ===== 攻擊 / 受擊動作（給 BattleUI 叫用）=====
 
 func play_attack_motion() -> void:
-	var tween := create_tween()
+	var tween = create_tween()
 
 	# ⭐ 每次攻擊都從「當前基準」開始（可能是 1,1，也可能是 0.92,0.92）
 	self.scale = _base_scale
@@ -195,8 +195,8 @@ func play_attack_motion() -> void:
 	tween.tween_property(self, "scale", _base_scale,          0.16)
 
 func play_damage_react() -> void:
-	var tween := create_tween()
-	var original_modulate := self.modulate
+	var tween = create_tween()
+	var original_modulate = self.modulate
 
 	self.modulate = Color(1.2, 0.6, 0.6, original_modulate.a)
 
@@ -210,8 +210,8 @@ func play_damage_react() -> void:
 	)
 
 func play_heal_react() -> void:
-	var tween := create_tween()
-	var original_modulate := self.modulate
+	var tween = create_tween()
+	var original_modulate = self.modulate
 
 	# ✅ 如果你之後在 FxHit 裡有做 "ItemHeal" 之類的動畫，這裡會順便播
 	if fx_hit and fx_hit.sprite_frames and fx_hit.sprite_frames.has_animation("ItemHeal"):
@@ -236,8 +236,8 @@ func play_defend_pose() -> void:
 	# ⭐ 防禦狀態的基準 size
 	_base_scale = Vector2(0.92, 0.92)
 
-	var tween := create_tween()
-	var original_modulate := self.modulate
+	var tween = create_tween()
+	var original_modulate = self.modulate
 
 	# 從目前大小慢慢縮到 _base_scale
 	tween.tween_property(self, "scale", _base_scale, 0.12)
@@ -257,7 +257,7 @@ func play_defend_pose() -> void:
 func clear_defend_pose() -> void:
 	_base_scale = Vector2.ONE
 
-	var tween := create_tween()
+	var tween = create_tween()
 	tween.tween_property(self, "scale", _base_scale, 0.12)
 
 	self.modulate = Color(1, 1, 1, 1)
@@ -265,9 +265,9 @@ func clear_defend_pose() -> void:
 
 # ===== 格擋反應：被打到但有防禦時 =====
 func play_guard_react() -> void:
-	var tween := create_tween()
-	var original_modulate := self.modulate
-	var a := original_modulate.a
+	var tween = create_tween()
+	var original_modulate = self.modulate
+	var a = original_modulate.a
 
 	# 🛡️ 格檔瞬間，護盾亮一下
 	play_guard_fx()
@@ -276,7 +276,7 @@ func play_guard_react() -> void:
 	self.modulate = Color(0.8, 0.9, 2.0, a)
 
 	# 微微往後抖一下（只動 position）
-	var original_pos := position
+	var original_pos = position
 	tween.tween_property(self, "position", original_pos + Vector2(-6, 0), 0.06)
 	tween.tween_property(self, "position", original_pos, 0.08)
 	tween.tween_callback(
