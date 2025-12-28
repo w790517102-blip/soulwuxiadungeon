@@ -11,6 +11,9 @@ var enemy_party: Array = []
 var battle_ui: Node = null
 var skill_db: Node = null
 var action_log_ui: LogPanel = null  # ✅ LogPanel 掛的腳本
+var last_round_logged: int = 0
+var last_round_regen: int = 0
+var battle_finished: bool = false
 
 @onready var skill_resolver = $SkillResolver
 @onready var emotion_modulator = $EmotionModulator
@@ -113,8 +116,14 @@ func _init_battle_safe() -> void:
 	if battle_ui:
 		battle_ui.set_teams(player_party, enemy_party)
 
+	battle_finished = false
+	last_round_logged = 0
+	last_round_regen = 0
+
 	turn_manager.turn_started.connect(_on_turn_started)
 	turn_manager.turn_ended.connect(_on_turn_ended)
+	turn_manager.round_started.connect(_on_round_started)
+	turn_manager.round_ended.connect(_on_round_ended)
 	turn_manager.start_battle(player_party, enemy_party)
 
 
@@ -168,6 +177,48 @@ func _on_turn_started(actor: Dictionary) -> void:
 func _on_turn_ended(actor: Dictionary) -> void:
 	# ❌ 不在這裡清 defending，單純交棒就好
 	turn_manager.next_turn()
+
+func _on_round_started(round_number: int) -> void:
+	if battle_finished:
+		return
+	if last_round_logged == round_number:
+		return
+	last_round_logged = round_number
+	_log("第 %d 回合開始！" % round_number)
+
+func _on_round_ended(_round_number: int) -> void:
+	if battle_finished:
+		return
+	if last_round_regen == _round_number:
+		return
+	last_round_regen = _round_number
+	_restore_mp_after_round()
+
+func _restore_mp_after_round() -> void:
+	for a in (player_party + enemy_party):
+		if typeof(a) != TYPE_DICTIONARY:
+			continue
+
+		if bool(a.get("is_dead", false)) or bool(a.get("dead", false)):
+			continue
+		if a.has("alive") and not bool(a.get("alive", true)):
+			continue
+
+		var hp := int(a.get("hp", 0))
+		if hp <= 0:
+			continue
+
+		var mp := int(a.get("mp", 0))
+		var new_mp := mp + 5
+		if a.has("max_mp"):
+			var max_mp := int(a.get("max_mp", 0))
+			if max_mp > 0:
+				new_mp = min(new_mp, max_mp)
+		a["mp"] = new_mp
+		_update_ui_for_actor(a)
+
+	if battle_ui:
+		battle_ui.update_enemy_panel()
 
 func _on_player_action_complete(actor: Dictionary) -> void:
 	var current = turn_manager.get_current_actor()
@@ -225,8 +276,10 @@ func safe_end_turn() -> void:
 
 func check_battle_status() -> void:
 	if player_party.all(func(p): return p["hp"] <= 0):
+		battle_finished = true
 		victory_handler.defeat()
 	elif enemy_party.all(func(e): return e["hp"] <= 0):
+		battle_finished = true
 		victory_handler.victory()
 
 
