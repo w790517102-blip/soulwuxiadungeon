@@ -14,6 +14,9 @@ var turn_queue: Array = []
 var current_index: int = 0
 var active_actor: Dictionary = {}
 var is_waiting_for_player = false
+var round_roster: Array = []
+var acted_this_round: Dictionary = {}
+var round_end_emitted = false
 
 # 外部資料來源（從 BattleController 注入）
 var player_party: Array = []
@@ -39,11 +42,13 @@ func start_new_round() -> void:
 		return  # 避免重複啟動
 
 	round_in_progress = true
+	round_end_emitted = false
+	_build_round_roster()
 	emit_signal("round_started", round_count)
 
 	turn_queue.clear()
 	turn_queue += player_party + enemy_party
-	turn_queue = turn_queue.filter(func(a): return a.get("hp", 1) > 0)
+	turn_queue = turn_queue.filter(func(a): return _is_actor_alive(a))
 	turn_queue.sort_custom(Callable(self, "_compare_speed"))
 	current_index = 0
 
@@ -56,11 +61,8 @@ func next_turn() -> void:
 		return
 
 	if current_index >= turn_queue.size():
-		print("⚠️ [TURN] 回合索引超界，結束 round")
-		emit_signal("round_ended", round_count)
-		round_count += 1
-		round_in_progress = false
-		call_deferred("start_new_round")
+		print("⚠️ [TURN] 回合索引超界，檢查回合結束")
+		_try_end_round()
 		return
 
 	active_actor = turn_queue[current_index]
@@ -86,13 +88,9 @@ func end_turn() -> void:
 	is_waiting_for_player = false
 	current_index += 1
 
-	if current_index >= turn_queue.size():
-		print("⚠️ [TURN] 回合索引超界，結束 round")
-		round_in_progress = false
-		emit_signal("round_ended", round_count)
-		round_count += 1
-		call_deferred("start_new_round")
-	else:
+	_mark_actor_acted(active_actor)
+	_try_end_round()
+	if round_in_progress:
 		call_deferred("next_turn")
 
 # ✅ 用於外部檢查是否輪到我方角色
@@ -102,3 +100,66 @@ func is_player_turn() -> bool:
 # ✅ 用於外部查詢目前行動角色
 func get_current_actor() -> Dictionary:
 	return active_actor
+
+func _actor_key(actor: Dictionary) -> String:
+	var id = str(actor.get("id", ""))
+	if id != "":
+		return id
+	return str(actor.get("name", ""))
+
+func _is_actor_alive(actor: Dictionary) -> bool:
+	if typeof(actor) != TYPE_DICTIONARY:
+		return false
+	if bool(actor.get("is_dead", false)) or bool(actor.get("dead", false)):
+		return false
+	if actor.has("alive") and not bool(actor.get("alive", true)):
+		return false
+	return int(actor.get("hp", 0)) > 0
+
+func _build_round_roster() -> void:
+	round_roster.clear()
+	acted_this_round.clear()
+	for actor in (player_party + enemy_party):
+		if _is_actor_alive(actor):
+			var key = _actor_key(actor)
+			if key != "":
+				round_roster.append(key)
+
+func _mark_actor_acted(actor: Dictionary) -> void:
+	var key = _actor_key(actor)
+	if key == "":
+		return
+	if round_roster.has(key):
+		acted_this_round[key] = true
+
+func _prune_roster() -> void:
+	var remaining = []
+	for actor in (player_party + enemy_party):
+		var key = _actor_key(actor)
+		if key == "":
+			continue
+		if not round_roster.has(key):
+			continue
+		if _is_actor_alive(actor):
+			remaining.append(key)
+		else:
+			acted_this_round[key] = true
+	round_roster = remaining
+
+func _is_round_complete() -> bool:
+	for key in round_roster:
+		if not acted_this_round.get(key, false):
+			return false
+	return true
+
+func _try_end_round() -> void:
+	if round_end_emitted:
+		return
+	_prune_roster()
+	if not _is_round_complete():
+		return
+	round_end_emitted = true
+	round_in_progress = false
+	emit_signal("round_ended", round_count)
+	round_count += 1
+	call_deferred("start_new_round")

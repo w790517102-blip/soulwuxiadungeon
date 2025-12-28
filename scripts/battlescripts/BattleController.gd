@@ -11,8 +11,8 @@ var enemy_party: Array = []
 var battle_ui: Node = null
 var skill_db: Node = null
 var action_log_ui: LogPanel = null  # ✅ LogPanel 掛的腳本
-var last_round_logged: int = 0
-var last_round_regen: int = 0
+var last_round_logged: int = -1
+var last_round_regen: int = -1
 var battle_finished: bool = false
 
 @onready var skill_resolver = $SkillResolver
@@ -117,8 +117,8 @@ func _init_battle_safe() -> void:
 		battle_ui.set_teams(player_party, enemy_party)
 
 	battle_finished = false
-	last_round_logged = 0
-	last_round_regen = 0
+	last_round_logged = -1
+	last_round_regen = -1
 
 	turn_manager.turn_started.connect(_on_turn_started)
 	turn_manager.turn_ended.connect(_on_turn_ended)
