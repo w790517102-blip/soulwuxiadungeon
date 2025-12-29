@@ -6,10 +6,10 @@ extends PopupPanel
 signal inner_force_selected(force_data: Dictionary)
 signal selection_cancelled()
 
-@onready var force_list       := $VBoxContainer/ForceList
-@onready var description      := $VBoxContainer/Description
-@onready var confirm_button   := $VBoxContainer/ButtonRow/Confirm
-@onready var cancel_button    := $VBoxContainer/ButtonRow/Cancel
+@onready var force_list       = $VBoxContainer/ForceList
+@onready var description      = $VBoxContainer/Description
+@onready var confirm_button   = $VBoxContainer/ButtonRow/Confirm
+@onready var cancel_button    = $VBoxContainer/ButtonRow/Cancel
 
 # ✅ 載入 ToneMap
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
@@ -36,14 +36,14 @@ func show_inner_forces(actor: Dictionary) -> void:
 
 	# 建立清單：顯示「清風・訣（屬性：快）」這種格式
 	for force in force_options:
-		var prefix  := str(force.get("prefix", "？"))
-		var f_type  := str(force.get("type", "？"))
-		var element := str(force.get("element", "？"))
+		var prefix  = str(force.get("prefix", "？"))
+		var f_type  = str(force.get("type", "？"))
+		var element = str(force.get("element", "？"))
 
 		if element == "":
 			element = "？"
 
-		var label := "%s・%s（屬性：%s）" % [prefix, f_type, element]
+		var label = "%s・%s（屬性：%s）" % [prefix, f_type, element]
 		force_list.add_item(label)
 
 	# 預設選第一個，並顯示描述
@@ -68,16 +68,16 @@ func _update_description_for_index(index: int) -> void:
 	var force: Dictionary = force_options[index]
 	selected_force = force
 
-	var prefix       := str(force.get("prefix", ""))
-	var f_type       := str(force.get("type", ""))
-	var element      := str(force.get("element", ""))
-	var boost_weapon := str(force.get("boost_weapon", ""))
+	var prefix       = str(force.get("prefix", ""))
+	var f_type       = str(force.get("type", ""))
+	var element      = str(force.get("element", ""))
+	var boost_weapon = str(force.get("boost_weapon", ""))
 
 	# 標題：清風訣（屬性：快）
-	var header := "%s%s（屬性：%s）" % [prefix, f_type, element]
+	var header = "%s%s（屬性：%s）" % [prefix, f_type, element]
 
 	# 內功本身描述（優先使用 TeamDataManager 裡的 description）
-	var main_desc := str(force.get("description", ""))
+	var main_desc = str(force.get("description", ""))
 
 	# 若資料層沒有寫 description，就給一個 fallback
 	if main_desc == "":
@@ -91,12 +91,12 @@ func _update_description_for_index(index: int) -> void:
 			main_desc = "%s%s，內功特性尚待摸索。" % [prefix, f_type]
 
 	# 補一句明講「可強化哪種武器」
-	var extra_info := ""
+	var extra_info = ""
 	if boost_weapon != "":
 		extra_info = "\n\n（此心法可強化：%s 系招式）" % boost_weapon
 
 	# ToneMap 額外敘事（可選）
-	var extra_tone := tone.get_tone_text("innerforce", prefix, current_actor.get("id", ""))
+	var extra_tone = tone.get_tone_text("innerforce", prefix, current_actor.get("id", ""))
 	if extra_tone != "":
 		extra_tone = "\n\n" + extra_tone
 

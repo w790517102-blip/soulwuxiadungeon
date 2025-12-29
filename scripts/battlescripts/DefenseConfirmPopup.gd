@@ -3,8 +3,8 @@ extends PopupPanel
 signal defense_confirmed
 signal selection_cancelled
 
-@onready var btn_confirm := $VBoxContainer/HBoxContainer/Confirm
-@onready var btn_cancel := $VBoxContainer/HBoxContainer/Cancel
+@onready var btn_confirm = $VBoxContainer/HBoxContainer/Confirm
+@onready var btn_cancel = $VBoxContainer/HBoxContainer/Cancel
 
 func _ready():
 	btn_confirm.pressed.connect(_on_confirm_pressed)

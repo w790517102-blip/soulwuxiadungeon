@@ -88,7 +88,7 @@ func get_battle_items() -> Array:
 	return inventory.filter(func(i): return i.has("effect"))
 
 # ✅ 消耗指定道具數量（預設1）
-func consume_item(id: String, amount := 1):
+func consume_item(id: String, amount = 1):
 	for i in inventory:
 		if i.get("id") == id:
 			i["quantity"] -= amount

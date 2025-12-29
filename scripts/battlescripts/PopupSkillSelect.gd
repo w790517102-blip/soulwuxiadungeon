@@ -7,15 +7,15 @@ extends PopupPanel
 signal skill_selected(skill_data: Dictionary)
 signal selection_cancelled()
 
-@onready var skill_list := $VBoxContainer/SkillList
-@onready var description_label := $VBoxContainer/Description
-@onready var confirm_button := $VBoxContainer/ButtonRow/Confirm
-@onready var cancel_button := $VBoxContainer/ButtonRow/Cancel
+@onready var skill_list = $VBoxContainer/SkillList
+@onready var description_label = $VBoxContainer/Description
+@onready var confirm_button = $VBoxContainer/ButtonRow/Confirm
+@onready var cancel_button = $VBoxContainer/ButtonRow/Cancel
 
 var skill_provider: Node = null
 var available_skills: Array = []
 var valid_skill_indices: Array = []
-var selected_index := -1
+var selected_index = -1
 var inner_force = {}
 var equipped_weapons: Array = []
 var character_skill_db: Node = null
@@ -56,12 +56,12 @@ func show_skills(
 	print("⚔️ 武器清單：", equipped_weapons)
 
 	# 🖐️ 真正「佔手」的實體武器數量（拳/掌不算佔手，只是徒手型態）
-	var real_weapon_count := 0
+	var real_weapon_count = 0
 	for w in equipped_weapons:
 		if w != "拳" and w != "掌":
 			real_weapon_count += 1
 
-	var has_free_hand := real_weapon_count < 2  # ✅ 至少有一隻手是空的，才算有空手
+	var has_free_hand = real_weapon_count < 2  # ✅ 至少有一隻手是空的，才算有空手
 
 	for i in range(skills.size()):
 		var skill: Dictionary = skills[i]
@@ -71,7 +71,7 @@ func show_skills(
 
 		var skill_name: String = skill_provider.resolve_skill_name(skill, inner_force)
 
-		var can_use := false
+		var can_use = false
 
 		if weapon_type == "拳" or weapon_type == "掌":
 			# 🔹 拳 / 掌武學：預設不吃武器限制
