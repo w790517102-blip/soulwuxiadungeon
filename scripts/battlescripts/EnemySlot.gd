@@ -31,7 +31,7 @@ func setup_from_actor(actor: Dictionary) -> void:
 		portrait.modulate = Color(1, 1, 1, 1)
 
 func update_from_actor(actor: Dictionary) -> void:
-	var new_id := str(actor.get("id", actor.get("name", "")))
+	var new_id = str(actor.get("id", actor.get("name", "")))
 	if new_id != "" and new_id != actor_id:
 		actor_id = new_id
 		_init_max_hp(actor)
@@ -61,17 +61,17 @@ func _update_all(actor: Dictionary) -> void:
 	hp_bar.value = clamp(cur_hp, 0, max_hp_cached)
 	hp_label.text = "生命值: %d / %d" % [cur_hp, max_hp_cached]
 
-	var elem := str(actor.get("element", "未知"))
+	var elem = str(actor.get("element", "未知"))
 	if elem == "":
 		elem = "未知"
 
 	element_label.text = "屬性：%s" % elem
-	var color := _get_element_color(elem)
+	var color = _get_element_color(elem)
 	element_label.add_theme_color_override("font_color", color)
 
 	var portrait_path = actor.get("portrait_path", "")
 	if portrait_path != "":
-		var tex := load(portrait_path)
+		var tex = load(portrait_path)
 		if tex:
 			portrait.texture = tex
 
@@ -208,14 +208,14 @@ func set_turn_highlight(is_active: bool) -> void:
 # ===== 攻擊 / 受擊動作 =====
 
 func play_attack_motion() -> void:
-	var tween := create_tween()
+	var tween = create_tween()
 	self.scale = Vector2.ONE
 	tween.tween_property(self, "scale", Vector2(1.08, 1.08), 0.12)
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.16)
 
 func play_damage_react() -> void:
-	var tween := create_tween()
-	var original_modulate := self.modulate
+	var tween = create_tween()
+	var original_modulate = self.modulate
 
 	self.modulate = Color(1.2, 0.6, 0.6, original_modulate.a)
 	self.scale = Vector2.ONE
@@ -229,8 +229,8 @@ func play_damage_react() -> void:
 
 # ===== 防禦姿態（預留給敵人）=====
 func play_defend_pose() -> void:
-	var tween := create_tween()
-	var original_modulate := self.modulate
+	var tween = create_tween()
+	var original_modulate = self.modulate
 
 	self.scale = Vector2.ONE
 	self.modulate = original_modulate
@@ -247,9 +247,9 @@ func clear_defend_pose() -> void:
 	self.modulate = Color(1, 1, 1, 1)
 
 func play_guard_react() -> void:
-	var tween := create_tween()
-	var original_modulate := self.modulate
-	var a := original_modulate.a
+	var tween = create_tween()
+	var original_modulate = self.modulate
+	var a = original_modulate.a
 
 	self.scale = Vector2.ONE
 	self.modulate = Color(0.8, 0.9, 1.4, a)

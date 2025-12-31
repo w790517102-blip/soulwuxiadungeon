@@ -18,7 +18,7 @@ func log_narration(text: String) -> void:
 
 # 系統藍字用（自動包 color 標籤）
 func log_system(text: String) -> void:
-	var wrapped := "[color=#7fd0ff]%s[/color]" % text
+	var wrapped = "[color=#7fd0ff]%s[/color]" % text
 	_enqueue_line(wrapped)
 
 # 通用，BattleController 直接呼叫（裡面可以塞自己的 [color] / [b] 標籤）
@@ -53,30 +53,30 @@ func _start_next() -> void:
 	_start_next()
 
 func _scroll_to_bottom() -> void:
-	var line_count := get_line_count()
+	var line_count = get_line_count()
 	if line_count > 0:
 		scroll_to_line(line_count - 1)
 
 # 解析 [color=#xxxxxx]...[/color] + [b]...[/b]，逐字顯示
 func _type_line_with_tags(line: String) -> void:
 	var segments: Array = []
-	var current_text := ""
+	var current_text = ""
 	var current_color: Color = Color(1, 1, 1)
-	var has_color := false
-	var bold := false
+	var has_color = false
+	var bold = false
 
-	var i := 0
+	var i = 0
 	while i < line.length():
-		var ch := line[i]
+		var ch = line[i]
 		if ch == "[":
-			var end_tag := line.find("]", i)
+			var end_tag = line.find("]", i)
 			if end_tag == -1:
 				# 標籤不完整就直接當普通文字吃掉
 				current_text += line.substr(i)
 				i = line.length()
 				break
 
-			var tag_content := line.substr(i + 1, end_tag - i - 1)
+			var tag_content = line.substr(i + 1, end_tag - i - 1)
 
 			if tag_content.begins_with("color="):
 				# 先把之前累積的文字丟進 segments
@@ -91,7 +91,7 @@ func _type_line_with_tags(line: String) -> void:
 					})
 					current_text = ""
 
-				var col_str := tag_content.substr(6, tag_content.length() - 6)
+				var col_str = tag_content.substr(6, tag_content.length() - 6)
 				current_color = Color(col_str)
 				has_color = true
 
@@ -165,7 +165,7 @@ func _type_line_with_tags(line: String) -> void:
 		if seg_bold:
 			push_bold()
 
-		var j := 0
+		var j = 0
 		while j < seg_text.length():
 			append_text(seg_text.substr(j, 1))
 			j += 1

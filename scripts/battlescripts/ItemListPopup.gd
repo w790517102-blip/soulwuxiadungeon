@@ -7,14 +7,14 @@ signal item_selected(item: Dictionary)
 signal selection_cancelled()
 signal item_used(item: Dictionary)
 
-@onready var item_list := $VBoxContainer/ItemListPopup
-@onready var description := $VBoxContainer/Description
-@onready var quantity_label := $VBoxContainer/QuantityLabel
-@onready var btn_confirm := $VBoxContainer/HBoxContainer/Confirm
-@onready var btn_cancel := $VBoxContainer/HBoxContainer/Cancel
+@onready var item_list = $VBoxContainer/ItemListPopup
+@onready var description = $VBoxContainer/Description
+@onready var quantity_label = $VBoxContainer/QuantityLabel
+@onready var btn_confirm = $VBoxContainer/HBoxContainer/Confirm
+@onready var btn_cancel = $VBoxContainer/HBoxContainer/Cancel
 
 var current_items: Array = []
-var selected_index := -1
+var selected_index = -1
 var user_actor: Dictionary = {}
 
 func _ready():

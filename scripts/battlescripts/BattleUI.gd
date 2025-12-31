@@ -3,25 +3,28 @@ extends Control
 signal player_action_complete(actor: Dictionary)
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
-var tone := ToneMap.new()
+var tone = ToneMap.new()
 
-@onready var ally_panel := $AllyPanel
-@onready var action_panel := $ActionPanel
-@onready var log_panel := $LogPanel as LogPanel
-@onready var enemy_panel := $EnemyPanel
-@onready var skill_list_popup := $ActionPanel/PopupSkillSelect
-@onready var inner_force_popup := $ActionPanel/InnerForcePopup
-@onready var item_list_popup := $ActionPanel/ItemListPopup
-@onready var defense_confirm_popup := $ActionPanel/DefenseConfirmPopup
-@onready var target_select_popup := $ActionPanel/TargetSelectPopup
+@onready var ally_panel = $AllyPanel
+@onready var action_panel = $ActionPanel
+@onready var log_panel = $LogPanel as LogPanel
+@onready var enemy_panel = $EnemyPanel
+@onready var skill_list_popup = $ActionPanel/PopupSkillSelect
+@onready var inner_force_popup = $ActionPanel/InnerForcePopup
+@onready var item_list_popup = $ActionPanel/ItemListPopup
+@onready var defense_confirm_popup = $ActionPanel/DefenseConfirmPopup
+@onready var target_select_popup = $ActionPanel/TargetSelectPopup
+@onready var btn_item = $ActionPanel/BtnItem
+@onready var btn_inner_force = $ActionPanel/BtnInnerForce
+@onready var btn_weapon_switch = $ActionPanel.get_node_or_null("BtnWeaponSwitch")
 
 var character_skill_db: Node = null
 var skill_provider : Node = null
 var current_actor: Dictionary = {}
-var on_action_selection := false
-var waiting_for_action := false
+var on_action_selection = false
+var waiting_for_action = false
 var combat_controller: Node = null
-var current_turn_id := ""
+var current_turn_id = ""
 var current_target_focus: Dictionary = {}  # ⭐ 目前在 TargetSelect 中被選中的那個
 
 # 用來暫存「還沒真正結算」的指令
@@ -92,13 +95,29 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	update_ally_panel()
 	update_enemy_panel()
 
+func apply_ruleset(ruleset: Dictionary) -> void:
+	var allow_items = bool(ruleset.get("allow_items", true))
+	var allow_inner = bool(ruleset.get("allow_inner_force_switch", true))
+	var allow_weapon = bool(ruleset.get("allow_weapon_switch", true))
+
+	_set_button_allowed(btn_item, allow_items)
+	_set_button_allowed(btn_inner_force, allow_inner)
+	_set_button_allowed(btn_weapon_switch, allow_weapon)
+
+func _set_button_allowed(button: Node, allowed: bool) -> void:
+	if button == null:
+		return
+	if button is BaseButton:
+		button.disabled = not allowed
+	button.visible = true
+
 # ⭐ 新增：讓 BattleController 可以指定「這個 actor 被打，播哪個 FX」
 func play_hit_fx_on_actor(actor: Dictionary, fx_name: String) -> void:
 	if actor.is_empty():
 		return
 
 	# 先找是不是我方
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("play_hit_fx"):
@@ -151,14 +170,14 @@ func update_ally_panel() -> void:
 
 ## 整隊敵方 UI 刷新
 func update_enemy_panel() -> void:
-	var total_slots := enemy_slots.size()
+	var total_slots = enemy_slots.size()
 
 	for i in range(total_slots):
 		var slot = enemy_slots[i]
 
 		if i < enemies.size():
 			var actor: Dictionary = enemies[i]
-			var hp := int(actor.get("hp", 0))
+			var hp = int(actor.get("hp", 0))
 
 			if hp > 0:
 				# 還活著 → 正常顯示
@@ -205,7 +224,7 @@ func play_attack_motion(actor: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("play_attack_motion"):
@@ -223,7 +242,7 @@ func play_defend_motion(actor: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("play_defend_pose"):
@@ -240,7 +259,7 @@ func clear_defend_motion(actor: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("clear_defend_pose"):
@@ -260,7 +279,7 @@ func play_hit_fx_on_target(target: Dictionary, fx_id: String) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := enemies.find(target)
+	var idx = enemies.find(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_hit_fx"):
@@ -277,7 +296,7 @@ func play_damage_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := enemies.find(target)
+	var idx = enemies.find(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_damage_react"):
@@ -294,7 +313,7 @@ func play_heal_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := allies.find(target)
+	var idx = allies.find(target)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("play_heal_react"):
@@ -312,7 +331,7 @@ func play_guard_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx := enemies.find(target)
+	var idx = enemies.find(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_guard_react"):
@@ -371,9 +390,9 @@ func _on_btn_skill_pressed() -> void:
 
 # ⭐ 根據技能的 effect / target_scope / target_side 來決定候選目標
 func _start_target_select_for_skill(user: Dictionary, skill_data: Dictionary) -> void:
-	var effect := str(skill_data.get("effect", "damage"))
-	var scope  := str(skill_data.get("target_scope", "single"))  # "single" / "ally_all" / ...
-	var side   := str(skill_data.get("target_side", ""))         # "ally" / "enemy" / "self"
+	var effect = str(skill_data.get("effect", "damage"))
+	var scope  = str(skill_data.get("target_scope", "single"))  # "single" / "ally_all" / ...
+	var side   = str(skill_data.get("target_side", ""))         # "ally" / "enemy" / "self"
 
 	# 🧠 自動推論目標陣營
 	if side == "":
@@ -459,21 +478,22 @@ func _on_PopupSkillSelect_selection_cancelled() -> void:
 # ===== 內功 =====
 func _on_btn_inner_force_pressed() -> void:
 	hide_all_popups()
+	if combat_controller and combat_controller.has_method("can_switch_inner_force"):
+		if not combat_controller.can_switch_inner_force():
+			if combat_controller.has_method("log_system"):
+				combat_controller.log_system("本場規則禁止切換內功。")
+			return
 	inner_force_popup.show_inner_forces(current_actor)
 
 
 func _on_InnerForcePopup_force_selected(force: Dictionary):
 	print("🎯 成功觸發內功切換訊號：", force)
 
-	# 1️⃣ 切換內功本體
-	current_actor["inner_force"] = force
-
-	# 2️⃣ 如果這個內功有定義 element，就更新角色的當前屬性
-	if force.has("element"):
-		current_actor["element"] = force["element"]
-
-	# 3️⃣ 立刻刷新 UI（讓隊友欄的屬性標籤更新）
-	update_ally_panel()
+	if combat_controller and combat_controller.has_method("apply_inner_force_switch"):
+		var ok = combat_controller.apply_inner_force_switch(current_actor, force)
+		if not ok:
+			inner_force_popup.hide()
+			return
 
 	# 下面是原本的敘事文字
 	var base = "你切換了內功為「%s・%s」（強化：%s）。" % [
@@ -516,7 +536,7 @@ func _on_DefenseConfirmPopup_confirmed() -> void:
 
 	_log_system("你選擇了防禦姿態。該回合結束。")
 
-	var extra := tone.get_tone_text("defend", "", current_actor.get("id", ""))
+	var extra = tone.get_tone_text("defend", "", current_actor.get("id", ""))
 	if extra == "":
 		var actor_name: String = current_actor.get("name", "？？")
 		extra = "%s 收招後氣沉丹田，雙臂微抬，小心提防對手動向。" % actor_name
@@ -536,6 +556,11 @@ func _on_DefenseConfirmPopup_cancelled() -> void:
 # ===== 道具 =====
 func _on_btn_item_pressed() -> void:
 	hide_all_popups()
+	if combat_controller and combat_controller.has_method("can_use_items"):
+		if not combat_controller.can_use_items():
+			if combat_controller.has_method("log_system"):
+				combat_controller.log_system("本場規則禁止使用道具。")
+			return
 	item_list_popup.show_items(current_actor)
 
 
@@ -544,7 +569,7 @@ func _on_ItemListPopup_item_selected(item) -> void:
 	on_action_selection = false
 
 	# ⭐ 讀道具的 target_scope，預設還是 ally_single
-	var scope := String(item.get("target_scope", "ally_single"))
+	var scope = String(item.get("target_scope", "ally_single"))
 
 	var item_name: String = item.name if item is Object and item.has_method("get") == false else str(item.get("name", "???"))
 	_log_system("你使用了「%s」。" % item_name)
@@ -642,7 +667,7 @@ func _set_actor_target_focus(actor: Dictionary, active: bool) -> void:
 	if actor.is_empty():
 		return
 
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("set_target_focus"):
@@ -730,7 +755,7 @@ func _set_target_highlight_for_actor(actor: Dictionary, is_active: bool) -> void
 		return
 
 	# 先找我方
-	var idx := allies.find(actor)
+	var idx = allies.find(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("set_target_highlight"):

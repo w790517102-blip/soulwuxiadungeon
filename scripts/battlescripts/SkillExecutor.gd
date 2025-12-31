@@ -52,19 +52,19 @@ func execute(
 		var w2: String = String(user.get("weapon_2", ""))
 
 		# 🖐️ 實際「佔手」的實體武器數（拳、掌不算佔手）
-		var real_weapon_count := 0
+		var real_weapon_count = 0
 		if w1 != "" and w1 != "拳" and w1 != "掌":
 			real_weapon_count += 1
 		if w2 != "" and w2 != "拳" and w2 != "掌":
 			real_weapon_count += 1
 
-		var has_free_hand := real_weapon_count < 2
+		var has_free_hand = real_weapon_count < 2
 		var uname: String = String(user.get("name", "???"))
 
 		if weapon_required == "拳" or weapon_required == "掌":
 			# 🔹 拳／掌武學：預設不吃武器限制
 			if require_free_hand and not has_free_hand:
-				var fail_line_free := "%s 嘗試使出 %s，但雙手都被兵器束縛，無法完全放開身形。" % [
+				var fail_line_free = "%s 嘗試使出 %s，但雙手都被兵器束縛，無法完全放開身形。" % [
 					uname,
 					skill_name
 				]
@@ -74,9 +74,9 @@ func execute(
 		else:
 			# 🔹 其他武器型技能：需要有對應武器
 			if weapon_required != "":
-				var has_weapon := (w1 == weapon_required or w2 == weapon_required)
+				var has_weapon = (w1 == weapon_required or w2 == weapon_required)
 				if not has_weapon:
-					var fail_line_weapon := "%s 嘗試使出 %s，但未裝備合適武器，無法施展。" % [
+					var fail_line_weapon = "%s 嘗試使出 %s，但未裝備合適武器，無法施展。" % [
 						uname,
 						skill_name
 					]
