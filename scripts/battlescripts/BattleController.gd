@@ -14,6 +14,9 @@ var action_log_ui: LogPanel = null  # ✅ LogPanel 掛的腳本
 var last_round_logged: int = -1
 var last_round_regen: int = -1
 var battle_finished: bool = false
+var battle_context: Dictionary = {}
+var ruleset: Dictionary = {}
+var regen_policy: Dictionary = {}
 
 @onready var skill_resolver = $SkillResolver
 @onready var emotion_modulator = $EmotionModulator
@@ -55,66 +58,51 @@ func _init_battle_safe() -> void:
 	else:
 		push_error("❌ 無法找到 BattleUI")
 
-	# 🧩 取得玩家隊伍資料（暫時還是用 TeamData）
-	player_party = TeamData.get_active_party()
-	if player_party.is_empty():
-		# ⭐ Fallback：單人測試用，也補上 max_hp / mp / max_mp，跟 TeamData schema 對齊
-		player_party = [
-			{
-				"id": "liuyu",
-				"name": "劉語塵",
-				"speed": 8,
-				"hp": 150,
-				"max_hp": 150,
-				"mp": 60,
-				"max_mp": 60,
-				"atk": 20,
-				"def": 5,
-				"element": "快",
-				"weapon_1": "劍",
-				"weapon_2": "刀",
-				"inner_force": {
-					"prefix": "清風",
-					"type": "訣",
-					"boost_weapon": "刀"
-				}
-			}
-		]
-		TeamData.set_active_party(player_party)
+	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
+	turn_manager.turn_started.connect(_on_turn_started)
+	turn_manager.turn_ended.connect(_on_turn_ended)
+	turn_manager.round_started.connect(_on_round_started)
+	turn_manager.round_ended.connect(_on_round_ended)
+	print("✅ BattleController 完成初始化，等待外部 start_battle(context)。")
 
-	# 🧩 Phase 1：敵人資料用「完整 schema」，之後可以直接搬到 EnemyDatabase
-	enemy_party = [
-		{
-			"id": "enemy1",
-			"name": "滯水語魅",
-			"hp": 40,
-			"atk": 15,
-			"def": 3,
-			"speed": 7,
-			"element": "遲",
-			"weapon_1": "掌",
-		},
-		{
-			"id": "enemy2",
-			"name": "磐石語魅",
-			"hp": 50,
-			"atk": 10,
-			"def": 8,
-			"speed": 4,
-			"element": "剛",
-			"weapon_1": "拳",
-			"portrait_path": "res://assets/sprites/NPC/Enemy/Stone_TP.png"
-		}
-	]
+func start_battle(context: Dictionary) -> void:
+	if not context.has("player_party") or not context.has("enemy_party"):
+		push_error("❌ BattleContext 缺少 player_party 或 enemy_party。")
+		return
 
-	# ⭐ 新增：標記這些是敵方單位，給語氣系統 & 之後 AI / UI 用
+	var ctx_players = context.get("player_party", [])
+	var ctx_enemies = context.get("enemy_party", [])
+	if ctx_players.is_empty() or ctx_enemies.is_empty():
+		push_error("❌ BattleContext 的 player_party / enemy_party 不可為空。")
+		return
+
+	battle_context = context
+	player_party = ctx_players
+	enemy_party = ctx_enemies
+	ruleset = context.get("ruleset", {})
+	regen_policy = context.get("regen_policy", {})
+
+	for p in player_party:
+		if typeof(p) != TYPE_DICTIONARY:
+			continue
+		p["max_hp"] = int(p.get("max_hp", p.get("hp", 0)))
+		p["max_mp"] = int(p.get("max_mp", p.get("mp", 0)))
+
 	for e in enemy_party:
+		if typeof(e) != TYPE_DICTIONARY:
+			continue
 		e["max_hp"] = int(e.get("max_hp", e.get("hp", 0)))
 		e["is_enemy"] = true
 
-	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
 	if battle_ui:
 		battle_ui.set_teams(player_party, enemy_party)
+		battle_ui.apply_ruleset(ruleset)
+
+	_play_battle_intro(context)
+
+	battle_finished = false
+	last_round_logged = -1
+	last_round_regen = -1
 
 	battle_finished = false
 	last_round_logged = -1
@@ -125,6 +113,21 @@ func _init_battle_safe() -> void:
 	turn_manager.round_started.connect(_on_round_started)
 	turn_manager.round_ended.connect(_on_round_ended)
 	turn_manager.start_battle(player_party, enemy_party)
+
+func _play_battle_intro(context: Dictionary) -> void:
+	var tone_block = context.get("tone", {})
+	var intro_key = str(tone_block.get("intro_key", ""))
+	var fallback_key = str(tone_block.get("fallback_intro_key", "default"))
+	var intro_line = ""
+
+	if tone_map != null:
+		if intro_key != "":
+			intro_line = tone_map.get_tone_text("battle_intro", intro_key, "default")
+		if intro_line == "" and fallback_key != "":
+			intro_line = tone_map.get_tone_text("battle_intro", fallback_key, "default")
+
+	if intro_line != "":
+		_log(intro_line)
 
 
 func _log(msg: String) -> void:
@@ -144,6 +147,34 @@ func _log_system(msg: String) -> void:
 		action_log_ui.log_system(msg)
 	else:
 		_log(msg)
+
+func log_system(msg: String) -> void:
+	_log_system(msg)
+
+func can_use_items() -> bool:
+	return _is_rule_allowed("allow_items", true)
+
+func can_switch_inner_force() -> bool:
+	return _is_rule_allowed("allow_inner_force_switch", true)
+
+func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
+	if not _is_rule_allowed("allow_inner_force_switch", true):
+		_log_system("本場規則禁止切換內功。")
+		return false
+
+	actor["inner_force"] = force
+	if force.has("element"):
+		actor["element"] = force["element"]
+
+	if battle_ui:
+		battle_ui.update_ally_panel()
+
+	return true
+
+func _is_rule_allowed(rule_key: String, default_value: bool) -> bool:
+	if ruleset.is_empty():
+		return default_value
+	return bool(ruleset.get(rule_key, default_value))
 
 
 func _on_turn_started(actor: Dictionary) -> void:
@@ -208,17 +239,27 @@ func _restore_mp_after_round() -> void:
 		if hp <= 0:
 			continue
 
-		var mp = int(a.get("mp", 0))
-		var new_mp = mp + 5
-		if a.has("max_mp"):
-			var max_mp = int(a.get("max_mp", 0))
-			if max_mp > 0:
-				new_mp = min(new_mp, max_mp)
-		a["mp"] = new_mp
+var new_mp = _calc_round_mp_regen(a, regen_policy, battle_context)
+a["mp"] = new_mp
 		_update_ui_for_actor(a)
 
 	if battle_ui:
 		battle_ui.update_enemy_panel()
+
+func _calc_round_mp_regen(actor: Dictionary, policy: Dictionary, context: Dictionary) -> int:
+	var mp = int(actor.get("mp", 0))
+	var base = int(policy.get("mp_base", 5))
+	var bonus = int(policy.get("mp_global_bonus", 0)) + int(actor.get("mp_regen_bonus", 0))
+	var multiplier = float(policy.get("mp_multiplier", 1.0))
+	var regen = int(round((base + bonus) * multiplier))
+	var new_mp = mp + regen
+
+	if bool(policy.get("clamp_to_max_mp", true)) and actor.has("max_mp"):
+		var max_mp = int(actor.get("max_mp", 0))
+		if max_mp > 0:
+			new_mp = min(new_mp, max_mp)
+
+	return new_mp
 
 func _on_player_action_complete(actor: Dictionary) -> void:
 	var current = turn_manager.get_current_actor()
@@ -1082,6 +1123,9 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 
 
 func use_item(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
+	if not _is_rule_allowed("allow_items", true):
+		_log_system("本場規則禁止使用道具。")
+		return
 	# ✅ 套用效果（dispatcher）
 	var ok = item_dispatcher.apply(self, user, item, target)
 

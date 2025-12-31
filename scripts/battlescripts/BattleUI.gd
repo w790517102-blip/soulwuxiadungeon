@@ -14,6 +14,9 @@ var tone = ToneMap.new()
 @onready var item_list_popup = $ActionPanel/ItemListPopup
 @onready var defense_confirm_popup = $ActionPanel/DefenseConfirmPopup
 @onready var target_select_popup = $ActionPanel/TargetSelectPopup
+@onready var btn_item = $ActionPanel/BtnItem
+@onready var btn_inner_force = $ActionPanel/BtnInnerForce
+@onready var btn_weapon_switch = $ActionPanel.get_node_or_null("BtnWeaponSwitch")
 
 var character_skill_db: Node = null
 var skill_provider : Node = null
@@ -91,6 +94,22 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	enemies = enemies_data
 	update_ally_panel()
 	update_enemy_panel()
+
+func apply_ruleset(ruleset: Dictionary) -> void:
+	var allow_items = bool(ruleset.get("allow_items", true))
+	var allow_inner = bool(ruleset.get("allow_inner_force_switch", true))
+	var allow_weapon = bool(ruleset.get("allow_weapon_switch", true))
+
+	_set_button_allowed(btn_item, allow_items)
+	_set_button_allowed(btn_inner_force, allow_inner)
+	_set_button_allowed(btn_weapon_switch, allow_weapon)
+
+func _set_button_allowed(button: Node, allowed: bool) -> void:
+	if button == null:
+		return
+	if button is BaseButton:
+		button.disabled = not allowed
+	button.visible = true
 
 # ⭐ 新增：讓 BattleController 可以指定「這個 actor 被打，播哪個 FX」
 func play_hit_fx_on_actor(actor: Dictionary, fx_name: String) -> void:
@@ -459,21 +478,22 @@ func _on_PopupSkillSelect_selection_cancelled() -> void:
 # ===== 內功 =====
 func _on_btn_inner_force_pressed() -> void:
 	hide_all_popups()
+	if combat_controller and combat_controller.has_method("can_switch_inner_force"):
+		if not combat_controller.can_switch_inner_force():
+			if combat_controller.has_method("log_system"):
+				combat_controller.log_system("本場規則禁止切換內功。")
+			return
 	inner_force_popup.show_inner_forces(current_actor)
 
 
 func _on_InnerForcePopup_force_selected(force: Dictionary):
 	print("🎯 成功觸發內功切換訊號：", force)
 
-	# 1️⃣ 切換內功本體
-	current_actor["inner_force"] = force
-
-	# 2️⃣ 如果這個內功有定義 element，就更新角色的當前屬性
-	if force.has("element"):
-		current_actor["element"] = force["element"]
-
-	# 3️⃣ 立刻刷新 UI（讓隊友欄的屬性標籤更新）
-	update_ally_panel()
+	if combat_controller and combat_controller.has_method("apply_inner_force_switch"):
+		var ok = combat_controller.apply_inner_force_switch(current_actor, force)
+		if not ok:
+			inner_force_popup.hide()
+			return
 
 	# 下面是原本的敘事文字
 	var base = "你切換了內功為「%s・%s」（強化：%s）。" % [
@@ -536,6 +556,11 @@ func _on_DefenseConfirmPopup_cancelled() -> void:
 # ===== 道具 =====
 func _on_btn_item_pressed() -> void:
 	hide_all_popups()
+	if combat_controller and combat_controller.has_method("can_use_items"):
+		if not combat_controller.can_use_items():
+			if combat_controller.has_method("log_system"):
+				combat_controller.log_system("本場規則禁止使用道具。")
+			return
 	item_list_popup.show_items(current_actor)
 
 

@@ -12,6 +12,11 @@ class_name ToneMap
 #   - ⚠️ "hit" 另外獨立放在 hit_reactions 裡，由 get_tone_text 特別處理
 
 var tone_map := {
+	"battle_intro": {
+		"default": {
+			"default": "戰鬥開始。"
+		}
+	},
 	"innerforce_applied": {
 		"清風": {
 			"default": "風姿清逸，氣息若幽蘭。",
@@ -355,6 +360,19 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		if effect_map.has(user_id):
 			return effect_map[user_id]
 		return effect_map.get("default", "")
+
+	# 2-1）戰鬥開場白：看 intro key
+	elif category == "battle_intro":
+		if key == "":
+			return ""
+		var intro_map = cat_map.get(key, null)
+		if intro_map == null:
+			intro_map = cat_map.get("default", null)
+		if intro_map == null:
+			return ""
+		if intro_map.has(user_id):
+			return intro_map[user_id]
+		return intro_map.get("default", "")
 
 	# 3）AOE 受擊：key = "skillId|state" 或 "state"
 	elif category == "aoe_suffer":
