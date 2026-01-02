@@ -235,8 +235,8 @@ func _restore_mp_after_round() -> void:
 		if hp <= 0:
 			continue
 
-var new_mp = _calc_round_mp_regen(a, regen_policy, battle_context)
-a["mp"] = new_mp
+		var new_mp = _calc_round_mp_regen(a, regen_policy, battle_context)
+		a["mp"] = new_mp
 		_update_ui_for_actor(a)
 
 	if battle_ui:
