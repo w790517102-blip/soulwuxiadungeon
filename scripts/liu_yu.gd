@@ -11,14 +11,145 @@ var can_move := true
 # 若角色腳底位置與 Sprite 原點不同，可調整這個偏移
 @export var z_index_offset := 0
 @export var random_encounter_enabled := false
-@export var encounter_step_threshold := 120.0
-@export var encounter_time_threshold := 2.5
-@export var encounter_roll_chance := 0.25
-@export var encounter_cooldown_seconds := 3.0
 
-var _encounter_step_progress := 0.0
-var _encounter_time_progress := 0.0
-var _encounter_cooldown_remaining := 0.0
+const ZONE_ID := "yuheng_bamboo_outskirts"
+const ZONE_CONFIG := {
+	"yuheng_bamboo_outskirts": {
+		"distance_threshold": 280.0,
+		"chance": 0.25,
+		"cooldown_distance": 320.0,
+		"intro_key": "yuheng_bamboo_outskirts_random"
+	},
+	"yuheng_sewer": {
+		"distance_threshold": 240.0,
+		"chance": 0.30,
+		"cooldown_distance": 280.0,
+		"intro_key": "yuheng_sewer_random"
+	}
+}
+
+const ENEMY_DB := {
+	"bamboo_bandit_scout": {
+		"id": "bamboo_bandit_scout",
+		"display_name": "山賊探子",
+		"hp": 60,
+		"max_hp": 60,
+		"mp": 10,
+		"atk": 10,
+		"def": 6,
+		"speed": 10,
+		"element": "遲"
+	},
+	"bamboo_bandit_archer": {
+		"id": "bamboo_bandit_archer",
+		"display_name": "山賊弓手",
+		"hp": 50,
+		"max_hp": 50,
+		"mp": 15,
+		"atk": 11,
+		"def": 5,
+		"speed": 12,
+		"element": "巧"
+	},
+	"bamboo_wild_boar": {
+		"id": "bamboo_wild_boar",
+		"display_name": "野豬",
+		"hp": 90,
+		"max_hp": 90,
+		"mp": 0,
+		"atk": 13,
+		"def": 7,
+		"speed": 8,
+		"element": "剛"
+	},
+	"bamboo_poison_snake": {
+		"id": "bamboo_poison_snake",
+		"display_name": "毒蛇",
+		"hp": 45,
+		"max_hp": 45,
+		"mp": 0,
+		"atk": 12,
+		"def": 4,
+		"speed": 14,
+		"element": "毒"
+	},
+	"bamboo_youmei": {
+		"id": "bamboo_youmei",
+		"display_name": "語魅",
+		"hp": 75,
+		"max_hp": 75,
+		"mp": 20,
+		"atk": 12,
+		"def": 7,
+		"speed": 9,
+		"element": "遲"
+	},
+	"sewer_rat_swarm": {
+		"id": "sewer_rat_swarm",
+		"display_name": "鼠群",
+		"hp": 55,
+		"max_hp": 55,
+		"mp": 0,
+		"atk": 10,
+		"def": 5,
+		"speed": 13,
+		"element": "群"
+	},
+	"sewer_thug": {
+		"id": "sewer_thug",
+		"display_name": "下水道匪徒",
+		"hp": 85,
+		"max_hp": 85,
+		"mp": 10,
+		"atk": 13,
+		"def": 7,
+		"speed": 10,
+		"element": "剛"
+	},
+	"sewer_ooze_slime": {
+		"id": "sewer_ooze_slime",
+		"display_name": "污泥怪",
+		"hp": 110,
+		"max_hp": 110,
+		"mp": 0,
+		"atk": 12,
+		"def": 9,
+		"speed": 6,
+		"element": "濁"
+	},
+	"sewer_drowned_wight": {
+		"id": "sewer_drowned_wight",
+		"display_name": "溺魂",
+		"hp": 120,
+		"max_hp": 120,
+		"mp": 25,
+		"atk": 14,
+		"def": 8,
+		"speed": 8,
+		"element": "陰"
+	}
+}
+
+const ENCOUNTER_POOLS := {
+	"yuheng_bamboo_outskirts": [
+		{"w": 40, "enemies": ["bamboo_bandit_scout", "bamboo_bandit_scout"]},
+		{"w": 25, "enemies": ["bamboo_bandit_scout", "bamboo_bandit_archer"]},
+		{"w": 20, "enemies": ["bamboo_wild_boar"]},
+		{"w": 10, "enemies": ["bamboo_poison_snake", "bamboo_poison_snake"]},
+		{"w": 5, "enemies": ["bamboo_youmei"]}
+	],
+	"yuheng_sewer": [
+		{"w": 35, "enemies": ["sewer_rat_swarm"]},
+		{"w": 30, "enemies": ["sewer_thug", "sewer_thug"]},
+		{"w": 20, "enemies": ["sewer_thug", "sewer_rat_swarm"]},
+		{"w": 10, "enemies": ["sewer_ooze_slime"]},
+		{"w": 5, "enemies": ["sewer_drowned_wight"]}
+	]
+}
+
+var in_danger_zone := false
+var _encounter_distance_accum := 0.0
+var _encounter_cooldown_distance := 0.0
 var _encounter_rng := RandomNumberGenerator.new()
 
 func _ready():
@@ -113,29 +244,36 @@ func _update_random_encounter(delta: float) -> void:
 		return
 	if _is_battle_active():
 		return
-	if _encounter_cooldown_remaining > 0.0:
-		_encounter_cooldown_remaining = max(_encounter_cooldown_remaining - delta, 0.0)
+	if not in_danger_zone:
+		_encounter_distance_accum = 0.0
 		return
 	if direction == Vector2.ZERO:
 		return
 
-	if encounter_step_threshold > 0.0:
-		_encounter_step_progress += velocity.length() * delta
-	if encounter_time_threshold > 0.0:
-		_encounter_time_progress += delta
+	var config = ZONE_CONFIG.get(ZONE_ID, {})
+	var distance_threshold = float(config.get("distance_threshold", 0.0))
+	var cooldown_distance = float(config.get("cooldown_distance", 0.0))
+	var chance = float(config.get("chance", 0.0))
 
-	var step_ready = encounter_step_threshold > 0.0 and _encounter_step_progress >= encounter_step_threshold
-	var time_ready = encounter_time_threshold > 0.0 and _encounter_time_progress >= encounter_time_threshold
-	if not step_ready and not time_ready:
+	if _encounter_cooldown_distance > 0.0:
+		_encounter_cooldown_distance = max(
+			_encounter_cooldown_distance - velocity.length() * delta,
+			0.0
+		)
 		return
 
-	_encounter_step_progress = 0.0
-	_encounter_time_progress = 0.0
+	if distance_threshold > 0.0:
+		_encounter_distance_accum += velocity.length() * delta
 
-	if _encounter_rng.randf() <= encounter_roll_chance:
+	if _encounter_distance_accum < distance_threshold:
+		return
+
+	_encounter_distance_accum = 0.0
+
+	if _encounter_rng.randf() <= chance:
 		_trigger_random_battle()
 	else:
-		_encounter_cooldown_remaining = encounter_cooldown_seconds
+		_encounter_cooldown_distance = cooldown_distance
 
 func _is_battle_active() -> bool:
 	return get_tree().root.find_child("BattleScene", true, false) != null
@@ -148,12 +286,16 @@ func _trigger_random_battle() -> void:
 
 	var context = {
 		"player_party": player_party,
-		"enemy_party": _build_stub_enemies(),
-		"ruleset": {},
-		"regen_policy": {},
-		"tone": {"intro_key": "default", "fallback_intro_key": "default"},
-		"zone_id": "yuheng_bamboo_outskirts"
+		"enemy_party": _build_enemies_from_zone(ZONE_ID, ENCOUNTER_POOLS, ENEMY_DB),
+		"ruleset": {"id": "default"},
+		"regen_policy": {"id": "round_end_mp_regen_default"},
+		"tone": {"intro_key": ZONE_CONFIG.get(ZONE_ID, {}).get("intro_key", "default")},
+		"zone_id": ZONE_ID
 	}
+
+	if context["enemy_party"].is_empty():
+		push_warning("❗ Encounter pool 產生空敵人，取消本次遭遇戰。")
+		return
 
 	GlobalState.set_meta("pending_battle_context", context)
 	var game_root = get_node_or_null("/root/GameRoot")
@@ -161,50 +303,63 @@ func _trigger_random_battle() -> void:
 		game_root.change_map_to("res://scenes/battle_scene.tscn")
 	else:
 		push_warning("❗ 找不到 GameRoot，無法切換到戰鬥場景。")
-	_encounter_cooldown_remaining = encounter_cooldown_seconds
+	_encounter_cooldown_distance = float(
+		ZONE_CONFIG.get(ZONE_ID, {}).get("cooldown_distance", 0.0)
+	)
 
-func _build_stub_enemies() -> Array:
-	var enemy_defs = [
-		{
-			"id": "enemy1",
-			"name": "語魅·陰掌",
-			"display_name": "語魅",
-			"hp": 80,
-			"max_hp": 80,
-			"mp": 20,
-			"max_mp": 20,
-			"atk": 12,
-			"def": 3,
-			"element": "遲",
-			"speed": 5,
-			"weapon_1": "掌",
-			"defending": false,
-			"defense_value": 0
-		},
-		{
-			"id": "enemy2",
-			"name": "語魅·剛拳",
-			"display_name": "語魅",
-			"hp": 95,
-			"max_hp": 95,
-			"mp": 15,
-			"max_mp": 15,
-			"atk": 14,
-			"def": 4,
-			"element": "剛",
-			"speed": 4,
-			"weapon_1": "拳",
-			"defending": false,
-			"defense_value": 0
-		}
-	]
+func _weighted_pick(pool: Array) -> Dictionary:
+	var total := 0
+	for e in pool:
+		total += int(e.get("w", 0))
+	if total <= 0:
+		return {}
 
-	var enemy_count = 1 if _encounter_rng.randf() < 0.5 else 2
+	var r = _encounter_rng.randi_range(1, total)
+	var acc := 0
+	for e in pool:
+		acc += int(e.get("w", 0))
+		if r <= acc:
+			return e
+	return pool[-1] if pool.size() > 0 else {}
+
+func _build_enemies_from_zone(
+	zone_id: String,
+	encounter_pools: Dictionary,
+	enemy_db: Dictionary
+) -> Array:
+	var pool: Array = encounter_pools.get(zone_id, [])
+	if pool.is_empty():
+		push_warning("Encounter pool empty for zone_id=%s" % zone_id)
+		return []
+
+	var picked := _weighted_pick(pool)
+	var ids: Array = picked.get("enemies", [])
 	var enemies: Array = []
-	for i in range(enemy_count):
-		enemies.append(enemy_defs[i].duplicate(true))
+
+	for enemy_id in ids:
+		var base: Dictionary = enemy_db.get(enemy_id, {})
+		if base.is_empty():
+			push_warning("Enemy not found: %s" % enemy_id)
+			continue
+		var enemy := base.duplicate(true)
+		if not enemy.has("name"):
+			enemy["name"] = enemy.get("display_name", enemy_id)
+		if not enemy.has("display_name"):
+			enemy["display_name"] = enemy.get("name")
+		if enemy.has("hp") and not enemy.has("max_hp"):
+			enemy["max_hp"] = enemy["hp"]
+		enemies.append(enemy)
 
 	return enemies
+
+func _on_danger_zone_body_entered(body: Node2D) -> void:
+	if body.name == "LiuYu":
+		in_danger_zone = true
+
+func _on_danger_zone_body_exited(body: Node2D) -> void:
+	if body.name == "LiuYu":
+		in_danger_zone = false
+		_encounter_distance_accum = 0.0
 
 func _process(delta):
 	if GlobalState.get_meta("menu_open", false):
