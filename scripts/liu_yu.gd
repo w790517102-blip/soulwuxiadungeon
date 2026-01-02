@@ -10,10 +10,21 @@ var can_move := true
 @onready var animated_sprite := $AnimatedSprite2D
 # 若角色腳底位置與 Sprite 原點不同，可調整這個偏移
 @export var z_index_offset := 0
+@export var random_encounter_enabled := false
+@export var encounter_step_threshold := 120.0
+@export var encounter_time_threshold := 2.5
+@export var encounter_roll_chance := 0.25
+@export var encounter_cooldown_seconds := 3.0
+
+var _encounter_step_progress := 0.0
+var _encounter_time_progress := 0.0
+var _encounter_cooldown_remaining := 0.0
+var _encounter_rng := RandomNumberGenerator.new()
 
 func _ready():
 	last_direction = GlobalState.last_facing_direction
 	animated_sprite.play(get_idle_anim_name(last_direction))
+	_encounter_rng.randomize()
 
 # ✅ 修正劉語塵在市集觀察事件中，未與NPC對話時 idle 方向過快復原的情況
 # 👉 方法：我們在觀察階段暫時停用 `_physics_process()` 裡自動 idle 的動畫播放邏輯
@@ -48,6 +59,7 @@ func _physics_process(delta):
 			animated_sprite.play(get_idle_anim_name(last_direction))
 
 	move_and_slide()
+	_update_random_encounter(delta)
 func get_anim_name(dir: Vector2, prefix: String) -> String:
 	return _get_anim_by_vector(dir, prefix)
 
@@ -95,6 +107,116 @@ func play_idle_direction(direction_name: String):
 # ✅ 加一個讓外部事件在結束時恢復正常 idle 控制的函式
 func restore_idle_control():
 	override_idle_animation = false
+
+func _update_random_encounter(delta: float) -> void:
+	if not random_encounter_enabled:
+		return
+	if _is_battle_active():
+		return
+	if _encounter_cooldown_remaining > 0.0:
+		_encounter_cooldown_remaining = max(_encounter_cooldown_remaining - delta, 0.0)
+		return
+	if direction == Vector2.ZERO:
+		return
+
+	if encounter_step_threshold > 0.0:
+		_encounter_step_progress += velocity.length() * delta
+	if encounter_time_threshold > 0.0:
+		_encounter_time_progress += delta
+
+	var step_ready = encounter_step_threshold > 0.0 and _encounter_step_progress >= encounter_step_threshold
+	var time_ready = encounter_time_threshold > 0.0 and _encounter_time_progress >= encounter_time_threshold
+	if not step_ready and not time_ready:
+		return
+
+	_encounter_step_progress = 0.0
+	_encounter_time_progress = 0.0
+
+	if _encounter_rng.randf() <= encounter_roll_chance:
+		_trigger_random_battle()
+	else:
+		_encounter_cooldown_remaining = encounter_cooldown_seconds
+
+func _is_battle_active() -> bool:
+	return get_tree().root.get_node_or_null("BattleScene") != null
+
+func _trigger_random_battle() -> void:
+	var battle_scene = _ensure_battle_scene()
+	if battle_scene == null:
+		return
+
+	var controller = battle_scene.get_node_or_null("BattleController")
+	if controller == null:
+		push_warning("❗ BattleScene 缺少 BattleController，無法啟動戰鬥。")
+		return
+
+	var player_party = TeamData.get_active_party()
+	if player_party.is_empty():
+		push_warning("❗ 當前隊伍為空，無法啟動遭遇戰。")
+		return
+
+	var context = {
+		"player_party": player_party,
+		"enemy_party": _build_stub_enemies(),
+		"ruleset": {},
+		"regen_policy": {},
+		"tone": {"intro_key": "default", "fallback_intro_key": "default"}
+	}
+
+	controller.start_battle(context)
+	_encounter_cooldown_remaining = encounter_cooldown_seconds
+
+func _ensure_battle_scene() -> Node:
+	var existing = get_tree().root.get_node_or_null("BattleScene")
+	if existing:
+		return existing
+
+	var battle_scene = load("res://scenes/battle_scene.tscn").instantiate()
+	get_tree().root.add_child(battle_scene)
+	return battle_scene
+
+func _build_stub_enemies() -> Array:
+	var enemy_defs = [
+		{
+			"id": "enemy1",
+			"name": "語魅·陰掌",
+			"display_name": "語魅",
+			"hp": 80,
+			"max_hp": 80,
+			"mp": 20,
+			"max_mp": 20,
+			"atk": 12,
+			"def": 3,
+			"element": "遲",
+			"speed": 5,
+			"weapon_1": "掌",
+			"defending": false,
+			"defense_value": 0
+		},
+		{
+			"id": "enemy2",
+			"name": "語魅·剛拳",
+			"display_name": "語魅",
+			"hp": 95,
+			"max_hp": 95,
+			"mp": 15,
+			"max_mp": 15,
+			"atk": 14,
+			"def": 4,
+			"element": "剛",
+			"speed": 4,
+			"weapon_1": "拳",
+			"defending": false,
+			"defense_value": 0
+		}
+	]
+
+	var enemy_count = 1 if _encounter_rng.randf() < 0.5 else 2
+	var enemies: Array = []
+	for i in range(enemy_count):
+		enemies.append(enemy_defs[i].duplicate(true))
+
+	return enemies
 
 func _process(delta):
 	if GlobalState.get_meta("menu_open", false):
