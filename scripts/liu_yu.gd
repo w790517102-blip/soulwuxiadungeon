@@ -11,8 +11,6 @@ var can_move := true
 # 若角色腳底位置與 Sprite 原點不同，可調整這個偏移
 @export var z_index_offset := 0
 @export var random_encounter_enabled := false
-
-const ZONE_ID := "yuheng_bamboo_outskirts"
 const ZONE_CONFIG := {
 	"yuheng_bamboo_outskirts": {
 		"distance_threshold": 280.0,
@@ -148,6 +146,8 @@ const ENCOUNTER_POOLS := {
 }
 
 var in_danger_zone := false
+var current_zone_id := ""
+var _zone_overrides := {}
 var _encounter_distance_accum := 0.0
 var _encounter_cooldown_distance := 0.0
 var _encounter_rng := RandomNumberGenerator.new()
@@ -247,13 +247,15 @@ func _update_random_encounter(delta: float) -> void:
 	if not in_danger_zone:
 		_encounter_distance_accum = 0.0
 		return
+	if current_zone_id == "":
+		return
 	if direction == Vector2.ZERO:
 		return
 
-	var config = ZONE_CONFIG.get(ZONE_ID, {})
-	var distance_threshold = float(config.get("distance_threshold", 0.0))
-	var cooldown_distance = float(config.get("cooldown_distance", 0.0))
-	var chance = float(config.get("chance", 0.0))
+	var config = ZONE_CONFIG.get(current_zone_id, {})
+	var distance_threshold = _resolve_zone_value(config, "distance_threshold", 0.0)
+	var cooldown_distance = _resolve_zone_value(config, "cooldown_distance", 0.0)
+	var chance = _resolve_zone_value(config, "chance", 0.0)
 
 	if _encounter_cooldown_distance > 0.0:
 		_encounter_cooldown_distance = max(
@@ -286,11 +288,11 @@ func _trigger_random_battle() -> void:
 
 	var context = {
 		"player_party": player_party,
-		"enemy_party": _build_enemies_from_zone(ZONE_ID, ENCOUNTER_POOLS, ENEMY_DB),
+		"enemy_party": _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS, ENEMY_DB),
 		"ruleset": {"id": "default"},
 		"regen_policy": {"id": "round_end_mp_regen_default"},
-		"tone": {"intro_key": ZONE_CONFIG.get(ZONE_ID, {}).get("intro_key", "default")},
-		"zone_id": ZONE_ID
+		"tone": {"intro_key": _resolve_zone_intro_key()},
+		"zone_id": current_zone_id
 	}
 
 	if context["enemy_party"].is_empty():
@@ -303,8 +305,10 @@ func _trigger_random_battle() -> void:
 		game_root.change_map_to("res://scenes/battle_scene.tscn")
 	else:
 		push_warning("❗ 找不到 GameRoot，無法切換到戰鬥場景。")
-	_encounter_cooldown_distance = float(
-		ZONE_CONFIG.get(ZONE_ID, {}).get("cooldown_distance", 0.0)
+	_encounter_cooldown_distance = _resolve_zone_value(
+		ZONE_CONFIG.get(current_zone_id, {}),
+		"cooldown_distance",
+		0.0
 	)
 
 func _weighted_pick(pool: Array) -> Dictionary:
@@ -352,14 +356,35 @@ func _build_enemies_from_zone(
 
 	return enemies
 
-func _on_danger_zone_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
-		in_danger_zone = true
+func enter_danger_zone(zone_id: String, overrides: Dictionary = {}) -> void:
+	current_zone_id = zone_id
+	_zone_overrides = overrides
+	in_danger_zone = true
 
-func _on_danger_zone_body_exited(body: Node2D) -> void:
-	if body.name == "LiuYu":
+func exit_danger_zone(zone_id: String) -> void:
+	if zone_id == current_zone_id:
 		in_danger_zone = false
+		current_zone_id = ""
+		_zone_overrides = {}
 		_encounter_distance_accum = 0.0
+
+func reset_encounter_state() -> void:
+	in_danger_zone = false
+	current_zone_id = ""
+	_zone_overrides = {}
+	_encounter_distance_accum = 0.0
+	_encounter_cooldown_distance = 0.0
+
+func _resolve_zone_value(config: Dictionary, key: String, fallback: float) -> float:
+	if _zone_overrides.has(key):
+		return float(_zone_overrides[key])
+	return float(config.get(key, fallback))
+
+func _resolve_zone_intro_key() -> String:
+	if _zone_overrides.has("intro_key"):
+		return str(_zone_overrides["intro_key"])
+	var config = ZONE_CONFIG.get(current_zone_id, {})
+	return str(config.get("intro_key", "default"))
 
 func _process(delta):
 	if GlobalState.get_meta("menu_open", false):
