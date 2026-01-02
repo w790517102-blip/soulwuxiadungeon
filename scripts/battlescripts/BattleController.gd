@@ -24,7 +24,7 @@ var regen_policy: Dictionary = {}
 @onready var victory_handler = $VictoryHandler
 @onready var skill_executor = $SkillExecutor
 @onready var item_dispatcher: ItemEffectDispatcher = ItemEffectDispatcher.new()
-@onready var team_data_manager = get_node("/root/BattleScene/TeamDataManager")
+@onready var team_data_manager = get_node_or_null("/root/BattleScene/TeamDataManager")
 @onready var turn_manager = $TurnManager
 @onready var enemy_ai = get_parent().get_node_or_null("EnemyAI") # 敵人 AI 掛載
 

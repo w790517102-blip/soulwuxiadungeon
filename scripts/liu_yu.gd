@@ -138,18 +138,9 @@ func _update_random_encounter(delta: float) -> void:
 		_encounter_cooldown_remaining = encounter_cooldown_seconds
 
 func _is_battle_active() -> bool:
-	return get_tree().root.get_node_or_null("BattleScene") != null
+	return get_tree().root.find_child("BattleScene", true, false) != null
 
 func _trigger_random_battle() -> void:
-	var battle_scene = _ensure_battle_scene()
-	if battle_scene == null:
-		return
-
-	var controller = battle_scene.get_node_or_null("BattleController")
-	if controller == null:
-		push_warning("❗ BattleScene 缺少 BattleController，無法啟動戰鬥。")
-		return
-
 	var player_party = TeamData.get_active_party()
 	if player_party.is_empty():
 		push_warning("❗ 當前隊伍為空，無法啟動遭遇戰。")
@@ -160,20 +151,17 @@ func _trigger_random_battle() -> void:
 		"enemy_party": _build_stub_enemies(),
 		"ruleset": {},
 		"regen_policy": {},
-		"tone": {"intro_key": "default", "fallback_intro_key": "default"}
+		"tone": {"intro_key": "default", "fallback_intro_key": "default"},
+		"zone_id": "yuheng_bamboo_outskirts"
 	}
 
-	controller.start_battle(context)
+	GlobalState.set_meta("pending_battle_context", context)
+	var game_root = get_node_or_null("/root/GameRoot")
+	if game_root:
+		game_root.change_map_to("res://scenes/battle_scene.tscn")
+	else:
+		push_warning("❗ 找不到 GameRoot，無法切換到戰鬥場景。")
 	_encounter_cooldown_remaining = encounter_cooldown_seconds
-
-func _ensure_battle_scene() -> Node:
-	var existing = get_tree().root.get_node_or_null("BattleScene")
-	if existing:
-		return existing
-
-	var battle_scene = load("res://scenes/battle_scene.tscn").instantiate()
-	get_tree().root.add_child(battle_scene)
-	return battle_scene
 
 func _build_stub_enemies() -> Array:
 	var enemy_defs = [

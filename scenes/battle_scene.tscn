@@ -1,6 +1,7 @@
 [gd_scene load_steps=73 format=3 uid="uid://bqa7bwydf6gxp"]
 
 [ext_resource type="Script" uid="uid://cmsitrldg0lw6" path="res://scripts/battlescripts/BattleController.gd" id="1_idkgt"]
+[ext_resource type="Script" uid="uid://c2rp4v2dmdgsk" path="res://scripts/battlescripts/BattleScene.gd" id="1_xr8tn"]
 [ext_resource type="Script" uid="uid://jco5aqxhv8fi" path="res://scripts/battlescripts/BattleUI.gd" id="2_kinr6"]
 [ext_resource type="Script" uid="uid://1mjd56d38eyw" path="res://scripts/battlescripts/SkillExecutor.gd" id="2_rca61"]
 [ext_resource type="Script" uid="uid://cu05s38f3jiwv" path="res://scripts/battlescripts/TurnManager.gd" id="2_svpld"]
@@ -349,6 +350,7 @@ bg_color = Color(0.376471, 0.0627451, 0.0627451, 1)
 bg_color = Color(0.690196, 0, 0.0627451, 1)
 
 [node name="BattleScene" type="Node"]
+script = ExtResource("1_xr8tn")
 
 [node name="BattleController" type="Node" parent="."]
 script = ExtResource("1_idkgt")
