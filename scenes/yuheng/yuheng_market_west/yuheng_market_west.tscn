@@ -1,4 +1,4 @@
-[gd_scene load_steps=50 format=4 uid="uid://cyo3rlydptuyd"]
+[gd_scene load_steps=51 format=4 uid="uid://cyo3rlydptuyd"]
 
 [ext_resource type="Script" uid="uid://bbjx0j5r5rtiw" path="res://scripts/yuheng/yuheng_marekt_west/yuheng_market_west.gd" id="1_dplkc"]
 [ext_resource type="Texture2D" uid="uid://bmm72ajjeumc3" path="res://assets/background/Yuheng_Town/yuheng_market_west/yuheng_market_west.jpg" id="2_gvwd1"]
@@ -6331,6 +6331,9 @@ size = Vector2(74.2808, 81.4321)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_5iwka"]
 size = Vector2(154, 60.335)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_f0n1g"]
+size = Vector2(135, 277.833)
+
 [node name="yuheng_market_west" type="Node2D"]
 position = Vector2(0, 462.665)
 script = ExtResource("1_dplkc")
@@ -6394,6 +6397,9 @@ position = Vector2(275.01, 340.6)
 
 [node name="from_Bai_Jian_Jue" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-178.38, 139.345)
+
+[node name="from_Bamboo_Grove_Suburb" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-650, 188.815)
 
 [node name="NPC" type="Node2D" parent="."]
 
@@ -6634,7 +6640,14 @@ rotation = 0.315905
 skew = -0.347321
 shape = SubResource("RectangleShape2D_5iwka")
 
+[node name="to_Bamboo_Grove_Suburb" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="to_Bamboo_Grove_Suburb"]
+position = Vector2(-812, 189.419)
+shape = SubResource("RectangleShape2D_f0n1g")
+
 [connection signal="body_entered" from="to_yuheng_market_east" to="." method="_on_to_yuheng_market_east_body_entered"]
 [connection signal="body_entered" from="to_yuheng_weapon_shop" to="." method="_on_to_yuheng_weapon_shop_body_entered"]
 [connection signal="body_entered" from="pharmacy" to="." method="_on_pharmacy_body_entered"]
 [connection signal="body_entered" from="to_Bai_Jian_Jue" to="." method="_on_to_bai_jian_jue_body_entered"]
+[connection signal="body_entered" from="to_Bamboo_Grove_Suburb" to="." method="_on_to_bamboo_grove_suburb_body_entered"]

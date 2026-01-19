@@ -30,7 +30,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 				return false
 
 			if has_existing:
-				var data := effects[effect_id]
+				var data = effects[effect_id]
 				data["payload"] = {"speed_delta": delta}
 				data["turns_left"] = turns
 				effects[effect_id] = data
@@ -47,7 +47,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 				return false
 
 			if has_existing:
-				var data2 := effects[effect_id]
+				var data2 = effects[effect_id]
 				data2["payload"] = {"slow_delta": slow_delta}
 				data2["turns_left"] = turns
 				effects[effect_id] = data2
@@ -68,7 +68,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 				effects = target.get("status_effects", {})
 				target["status_effects"] = effects
 
-			var prev_element := target.get("element", "")
+			var prev_element = target.get("element", "")
 			target["element"] = new_element
 
 			effects[effect_id] = {
@@ -130,7 +130,7 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 
 func _recalc_speed(target: Dictionary) -> void:
 	var base := int(target.get("base_speed", target.get("speed", 0)))
-	var effects := target.get("status_effects", {})
+	var effects = target.get("status_effects", {})
 	var buff := 0
 	var debuff := 0
 

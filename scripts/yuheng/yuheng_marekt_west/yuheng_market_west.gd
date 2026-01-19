@@ -1,5 +1,6 @@
 extends Node2D
 
+@export var Bamboo_Grove_Suburb: String = "res://scenes/yuheng/Bamboo_Grove_Suburb/Bamboo_Grove_Suburb.tscn"
 @export var Bai_Jian_Jue: String = "res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/bai_jian_jue.tscn"
 @export var yuheng_pharmacy: String = "res://scenes/yuheng/yuheng_market_west/yuheng_pharmacy/yuheng_pharmacy.tscn"
 @export var yuheng_market_east: String = "res://scenes/yuheng/yuheng_market_east/yuheng_market_east.tscn"
@@ -72,3 +73,14 @@ func _on_to_bai_jian_jue_body_entered(body: Node2D) -> void:
 		await tween.finished
 		get_node("/root/GameRoot").spawn_point_name = "from_yuheng_market_west"
 		get_node("/root/GameRoot").change_map_to(Bai_Jian_Jue)
+
+
+func _on_to_bamboo_grove_suburb_body_entered(body: Node2D) -> void:
+	if body.name == "LiuYu":
+		overlay.visible = true
+		overlay.modulate.a = 0.0
+		var tween = overlay.create_tween()
+		tween.tween_property(overlay, "modulate:a", 1.0, 0.5)
+		await tween.finished
+		get_node("/root/GameRoot").spawn_point_name = "from_yuheng_market_west"
+		get_node("/root/GameRoot").change_map_to(Bamboo_Grove_Suburb)

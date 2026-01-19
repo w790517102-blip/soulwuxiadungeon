@@ -1,0 +1,122 @@
+[gd_scene load_steps=15 format=3 uid="uid://b07w42x7gu0q7"]
+
+[ext_resource type="Texture2D" uid="uid://b5h2vhqmme2mv" path="res://assets/sprites/NPC/Yuheng/Yuheng_Grandma_3.png" id="1_7tgbp"]
+[ext_resource type="Texture2D" uid="uid://7gsu5vc8ueqj" path="res://assets/sprites/NPC/Yuheng/Yuheng_Grandma_1.png" id="2_lwx4e"]
+[ext_resource type="Texture2D" uid="uid://cfkclkep84ymh" path="res://assets/sprites/NPC/Yuheng/Yuheng_Grandma_2.png" id="3_aos5i"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7tgbp"]
+atlas = ExtResource("1_7tgbp")
+region = Rect2(241, 171, 173, 157)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lwx4e"]
+atlas = ExtResource("1_7tgbp")
+region = Rect2(231, 11, 177, 151)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kgsrd"]
+atlas = ExtResource("2_lwx4e")
+region = Rect2(475, 157, 153, 137)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aos5i"]
+atlas = ExtResource("1_7tgbp")
+region = Rect2(37, 176, 177, 152)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5a8ii"]
+atlas = ExtResource("1_7tgbp")
+region = Rect2(37, 6, 177, 151)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_l5arp"]
+atlas = ExtResource("3_aos5i")
+region = Rect2(344, 162, 137, 138)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sshur"]
+atlas = ExtResource("3_aos5i")
+region = Rect2(481, 162, 137, 138)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hmpbf"]
+atlas = ExtResource("2_lwx4e")
+region = Rect2(464, 29, 162, 137)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_t5ro2"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7tgbp")
+}],
+"loop": true,
+"name": &"anger",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lwx4e")
+}],
+"loop": true,
+"name": &"bye",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kgsrd")
+}],
+"loop": true,
+"name": &"confuse",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_aos5i")
+}],
+"loop": true,
+"name": &"embarrassed",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5a8ii")
+}],
+"loop": true,
+"name": &"shout",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_l5arp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sshur")
+}],
+"loop": true,
+"name": &"sleep",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hmpbf")
+}],
+"loop": true,
+"name": &"wake_up",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dv4db"]
+size = Vector2(101, 23)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gsb5f"]
+size = Vector2(180, 98)
+
+[node name="Yuheng_GrandMa" type="CharacterBody2D"]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_t5ro2")
+animation = &"sleep"
+frame_progress = 0.949058
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(1.5, 40.5)
+shape = SubResource("RectangleShape2D_dv4db")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(-22, 57)
+shape = SubResource("RectangleShape2D_gsb5f")

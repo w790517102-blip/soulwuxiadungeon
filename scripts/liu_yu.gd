@@ -10,7 +10,7 @@ var can_move := true
 @onready var animated_sprite := $AnimatedSprite2D
 # 若角色腳底位置與 Sprite 原點不同，可調整這個偏移
 @export var z_index_offset := 0
-@export var random_encounter_enabled := false
+@export var random_encounter_enabled := true
 const ZONE_CONFIG := {
 	"yuheng_bamboo_outskirts": {
 		"distance_threshold": 280.0,
