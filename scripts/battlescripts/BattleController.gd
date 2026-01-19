@@ -43,8 +43,12 @@ func _init_battle_safe() -> void:
 	else:
 		push_error("❌ 無法找到 CharacterDataManager")
 
-	if root.has_node("BattleUI"):
-		battle_ui = root.get_node("BattleUI")
+	var battle_ui_node = root.get_node_or_null("BattleUILayer/BattleUI")
+	if battle_ui_node == null:
+		battle_ui_node = root.get_node_or_null("BattleUI")
+
+	if battle_ui_node != null:
+		battle_ui = battle_ui_node
 		battle_ui.character_skill_db = skill_db
 		battle_ui.combat_controller = self
 		battle_ui.player_action_complete.connect(_on_player_action_complete)
