@@ -24,7 +24,7 @@ var regen_policy: Dictionary = {}
 @onready var victory_handler = $VictoryHandler
 @onready var skill_executor = $SkillExecutor
 @onready var item_dispatcher: ItemEffectDispatcher = ItemEffectDispatcher.new()
-@onready var team_data_manager = get_node("/root/BattleScene/TeamDataManager")
+@onready var team_data_manager = get_node_or_null("/root/BattleScene/TeamDataManager")
 @onready var turn_manager = $TurnManager
 @onready var enemy_ai = get_parent().get_node_or_null("EnemyAI") # 敵人 AI 掛載
 
@@ -108,10 +108,6 @@ func start_battle(context: Dictionary) -> void:
 	last_round_logged = -1
 	last_round_regen = -1
 
-	turn_manager.turn_started.connect(_on_turn_started)
-	turn_manager.turn_ended.connect(_on_turn_ended)
-	turn_manager.round_started.connect(_on_round_started)
-	turn_manager.round_ended.connect(_on_round_ended)
 	turn_manager.start_battle(player_party, enemy_party)
 
 func _play_battle_intro(context: Dictionary) -> void:
@@ -239,8 +235,8 @@ func _restore_mp_after_round() -> void:
 		if hp <= 0:
 			continue
 
-var new_mp = _calc_round_mp_regen(a, regen_policy, battle_context)
-a["mp"] = new_mp
+		var new_mp = _calc_round_mp_regen(a, regen_policy, battle_context)
+		a["mp"] = new_mp
 		_update_ui_for_actor(a)
 
 	if battle_ui:

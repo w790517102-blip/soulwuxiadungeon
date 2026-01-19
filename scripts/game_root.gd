@@ -24,6 +24,9 @@ func change_map_to(path: String):
 	else:
 		push_warning("Spawn point '%s' not found in %s" % [spawn_point_name, path])
 
+	if $LiuYu.has_method("reset_encounter_state"):
+		$LiuYu.reset_encounter_state()
+
 	# 清除為下一次準備
 	spawn_point_name = "default"
 
