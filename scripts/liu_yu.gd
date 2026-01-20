@@ -394,6 +394,7 @@ func reset_encounter_state() -> void:
 	_encounter_distance_accum = 0.0
 	_encounter_cooldown_distance = 0.0
 	_encounter_paused = false
+	_restore_idle_animation()
 
 func set_encounter_paused(paused: bool) -> void:
 	_encounter_paused = paused
@@ -402,9 +403,28 @@ func set_encounter_cooldown(distance: float) -> void:
 	_encounter_cooldown_distance = max(distance, 0.0)
 
 func _pause_for_battle() -> void:
+	lock_for_battle()
+
+func lock_for_battle() -> void:
 	can_move = false
 	velocity = Vector2.ZERO
 	_encounter_paused = true
+	visible = false
+	if animated_sprite:
+		animated_sprite.stop()
+
+func restore_after_battle() -> void:
+	visible = true
+	can_move = true
+	velocity = Vector2.ZERO
+	_encounter_paused = false
+	_restore_idle_animation()
+
+func _restore_idle_animation() -> void:
+	override_idle_animation = false
+	if animated_sprite:
+		animated_sprite.frame = 0
+		animated_sprite.play(get_idle_anim_name(last_direction))
 
 func _resolve_zone_value(config: Dictionary, key: String, fallback: float) -> float:
 	if _zone_overrides.has(key):

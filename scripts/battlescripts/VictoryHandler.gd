@@ -43,12 +43,12 @@ func _return_to_map(result: String) -> void:
 	var liuyu = game_root.get_node_or_null("LiuYu")
 	if liuyu:
 		liuyu.global_position = return_pos
-		if liuyu.has_method("set_encounter_paused"):
-			liuyu.set_encounter_paused(false)
+		if liuyu.has_method("restore_after_battle"):
+			liuyu.restore_after_battle()
+		elif "can_move" in liuyu:
+			liuyu.can_move = true
 		if liuyu.has_method("set_encounter_cooldown"):
 			liuyu.set_encounter_cooldown(cooldown_distance)
-		if "can_move" in liuyu:
-			liuyu.can_move = true
 	else:
 		push_warning("❗ 無法回到地圖：找不到 LiuYu。")
 
