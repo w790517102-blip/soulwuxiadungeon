@@ -39,16 +39,21 @@ func _return_to_map(result: String) -> void:
 
 	await game_root.change_map_to(return_path)
 	await get_tree().process_frame
+	await get_tree().process_frame
 
 	var liuyu = game_root.get_node_or_null("LiuYu")
 	if liuyu:
 		liuyu.global_position = return_pos
-		if liuyu.has_method("restore_after_battle"):
+		if liuyu.has_method("battle_restore"):
+			liuyu.battle_restore()
+		elif liuyu.has_method("restore_after_battle"):
 			liuyu.restore_after_battle()
 		elif "can_move" in liuyu:
 			liuyu.can_move = true
+			liuyu.visible = true
 		if liuyu.has_method("set_encounter_cooldown"):
 			liuyu.set_encounter_cooldown(cooldown_distance)
+		print("[VictoryReturn] liuyu=", liuyu, " visible=", liuyu.visible, " can_move=", liuyu.can_move)
 	else:
 		push_warning("❗ 無法回到地圖：找不到 LiuYu。")
 

@@ -426,6 +426,15 @@ func _restore_idle_animation() -> void:
 		animated_sprite.frame = 0
 		animated_sprite.play(get_idle_anim_name(last_direction))
 
+func battle_restore() -> void:
+	visible = true
+	can_move = true
+	velocity = Vector2.ZERO
+	_encounter_paused = false
+	set_process_input(true)
+	set_physics_process(true)
+	_restore_idle_animation()
+
 func _resolve_zone_value(config: Dictionary, key: String, fallback: float) -> float:
 	if _zone_overrides.has(key):
 		return float(_zone_overrides[key])
