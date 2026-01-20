@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://b4cc072wxnf5v" path="res://scripts/battlescripts/CharacterSkill.gd" id="5_pxwbd"]
 [ext_resource type="Script" uid="uid://c747gfhv5jsun" path="res://scripts/battlescripts/TargetSelectPopup.gd" id="5_ti0og"]
 [ext_resource type="Script" uid="uid://di1n4fdr4eftg" path="res://scripts/battlescripts/TeamMateSlot.gd" id="5_yt3ua"]
+[ext_resource type="Script" uid="uid://csns442ydm1k0" path="res://scripts/battlescripts/VictoryHandler.gd" id="6_6yp1m"]
 [ext_resource type="Texture2D" uid="uid://dxcg3vsxgdjd0" path="res://assets/fx/fx_slash_sword.png" id="6_3xrod"]
 [ext_resource type="Texture2D" uid="uid://bnv5xrl8ffdkf" path="res://assets/fx/fx_brush_stroke.png" id="6_7mjbx"]
 [ext_resource type="Texture2D" uid="uid://blrewhf5lp55i" path="res://assets/fx/123.png" id="6_jrwob"]
@@ -367,6 +368,7 @@ script = ExtResource("2_svpld")
 [node name="InventorySync" type="Node" parent="BattleController"]
 
 [node name="VictoryHandler" type="Node" parent="BattleController"]
+script = ExtResource("6_6yp1m")
 
 [node name="SkillExecutor" type="Node" parent="BattleController"]
 script = ExtResource("2_rca61")

@@ -151,6 +151,7 @@ var _zone_overrides := {}
 var _encounter_distance_accum := 0.0
 var _encounter_cooldown_distance := 0.0
 var _encounter_rng := RandomNumberGenerator.new()
+var _encounter_paused := false
 
 func _ready():
 	last_direction = GlobalState.last_facing_direction
@@ -242,6 +243,8 @@ func restore_idle_control():
 func _update_random_encounter(delta: float) -> void:
 	if not random_encounter_enabled:
 		return
+	if _encounter_paused:
+		return
 	if _is_battle_active():
 		return
 	if not in_danger_zone:
@@ -299,9 +302,25 @@ func _trigger_random_battle() -> void:
 		push_warning("❗ Encounter pool 產生空敵人，取消本次遭遇戰。")
 		return
 
-	GlobalState.set_meta("pending_battle_context", context)
 	var game_root = get_node_or_null("/root/GameRoot")
 	if game_root:
+		var current_scene = game_root.get_node_or_null("CurrentScene")
+		var current_map = ""
+		if current_scene and current_scene.get_child_count() > 0:
+			current_map = current_scene.get_child(0).scene_file_path
+		if current_map != "":
+			GlobalState.set_meta("return_map_path", current_map)
+		GlobalState.set_meta("return_player_pos", global_position)
+
+	GlobalState.set_meta("pending_battle_context", context)
+	if game_root:
+		_pause_for_battle()
+		var cooldown_distance = _resolve_zone_value(
+			ZONE_CONFIG.get(current_zone_id, {}),
+			"cooldown_distance",
+			0.0
+		)
+		GlobalState.set_meta("return_encounter_cooldown", cooldown_distance)
 		game_root.change_map_to("res://scenes/battle_scene.tscn")
 	else:
 		push_warning("❗ 找不到 GameRoot，無法切換到戰鬥場景。")
@@ -374,6 +393,18 @@ func reset_encounter_state() -> void:
 	_zone_overrides = {}
 	_encounter_distance_accum = 0.0
 	_encounter_cooldown_distance = 0.0
+	_encounter_paused = false
+
+func set_encounter_paused(paused: bool) -> void:
+	_encounter_paused = paused
+
+func set_encounter_cooldown(distance: float) -> void:
+	_encounter_cooldown_distance = max(distance, 0.0)
+
+func _pause_for_battle() -> void:
+	can_move = false
+	velocity = Vector2.ZERO
+	_encounter_paused = true
 
 func _resolve_zone_value(config: Dictionary, key: String, fallback: float) -> float:
 	if _zone_overrides.has(key):
