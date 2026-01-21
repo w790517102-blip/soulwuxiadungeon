@@ -29,6 +29,10 @@ var regen_policy: Dictionary = {}
 @onready var enemy_ai = get_parent().get_node_or_null("EnemyAI") # 敵人 AI 掛載
 
 func _ready() -> void:
+	if victory_handler == null:
+		push_error("❌ VictoryHandler missing in battle scene!")
+	else:
+		print("[BattleController] VictoryHandler=", victory_handler)
 	call_deferred("_init_battle_safe")
 
 
