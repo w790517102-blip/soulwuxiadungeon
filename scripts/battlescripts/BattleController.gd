@@ -318,10 +318,16 @@ func safe_end_turn() -> void:
 func check_battle_status() -> void:
 	if player_party.all(func(p): return p["hp"] <= 0):
 		battle_finished = true
-		victory_handler.defeat()
+		if victory_handler:
+			victory_handler.defeat()
+		else:
+			push_error("❌ VictoryHandler 缺失，無法處理戰敗返回流程。")
 	elif enemy_party.all(func(e): return e["hp"] <= 0):
 		battle_finished = true
-		victory_handler.victory()
+		if victory_handler:
+			victory_handler.victory()
+		else:
+			push_error("❌ VictoryHandler 缺失，無法處理戰勝返回流程。")
 
 
 func _maybe_end_turn() -> void:

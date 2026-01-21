@@ -2,10 +2,15 @@ extends Node
 
 var _returning := false
 
+func _ready() -> void:
+	print("[VictoryHandler] ready")
+
 func victory() -> void:
+	print("[VictoryHandler] victory called")
 	_return_to_map("victory")
 
 func defeat() -> void:
+	print("[VictoryHandler] defeat called")
 	_return_to_map("defeat")
 
 func _return_to_map(result: String) -> void:
@@ -31,6 +36,7 @@ func _return_to_map(result: String) -> void:
 	if game_root == null:
 		push_warning("❗ 無法回到地圖：找不到 GameRoot。")
 		return
+	print("[VictoryReturn] change_map_to=", return_path, " pos=", return_pos)
 
 	var cooldown_distance := 0.0
 	if GlobalState.has_meta("return_encounter_cooldown"):
