@@ -320,14 +320,26 @@ func safe_end_turn() -> void:
 
 
 func check_battle_status() -> void:
+	if battle_finished:
+		return
 	if player_party.all(func(p): return p["hp"] <= 0):
 		battle_finished = true
+		set_process(false)
+		if turn_manager:
+			turn_manager.set_process(false)
+		if battle_ui:
+			battle_ui.set_process(false)
 		if victory_handler:
 			victory_handler.defeat()
 		else:
 			push_error("❌ VictoryHandler 缺失，無法處理戰敗返回流程。")
 	elif enemy_party.all(func(e): return e["hp"] <= 0):
 		battle_finished = true
+		set_process(false)
+		if turn_manager:
+			turn_manager.set_process(false)
+		if battle_ui:
+			battle_ui.set_process(false)
 		if victory_handler:
 			victory_handler.victory()
 		else:

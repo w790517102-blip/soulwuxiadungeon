@@ -53,6 +53,31 @@ func change_map_to(path: String):
 	else:
 		print("[Camera] 未找到 CameraBounds")
 
+	# ✅ 戰鬥回歸：在新地圖 ready 後 restore LiuYu
+	if GlobalState.get_meta("pending_battle_return", false) == true:
+		GlobalState.remove_meta("pending_battle_return")
+
+		var return_pos: Vector2 = GlobalState.get_meta("return_player_pos", $LiuYu.global_position)
+		var cooldown_distance := float(GlobalState.get_meta("return_encounter_cooldown", 0.0))
+
+		if GlobalState.has_meta("return_player_pos"):
+			GlobalState.remove_meta("return_player_pos")
+		if GlobalState.has_meta("return_encounter_cooldown"):
+			GlobalState.remove_meta("return_encounter_cooldown")
+		if GlobalState.has_meta("return_map_path"):
+			GlobalState.remove_meta("return_map_path")
+
+		await get_tree().process_frame
+		await get_tree().process_frame
+
+		$LiuYu.global_position = return_pos
+		if $LiuYu.has_method("battle_restore"):
+			$LiuYu.battle_restore()
+		if $LiuYu.has_method("set_encounter_cooldown"):
+			$LiuYu.set_encounter_cooldown(cooldown_distance)
+
+		print("[GameRoot Return] liuyu visible=", $LiuYu.visible, " can_move=", $LiuYu.get("can_move"))
+
 func play_music_by_tag(tag: String, fade_time := 1.5):
 	if tag == current_music_tag:
 		print("[音樂] music_tag 無變化（仍為：", tag, "）")
