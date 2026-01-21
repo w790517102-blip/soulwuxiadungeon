@@ -34,3 +34,7 @@ func _request_return_to_map(result: String) -> void:
 	GlobalState.set_meta("pending_battle_return", true)
 	GlobalState.set_meta("pending_battle_result", result)
 	game_root.change_map_to(return_path)
+	call_deferred("_unlock_returning")
+
+func _unlock_returning() -> void:
+	_returning = false

@@ -24,7 +24,8 @@ func change_map_to(path: String):
 	else:
 		push_warning("Spawn point '%s' not found in %s" % [spawn_point_name, path])
 
-	if $LiuYu.has_method("reset_encounter_state"):
+	var is_battle_return := GlobalState.get_meta("pending_battle_return", false) == true
+	if not is_battle_return and $LiuYu.has_method("reset_encounter_state"):
 		$LiuYu.reset_encounter_state()
 
 	# 清除為下一次準備
@@ -66,6 +67,8 @@ func change_map_to(path: String):
 			GlobalState.remove_meta("return_encounter_cooldown")
 		if GlobalState.has_meta("return_map_path"):
 			GlobalState.remove_meta("return_map_path")
+		if GlobalState.has_meta("pending_battle_result"):
+			GlobalState.remove_meta("pending_battle_result")
 
 		await get_tree().process_frame
 		await get_tree().process_frame
