@@ -131,6 +131,14 @@ func play_hit_fx_on_actor(actor: Dictionary, fx_name: String) -> void:
 		if enemy_slot and enemy_slot.has_method("play_hit_fx"):
 			enemy_slot.play_hit_fx(fx_name)
 
+func play_damage_react_multi(targets: Array) -> void:
+	for t in targets:
+		play_damage_react(t)
+
+func play_hit_fx_multi(targets: Array, fx_name: String) -> void:
+	for t in targets:
+		play_hit_fx_on_target(t, fx_name)
+
 ## 每回合開頭會重新刷新一次 UI
 func begin_turn(actor: Dictionary) -> void:
 	current_actor = actor

@@ -513,6 +513,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		var user_element: String = str(actor.get("element", ""))
 
 		var any_down = false
+		var alive_targets: Array = []
 
 		# 🌊 全場級起手描述
 		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
@@ -525,15 +526,28 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			var enemy: Dictionary = entry["enemy"]
 			enemy["hp"] = entry["after_hp"]
 			_update_ui_for_actor(enemy)
+			alive_targets.append(enemy)
 
-		# 💥 全體受擊動畫＋每隻各自敘事＋傷害數字
+		# 💥 全體受擊動畫（同時播放）
+		if battle_ui:
+			if battle_ui.has_method("play_hit_fx_multi"):
+				battle_ui.play_hit_fx_multi(alive_targets, "fx_hit_fist")
+			elif battle_ui.has_method("play_hit_fx_on_target"):
+				for enemy in alive_targets:
+					battle_ui.play_hit_fx_on_target(enemy, "fx_hit_fist")
+
+			if battle_ui.has_method("play_damage_react_multi"):
+				battle_ui.play_damage_react_multi(alive_targets)
+			elif battle_ui.has_method("play_damage_react"):
+				for enemy in alive_targets:
+					battle_ui.play_damage_react(enemy)
+
+		await get_tree().create_timer(0.15).timeout
+
+		# 💥 每隻各自敘事＋傷害數字
 		for entry in aoe_results:
 			var enemy: Dictionary = entry["enemy"]
 			var r: Dictionary     = entry["result"]
-
-			# 動畫：敵人抖一下（逐一播放）
-			if battle_ui and battle_ui.has_method("play_damage_react"):
-				battle_ui.play_damage_react(enemy)
 
 			var name_e: String = str(enemy.get("name", "???"))
 			var dmg_int: int = int(r.get("damage", 0))
@@ -1182,18 +1196,31 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 		enemy["hp"] = result["after_hp"]
 		_update_ui_for_actor(enemy)
 
-	# 再逐一播擊中、敘事、戰報
+	var alive_targets: Array = []
+	for entry in aoe_results:
+		alive_targets.append(entry["enemy"])
+
+	if battle_ui:
+		if battle_ui.has_method("play_hit_fx_multi"):
+			battle_ui.play_hit_fx_multi(alive_targets, "fx_hit_fist")
+		elif battle_ui.has_method("play_hit_fx_on_target"):
+			for enemy in alive_targets:
+				battle_ui.play_hit_fx_on_target(enemy, "fx_hit_fist")
+
+		if battle_ui.has_method("play_damage_react_multi"):
+			battle_ui.play_damage_react_multi(alive_targets)
+		elif battle_ui.has_method("play_damage_react"):
+			for enemy in alive_targets:
+				battle_ui.play_damage_react(enemy)
+
+	await get_tree().create_timer(0.15).timeout
+
+	# 再逐一敘事、戰報
 	for entry in aoe_results:
 		var enemy: Dictionary = entry["enemy"]
 		var result: Dictionary = entry["result"]
 		var tname = str(enemy.get("name", "???"))
 		var tid = str(enemy.get("id", ""))
-
-		if battle_ui:
-			if battle_ui.has_method("play_hit_fx_on_target"):
-				battle_ui.play_hit_fx_on_target(enemy, "fx_hit_fist")
-			if battle_ui.has_method("play_damage_react"):
-				battle_ui.play_damage_react(enemy)
 
 		if tone_map != null:
 			var suffer_line = tone_map.get_tone_text("item_suffer", "bomb_aoe", tid)
