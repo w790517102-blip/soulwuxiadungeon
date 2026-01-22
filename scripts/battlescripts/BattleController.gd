@@ -479,8 +479,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		var actor_name: String = str(actor.get("name", "???"))
 
-		# 先把每個敵人的結果算好
-		var aoe_results: Array = []  # [ { "enemy": enemy_dict, "result": result_dict }, ... ]
+		# 先把每個敵人的結果算好（不直接改本體）
+		var aoe_results: Array = []  # [ { "enemy": enemy_dict, "result": result_dict, "after_hp": int }, ... ]
 
 		for enemy in enemy_party:
 			if typeof(enemy) != TYPE_DICTIONARY:
@@ -488,10 +488,14 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			if int(enemy.get("hp", 0)) <= 0:
 				continue
 
-			var r: Dictionary = skill_executor.execute(actor, enemy, skill_data, inner_force)
+			var enemy_copy: Dictionary = enemy.duplicate(true)
+			var before_hp: int = int(enemy.get("hp", 0))
+			var r: Dictionary = skill_executor.execute(actor, enemy_copy, skill_data, inner_force)
+			var after_hp: int = max(before_hp - int(r.get("damage", 0)), 0)
 			aoe_results.append({
 				"enemy": enemy,
-				"result": r
+				"result": r,
+				"after_hp": after_hp
 			})
 
 		# 🎬 出手動畫只播一次
@@ -516,16 +520,20 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			display_skill_name
 		])
 
+		# 先同步寫回傷害結果
+		for entry in aoe_results:
+			var enemy: Dictionary = entry["enemy"]
+			enemy["hp"] = entry["after_hp"]
+			_update_ui_for_actor(enemy)
+
 		# 💥 全體受擊動畫＋每隻各自敘事＋傷害數字
 		for entry in aoe_results:
 			var enemy: Dictionary = entry["enemy"]
 			var r: Dictionary     = entry["result"]
 
-			# 動畫：敵人抖一下（幾乎同時）
+			# 動畫：敵人抖一下（逐一播放）
 			if battle_ui and battle_ui.has_method("play_damage_react"):
 				battle_ui.play_damage_react(enemy)
-
-			_update_ui_for_actor(enemy)
 
 			var name_e: String = str(enemy.get("name", "???"))
 			var dmg_int: int = int(r.get("damage", 0))
@@ -1105,6 +1113,25 @@ func _apply_bomb_damage_to_target(
 
 	_update_ui_for_actor(target)
 
+func _calculate_bomb_damage(target: Dictionary, item: Dictionary) -> Dictionary:
+	var power: int = int(item.get("amount", 0))
+	if power <= 0:
+		var warn_item_id = str(item.get("id", "unknown_item"))
+		push_warning("⚠️ 炸彈道具 %s 的 amount <= 0，沒有造成傷害。" % warn_item_id)
+		_log("WARN: item missing amount: %s" % warn_item_id)
+		return {}
+
+	var before_hp: int = int(target.get("hp", 0))
+	if before_hp <= 0:
+		return {}
+
+	var after_hp: int = max(before_hp - power, 0)
+	return {
+		"before_hp": before_hp,
+		"after_hp": after_hp,
+		"damage": before_hp - after_hp
+	}
+
 
 # 單體霹靂彈：打指定 target，沒選就打第一隻敵人
 func _apply_bomb_single(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
@@ -1133,14 +1160,52 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 		if use_line != "":
 			_log(use_line)
 
-	# 對每一隻活著的敵人套固定傷害
+	var aoe_results: Array = [] # [ { "enemy": Dictionary, "result": Dictionary } ]
 	for enemy in enemy_party:
 		if typeof(enemy) != TYPE_DICTIONARY:
 			continue
 		if int(enemy.get("hp", 0)) <= 0:
 			continue
 
-		_apply_bomb_damage_to_target(user, item, enemy, "bomb_aoe")
+		var result = _calculate_bomb_damage(enemy, item)
+		if result.is_empty():
+			continue
+		aoe_results.append({
+			"enemy": enemy,
+			"result": result
+		})
+
+	# 先同步寫回傷害
+	for entry in aoe_results:
+		var enemy: Dictionary = entry["enemy"]
+		var result: Dictionary = entry["result"]
+		enemy["hp"] = result["after_hp"]
+		_update_ui_for_actor(enemy)
+
+	# 再逐一播擊中、敘事、戰報
+	for entry in aoe_results:
+		var enemy: Dictionary = entry["enemy"]
+		var result: Dictionary = entry["result"]
+		var tname = str(enemy.get("name", "???"))
+		var tid = str(enemy.get("id", ""))
+
+		if battle_ui:
+			if battle_ui.has_method("play_hit_fx_on_target"):
+				battle_ui.play_hit_fx_on_target(enemy, "fx_hit_fist")
+			if battle_ui.has_method("play_damage_react"):
+				battle_ui.play_damage_react(enemy)
+
+		if tone_map != null:
+			var suffer_line = tone_map.get_tone_text("item_suffer", "bomb_aoe", tid)
+			if suffer_line != "":
+				_log(suffer_line)
+
+		var dmg_str = "[color=#ffd447]%d[/color]" % int(result["damage"])
+		_log("%s 受到 %s 點傷害。" % [tname, dmg_str])
+
+		if int(result["after_hp"]) <= 0:
+			enemy["is_dead"] = true
+			_log("%s 倒下了，已無力再戰。" % tname)
 
 
 
