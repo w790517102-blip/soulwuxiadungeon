@@ -148,10 +148,10 @@ func begin_turn(actor: Dictionary) -> void:
 
 	update_ally_panel()
 	update_enemy_panel()
-	
-		# ⭐ 新增：更新回合高亮
+
+	# ⭐ 新增：更新回合高亮
 	_update_turn_highlight()
-	
+
 	hide_all_popups()
 	action_panel.show()
 	on_action_selection = true

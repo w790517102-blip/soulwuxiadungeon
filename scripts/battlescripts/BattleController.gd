@@ -555,7 +555,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			# ▶ 狀態旗標
 			var target_element: String = str(enemy.get("element", ""))
 			var is_crit: bool  = bool(r.get("crit", false))
-			var is_down: bool  = bool(r.get("target_down", false))
+			var after_hp_now: int = int(enemy.get("hp", 0))
+			var is_down: bool  = after_hp_now <= 0
 
 			# 簡單算一下「有沒有剋到」：快>遲>柔>剛>快
 			var has_ke_advantage = false
@@ -1231,6 +1232,7 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 		_log("%s 受到 %s 點傷害。" % [tname, dmg_str])
 
 		if int(result["after_hp"]) <= 0:
+			enemy["hp"] = 0
 			enemy["is_dead"] = true
 			_log("%s 倒下了，已無力再戰。" % tname)
 
