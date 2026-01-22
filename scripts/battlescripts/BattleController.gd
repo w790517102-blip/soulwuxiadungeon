@@ -96,11 +96,14 @@ func start_battle(context: Dictionary) -> void:
 		p["max_hp"] = int(p.get("max_hp", p.get("hp", 0)))
 		p["max_mp"] = int(p.get("max_mp", p.get("mp", 0)))
 
-	for e in enemy_party:
+	for i in range(enemy_party.size()):
+		var e = enemy_party[i]
 		if typeof(e) != TYPE_DICTIONARY:
 			continue
 		e["max_hp"] = int(e.get("max_hp", e.get("hp", 0)))
 		e["is_enemy"] = true
+		if not e.has("ui_index"):
+			e["ui_index"] = i
 
 	if battle_ui:
 		battle_ui.set_teams(player_party, enemy_party)
@@ -608,6 +611,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				_log("%s 倒下，傷勢過重，已無力再戰。" % name_e)
 
 		await get_tree().create_timer(0.2).timeout
+		await get_tree().process_frame
 		await get_tree().process_frame
 
 		if any_down and battle_ui:
