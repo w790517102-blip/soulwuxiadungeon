@@ -125,7 +125,7 @@ func play_hit_fx_on_actor(actor: Dictionary, fx_name: String) -> void:
 		return
 
 	# 再找是不是敵方
-	idx = enemies.find(actor)
+	idx = _find_enemy_slot_index(actor)
 	if idx != -1 and idx < enemy_slots.size():
 		var enemy_slot = enemy_slots[idx]
 		if enemy_slot and enemy_slot.has_method("play_hit_fx"):
@@ -138,6 +138,13 @@ func play_damage_react_multi(targets: Array) -> void:
 func play_hit_fx_multi(targets: Array, fx_name: String) -> void:
 	for t in targets:
 		play_hit_fx_on_target(t, fx_name)
+
+func _find_enemy_slot_index(target: Dictionary) -> int:
+	if target.has("ui_index"):
+		var idx = int(target.get("ui_index", -1))
+		if idx >= 0 and idx < enemy_slots.size():
+			return idx
+	return enemies.find(target)
 
 ## 每回合開頭會重新刷新一次 UI
 func begin_turn(actor: Dictionary) -> void:
@@ -239,7 +246,7 @@ func play_attack_motion(actor: Dictionary) -> void:
 			slot.play_attack_motion()
 		return
 
-	idx = enemies.find(actor)
+	idx = _find_enemy_slot_index(actor)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_attack_motion"):
@@ -257,7 +264,7 @@ func play_defend_motion(actor: Dictionary) -> void:
 			slot.play_defend_pose()
 		return
 
-	idx = enemies.find(actor)
+	idx = _find_enemy_slot_index(actor)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_defend_pose"):
@@ -274,7 +281,7 @@ func clear_defend_motion(actor: Dictionary) -> void:
 			slot.clear_defend_pose()
 		return
 
-	idx = enemies.find(actor)
+	idx = _find_enemy_slot_index(actor)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("clear_defend_pose"):
@@ -287,7 +294,7 @@ func play_hit_fx_on_target(target: Dictionary, fx_id: String) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx = enemies.find(target)
+	var idx = _find_enemy_slot_index(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_hit_fx"):
@@ -304,7 +311,7 @@ func play_damage_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx = enemies.find(target)
+	var idx = _find_enemy_slot_index(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_damage_react"):
@@ -328,7 +335,7 @@ func play_heal_react(target: Dictionary) -> void:
 			slot.play_heal_react()
 		return
 
-	idx = enemies.find(target)
+	idx = _find_enemy_slot_index(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var eslot = enemy_slots[idx]
 		if eslot and eslot.has_method("play_heal_react"):

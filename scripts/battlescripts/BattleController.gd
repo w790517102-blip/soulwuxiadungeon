@@ -608,6 +608,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				_log("%s 倒下，傷勢過重，已無力再戰。" % name_e)
 
 		await get_tree().create_timer(0.2).timeout
+		await get_tree().process_frame
 
 		if any_down and battle_ui:
 			battle_ui.update_enemy_panel()

@@ -359,12 +359,14 @@ func _build_enemies_from_zone(
 	var ids: Array = picked.get("enemies", [])
 	var enemies: Array = []
 
-	for enemy_id in ids:
+	for i in range(ids.size()):
+		var enemy_id = ids[i]
 		var base: Dictionary = enemy_db.get(enemy_id, {})
 		if base.is_empty():
 			push_warning("Enemy not found: %s" % enemy_id)
 			continue
 		var enemy := base.duplicate(true)
+		enemy["ui_index"] = i
 		if not enemy.has("name"):
 			enemy["name"] = enemy.get("display_name", enemy_id)
 		if not enemy.has("display_name"):
