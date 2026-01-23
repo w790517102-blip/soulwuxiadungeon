@@ -344,6 +344,12 @@ func _begin_end_battle(result: String) -> void:
 		return
 	_ending = true
 	battle_finished = true
+	var current_actor_id := ""
+	if turn_manager and turn_manager.has_method("get_current_actor"):
+		var current_actor = turn_manager.get_current_actor()
+		if typeof(current_actor) == TYPE_DICTIONARY:
+			current_actor_id = str(current_actor.get("id", ""))
+	print("[BattleEnd] result=", result, " actor_id=", current_actor_id)
 
 	set_process(false)
 	set_physics_process(false)
