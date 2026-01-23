@@ -14,6 +14,7 @@ var action_log_ui: LogPanel = null  # ✅ LogPanel 掛的腳本
 var last_round_logged: int = -1
 var last_round_regen: int = -1
 var battle_finished: bool = false
+var _ending: bool = false
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
@@ -326,27 +327,42 @@ func check_battle_status() -> void:
 	if battle_finished:
 		return
 	if player_party.all(func(p): return p["hp"] <= 0):
-		battle_finished = true
-		set_process(false)
-		if turn_manager:
-			turn_manager.set_process(false)
-		if battle_ui:
-			battle_ui.set_process(false)
-		if victory_handler:
-			victory_handler.defeat()
-		else:
-			push_error("❌ VictoryHandler 缺失，無法處理戰敗返回流程。")
-	elif enemy_party.all(func(e): return e["hp"] <= 0):
-		battle_finished = true
-		set_process(false)
-		if turn_manager:
-			turn_manager.set_process(false)
-		if battle_ui:
-			battle_ui.set_process(false)
-		if victory_handler:
+		_begin_end_battle("defeat")
+		return
+	if enemy_party.all(func(e): return e["hp"] <= 0):
+		_begin_end_battle("victory")
+		return
+
+func _begin_end_battle(result: String) -> void:
+	if _ending:
+		return
+	_ending = true
+	battle_finished = true
+
+	set_process(false)
+	set_physics_process(false)
+	if turn_manager:
+		turn_manager.set_process(false)
+		turn_manager.set_physics_process(false)
+	if battle_ui:
+		battle_ui.set_process(false)
+		battle_ui.set_physics_process(false)
+		if battle_ui.has_method("update_enemy_panel"):
+			battle_ui.update_enemy_panel()
+		if battle_ui.has_method("update_ally_panel"):
+			battle_ui.update_ally_panel()
+
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().create_timer(0.25).timeout
+
+	if victory_handler:
+		if result == "victory":
 			victory_handler.victory()
 		else:
-			push_error("❌ VictoryHandler 缺失，無法處理戰勝返回流程。")
+			victory_handler.defeat()
+	else:
+		push_error("❌ VictoryHandler 缺失，無法處理返回流程。")
 
 
 func _maybe_end_turn() -> void:
