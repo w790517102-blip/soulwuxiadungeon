@@ -284,6 +284,8 @@ func _on_player_action_complete(actor: Dictionary) -> void:
 
 func perform_enemy_action(enemy: Dictionary) -> void:
 	await get_tree().process_frame
+	if battle_finished or _ending:
+		return
 
 	var skills = skill_db.get_skills(enemy.get("id", ""))
 	var inner_force = enemy.get("inner_force", {})
