@@ -313,12 +313,16 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 			await action_log_ui.wait_for_all_logs()
 
 	check_battle_status()
+	if battle_finished:
+		return
 	enemy["acted_this_turn"] = true
 	_maybe_end_turn()
 	print("🔚 %s 結束行動，交棒給下一位" % enemy.get("name", "???"))
 
 
 func safe_end_turn() -> void:
+	if battle_finished or _ending:
+		return
 	if turn_manager:
 		turn_manager.end_turn()
 
@@ -366,6 +370,8 @@ func _begin_end_battle(result: String) -> void:
 
 
 func _maybe_end_turn() -> void:
+	if battle_finished or _ending:
+		return
 	var alive: Array = []
 	for a in (player_party + enemy_party):
 		if typeof(a) == TYPE_DICTIONARY and int(a.get("hp", 0)) > 0:
@@ -471,6 +477,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	if effect == "heal_hp" or effect == "mp_heal" or side == "ally" or support_status_effects.has(effect):
 		await _execute_support_heal_action(actor, skill_data, target)
 		check_battle_status()
+		if battle_finished:
+			return
 		actor["acted_this_turn"] = true
 		_maybe_end_turn()
 		return
@@ -634,6 +642,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			battle_ui.update_enemy_panel()
 
 		check_battle_status()
+		if battle_finished:
+			return
 		actor["acted_this_turn"] = true
 		_maybe_end_turn()
 		return
@@ -745,6 +755,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			battle_ui.update_enemy_panel()
 
 	check_battle_status()
+	if battle_finished:
+		return
 	actor["acted_this_turn"] = true
 	_maybe_end_turn()
 
@@ -1275,6 +1287,8 @@ func use_item(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
 	_update_ui_for_actor(user)
 
 	check_battle_status()
+	if battle_finished:
+		return
 	user["acted_this_turn"] = true
 	_maybe_end_turn()
 
