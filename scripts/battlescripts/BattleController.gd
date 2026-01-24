@@ -357,16 +357,27 @@ func _begin_end_battle(result: String) -> void:
 		turn_manager.set_process(false)
 		turn_manager.set_physics_process(false)
 	if battle_ui:
-		battle_ui.set_process(false)
-		battle_ui.set_physics_process(false)
 		if battle_ui.has_method("update_enemy_panel"):
 			battle_ui.update_enemy_panel()
 		if battle_ui.has_method("update_ally_panel"):
 			battle_ui.update_ally_panel()
+		if battle_ui.has_method("set_process_input"):
+			battle_ui.set_process_input(false)
+		if battle_ui.has_method("set_physics_process"):
+			battle_ui.set_physics_process(false)
+		if battle_ui.has_node("ActionPanel"):
+			battle_ui.get_node("ActionPanel").hide()
+
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+
+	_log("戰勢已定，眾人緩緩收勢。")
+	_log("風聲漸歇，殺氣散去。")
+	_log("片刻寂靜後，你們回過神來。")
 
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(0.25).timeout
+	await get_tree().create_timer(0.4).timeout
 
 	if victory_handler:
 		if result == "victory":
