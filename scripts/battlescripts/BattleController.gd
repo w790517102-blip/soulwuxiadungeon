@@ -118,10 +118,6 @@ func start_battle(context: Dictionary) -> void:
 	last_round_logged = -1
 	last_round_regen = -1
 
-	battle_finished = false
-	last_round_logged = -1
-	last_round_regen = -1
-
 	turn_manager.start_battle(player_party, enemy_party)
 
 func _play_battle_intro(context: Dictionary) -> void:
@@ -156,6 +152,9 @@ func _snapshot_player_base_stats() -> void:
 		_player_base_snapshot[key] = {
 			"speed": int(p.get("speed", 0)),
 			"base_speed": int(p.get("base_speed", p.get("speed", 0))),
+			"atk": int(p.get("atk", 0)),
+			"def": int(p.get("def", 0)),
+			"defense_value": int(p.get("defense_value", 0)),
 			"element": p.get("element", ""),
 			"status_effects": p.get("status_effects", {}).duplicate(true),
 		}
@@ -172,6 +171,9 @@ func _restore_player_base_stats() -> void:
 		var snapshot: Dictionary = _player_base_snapshot[key]
 		p["speed"] = int(snapshot.get("speed", p.get("speed", 0)))
 		p["base_speed"] = int(snapshot.get("base_speed", p.get("base_speed", p.get("speed", 0))))
+		p["atk"] = int(snapshot.get("atk", p.get("atk", 0)))
+		p["def"] = int(snapshot.get("def", p.get("def", 0)))
+		p["defense_value"] = int(snapshot.get("defense_value", p.get("defense_value", 0)))
 		p["element"] = snapshot.get("element", p.get("element", ""))
 		p["status_effects"] = snapshot.get("status_effects", {}).duplicate(true)
 
