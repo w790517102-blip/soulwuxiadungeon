@@ -15,6 +15,7 @@ var last_round_logged: int = -1
 var last_round_regen: int = -1
 var battle_finished: bool = false
 var _ending: bool = false
+var _player_base_snapshot: Dictionary = {}
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
@@ -90,6 +91,7 @@ func start_battle(context: Dictionary) -> void:
 	enemy_party = ctx_enemies
 	ruleset = context.get("ruleset", {})
 	regen_policy = context.get("regen_policy", {})
+	_snapshot_player_base_stats()
 
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
@@ -136,6 +138,42 @@ func _play_battle_intro(context: Dictionary) -> void:
 
 	if intro_line != "":
 		_log(intro_line)
+
+func _actor_key(actor: Dictionary) -> String:
+	var id = str(actor.get("id", ""))
+	if id != "":
+		return id
+	return str(actor.get("name", ""))
+
+func _snapshot_player_base_stats() -> void:
+	_player_base_snapshot.clear()
+	for p in player_party:
+		if typeof(p) != TYPE_DICTIONARY:
+			continue
+		var key = _actor_key(p)
+		if key == "":
+			continue
+		_player_base_snapshot[key] = {
+			"speed": int(p.get("speed", 0)),
+			"base_speed": int(p.get("base_speed", p.get("speed", 0))),
+			"element": p.get("element", ""),
+			"status_effects": p.get("status_effects", {}).duplicate(true),
+		}
+
+func _restore_player_base_stats() -> void:
+	if _player_base_snapshot.is_empty():
+		return
+	for p in player_party:
+		if typeof(p) != TYPE_DICTIONARY:
+			continue
+		var key = _actor_key(p)
+		if key == "" or not _player_base_snapshot.has(key):
+			continue
+		var snapshot: Dictionary = _player_base_snapshot[key]
+		p["speed"] = int(snapshot.get("speed", p.get("speed", 0)))
+		p["base_speed"] = int(snapshot.get("base_speed", p.get("base_speed", p.get("speed", 0))))
+		p["element"] = snapshot.get("element", p.get("element", ""))
+		p["status_effects"] = snapshot.get("status_effects", {}).duplicate(true)
 
 
 func _log(msg: String) -> void:
@@ -196,7 +234,7 @@ func _on_turn_started(actor: Dictionary) -> void:
 	var hp = int(actor.get("hp", 0))
 	if hp <= 0:
 		print("⚰️ %s 已經倒下，略過他的回合。" % actor.get("name", "???"))
-		turn_manager.end_turn()
+		safe_end_turn()
 		return
 		
 	# 🟥 敵方回合
@@ -205,7 +243,7 @@ func _on_turn_started(actor: Dictionary) -> void:
 		_log_system("輪到「%s」行動。" % name)
 
 		await perform_enemy_action(actor)
-		turn_manager.end_turn()
+		safe_end_turn()
 		return
 
 	# 🟦 我方回合
@@ -279,7 +317,7 @@ func _on_player_action_complete(actor: Dictionary) -> void:
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 
-	turn_manager.end_turn()
+	safe_end_turn()
 
 
 func perform_enemy_action(enemy: Dictionary) -> void:
@@ -386,6 +424,8 @@ func _begin_end_battle(result: String) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().create_timer(0.4).timeout
+
+	_restore_player_base_stats()
 
 	if victory_handler:
 		if result == "victory":

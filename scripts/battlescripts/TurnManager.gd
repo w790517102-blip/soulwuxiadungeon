@@ -38,6 +38,8 @@ func start_battle(players: Array, enemies: Array) -> void:
 
 # 產生新一輪行動順序
 func start_new_round() -> void:
+	if _is_battle_ending():
+		return
 	if round_in_progress:
 		return  # 避免重複啟動
 
@@ -56,6 +58,8 @@ func start_new_round() -> void:
 
 # 執行下一位角色行動
 func next_turn() -> void:
+	if _is_battle_ending():
+		return
 	if is_waiting_for_player:
 		print("🛑 尚未完成玩家回合，禁止進入下一角色")
 		return
@@ -76,6 +80,8 @@ func next_turn() -> void:
 
 # 當角色完成行動時呼叫此方法
 func end_turn() -> void:
+	if _is_battle_ending():
+		return
 	if round_in_progress == false:
 		print("⛔ 嘗試結束非進行中回合，略過")
 		return
@@ -153,6 +159,8 @@ func _is_round_complete() -> bool:
 	return true
 
 func _try_end_round() -> void:
+	if _is_battle_ending():
+		return
 	if round_end_emitted:
 		return
 	_prune_roster()
@@ -163,3 +171,13 @@ func _try_end_round() -> void:
 	emit_signal("round_ended", round_count)
 	round_count += 1
 	call_deferred("start_new_round")
+
+func _is_battle_ending() -> bool:
+	var controller = get_parent()
+	if controller == null:
+		return false
+	if bool(controller.get("battle_finished")):
+		return true
+	if bool(controller.get("_ending")):
+		return true
+	return false
