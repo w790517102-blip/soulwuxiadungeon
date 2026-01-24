@@ -330,7 +330,7 @@ func safe_end_turn() -> void:
 
 
 func check_battle_status() -> void:
-	if battle_finished:
+	if battle_finished or _ending:
 		return
 	if player_party.all(func(p): return p["hp"] <= 0):
 		_begin_end_battle("defeat")
@@ -353,6 +353,8 @@ func _begin_end_battle(result: String) -> void:
 
 	set_process(false)
 	set_physics_process(false)
+	set_process_input(false)
+	set_process_unhandled_input(false)
 	if turn_manager:
 		turn_manager.set_process(false)
 		turn_manager.set_physics_process(false)
@@ -368,12 +370,18 @@ func _begin_end_battle(result: String) -> void:
 		if battle_ui.has_node("ActionPanel"):
 			battle_ui.get_node("ActionPanel").hide()
 
+	await get_tree().process_frame
+	await get_tree().process_frame
+
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 
 	_log("戰勢已定，眾人緩緩收勢。")
 	_log("風聲漸歇，殺氣散去。")
 	_log("片刻寂靜後，你們回過神來。")
+
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
 
 	await get_tree().process_frame
 	await get_tree().process_frame
