@@ -163,11 +163,17 @@ func _restore_player_base_stats() -> void:
 		var snapshot: Dictionary = _player_base_snapshot[key].duplicate(true)
 		var keep_hp = int(p.get("hp", snapshot.get("hp", 0)))
 		var keep_mp = int(p.get("mp", snapshot.get("mp", 0)))
+		var keep_max_hp = int(p.get("max_hp", snapshot.get("max_hp", keep_hp)))
+		var keep_max_mp = int(p.get("max_mp", snapshot.get("max_mp", keep_mp)))
+		print("[BattleRestore] before status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
 		p.clear()
 		for field in snapshot.keys():
 			p[field] = snapshot[field]
 		p["hp"] = keep_hp
 		p["mp"] = keep_mp
+		p["max_hp"] = keep_max_hp
+		p["max_mp"] = keep_max_mp
+		print("[BattleRestore] after status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
 
 
 func _log(msg: String) -> void:
