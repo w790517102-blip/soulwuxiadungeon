@@ -149,15 +149,7 @@ func _snapshot_player_base_stats() -> void:
 		var key = _actor_key(p)
 		if key == "":
 			continue
-		_player_base_snapshot[key] = {
-			"speed": int(p.get("speed", 0)),
-			"base_speed": int(p.get("base_speed", p.get("speed", 0))),
-			"atk": int(p.get("atk", 0)),
-			"def": int(p.get("def", 0)),
-			"defense_value": int(p.get("defense_value", 0)),
-			"element": p.get("element", ""),
-			"status_effects": p.get("status_effects", {}).duplicate(true),
-		}
+		_player_base_snapshot[key] = p.duplicate(true)
 
 func _restore_player_base_stats() -> void:
 	if _player_base_snapshot.is_empty():
@@ -168,14 +160,14 @@ func _restore_player_base_stats() -> void:
 		var key = _actor_key(p)
 		if key == "" or not _player_base_snapshot.has(key):
 			continue
-		var snapshot: Dictionary = _player_base_snapshot[key]
-		p["speed"] = int(snapshot.get("speed", p.get("speed", 0)))
-		p["base_speed"] = int(snapshot.get("base_speed", p.get("base_speed", p.get("speed", 0))))
-		p["atk"] = int(snapshot.get("atk", p.get("atk", 0)))
-		p["def"] = int(snapshot.get("def", p.get("def", 0)))
-		p["defense_value"] = int(snapshot.get("defense_value", p.get("defense_value", 0)))
-		p["element"] = snapshot.get("element", p.get("element", ""))
-		p["status_effects"] = snapshot.get("status_effects", {}).duplicate(true)
+		var snapshot: Dictionary = _player_base_snapshot[key].duplicate(true)
+		var keep_hp = int(p.get("hp", snapshot.get("hp", 0)))
+		var keep_mp = int(p.get("mp", snapshot.get("mp", 0)))
+		p.clear()
+		for field in snapshot.keys():
+			p[field] = snapshot[field]
+		p["hp"] = keep_hp
+		p["mp"] = keep_mp
 
 
 func _log(msg: String) -> void:
