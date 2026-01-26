@@ -156,8 +156,13 @@ func _find_enemy_slot_index(target: Dictionary) -> int:
 
 ## 每回合開頭會重新刷新一次 UI
 func begin_turn(actor: Dictionary) -> void:
-	if combat_controller and (combat_controller.battle_finished or combat_controller._ending):
-		return
+	if combat_controller:
+		if bool(combat_controller.get("battle_finished")) or bool(combat_controller.get("_ending")):
+			hide_all_popups()
+			action_panel.hide()
+			on_action_selection = false
+			waiting_for_action = false
+			return
 	current_actor = actor
 	current_turn_id = actor.get("id", "")
 	var actor_name: String = actor.get("name", "？？")
