@@ -27,7 +27,7 @@ var character_skill_db: Node = null
 var skill_provider : Node = null
 var current_actor: Dictionary = {}
 var on_action_selection = false
-var waiting_for_action = false
+var waiting_for_action = false # legacy unused flag (kept for compatibility)
 var combat_controller: Node = null
 var current_turn_id = ""
 var current_target_focus: Dictionary = {}  # ⭐ 目前在 TargetSelect 中被選中的那個
@@ -159,6 +159,9 @@ func begin_turn(actor: Dictionary) -> void:
 	if combat_controller:
 		if bool(combat_controller.get("battle_finished")) or bool(combat_controller.get("_ending")):
 			hide_all_popups()
+			if not current_target_focus.is_empty():
+				_set_actor_target_focus(current_target_focus, false)
+				current_target_focus = {}
 			action_panel.hide()
 			on_action_selection = false
 			waiting_for_action = false
