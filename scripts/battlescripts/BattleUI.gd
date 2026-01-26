@@ -425,6 +425,10 @@ func _enter_battle_end_ui_cleanup() -> void:
 	if not current_target_focus.is_empty():
 		_set_actor_target_focus(current_target_focus, false)
 		current_target_focus = {}
+	pending_item = {}
+	pending_item_user = {}
+	pending_skill = {}
+	pending_skill_user = {}
 	action_panel.hide()
 	on_action_selection = false
 	waiting_for_action = false
