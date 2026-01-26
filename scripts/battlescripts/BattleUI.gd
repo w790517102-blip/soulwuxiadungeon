@@ -158,13 +158,7 @@ func _find_enemy_slot_index(target: Dictionary) -> int:
 func begin_turn(actor: Dictionary) -> void:
 	if combat_controller:
 		if bool(combat_controller.get("battle_finished")) or bool(combat_controller.get("_ending")):
-			hide_all_popups()
-			if not current_target_focus.is_empty():
-				_set_actor_target_focus(current_target_focus, false)
-				current_target_focus = {}
-			action_panel.hide()
-			on_action_selection = false
-			waiting_for_action = false
+			_enter_battle_end_ui_cleanup()
 			return
 	current_actor = actor
 	current_turn_id = actor.get("id", "")
@@ -425,6 +419,15 @@ func hide_all_popups() -> void:
 	defense_confirm_popup.hide()
 	inner_force_popup.hide()
 	target_select_popup.hide()
+
+func _enter_battle_end_ui_cleanup() -> void:
+	hide_all_popups()
+	if not current_target_focus.is_empty():
+		_set_actor_target_focus(current_target_focus, false)
+		current_target_focus = {}
+	action_panel.hide()
+	on_action_selection = false
+	waiting_for_action = false
 
 
 # ===== 技能 =====
