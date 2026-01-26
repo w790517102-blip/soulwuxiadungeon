@@ -5,15 +5,15 @@ var _returning := false
 func _ready() -> void:
 	print("[VictoryHandler] ready")
 
-func victory() -> void:
+func victory(battle_result: Dictionary = {}) -> void:
 	print("[VictoryHandler] victory called")
-	_request_return_to_map("victory")
+	_request_return_to_map("victory", battle_result)
 
-func defeat() -> void:
+func defeat(battle_result: Dictionary = {}) -> void:
 	print("[VictoryHandler] defeat called")
-	_request_return_to_map("defeat")
+	_request_return_to_map("defeat", battle_result)
 
-func _request_return_to_map(result: String) -> void:
+func _request_return_to_map(result: String, battle_result: Dictionary) -> void:
 	if _returning:
 		return
 	_returning = true
@@ -32,7 +32,10 @@ func _request_return_to_map(result: String) -> void:
 		return
 
 	GlobalState.set_meta("pending_battle_return", true)
-	GlobalState.set_meta("pending_battle_result", result)
+	if battle_result.is_empty():
+		GlobalState.set_meta("pending_battle_result", result)
+	else:
+		GlobalState.set_meta("pending_battle_result", battle_result)
 	game_root.change_map_to(return_path)
 	call_deferred("_unlock_returning")
 

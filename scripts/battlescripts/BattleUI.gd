@@ -1,6 +1,7 @@
 extends Control
 
 signal player_action_complete(actor: Dictionary)
+signal battle_result_confirmed(result: Dictionary)
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 var tone = ToneMap.new()
@@ -17,6 +18,10 @@ var tone = ToneMap.new()
 @onready var btn_item = $ActionPanel/BtnItem
 @onready var btn_inner_force = $ActionPanel/BtnInnerForce
 @onready var btn_weapon_switch = $ActionPanel.get_node_or_null("BtnWeaponSwitch")
+@onready var battle_result_overlay = $BattleResultOverlay
+@onready var battle_result_title = $BattleResultOverlay/ResultPanel/ResultContent/ResultTitle
+@onready var battle_result_body = $BattleResultOverlay/ResultPanel/ResultContent/ResultBody
+@onready var battle_result_confirm = $BattleResultOverlay/ResultPanel/ResultContent/ConfirmButton
 
 var character_skill_db: Node = null
 var skill_provider : Node = null
@@ -32,6 +37,7 @@ var pending_item: Dictionary = {}
 var pending_item_user: Dictionary = {}
 var pending_skill: Dictionary = {}
 var pending_skill_user: Dictionary = {}
+var _pending_battle_result: Dictionary = {}
 
 # 隊伍資料與 UI slot 參考
 var allies: Array = []      # 由 BattleController / TeamDataManager 傳進來
@@ -74,9 +80,11 @@ func _ready() -> void:
 	target_select_popup.selection_cancelled.connect(_on_TargetSelectPopup_selection_cancelled)
 # ⭐ 新增：選單裡選到目標時，讓頭像閃一下
 	target_select_popup.target_focus_changed.connect(_on_TargetSelectPopup_target_focus_changed)
+	battle_result_confirm.pressed.connect(_on_battle_result_confirmed)
 	# 把 AllyPanel / EnemyPanel 底下現有的 slot 存起來（例如 TeamMate_1, TeamMate_2...）
 	ally_slots = ally_panel.get_children()
 	enemy_slots = enemy_panel.get_children()
+	battle_result_overlay.hide()
 
 
 # =========================
@@ -164,6 +172,31 @@ func begin_turn(actor: Dictionary) -> void:
 	on_action_selection = true
 
 	_log_system("輪到「%s」行動。" % actor_name)
+
+func show_battle_result(result: Dictionary) -> void:
+	_pending_battle_result = result
+	var exp = int(result.get("exp", 0))
+	var gold = int(result.get("gold", 0))
+	var drops: Array = result.get("drops", [])
+	var drops_line = "掉落：無"
+	if drops.size() > 0:
+		var drop_parts: Array = []
+		for d in drops:
+			if typeof(d) == TYPE_DICTIONARY:
+				var drop_id = str(d.get("id", "unknown"))
+				var count = int(d.get("count", 1))
+				drop_parts.append("%s x%d" % [drop_id, count])
+		if not drop_parts.is_empty():
+			drops_line = "掉落：" + ", ".join(drop_parts)
+
+	battle_result_title.text = "戰鬥勝利"
+	battle_result_body.text = "經驗：%d\n金幣：%d\n%s" % [exp, gold, drops_line]
+	action_panel.hide()
+	battle_result_overlay.show()
+
+func _on_battle_result_confirmed() -> void:
+	battle_result_overlay.hide()
+	emit_signal("battle_result_confirmed", _pending_battle_result)
 
 
 ## 整隊我方 UI 刷新（例如回合開始時）

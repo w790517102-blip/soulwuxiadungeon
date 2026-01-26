@@ -425,15 +425,28 @@ func _begin_end_battle(result: String) -> void:
 	await get_tree().process_frame
 	await get_tree().create_timer(0.4).timeout
 
+	var battle_result = _build_battle_result(result)
+	if result == "victory" and battle_ui and battle_ui.has_method("show_battle_result"):
+		battle_ui.show_battle_result(battle_result)
+		await battle_ui.battle_result_confirmed
+
 	_restore_player_base_stats()
 
 	if victory_handler:
 		if result == "victory":
-			victory_handler.victory()
+			victory_handler.victory(battle_result)
 		else:
-			victory_handler.defeat()
+			victory_handler.defeat(battle_result)
 	else:
 		push_error("❌ VictoryHandler 缺失，無法處理返回流程。")
+
+func _build_battle_result(result: String) -> Dictionary:
+	return {
+		"result": result,
+		"exp": 0,
+		"gold": 0,
+		"drops": [],
+	}
 
 
 func _maybe_end_turn() -> void:
