@@ -289,8 +289,83 @@ func _restore_mp_after_round() -> void:
 		a["mp"] = new_mp
 		_update_ui_for_actor(a)
 
-	if battle_ui:
-		battle_ui.update_enemy_panel()
+		var battle_result = _build_battle_result("defeat")
+		if victory_handler and victory_handler.has_method("defeat"):
+			victory_handler.defeat(battle_result)
+		var battle_result = _build_battle_result("victory")
+		if victory_handler and victory_handler.has_method("victory"):
+			victory_handler.victory(battle_result)
+
+func _build_battle_result(result: String) -> Dictionary:
+	var out := {
+		"result": result,
+		"exp": 0,
+		"gold": 0,
+		"drops": [],
+	}
+
+	if result != "victory":
+		return out
+
+	var exp_total := 0
+	var gold_total := 0
+	var drops_acc := {}
+
+	for e in enemy_party:
+		if typeof(e) != TYPE_DICTIONARY:
+			continue
+
+		exp_total += int(e.get("exp", 0))
+
+		var gold_def = e.get("gold", {})
+		if typeof(gold_def) == TYPE_DICTIONARY:
+			var chance := float(gold_def.get("chance", 0.0))
+			if chance > 1.0:
+				chance /= 100.0
+			chance = clamp(chance, 0.0, 1.0)
+			if randf() < chance:
+				var mn := int(gold_def.get("min", 0))
+				var mx := int(gold_def.get("max", mn))
+				if mn > mx:
+					var tmp = mn
+					mn = mx
+					mx = tmp
+				gold_total += randi_range(mn, mx)
+
+		var drops_val = e.get("drops", [])
+		var drops: Array = drops_val if typeof(drops_val) == TYPE_ARRAY else []
+		for d in drops:
+			if typeof(d) != TYPE_DICTIONARY:
+				continue
+			var drop_id := str(d.get("id", ""))
+			if drop_id == "":
+				continue
+			var d_chance := float(d.get("chance", 1.0))
+			if d_chance > 1.0:
+				d_chance /= 100.0
+			d_chance = clamp(d_chance, 0.0, 1.0)
+			if randf() >= d_chance:
+				continue
+			var mn_c := int(d.get("min", d.get("count", 1)))
+			var mx_c := int(d.get("max", mn_c))
+			if mn_c > mx_c:
+				var tmp2 = mn_c
+				mn_c = mx_c
+				mx_c = tmp2
+			var cnt := randi_range(mn_c, mx_c)
+			if cnt <= 0:
+				continue
+			drops_acc[drop_id] = int(drops_acc.get(drop_id, 0)) + cnt
+
+	out["exp"] = exp_total
+	out["gold"] = gold_total
+
+	var drops_out: Array = []
+	for key in drops_acc.keys():
+		drops_out.append({"id": key, "count": int(drops_acc[key])})
+	out["drops"] = drops_out
+
+	return out
 
 func _calc_round_mp_regen(actor: Dictionary, policy: Dictionary, context: Dictionary) -> int:
 	var mp = int(actor.get("mp", 0))
