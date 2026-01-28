@@ -15,6 +15,7 @@ var last_round_logged: int = -1
 var last_round_regen: int = -1
 var battle_finished: bool = false
 var _ending: bool = false
+var _ending: bool = false
 var _player_base_snapshot: Dictionary = {}
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
@@ -287,14 +288,31 @@ func _restore_mp_after_round() -> void:
 
 		var new_mp = _calc_round_mp_regen(a, regen_policy, battle_context)
 		a["mp"] = new_mp
-		_update_ui_for_actor(a)
+	if battle_finished or _ending:
+		return
+		_begin_end_battle("defeat")
+		_begin_end_battle("victory")
 
-		var battle_result = _build_battle_result("defeat")
-		if victory_handler and victory_handler.has_method("defeat"):
-			victory_handler.defeat(battle_result)
-		var battle_result = _build_battle_result("victory")
-		if victory_handler and victory_handler.has_method("victory"):
+func _begin_end_battle(result: String) -> void:
+	if _ending:
+		return
+	_ending = true
+	battle_finished = true
+
+	var battle_result = _build_battle_result(result)
+	if battle_ui and battle_ui.has_method("show_battle_result"):
+		if result == "victory":
+			battle_ui.show_battle_result(battle_result)
+			await battle_ui.battle_result_confirmed
+		elif result == "defeat":
+			# TODO: show defeat overlay if desired
+			pass
+
+	if victory_handler:
+		if result == "victory" and victory_handler.has_method("victory"):
 			victory_handler.victory(battle_result)
+		elif result == "defeat" and victory_handler.has_method("defeat"):
+			victory_handler.defeat(battle_result)
 
 func _build_battle_result(result: String) -> Dictionary:
 	var out := {
