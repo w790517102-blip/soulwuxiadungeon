@@ -11,6 +11,7 @@ var can_move := true
 # 若角色腳底位置與 Sprite 原點不同，可調整這個偏移
 @export var z_index_offset := 0
 @export var random_encounter_enabled := true
+const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 const ZONE_CONFIG := {
 	"yuheng_bamboo_outskirts": {
 		"distance_threshold": 280.0,
@@ -23,108 +24,6 @@ const ZONE_CONFIG := {
 		"chance": 0.30,
 		"cooldown_distance": 280.0,
 		"intro_key": "yuheng_sewer_random"
-	}
-}
-
-const ENEMY_DB := {
-	"bamboo_bandit_scout": {
-		"id": "bamboo_bandit_scout",
-		"display_name": "山賊探子",
-		"hp": 60,
-		"max_hp": 60,
-		"mp": 10,
-		"atk": 10,
-		"def": 6,
-		"speed": 10,
-		"element": "遲"
-	},
-	"bamboo_bandit_archer": {
-		"id": "bamboo_bandit_archer",
-		"display_name": "山賊弓手",
-		"hp": 50,
-		"max_hp": 50,
-		"mp": 15,
-		"atk": 11,
-		"def": 5,
-		"speed": 12,
-		"element": "巧"
-	},
-	"bamboo_wild_boar": {
-		"id": "bamboo_wild_boar",
-		"display_name": "野豬",
-		"hp": 90,
-		"max_hp": 90,
-		"mp": 0,
-		"atk": 13,
-		"def": 7,
-		"speed": 8,
-		"element": "剛"
-	},
-	"bamboo_poison_snake": {
-		"id": "bamboo_poison_snake",
-		"display_name": "毒蛇",
-		"hp": 45,
-		"max_hp": 45,
-		"mp": 0,
-		"atk": 12,
-		"def": 4,
-		"speed": 14,
-		"element": "毒"
-	},
-	"bamboo_youmei": {
-		"id": "bamboo_youmei",
-		"display_name": "語魅",
-		"hp": 75,
-		"max_hp": 75,
-		"mp": 20,
-		"atk": 12,
-		"def": 7,
-		"speed": 9,
-		"element": "遲"
-	},
-	"sewer_rat_swarm": {
-		"id": "sewer_rat_swarm",
-		"display_name": "鼠群",
-		"hp": 55,
-		"max_hp": 55,
-		"mp": 0,
-		"atk": 10,
-		"def": 5,
-		"speed": 13,
-		"element": "群"
-	},
-	"sewer_thug": {
-		"id": "sewer_thug",
-		"display_name": "下水道匪徒",
-		"hp": 85,
-		"max_hp": 85,
-		"mp": 10,
-		"atk": 13,
-		"def": 7,
-		"speed": 10,
-		"element": "剛"
-	},
-	"sewer_ooze_slime": {
-		"id": "sewer_ooze_slime",
-		"display_name": "污泥怪",
-		"hp": 110,
-		"max_hp": 110,
-		"mp": 0,
-		"atk": 12,
-		"def": 9,
-		"speed": 6,
-		"element": "濁"
-	},
-	"sewer_drowned_wight": {
-		"id": "sewer_drowned_wight",
-		"display_name": "溺魂",
-		"hp": 120,
-		"max_hp": 120,
-		"mp": 25,
-		"atk": 14,
-		"def": 8,
-		"speed": 8,
-		"element": "陰"
 	}
 }
 
@@ -291,7 +190,7 @@ func _trigger_random_battle() -> void:
 
 	var context = {
 		"player_party": player_party,
-		"enemy_party": _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS, ENEMY_DB),
+		"enemy_party": _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS),
 		"ruleset": {"id": "default"},
 		"regen_policy": {"id": "round_end_mp_regen_default"},
 		"tone": {"intro_key": _resolve_zone_intro_key()},
@@ -347,8 +246,7 @@ func _weighted_pick(pool: Array) -> Dictionary:
 
 func _build_enemies_from_zone(
 	zone_id: String,
-	encounter_pools: Dictionary,
-	enemy_db: Dictionary
+	encounter_pools: Dictionary
 ) -> Array:
 	var pool: Array = encounter_pools.get(zone_id, [])
 	if pool.is_empty():
@@ -361,18 +259,11 @@ func _build_enemies_from_zone(
 
 	for i in range(ids.size()):
 		var enemy_id = ids[i]
-		var base: Dictionary = enemy_db.get(enemy_id, {})
-		if base.is_empty():
+		var enemy := EnemyDB.make_enemy(enemy_id)
+		if enemy.is_empty():
 			push_warning("Enemy not found: %s" % enemy_id)
 			continue
-		var enemy := base.duplicate(true)
 		enemy["ui_index"] = i
-		if not enemy.has("name"):
-			enemy["name"] = enemy.get("display_name", enemy_id)
-		if not enemy.has("display_name"):
-			enemy["display_name"] = enemy.get("name")
-		if enemy.has("hp") and not enemy.has("max_hp"):
-			enemy["max_hp"] = enemy["hp"]
 		enemies.append(enemy)
 
 	return enemies
