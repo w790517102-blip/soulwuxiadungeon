@@ -179,25 +179,35 @@ func begin_turn(actor: Dictionary) -> void:
 
 func show_battle_result(result: Dictionary) -> void:
 	_enter_battle_end_ui_cleanup()
-	_pending_battle_result = result
+	_pending_battle_result = result.duplicate(true)
+	var outcome = str(result.get("result", "victory"))
 	var exp = int(result.get("exp", 0))
 	var gold = int(result.get("gold", 0))
 	var drops: Array = result.get("drops", [])
-	var drops_line = "掉落：無"
-	if drops.size() > 0:
-		var drop_parts: Array = []
-		for d in drops:
-			if typeof(d) == TYPE_DICTIONARY:
-				var drop_id = str(d.get("id", "unknown"))
-				var count = int(d.get("count", 1))
-				drop_parts.append("%s x%d" % [drop_id, count])
-		if not drop_parts.is_empty():
-			drops_line = "掉落：" + ", ".join(drop_parts)
+	var drops_lines: Array = []
+	for d in drops:
+		if typeof(d) != TYPE_DICTIONARY:
+			continue
+		var drop_id = str(d.get("id", "unknown"))
+		var count = int(d.get("count", 1))
+		if count <= 0:
+			continue
+		drops_lines.append("%s x%d" % [drop_id, count])
+	var drops_block = "掉落：無"
+	if drops_lines.size() > 0:
+		drops_block = "掉落：\n" + "\n".join(drops_lines)
 
-	battle_result_title.text = "戰鬥勝利"
-	battle_result_body.text = "經驗：%d\n金幣：%d\n%s" % [exp, gold, drops_line]
+	match outcome:
+		"defeat":
+			battle_result_title.text = "戰鬥失敗"
+		_:
+			battle_result_title.text = "戰鬥勝利"
+
+	battle_result_body.text = "經驗：%d\n金幣：%d\n%s" % [exp, gold, drops_block]
 	action_panel.hide()
 	battle_result_overlay.show()
+	if battle_result_confirm:
+		battle_result_confirm.grab_focus()
 
 func _on_battle_result_confirmed() -> void:
 	battle_result_overlay.hide()
