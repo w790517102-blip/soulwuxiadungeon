@@ -3,7 +3,6 @@ class_name EnemyDB
 
 const ENEMY_DEFS := {
 	"bamboo_bandit_scout": {
-		"id": "bamboo_bandit_scout",
 		"display_name": "山賊探子",
 		"hp": 60,
 		"max_hp": 60,
@@ -17,7 +16,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"bamboo_bandit_archer": {
-		"id": "bamboo_bandit_archer",
 		"display_name": "山賊弓手",
 		"hp": 50,
 		"max_hp": 50,
@@ -31,7 +29,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"bamboo_wild_boar": {
-		"id": "bamboo_wild_boar",
 		"display_name": "野豬",
 		"hp": 90,
 		"max_hp": 90,
@@ -45,7 +42,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"bamboo_poison_snake": {
-		"id": "bamboo_poison_snake",
 		"display_name": "毒蛇",
 		"hp": 45,
 		"max_hp": 45,
@@ -59,7 +55,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"bamboo_youmei": {
-		"id": "bamboo_youmei",
 		"display_name": "語魅",
 		"hp": 75,
 		"max_hp": 75,
@@ -73,7 +68,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"sewer_rat_swarm": {
-		"id": "sewer_rat_swarm",
 		"display_name": "鼠群",
 		"hp": 55,
 		"max_hp": 55,
@@ -87,7 +81,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"sewer_thug": {
-		"id": "sewer_thug",
 		"display_name": "下水道匪徒",
 		"hp": 85,
 		"max_hp": 85,
@@ -101,7 +94,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"sewer_ooze_slime": {
-		"id": "sewer_ooze_slime",
 		"display_name": "污泥怪",
 		"hp": 110,
 		"max_hp": 110,
@@ -115,7 +107,6 @@ const ENEMY_DEFS := {
 		"drops": []
 	},
 	"sewer_drowned_wight": {
-		"id": "sewer_drowned_wight",
 		"display_name": "溺魂",
 		"hp": 120,
 		"max_hp": 120,
@@ -132,12 +123,14 @@ const ENEMY_DEFS := {
 
 static func get_def(id: String) -> Dictionary:
 	if not ENEMY_DEFS.has(id):
+		push_warning("Enemy def not found: %s" % id)
 		return {}
 	return ENEMY_DEFS[id].duplicate(true)
 
 static func make_enemy(id: String) -> Dictionary:
 	var data: Dictionary = ENEMY_DEFS.get(id, {})
 	if data.is_empty():
+		push_warning("Enemy def not found: %s" % id)
 		return {}
 	var enemy := data.duplicate(true)
 	enemy["id"] = id
@@ -149,8 +142,47 @@ static func make_enemy(id: String) -> Dictionary:
 		enemy["max_hp"] = enemy["hp"]
 	if not enemy.has("exp"):
 		enemy["exp"] = 0
-	if not enemy.has("gold"):
-		enemy["gold"] = {"chance": 0.0, "min": 0, "max": 0}
-	if not enemy.has("drops"):
-		enemy["drops"] = []
+	enemy["gold"] = _normalize_gold(enemy.get("gold", {"chance": 0.0, "min": 0, "max": 0}))
+	enemy["drops"] = _normalize_drops(enemy.get("drops", []))
 	return enemy
+
+static func _normalize_gold(gold_data) -> Dictionary:
+	var gold: Dictionary = gold_data if typeof(gold_data) == TYPE_DICTIONARY else {}
+	var chance = float(gold.get("chance", 0.0))
+	if chance > 1.0:
+		chance = chance / 100.0
+	chance = clamp(chance, 0.0, 1.0)
+	var min_gold = int(gold.get("min", 0))
+	var max_gold = int(gold.get("max", 0))
+	if min_gold > max_gold:
+		var tmp = min_gold
+		min_gold = max_gold
+		max_gold = tmp
+	return {"chance": chance, "min": min_gold, "max": max_gold}
+
+static func _normalize_drops(drops_data) -> Array:
+	var drops: Array = drops_data if typeof(drops_data) == TYPE_ARRAY else []
+	var normalized: Array = []
+	for entry in drops:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var id = str(entry.get("id", ""))
+		if id == "":
+			continue
+		var chance = float(entry.get("chance", 1.0))
+		if chance > 1.0:
+			chance = chance / 100.0
+		chance = clamp(chance, 0.0, 1.0)
+		var min_count = int(entry.get("min", entry.get("count", 1)))
+		var max_count = int(entry.get("max", entry.get("count", 1)))
+		if min_count > max_count:
+			var tmp = min_count
+			min_count = max_count
+			max_count = tmp
+		normalized.append({
+			"id": id,
+			"chance": chance,
+			"min": min_count,
+			"max": max_count
+		})
+	return normalized

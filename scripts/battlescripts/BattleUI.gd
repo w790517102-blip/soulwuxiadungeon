@@ -178,6 +178,7 @@ func begin_turn(actor: Dictionary) -> void:
 	_log_system("輪到「%s」行動。" % actor_name)
 
 func show_battle_result(result: Dictionary) -> void:
+	_enter_battle_end_ui_cleanup()
 	_pending_battle_result = result
 	var exp = int(result.get("exp", 0))
 	var gold = int(result.get("gold", 0))
