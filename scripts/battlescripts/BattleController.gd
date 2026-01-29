@@ -69,6 +69,7 @@ func _init_battle_safe() -> void:
 	else:
 		push_error("❌ 無法找到 BattleUI")
 
+		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
 	turn_manager.turn_started.connect(_on_turn_started)
 	turn_manager.turn_ended.connect(_on_turn_ended)
@@ -179,6 +180,8 @@ func _restore_player_base_stats() -> void:
 
 func _log(msg: String) -> void:
 	print("📨 LogPanel 記錄中：", msg)
+	if battle_finished or _ending:
+		return
 	if action_log_ui:
 		if action_log_ui.has_method("log"):
 			action_log_ui.log(msg)          # 白字戰報＋打字機
