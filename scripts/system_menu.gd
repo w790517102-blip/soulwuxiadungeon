@@ -5,6 +5,7 @@ extends Panel
 @onready var item_list: ItemList = $VBoxContainer/道具/ItemList
 @onready var item_desc: RichTextLabel = $VBoxContainer/道具/RichTextLabel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
+@onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
 var _item_entries: Array = []
 
 func _ready():
@@ -99,6 +100,8 @@ func _on_gold_changed(_new_gold: int) -> void:
 	_refresh_gold()
 
 func _refresh_gold() -> void:
-	if gold_label == null:
-		return
-	gold_label.text = "銀兩：%d" % InventorySync.get_gold()
+	var gold := InventorySync.get_gold()
+	if gold_label:
+		gold_label.text = "銀兩：%d" % gold
+	if status_gold_label:
+		status_gold_label.text = "銀兩：%d" % gold

@@ -31,6 +31,10 @@ z_index = 1024
 layout_mode = 2
 metadata/_tab_index = 0
 
+[node name="GoldLabel" type="Label" parent="VBoxContainer/狀態"]
+layout_mode = 2
+text = "銀兩：0"
+
 [node name="Label" type="Label" parent="VBoxContainer/狀態"]
 layout_mode = 2
 
