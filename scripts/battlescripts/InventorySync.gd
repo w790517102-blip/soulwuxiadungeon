@@ -20,6 +20,9 @@ var party_inventory: Array = [
 ]
 var party_gold: int = 0
 
+func get_gold() -> int:
+	return party_gold
+
 func get_items() -> Array:
 	return _make_item_list(party_inventory)
 

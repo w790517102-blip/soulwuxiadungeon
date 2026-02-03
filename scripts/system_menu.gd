@@ -4,6 +4,7 @@ extends Panel
 @onready var tabs: TabContainer = $VBoxContainer
 @onready var item_list: ItemList = $VBoxContainer/道具/ItemList
 @onready var item_desc: RichTextLabel = $VBoxContainer/道具/RichTextLabel
+@onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
 var _item_entries: Array = []
 
 func _ready():
@@ -23,7 +24,9 @@ func _ready():
 		tabs.tab_changed.connect(_on_tab_changed)
 	if InventorySync:
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
+		InventorySync.gold_changed.connect(_on_gold_changed)
 	_refresh_item_tab()
+	_refresh_gold()
 
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
@@ -93,3 +96,11 @@ func _on_inventory_changed() -> void:
 	var item_tab_index = $VBoxContainer/道具.get_index()
 	if tabs.current_tab == item_tab_index:
 		_refresh_item_tab()
+
+func _on_gold_changed(_new_gold: int) -> void:
+	_refresh_gold()
+
+func _refresh_gold() -> void:
+	if gold_label == null:
+		return
+	gold_label.text = "銀兩：%d" % InventorySync.get_gold()
