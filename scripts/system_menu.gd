@@ -30,11 +30,9 @@ func _ready():
 
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
-		# 嘗試關閉選單（呼叫 Global 單例）
-		if has_node("/root/GlobalSystemMenu"):
-			var controller = get_node("/root/GlobalSystemMenu")
-			if controller.has_method("_close_system_menu"):
-				controller._close_system_menu()
+		# 直接呼叫 Autoload：SystemMenu
+		SystemMenu._close_system_menu()
+		get_viewport().set_input_as_handled()
 
 func _on_tab_changed(tab_index: int) -> void:
 	if tabs == null:
