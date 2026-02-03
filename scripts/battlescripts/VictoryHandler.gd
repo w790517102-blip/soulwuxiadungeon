@@ -1,5 +1,4 @@
 extends Node
-const InventorySync = preload("res://scripts/battlescripts/InventorySync.gd")
 
 var _returning := false
 

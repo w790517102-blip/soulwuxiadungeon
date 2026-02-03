@@ -58,26 +58,28 @@ func add_item_stack(id: String, amount: int = 1) -> void:
 			return
 	party_inventory.append({"id": id, "count": amount})
 
-func apply_battle_result(battle_result: Dictionary, party_state: Dictionary = {}) -> void:
+func apply_battle_result(battle_result: Dictionary) -> void:
 	if battle_result.is_empty():
 		return
 	var gold_gain = int(battle_result.get("gold", 0))
-	if party_state.is_empty():
-		party_gold += gold_gain
-	else:
-		party_state["party_gold"] = int(party_state.get("party_gold", 0)) + gold_gain
-	var drops: Array = battle_result.get("drops", [])
-	for drop in drops:
-		if typeof(drop) != TYPE_DICTIONARY:
-			continue
-		var drop_id = str(drop.get("id", ""))
-		var drop_count = int(drop.get("count", 0))
-		if drop_id == "" or drop_count <= 0:
-			continue
-		if party_state.is_empty():
+	party_gold += gold_gain
+	var drops = battle_result.get("drops", [])
+	if drops is Array:
+		for drop in drops:
+			if typeof(drop) != TYPE_DICTIONARY:
+				continue
+			var drop_id := str(drop.get("id", drop.get("item_id", "")))
+			var drop_count := int(drop.get("count", 0))
+			if drop_id == "" or drop_count <= 0:
+				continue
 			add_item_stack(drop_id, drop_count)
-		else:
-			_add_item_stack_to_party(party_state, drop_id, drop_count)
+	elif drops is Dictionary:
+		for key in drops.keys():
+			var drop_id := str(key)
+			var drop_count := int(drops[key])
+			if drop_id == "" or drop_count <= 0:
+				continue
+			add_item_stack(drop_id, drop_count)
 	var exp_gain = int(battle_result.get("exp", 0))
 	if exp_gain > 0:
 		print("[BattleResult] exp pending:", exp_gain)
@@ -100,17 +102,3 @@ func _make_item_list(source_inventory: Array) -> Array:
 		item["description"] = item.get("desc", item.get("description", ""))
 		items.append(item)
 	return items
-
-func _add_item_stack_to_party(party_state: Dictionary, id: String, amount: int) -> void:
-	if not party_state.has("party_inventory"):
-		party_state["party_inventory"] = []
-	var inventory: Array = party_state.get("party_inventory", [])
-	for entry in inventory:
-		if typeof(entry) != TYPE_DICTIONARY:
-			continue
-		if entry.get("id") == id:
-			entry["count"] = int(entry.get("count", 0)) + amount
-			party_state["party_inventory"] = inventory
-			return
-	inventory.append({"id": id, "count": amount})
-	party_state["party_inventory"] = inventory
