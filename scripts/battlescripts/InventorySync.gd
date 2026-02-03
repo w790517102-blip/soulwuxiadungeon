@@ -1,113 +1,121 @@
 # InventorySync.gd
-# ✅ Autoload 全域同步用道具庫：負責道具清單與戰鬥物品存取
+# ✅ Autoload 全域同步用背包系統：負責道具堆疊與戰利品結算
 
 extends Node
 
-# === 初始背包道具 ===
-var inventory: Array = [
-	{
-		"id": "herb",
-		"name": "藥草",
-		"description": "回復50點HP的藥草。",
-		"effect": "heal",         # ✅ 走 use_item 裡的 heal/heal_hp 分支
-		"amount": 50,
-		"quantity": 3,            # 持有數量
-		"target_scope": "ally_single"  # 單體友方
-	},
-	{
-		"id": "elixir_qi",
-		"name": "回氣丹",
-		"description": "回復15點內力。",
-		"effect": "mp_heal",      # ✅ 回復 MP
-		"amount": 15,
-		"quantity": 2,
-		"target_scope": "ally_single"
-	},
-	{
-		"id": "light_step_powder",
-		"name": "輕身散",
-		"description": "暫時提升使用者的身法速度。",
-		"effect": "buff_speed",   # ✅ 速度 BUFF
-		"amount": 5,
-		"quantity": 2,
-		"target_scope": "ally_single"
-	},
-	{
-		"id": "chicken_spike",
-		"name": "雞爪釘",
-		"description": "拋向敵人足下，可拖慢對方腳步。",
-		"effect": "debuff_speed", # ✅ 速度 DEBUFF
-		"amount": 5,
-		"quantity": 3,
-		"target_scope": "enemy_single"
-	},
-	{
-		"id": "haste_talisman",
-		"name": "神速符",
-		"description": "貼在己方可加速，貼在敵方可改變其屬性為「快」。",
-		"effect": "haste_talisman",   # ✅ 特殊：我方加速 / 敵方改屬性
-		"amount": 8,
-		"quantity": 1,
-		"target_scope": "all_single"  # ✅ 需要能選「任一單體」的 target_scope
-	},
-	# 單體炸彈：霹靂彈
-	{
-		"id": "item_pili_single",
-		"name": "霹靂彈",
-		"effect": "bomb_single",      # ✅ 效果代號
-		"amount": 20,                  # ✅ 固定傷害
-		"quantity": 3,
-		"target_scope": "enemy_single"     # ✅ 單體
-	},
-# AOE：轟雷霹靂彈
-	{
-		"id": "item_pili_aoe",
-		"name": "轟雷霹靂彈",
-		"effect": "bomb_aoe",         # ✅ 效果代號
-		"amount": 15,                  # ✅ 每隻固定傷害
-		"quantity": 3,
-		"target_scope": "enemy_all"  # ✅ 敵方全體
-	},
-	{
-		"id": "item_fire_talisman",
-		"name": "烈火符",
-		"effect": "fire_talisman",
-		"amount": 15,
-		"enemy_damage": 30,
-		"quantity": 3,
-		"target_scope": "all_single" # 可指定敵／我方的單體
-	},
+const ItemDB = preload("res://scripts/db/ItemDB.gd")
 
+signal inventory_changed
+signal gold_changed(new_gold: int)
+
+var party_inventory: Array = [
+	{"id": "herb", "count": 3},
+	{"id": "elixir_qi", "count": 2},
+	{"id": "light_step_powder", "count": 2},
+	{"id": "chicken_spike", "count": 3},
+	{"id": "haste_talisman", "count": 1},
+	{"id": "item_pili_single", "count": 3},
+	{"id": "item_pili_aoe", "count": 3},
+	{"id": "item_fire_talisman", "count": 3},
 ]
+var party_gold: int = 0
+
+func get_gold() -> int:
+	return party_gold
 
 func get_items() -> Array:
-	return inventory
+	return _make_item_list(party_inventory)
 
-# ✅ 取得所有具有戰鬥效果的道具（有 effect 欄位）
 func get_battle_items() -> Array:
-	return inventory.filter(func(i): return i.has("effect"))
+	return get_items().filter(func(i): return i.has("effect"))
 
-# ✅ 消耗指定道具數量（預設1）
-func consume_item(id: String, amount = 1):
-	for i in inventory:
-		if i.get("id") == id:
-			i["quantity"] -= amount
-			if i["quantity"] <= 0:
-				inventory.erase(i)
-			return
-
-# ✅ 新增或疊加道具
-func add_item(item: Dictionary):
-	for i in inventory:
-		if i.get("id") == item.get("id"):
-			i["quantity"] += item.get("quantity", 1)
-			return
-	# 否則為新物品
-	inventory.append(item)
-
-# ✅ 查詢特定 ID 的道具（可用於描述）
 func get_item_by_id(id: String) -> Dictionary:
-	for i in inventory:
-		if i.get("id") == id:
-			return i
+	for entry in party_inventory:
+		if entry.get("id") == id:
+			var item_def = ItemDB.get_def(id)
+			if item_def.is_empty():
+				return {}
+			var item = item_def.duplicate(true)
+			var count = int(entry.get("count", 0))
+			item["quantity"] = count
+			item["count"] = count
+			item["description"] = item.get("desc", item.get("description", ""))
+			return item
 	return {}
+
+func consume_item(id: String, amount: int = 1) -> void:
+	if amount <= 0:
+		return
+	for entry in party_inventory:
+		if entry.get("id") == id:
+			var new_count = int(entry.get("count", 0)) - amount
+			if new_count <= 0:
+				party_inventory.erase(entry)
+			else:
+				entry["count"] = new_count
+			inventory_changed.emit()
+			return
+
+func add_item_stack(id: String, amount: int = 1) -> void:
+	if _add_item_stack_internal(id, amount):
+		inventory_changed.emit()
+
+func _add_item_stack_internal(id: String, amount: int) -> bool:
+	if id == "" or amount <= 0:
+		return false
+	for entry in party_inventory:
+		if entry.get("id") == id:
+			entry["count"] = int(entry.get("count", 0)) + amount
+			return true
+	party_inventory.append({"id": id, "count": amount})
+	return true
+
+func apply_battle_result(battle_result: Dictionary) -> void:
+	if battle_result.is_empty():
+		return
+	var gold_gain = int(battle_result.get("gold", 0))
+	if gold_gain != 0:
+		party_gold += gold_gain
+		gold_changed.emit(party_gold)
+	var drops = battle_result.get("drops", [])
+	var inventory_changed_local := false
+	if drops is Array:
+		for drop in drops:
+			if typeof(drop) != TYPE_DICTIONARY:
+				continue
+			var drop_id := str(drop.get("id", drop.get("item_id", "")))
+			var drop_count := int(drop.get("count", 0))
+			if drop_id == "" or drop_count <= 0:
+				continue
+			inventory_changed_local = _add_item_stack_internal(drop_id, drop_count) or inventory_changed_local
+	elif drops is Dictionary:
+		for key in drops.keys():
+			var drop_id := str(key)
+			var drop_count := int(drops[key])
+			if drop_id == "" or drop_count <= 0:
+				continue
+			inventory_changed_local = _add_item_stack_internal(drop_id, drop_count) or inventory_changed_local
+	if inventory_changed_local:
+		inventory_changed.emit()
+	var exp_gain = int(battle_result.get("exp", 0))
+	if exp_gain > 0:
+		print("[BattleResult] exp pending:", exp_gain)
+
+func _make_item_list(source_inventory: Array) -> Array:
+	var items: Array = []
+	for entry in source_inventory:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var id = str(entry.get("id", ""))
+		if id == "":
+			continue
+		var count = int(entry.get("count", 0))
+		var item_def = ItemDB.get_def(id)
+		if item_def.is_empty():
+			continue
+		var item = item_def.duplicate(true)
+		item["quantity"] = count
+		item["count"] = count
+		item["description"] = item.get("desc", item.get("description", ""))
+		items.append(item)
+	return items

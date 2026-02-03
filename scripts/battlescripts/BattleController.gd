@@ -15,7 +15,6 @@ var last_round_logged: int = -1
 var last_round_regen: int = -1
 var battle_finished: bool = false
 var _ending: bool = false
-var _ending: bool = false
 var _player_base_snapshot: Dictionary = {}
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
@@ -69,7 +68,6 @@ func _init_battle_safe() -> void:
 	else:
 		push_error("❌ 無法找到 BattleUI")
 
-		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
 	turn_manager.turn_started.connect(_on_turn_started)
 	turn_manager.turn_ended.connect(_on_turn_ended)
@@ -109,6 +107,7 @@ func start_battle(context: Dictionary) -> void:
 		e["is_enemy"] = true
 		if not e.has("ui_index"):
 			e["ui_index"] = i
+		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 
 	if battle_ui:
 		battle_ui.set_teams(player_party, enemy_party)
@@ -178,9 +177,9 @@ func _restore_player_base_stats() -> void:
 		print("[BattleRestore] after status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
 
 
-func _log(msg: String) -> void:
+func _log(msg: String, allow_when_ending: bool = false) -> void:
 	print("📨 LogPanel 記錄中：", msg)
-	if battle_finished or _ending:
+	if (battle_finished or _ending) and not allow_when_ending:
 		return
 	if action_log_ui:
 		if action_log_ui.has_method("log"):
@@ -257,6 +256,8 @@ func _on_turn_started(actor: Dictionary) -> void:
 
 func _on_turn_ended(actor: Dictionary) -> void:
 	# ❌ 不在這裡清 defending，單純交棒就好
+	if battle_finished or _ending:
+		return
 	turn_manager.next_turn()
 
 func _on_round_started(round_number: int) -> void:
@@ -293,29 +294,6 @@ func _restore_mp_after_round() -> void:
 		a["mp"] = new_mp
 	if battle_finished or _ending:
 		return
-		_begin_end_battle("defeat")
-		_begin_end_battle("victory")
-
-func _begin_end_battle(result: String) -> void:
-	if _ending:
-		return
-	_ending = true
-	battle_finished = true
-
-	var battle_result = _build_battle_result(result)
-	if battle_ui and battle_ui.has_method("show_battle_result"):
-		if result == "victory":
-			battle_ui.show_battle_result(battle_result)
-			await battle_ui.battle_result_confirmed
-		elif result == "defeat":
-			# TODO: show defeat overlay if desired
-			pass
-
-	if victory_handler:
-		if result == "victory" and victory_handler.has_method("victory"):
-			victory_handler.victory(battle_result)
-		elif result == "defeat" and victory_handler.has_method("defeat"):
-			victory_handler.defeat(battle_result)
 
 func _build_battle_result(result: String) -> Dictionary:
 	var out := {
@@ -510,9 +488,9 @@ func _begin_end_battle(result: String) -> void:
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 
-	_log("戰勢已定，眾人緩緩收勢。")
-	_log("風聲漸歇，殺氣散去。")
-	_log("片刻寂靜後，你們回過神來。")
+	_log("戰勢已定，眾人緩緩收勢。", true)
+	_log("風聲漸歇，殺氣散去。", true)
+	_log("片刻寂靜後，你們回過神來。", true)
 
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
@@ -522,6 +500,7 @@ func _begin_end_battle(result: String) -> void:
 	await get_tree().create_timer(0.4).timeout
 
 	var battle_result = _build_battle_result(result)
+	print("[BattleResult]", battle_result)
 	if result == "victory" and battle_ui and battle_ui.has_method("show_battle_result"):
 		battle_ui.show_battle_result(battle_result)
 		await battle_ui.battle_result_confirmed
@@ -535,15 +514,6 @@ func _begin_end_battle(result: String) -> void:
 			victory_handler.defeat(battle_result)
 	else:
 		push_error("❌ VictoryHandler 缺失，無法處理返回流程。")
-
-func _build_battle_result(result: String) -> Dictionary:
-	return {
-		"result": result,
-		"exp": 0,
-		"gold": 0,
-		"drops": [],
-	}
-
 
 func _maybe_end_turn() -> void:
 	if battle_finished or _ending:
