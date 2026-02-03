@@ -33,7 +33,7 @@ metadata/_tab_index = 0
 
 [node name="GoldLabel" type="Label" parent="VBoxContainer/狀態"]
 layout_mode = 2
-text = "銀兩：0"
+text = "💰 盤纏：0文"
 
 [node name="Label" type="Label" parent="VBoxContainer/狀態"]
 layout_mode = 2
@@ -48,7 +48,11 @@ metadata/_tab_index = 1
 
 [node name="GoldLabel" type="Label" parent="VBoxContainer/道具"]
 layout_mode = 2
-text = "銀兩：0"
+text = "💰 盤纏：0文"
+
+[node name="UseButton" type="Button" parent="VBoxContainer/道具"]
+layout_mode = 2
+text = "使用"
 
 [node name="ItemList" type="ItemList" parent="VBoxContainer/道具"]
 custom_minimum_size = Vector2(10, 20)

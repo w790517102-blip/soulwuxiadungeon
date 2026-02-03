@@ -6,6 +6,7 @@ extends Panel
 @onready var item_desc: RichTextLabel = $VBoxContainer/道具/RichTextLabel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
 @onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
+@onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
 var _item_entries: Array = []
 
 func _ready():
@@ -21,6 +22,8 @@ func _ready():
 
 	if item_list:
 		item_list.item_selected.connect(_on_item_selected)
+	if use_button:
+		use_button.pressed.connect(_on_use_pressed)
 	if tabs:
 		tabs.tab_changed.connect(_on_tab_changed)
 	if InventorySync:
@@ -102,6 +105,18 @@ func _on_gold_changed(_new_gold: int) -> void:
 func _refresh_gold() -> void:
 	var gold := InventorySync.get_gold()
 	if gold_label:
-		gold_label.text = "銀兩：%d" % gold
+		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
-		status_gold_label.text = "銀兩：%d" % gold
+		status_gold_label.text = "💰 盤纏：%d文" % gold
+
+func _on_use_pressed() -> void:
+	if item_list == null:
+		return
+	var selected_items = item_list.get_selected_items()
+	if selected_items.is_empty():
+		return
+	var item_id = str(item_list.get_item_metadata(selected_items[0]))
+	if item_id == "":
+		return
+	InventorySync.consume_item(item_id, 1)
+	print("[ItemUse] used:", item_id)
