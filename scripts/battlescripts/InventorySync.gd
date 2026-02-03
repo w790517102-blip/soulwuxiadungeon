@@ -54,23 +54,28 @@ func consume_item(id: String, amount: int = 1) -> void:
 			return
 
 func add_item_stack(id: String, amount: int = 1) -> void:
+	if _add_item_stack_internal(id, amount):
+		inventory_changed.emit()
+
+func _add_item_stack_internal(id: String, amount: int) -> bool:
 	if id == "" or amount <= 0:
-		return
+		return false
 	for entry in party_inventory:
 		if entry.get("id") == id:
 			entry["count"] = int(entry.get("count", 0)) + amount
-			inventory_changed.emit()
-			return
+			return true
 	party_inventory.append({"id": id, "count": amount})
-	inventory_changed.emit()
+	return true
 
 func apply_battle_result(battle_result: Dictionary) -> void:
 	if battle_result.is_empty():
 		return
 	var gold_gain = int(battle_result.get("gold", 0))
-	party_gold += gold_gain
-	gold_changed.emit(party_gold)
+	if gold_gain != 0:
+		party_gold += gold_gain
+		gold_changed.emit(party_gold)
 	var drops = battle_result.get("drops", [])
+	var inventory_changed_local := false
 	if drops is Array:
 		for drop in drops:
 			if typeof(drop) != TYPE_DICTIONARY:
@@ -79,14 +84,16 @@ func apply_battle_result(battle_result: Dictionary) -> void:
 			var drop_count := int(drop.get("count", 0))
 			if drop_id == "" or drop_count <= 0:
 				continue
-			add_item_stack(drop_id, drop_count)
+			inventory_changed_local = _add_item_stack_internal(drop_id, drop_count) or inventory_changed_local
 	elif drops is Dictionary:
 		for key in drops.keys():
 			var drop_id := str(key)
 			var drop_count := int(drops[key])
 			if drop_id == "" or drop_count <= 0:
 				continue
-			add_item_stack(drop_id, drop_count)
+			inventory_changed_local = _add_item_stack_internal(drop_id, drop_count) or inventory_changed_local
+	if inventory_changed_local:
+		inventory_changed.emit()
 	var exp_gain = int(battle_result.get("exp", 0))
 	if exp_gain > 0:
 		print("[BattleResult] exp pending:", exp_gain)

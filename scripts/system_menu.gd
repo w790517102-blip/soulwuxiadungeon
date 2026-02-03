@@ -43,6 +43,10 @@ func _on_tab_changed(tab_index: int) -> void:
 func _refresh_item_tab() -> void:
 	if item_list == null or item_desc == null:
 		return
+	var selected_index = item_list.get_selected_items()
+	var selected_id := ""
+	if selected_index.size() > 0:
+		selected_id = str(item_list.get_item_metadata(selected_index[0]))
 	item_list.clear()
 	_item_entries = InventorySync.get_items()
 	for item in _item_entries:
@@ -50,9 +54,14 @@ func _refresh_item_tab() -> void:
 		var label = "%s x%d" % [item.get("name", item.get("id", "???")), count]
 		item_list.add_item(label)
 		var item_index = item_list.item_count - 1
-		item_list.set_item_metadata(item_index, item.get("id", ""))
+		var item_id = item.get("id", "")
+		item_list.set_item_metadata(item_index, item_id)
+		if selected_id != "" and item_id == selected_id:
+			item_list.select(item_index)
 	if _item_entries.is_empty():
 		item_desc.text = "背包裡空空如也。"
+	elif selected_id != "":
+		_on_item_selected(item_list.get_selected_items()[0])
 	else:
 		item_list.select(0)
 		_on_item_selected(0)
