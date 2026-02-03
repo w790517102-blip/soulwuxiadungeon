@@ -5,6 +5,9 @@ extends Node
 
 const ItemDB = preload("res://scripts/db/ItemDB.gd")
 
+signal inventory_changed
+signal gold_changed(new_gold: int)
+
 var party_inventory: Array = [
 	{"id": "herb", "count": 3},
 	{"id": "elixir_qi", "count": 2},
@@ -47,6 +50,7 @@ func consume_item(id: String, amount: int = 1) -> void:
 				party_inventory.erase(entry)
 			else:
 				entry["count"] = new_count
+			inventory_changed.emit()
 			return
 
 func add_item_stack(id: String, amount: int = 1) -> void:
@@ -55,14 +59,17 @@ func add_item_stack(id: String, amount: int = 1) -> void:
 	for entry in party_inventory:
 		if entry.get("id") == id:
 			entry["count"] = int(entry.get("count", 0)) + amount
+			inventory_changed.emit()
 			return
 	party_inventory.append({"id": id, "count": amount})
+	inventory_changed.emit()
 
 func apply_battle_result(battle_result: Dictionary) -> void:
 	if battle_result.is_empty():
 		return
 	var gold_gain = int(battle_result.get("gold", 0))
 	party_gold += gold_gain
+	gold_changed.emit(party_gold)
 	var drops = battle_result.get("drops", [])
 	if drops is Array:
 		for drop in drops:

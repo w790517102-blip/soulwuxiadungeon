@@ -21,6 +21,8 @@ func _ready():
 		item_list.item_selected.connect(_on_item_selected)
 	if tabs:
 		tabs.tab_changed.connect(_on_tab_changed)
+	if InventorySync:
+		InventorySync.inventory_changed.connect(_on_inventory_changed)
 	_refresh_item_tab()
 
 func _unhandled_input(event):
@@ -47,6 +49,8 @@ func _refresh_item_tab() -> void:
 		var count = int(item.get("quantity", item.get("count", 0)))
 		var label = "%s x%d" % [item.get("name", item.get("id", "???")), count]
 		item_list.add_item(label)
+		var item_index = item_list.item_count - 1
+		item_list.set_item_metadata(item_index, item.get("id", ""))
 	if _item_entries.is_empty():
 		item_desc.text = "背包裡空空如也。"
 	else:
@@ -54,10 +58,22 @@ func _refresh_item_tab() -> void:
 		_on_item_selected(0)
 
 func _on_item_selected(index: int) -> void:
-	if index < 0 or index >= _item_entries.size():
+	if index < 0 or index >= item_list.item_count:
 		return
-	var item: Dictionary = _item_entries[index]
+	var item_id = str(item_list.get_item_metadata(index))
+	if item_id == "":
+		return
+	var item: Dictionary = InventorySync.get_item_by_id(item_id)
+	if item.is_empty():
+		return
 	var name = item.get("name", item.get("id", "???"))
 	var desc = item.get("desc", item.get("description", ""))
 	var count = int(item.get("quantity", item.get("count", 0)))
 	item_desc.text = "[b]%s[/b]\n數量：%d\n\n%s" % [name, count, desc]
+
+func _on_inventory_changed() -> void:
+	if tabs == null:
+		return
+	var item_tab_index = $VBoxContainer/道具.get_index()
+	if tabs.current_tab == item_tab_index:
+		_refresh_item_tab()

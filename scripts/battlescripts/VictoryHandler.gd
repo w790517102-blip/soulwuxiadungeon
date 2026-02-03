@@ -9,6 +9,7 @@ func victory(battle_result: Dictionary = {}) -> void:
 	print("[VictoryHandler] victory called")
 	if typeof(battle_result) == TYPE_DICTIONARY and not battle_result.is_empty():
 		InventorySync.apply_battle_result(battle_result)
+	# ✅ 勝利後一定回地圖：後續劇情與流程統一在地圖場景續接
 	_request_return_to_map("victory", battle_result)
 
 func defeat(battle_result: Dictionary = {}) -> void:
