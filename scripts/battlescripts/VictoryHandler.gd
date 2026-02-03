@@ -1,4 +1,5 @@
 extends Node
+const InventorySync = preload("res://scripts/battlescripts/InventorySync.gd")
 
 var _returning := false
 
@@ -7,6 +8,8 @@ func _ready() -> void:
 
 func victory(battle_result: Dictionary = {}) -> void:
 	print("[VictoryHandler] victory called")
+	if typeof(battle_result) == TYPE_DICTIONARY and not battle_result.is_empty():
+		InventorySync.apply_battle_result(battle_result)
 	_request_return_to_map("victory", battle_result)
 
 func defeat(battle_result: Dictionary = {}) -> void:
