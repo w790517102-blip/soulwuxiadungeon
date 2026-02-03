@@ -61,7 +61,14 @@ func _refresh_item_tab() -> void:
 	if _item_entries.is_empty():
 		item_desc.text = "背包裡空空如也。"
 	elif selected_id != "":
-		_on_item_selected(item_list.get_selected_items()[0])
+		var selected_items = item_list.get_selected_items()
+		if selected_items.size() > 0:
+			_on_item_selected(selected_items[0])
+		elif item_list.item_count > 0:
+			item_list.select(0)
+			_on_item_selected(0)
+		else:
+			item_desc.text = "背包裡空空如也。"
 	else:
 		item_list.select(0)
 		_on_item_selected(0)
