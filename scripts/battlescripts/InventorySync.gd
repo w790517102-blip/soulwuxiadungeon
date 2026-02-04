@@ -7,6 +7,7 @@ const ItemDB = preload("res://scripts/db/ItemDB.gd")
 
 signal inventory_changed
 signal gold_changed(new_gold: int)
+signal equipment_changed
 
 var party_inventory: Array = [
 	{"id": "herb", "count": 3},
@@ -17,8 +18,18 @@ var party_inventory: Array = [
 	{"id": "item_pili_single", "count": 3},
 	{"id": "item_pili_aoe", "count": 3},
 	{"id": "item_fire_talisman", "count": 3},
+	{"id": "iron_sword", "count": 1},
+	{"id": "bronze_sword", "count": 1},
+	{"id": "cloth_armor", "count": 1},
+	{"id": "jade_pendant", "count": 1},
+	{"id": "quest_letter", "count": 1},
 ]
 var party_gold: int = 0
+var equipped := {
+	"weapon": "",
+	"armor": "",
+	"accessory": "",
+}
 
 func get_gold() -> int:
 	return party_gold
@@ -59,6 +70,46 @@ func consume_item(id: String, amount: int = 1) -> void:
 func add_item_stack(id: String, amount: int = 1) -> void:
 	if _add_item_stack_internal(id, amount):
 		inventory_changed.emit()
+
+func equip_item(item_id: String) -> void:
+	var item_def := ItemDB.get_def(item_id)
+	if item_def.is_empty():
+		return
+	if get_item_by_id(item_id).is_empty():
+		return
+	var slot := str(item_def.get("equip_slot", ""))
+	if slot == "":
+		return
+	var current_id := str(equipped.get(slot, ""))
+	if current_id == item_id:
+		return
+	if current_id != "":
+		_add_item_stack_internal(current_id, 1)
+	equipped[slot] = item_id
+	consume_item(item_id, 1)
+	equipment_changed.emit()
+
+func unequip(slot: String) -> void:
+	if not equipped.has(slot):
+		return
+	var current_id := str(equipped.get(slot, ""))
+	if current_id == "":
+		return
+	equipped[slot] = ""
+	_add_item_stack_internal(current_id, 1)
+	inventory_changed.emit()
+	equipment_changed.emit()
+
+func get_equipped() -> Dictionary:
+	return equipped.duplicate(true)
+
+func is_equipped(item_id: String) -> bool:
+	if item_id == "":
+		return false
+	for slot in equipped.keys():
+		if str(equipped.get(slot, "")) == item_id:
+			return true
+	return false
 
 func _add_item_stack_internal(id: String, amount: int) -> bool:
 	if id == "" or amount <= 0:

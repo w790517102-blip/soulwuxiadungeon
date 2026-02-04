@@ -29,8 +29,10 @@ func _ready():
 	if InventorySync:
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
+		InventorySync.equipment_changed.connect(_on_equipment_changed)
 	_refresh_item_tab()
 	_refresh_gold()
+	_update_use_button("")
 
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
@@ -56,15 +58,18 @@ func _refresh_item_tab() -> void:
 	_item_entries = InventorySync.get_items()
 	for item in _item_entries:
 		var count = int(item.get("quantity", item.get("count", 0)))
-		var label = "%s x%d" % [item.get("name", item.get("id", "???")), count]
+		var item_id = str(item.get("id", ""))
+		var label = "%s x%d" % [item.get("name", item_id if item_id != "" else "???"), count]
+		if InventorySync.is_equipped(item_id):
+			label += "（裝備中）"
 		item_list.add_item(label)
 		var item_index = item_list.item_count - 1
-		var item_id = item.get("id", "")
 		item_list.set_item_metadata(item_index, item_id)
 		if selected_id != "" and item_id == selected_id:
 			item_list.select(item_index)
 	if _item_entries.is_empty():
 		item_desc.text = "背包裡空空如也。"
+		_update_use_button("")
 	elif selected_id != "":
 		var selected_items = item_list.get_selected_items()
 		if selected_items.size() > 0:
@@ -74,6 +79,7 @@ func _refresh_item_tab() -> void:
 			_on_item_selected(0)
 		else:
 			item_desc.text = "背包裡空空如也。"
+			_update_use_button("")
 	else:
 		item_list.select(0)
 		_on_item_selected(0)
@@ -91,6 +97,7 @@ func _on_item_selected(index: int) -> void:
 	var desc = item.get("desc", item.get("description", ""))
 	var count = int(item.get("quantity", item.get("count", 0)))
 	item_desc.text = "[b]%s[/b]\n數量：%d\n\n%s" % [name, count, desc]
+	_update_use_button(item_id)
 
 func _on_inventory_changed() -> void:
 	if tabs == null:
@@ -98,6 +105,9 @@ func _on_inventory_changed() -> void:
 	var item_tab_index = $VBoxContainer/道具.get_index()
 	if tabs.current_tab == item_tab_index:
 		_refresh_item_tab()
+
+func _on_equipment_changed() -> void:
+	_refresh_item_tab()
 
 func _on_gold_changed(_new_gold: int) -> void:
 	_refresh_gold()
@@ -118,5 +128,62 @@ func _on_use_pressed() -> void:
 	var item_id = str(item_list.get_item_metadata(selected_items[0]))
 	if item_id == "":
 		return
-	InventorySync.consume_item(item_id, 1)
-	print("[ItemUse] used:", item_id)
+	var item_def := InventorySync.get_item_by_id(item_id)
+	if item_def.is_empty():
+		return
+	var use_action := str(item_def.get("use_action", "none"))
+	var use_scope := str(item_def.get("use_scope", "none"))
+	if use_action == "consume":
+		if use_scope == "any" or use_scope == "world":
+			InventorySync.consume_item(item_id, 1)
+			print("[ItemUse] used:", item_id)
+		return
+	if use_action == "equip":
+		if use_scope != "any" and use_scope != "world":
+			return
+		var slot := str(item_def.get("equip_slot", ""))
+		if slot == "":
+			return
+		if InventorySync.is_equipped(item_id):
+			InventorySync.unequip(slot)
+			print("[Unequip] slot=%s" % slot)
+		else:
+			InventorySync.equip_item(item_id)
+			print("[Equip] slot=%s id=%s" % [slot, item_id])
+		return
+
+func _update_use_button(item_id: String) -> void:
+	if use_button == null:
+		return
+	if item_id == "":
+		use_button.disabled = true
+		use_button.text = "不可使用"
+		return
+	var item_def := InventorySync.get_item_by_id(item_id)
+	if item_def.is_empty():
+		use_button.disabled = true
+		use_button.text = "不可使用"
+		return
+	var use_action := str(item_def.get("use_action", "none"))
+	var use_scope := str(item_def.get("use_scope", "none"))
+	if use_action == "consume":
+		if use_scope == "any" or use_scope == "world":
+			use_button.disabled = false
+			use_button.text = "使用"
+		elif use_scope == "battle":
+			use_button.disabled = true
+			use_button.text = "戰鬥可用"
+		else:
+			use_button.disabled = true
+			use_button.text = "不可使用"
+		return
+	if use_action == "equip":
+		if use_scope == "any" or use_scope == "world":
+			use_button.disabled = false
+			use_button.text = "卸下" if InventorySync.is_equipped(item_id) else "裝備"
+		else:
+			use_button.disabled = true
+			use_button.text = "不可在此更換"
+		return
+	use_button.disabled = true
+	use_button.text = "不可使用"
