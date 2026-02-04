@@ -92,6 +92,7 @@ const ITEM_DEFS := {
 		"use_action": "equip",
 		"equip_slot": "weapon_1",
 		"weapon_type": "劍",
+		"stats": {"atk": 3},
 	},
 	"bronze_sword": {
 		"name": "青銅劍",
@@ -101,6 +102,7 @@ const ITEM_DEFS := {
 		"use_action": "equip",
 		"equip_slot": "weapon_1",
 		"weapon_type": "劍",
+		"stats": {"atk": 4, "speed": 1},
 	},
 	"ink_brush": {
 		"name": "墨筆",
@@ -136,6 +138,7 @@ const ITEM_DEFS := {
 		"use_scope": "world",
 		"use_action": "equip",
 		"equip_slot": "armor",
+		"stats": {"def": 2, "max_hp": 10},
 	},
 	"jade_pendant": {
 		"name": "玉佩",
@@ -144,6 +147,7 @@ const ITEM_DEFS := {
 		"use_scope": "world",
 		"use_action": "equip",
 		"equip_slot": "accessory",
+		"stats": {"max_mp": 15, "def": 1},
 	},
 	"quest_letter": {
 		"name": "密函",
@@ -173,6 +177,8 @@ static func get_def(id: String) -> Dictionary:
 		out["equip_slot"] = ""
 	if not out.has("weapon_type"):
 		out["weapon_type"] = ""
+	if not out.has("stats"):
+		out["stats"] = {}
 	return out
 
 static func make_item(id: String) -> Dictionary:

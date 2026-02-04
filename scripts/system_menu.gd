@@ -6,6 +6,11 @@ extends Panel
 @onready var item_desc: RichTextLabel = $VBoxContainer/道具/RichTextLabel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
 @onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
+@onready var status_atk_label: Label = get_node_or_null("VBoxContainer/狀態/StatusAtkLabel")
+@onready var status_def_label: Label = get_node_or_null("VBoxContainer/狀態/StatusDefLabel")
+@onready var status_hp_label: Label = get_node_or_null("VBoxContainer/狀態/StatusHpLabel")
+@onready var status_mp_label: Label = get_node_or_null("VBoxContainer/狀態/StatusMpLabel")
+@onready var status_speed_label: Label = get_node_or_null("VBoxContainer/狀態/StatusSpeedLabel")
 @onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
 @onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
@@ -65,6 +70,7 @@ func _ready():
 	_refresh_item_tab()
 	_refresh_gold()
 	_refresh_equipment_tab()
+	_refresh_status_tab()
 	_update_use_button("")
 
 func _unhandled_input(event):
@@ -142,6 +148,7 @@ func _on_inventory_changed() -> void:
 func _on_equipment_changed() -> void:
 	_refresh_item_tab()
 	_refresh_equipment_tab()
+	_refresh_status_tab()
 
 func _on_gold_changed(_new_gold: int) -> void:
 	_refresh_gold()
@@ -152,6 +159,34 @@ func _refresh_gold() -> void:
 		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
 		status_gold_label.text = "💰 盤纏：%d文" % gold
+
+func _refresh_status_tab() -> void:
+	var actor := _get_active_actor()
+	if actor.is_empty():
+		return
+	var base_atk := int(actor.get("atk", 0))
+	var base_def := int(actor.get("def", 0))
+	var base_hp := int(actor.get("hp", 0))
+	var base_max_hp := int(actor.get("max_hp", base_hp))
+	var base_mp := int(actor.get("mp", 0))
+	var base_max_mp := int(actor.get("max_mp", base_mp))
+	var base_speed := int(actor.get("speed", 0))
+	var bonus := InventorySync.get_equipment_stat_bonus()
+	var bonus_atk := int(bonus.get("atk", 0))
+	var bonus_def := int(bonus.get("def", 0))
+	var bonus_max_hp := int(bonus.get("max_hp", 0))
+	var bonus_max_mp := int(bonus.get("max_mp", 0))
+	var bonus_speed := int(bonus.get("speed", 0))
+	if status_atk_label:
+		status_atk_label.text = "攻：%d (+%d)" % [base_atk, bonus_atk]
+	if status_def_label:
+		status_def_label.text = "防：%d (+%d)" % [base_def, bonus_def]
+	if status_hp_label:
+		status_hp_label.text = "氣血：%d/%d (+%d max)" % [base_hp, base_max_hp + bonus_max_hp, bonus_max_hp]
+	if status_mp_label:
+		status_mp_label.text = "內力：%d/%d (+%d max)" % [base_mp, base_max_mp + bonus_max_mp, bonus_max_mp]
+	if status_speed_label:
+		status_speed_label.text = "身法：%d (+%d)" % [base_speed, bonus_speed]
 
 func _refresh_equipment_tab() -> void:
 	var equipped := InventorySync.get_equipped()
@@ -225,6 +260,13 @@ func _get_active_character_id() -> String:
 	if TeamData and TeamData.current_team_ids.size() > 0:
 		return str(TeamData.current_team_ids[0])
 	return "liuyu"
+
+func _get_active_actor() -> Dictionary:
+	if TeamData:
+		var party := TeamData.get_active_party()
+		if party.size() > 0 and typeof(party[0]) == TYPE_DICTIONARY:
+			return party[0]
+	return {}
 
 func _on_equip_popup_selected(index: int) -> void:
 	if equip_popup == null:

@@ -36,6 +36,26 @@ metadata/_tab_index = 0
 layout_mode = 2
 text = "💰 盤纏：0文"
 
+[node name="StatusAtkLabel" type="Label" parent="VBoxContainer/狀態"]
+layout_mode = 2
+text = "攻：0 (+0)"
+
+[node name="StatusDefLabel" type="Label" parent="VBoxContainer/狀態"]
+layout_mode = 2
+text = "防：0 (+0)"
+
+[node name="StatusHpLabel" type="Label" parent="VBoxContainer/狀態"]
+layout_mode = 2
+text = "氣血：0/0 (+0 max)"
+
+[node name="StatusMpLabel" type="Label" parent="VBoxContainer/狀態"]
+layout_mode = 2
+text = "內力：0/0 (+0 max)"
+
+[node name="StatusSpeedLabel" type="Label" parent="VBoxContainer/狀態"]
+layout_mode = 2
+text = "身法：0 (+0)"
+
 [node name="Label" type="Label" parent="VBoxContainer/狀態"]
 layout_mode = 2
 

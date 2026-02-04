@@ -34,6 +34,7 @@ var equipped := {
 	"armor": "",
 	"accessory": "",
 }
+const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed"]
 
 func get_gold() -> int:
 	return party_gold
@@ -119,6 +120,23 @@ func is_equipped(item_id: String) -> bool:
 		if str(equipped.get(slot, "")) == item_id:
 			return true
 	return false
+
+func get_equipment_stat_bonus() -> Dictionary:
+	var bonus := {}
+	for key in STAT_KEYS:
+		bonus[key] = 0
+	for slot in equipped.keys():
+		var item_id := str(equipped.get(slot, ""))
+		if item_id == "":
+			continue
+		var item_def := ItemDB.get_def(item_id)
+		if item_def.is_empty():
+			continue
+		var stats: Dictionary = item_def.get("stats", {})
+		for key in STAT_KEYS:
+			if stats.has(key):
+				bonus[key] = int(bonus.get(key, 0)) + int(stats.get(key, 0))
+	return bonus
 
 func _add_item_stack_internal(id: String, amount: int) -> bool:
 	if id == "" or amount <= 0:

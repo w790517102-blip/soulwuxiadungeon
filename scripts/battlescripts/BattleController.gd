@@ -92,6 +92,7 @@ func start_battle(context: Dictionary) -> void:
 	ruleset = context.get("ruleset", {})
 	regen_policy = context.get("regen_policy", {})
 	_snapshot_player_base_stats()
+	_apply_equipment_bonuses()
 
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
@@ -120,6 +121,23 @@ func start_battle(context: Dictionary) -> void:
 	last_round_regen = -1
 
 	turn_manager.start_battle(player_party, enemy_party)
+
+func _apply_equipment_bonuses() -> void:
+	if InventorySync == null:
+		return
+	var bonus := InventorySync.get_equipment_stat_bonus()
+	for p in player_party:
+		if typeof(p) != TYPE_DICTIONARY:
+			continue
+		var max_hp := int(p.get("max_hp", p.get("hp", 0))) + int(bonus.get("max_hp", 0))
+		var max_mp := int(p.get("max_mp", p.get("mp", 0))) + int(bonus.get("max_mp", 0))
+		p["atk"] = int(p.get("atk", 0)) + int(bonus.get("atk", 0))
+		p["def"] = int(p.get("def", 0)) + int(bonus.get("def", 0))
+		p["speed"] = int(p.get("speed", 0)) + int(bonus.get("speed", 0))
+		p["max_hp"] = max_hp
+		p["max_mp"] = max_mp
+		p["hp"] = min(int(p.get("hp", 0)), max_hp)
+		p["mp"] = min(int(p.get("mp", 0)), max_mp)
 
 func _play_battle_intro(context: Dictionary) -> void:
 	var tone_block = context.get("tone", {})
