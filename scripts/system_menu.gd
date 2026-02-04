@@ -15,7 +15,7 @@ extends Panel
 var _item_entries: Array = []
 var _active_equip_slot := ""
 
-const DEFAULT_UNARMED_NAME := "拳掌"
+const DEFAULT_UNARMED_NAME := "空手"
 const WEAPON_RULES := {
 	"liuyu": {
 		"weapon_1": ["劍"],
@@ -23,7 +23,7 @@ const WEAPON_RULES := {
 	},
 	"shumian": {
 		"weapon_1": ["筆"],
-		"weapon_2": ["拳掌"],
+		"weapon_2": ["拳", "掌"],
 	},
 	"lieshao": {
 		"weapon_1": ["琴"],
