@@ -90,7 +90,8 @@ const ITEM_DEFS := {
 		"type": "equipment",
 		"use_scope": "world",
 		"use_action": "equip",
-		"equip_slot": "weapon",
+		"equip_slot": "weapon_1",
+		"weapon_type": "劍",
 	},
 	"bronze_sword": {
 		"name": "青銅劍",
@@ -98,7 +99,35 @@ const ITEM_DEFS := {
 		"type": "equipment",
 		"use_scope": "world",
 		"use_action": "equip",
-		"equip_slot": "weapon",
+		"equip_slot": "weapon_1",
+		"weapon_type": "劍",
+	},
+	"ink_brush": {
+		"name": "墨筆",
+		"desc": "書家墨筆，筆走龍蛇亦可為武。",
+		"type": "equipment",
+		"use_scope": "world",
+		"use_action": "equip",
+		"equip_slot": "weapon_1",
+		"weapon_type": "筆",
+	},
+	"yaoqin": {
+		"name": "瑤琴",
+		"desc": "清音瑤琴，弦動可裂金石。",
+		"type": "equipment",
+		"use_scope": "world",
+		"use_action": "equip",
+		"equip_slot": "weapon_1",
+		"weapon_type": "琴",
+	},
+	"short_dao": {
+		"name": "短刀",
+		"desc": "刀身短小，利於副手運用。",
+		"type": "equipment",
+		"use_scope": "world",
+		"use_action": "equip",
+		"equip_slot": "weapon_2",
+		"weapon_type": "刀",
 	},
 	"cloth_armor": {
 		"name": "布衣",
@@ -142,6 +171,8 @@ static func get_def(id: String) -> Dictionary:
 		out["use_action"] = "none"
 	if not out.has("equip_slot"):
 		out["equip_slot"] = ""
+	if not out.has("weapon_type"):
+		out["weapon_type"] = ""
 	return out
 
 static func make_item(id: String) -> Dictionary:

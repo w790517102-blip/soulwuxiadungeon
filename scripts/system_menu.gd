@@ -7,10 +7,29 @@ extends Panel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
 @onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
 @onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
-@onready var weapon_label: Label = get_node_or_null("VBoxContainer/裝備/WeaponLabel")
-@onready var armor_label: Label = get_node_or_null("VBoxContainer/裝備/ArmorLabel")
-@onready var accessory_label: Label = get_node_or_null("VBoxContainer/裝備/AccessoryLabel")
+@onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
+@onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
+@onready var armor_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorButton")
+@onready var accessory_button: Button = get_node_or_null("VBoxContainer/裝備/AccessoryButton")
+@onready var equip_popup: PopupMenu = get_node_or_null("EquipPopup")
 var _item_entries: Array = []
+var _active_equip_slot := ""
+
+const DEFAULT_UNARMED_NAME := "拳掌"
+const WEAPON_RULES := {
+	"liuyu": {
+		"weapon_1": ["劍"],
+		"weapon_2": [],
+	},
+	"shumian": {
+		"weapon_1": ["筆"],
+		"weapon_2": ["拳掌"],
+	},
+	"lieshao": {
+		"weapon_1": ["琴"],
+		"weapon_2": ["刀"],
+	},
+}
 
 func _ready():
 	# ✅ Godot 4 正確用法，Control 沒有 pause_mode，這裡不能設！
@@ -33,6 +52,16 @@ func _ready():
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
 		InventorySync.equipment_changed.connect(_on_equipment_changed)
+	if weapon1_button:
+		weapon1_button.pressed.connect(func(): _open_equip_popup("weapon_1"))
+	if weapon2_button:
+		weapon2_button.pressed.connect(func(): _open_equip_popup("weapon_2"))
+	if armor_button:
+		armor_button.pressed.connect(func(): _open_equip_popup("armor"))
+	if accessory_button:
+		accessory_button.pressed.connect(func(): _open_equip_popup("accessory"))
+	if equip_popup:
+		equip_popup.index_pressed.connect(_on_equip_popup_selected)
 	_refresh_item_tab()
 	_refresh_gold()
 	_refresh_equipment_tab()
@@ -126,19 +155,87 @@ func _refresh_gold() -> void:
 
 func _refresh_equipment_tab() -> void:
 	var equipped := InventorySync.get_equipped()
-	_set_equipment_label(weapon_label, "武器", str(equipped.get("weapon", "")))
-	_set_equipment_label(armor_label, "防具", str(equipped.get("armor", "")))
-	_set_equipment_label(accessory_label, "飾品", str(equipped.get("accessory", "")))
+	_set_equipment_button(weapon1_button, "主武器", str(equipped.get("weapon_1", "")), "weapon_1")
+	_set_equipment_button(weapon2_button, "副武器", str(equipped.get("weapon_2", "")), "weapon_2")
+	_set_equipment_button(armor_button, "防具", str(equipped.get("armor", "")), "armor")
+	_set_equipment_button(accessory_button, "飾品", str(equipped.get("accessory", "")), "accessory")
 
-func _set_equipment_label(label: Label, prefix: String, item_id: String) -> void:
-	if label == null:
+func _set_equipment_button(button: Button, prefix: String, item_id: String, slot: String) -> void:
+	if button == null:
 		return
 	var display_name := "—"
 	if item_id != "":
 		var item_def := ItemDB.get_def(item_id)
 		if not item_def.is_empty():
 			display_name = str(item_def.get("name", item_id))
-	label.text = "%s：%s" % [prefix, display_name]
+	elif slot.begins_with("weapon"):
+		display_name = DEFAULT_UNARMED_NAME
+	if slot == "weapon_2" and _is_slot_locked(slot):
+		display_name = "%s（固定）" % DEFAULT_UNARMED_NAME
+		button.disabled = true
+	else:
+		button.disabled = false
+	button.text = "%s：%s" % [prefix, display_name]
+
+func _is_slot_locked(slot: String) -> bool:
+	if _get_active_character_id() == "shumian" and slot == "weapon_2":
+		return true
+	return false
+
+func _open_equip_popup(slot: String) -> void:
+	if equip_popup == null:
+		return
+	if _is_slot_locked(slot):
+		return
+	_active_equip_slot = slot
+	equip_popup.clear()
+	equip_popup.add_item("<卸下>")
+	equip_popup.set_item_metadata(0, "")
+	var index := 1
+	for item in InventorySync.get_items():
+		var item_id := str(item.get("id", ""))
+		if item_id == "":
+			continue
+		var item_def := ItemDB.get_def(item_id)
+		if item_def.is_empty():
+			continue
+		if str(item_def.get("use_action", "none")) != "equip":
+			continue
+		if str(item_def.get("equip_slot", "")) != slot:
+			continue
+		if not _is_weapon_type_allowed(item_def, slot):
+			continue
+		var name := str(item_def.get("name", item_id))
+		equip_popup.add_item(name)
+		equip_popup.set_item_metadata(index, item_id)
+		index += 1
+	equip_popup.popup()
+
+func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
+	if not slot.begins_with("weapon"):
+		return true
+	var rules := WEAPON_RULES.get(_get_active_character_id(), {})
+	var allowed_types: Array = rules.get(slot, [])
+	if allowed_types.is_empty():
+		return true
+	var weapon_type := str(item_def.get("weapon_type", ""))
+	return allowed_types.has(weapon_type)
+
+func _get_active_character_id() -> String:
+	if TeamData and TeamData.current_team_ids.size() > 0:
+		return str(TeamData.current_team_ids[0])
+	return "liuyu"
+
+func _on_equip_popup_selected(index: int) -> void:
+	if equip_popup == null:
+		return
+	if _active_equip_slot == "":
+		return
+	var item_id = str(equip_popup.get_item_metadata(index))
+	if item_id == "":
+		InventorySync.unequip(_active_equip_slot)
+		return
+	InventorySync.equip_item(item_id)
 
 func _on_use_pressed() -> void:
 	if item_list == null:

@@ -17,6 +17,7 @@ offset_right = 577.499
 offset_bottom = 326.5
 script = ExtResource("1_pg0ij")
 
+[node name="EquipPopup" type="PopupMenu" parent="."]
 [node name="VBoxContainer" type="TabContainer" parent="."]
 layout_mode = 0
 offset_left = 61.0
@@ -67,15 +68,19 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
-[node name="WeaponLabel" type="Label" parent="VBoxContainer/裝備"]
+[node name="Weapon1Button" type="Button" parent="VBoxContainer/裝備"]
 layout_mode = 2
-text = "武器：—"
+text = "主武器：—"
 
-[node name="ArmorLabel" type="Label" parent="VBoxContainer/裝備"]
+[node name="Weapon2Button" type="Button" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "副武器：—"
+
+[node name="ArmorButton" type="Button" parent="VBoxContainer/裝備"]
 layout_mode = 2
 text = "防具：—"
 
-[node name="AccessoryLabel" type="Label" parent="VBoxContainer/裝備"]
+[node name="AccessoryButton" type="Button" parent="VBoxContainer/裝備"]
 layout_mode = 2
 text = "飾品：—"
 

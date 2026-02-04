@@ -20,13 +20,17 @@ var party_inventory: Array = [
 	{"id": "item_fire_talisman", "count": 3},
 	{"id": "iron_sword", "count": 1},
 	{"id": "bronze_sword", "count": 1},
+	{"id": "ink_brush", "count": 1},
+	{"id": "yaoqin", "count": 1},
+	{"id": "short_dao", "count": 1},
 	{"id": "cloth_armor", "count": 1},
 	{"id": "jade_pendant", "count": 1},
 	{"id": "quest_letter", "count": 1},
 ]
 var party_gold: int = 0
 var equipped := {
-	"weapon": "",
+	"weapon_1": "",
+	"weapon_2": "",
 	"armor": "",
 	"accessory": "",
 }
@@ -82,6 +86,8 @@ func equip_item(item_id: String) -> void:
 		return
 	var slot := str(item_def.get("equip_slot", ""))
 	if slot == "":
+		return
+	if not equipped.has(slot):
 		return
 	var current_id := str(equipped.get(slot, ""))
 	if current_id == item_id:
