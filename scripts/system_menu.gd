@@ -7,6 +7,9 @@ extends Panel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
 @onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
 @onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
+@onready var weapon_label: Label = get_node_or_null("VBoxContainer/裝備/WeaponLabel")
+@onready var armor_label: Label = get_node_or_null("VBoxContainer/裝備/ArmorLabel")
+@onready var accessory_label: Label = get_node_or_null("VBoxContainer/裝備/AccessoryLabel")
 var _item_entries: Array = []
 
 func _ready():
@@ -32,6 +35,7 @@ func _ready():
 		InventorySync.equipment_changed.connect(_on_equipment_changed)
 	_refresh_item_tab()
 	_refresh_gold()
+	_refresh_equipment_tab()
 	_update_use_button("")
 
 func _unhandled_input(event):
@@ -108,6 +112,7 @@ func _on_inventory_changed() -> void:
 
 func _on_equipment_changed() -> void:
 	_refresh_item_tab()
+	_refresh_equipment_tab()
 
 func _on_gold_changed(_new_gold: int) -> void:
 	_refresh_gold()
@@ -118,6 +123,22 @@ func _refresh_gold() -> void:
 		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
 		status_gold_label.text = "💰 盤纏：%d文" % gold
+
+func _refresh_equipment_tab() -> void:
+	var equipped := InventorySync.get_equipped()
+	_set_equipment_label(weapon_label, "武器", str(equipped.get("weapon", "")))
+	_set_equipment_label(armor_label, "防具", str(equipped.get("armor", "")))
+	_set_equipment_label(accessory_label, "飾品", str(equipped.get("accessory", "")))
+
+func _set_equipment_label(label: Label, prefix: String, item_id: String) -> void:
+	if label == null:
+		return
+	var display_name := "—"
+	if item_id != "":
+		var item_def := ItemDB.get_def(item_id)
+		if not item_def.is_empty():
+			display_name = str(item_def.get("name", item_id))
+	label.text = "%s：%s" % [prefix, display_name]
 
 func _on_use_pressed() -> void:
 	if item_list == null:

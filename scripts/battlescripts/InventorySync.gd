@@ -38,7 +38,10 @@ func get_items() -> Array:
 	return _make_item_list(party_inventory)
 
 func get_battle_items() -> Array:
-	return get_items().filter(func(i): return i.has("effect"))
+	return get_items().filter(func(i):
+		return str(i.get("use_action", "none")) == "consume" \
+			and ["any", "battle"].has(str(i.get("use_scope", "none")))
+	)
 
 func get_item_by_id(id: String) -> Dictionary:
 	for entry in party_inventory:

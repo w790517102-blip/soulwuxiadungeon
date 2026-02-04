@@ -67,6 +67,18 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
+[node name="WeaponLabel" type="Label" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "武器：—"
+
+[node name="ArmorLabel" type="Label" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "防具：—"
+
+[node name="AccessoryLabel" type="Label" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "飾品：—"
+
 [node name="GridContainer" type="GridContainer" parent="VBoxContainer/裝備"]
 layout_mode = 2
 
