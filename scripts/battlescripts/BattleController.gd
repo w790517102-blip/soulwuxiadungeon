@@ -131,11 +131,18 @@ func _apply_equipment_bonuses() -> void:
 		if typeof(p) != TYPE_DICTIONARY:
 			continue
 		var bonus := InventorySync.get_equipment_stat_bonus(str(p.get("id", "")))
-		var max_hp := int(p.get("max_hp", p.get("hp", 0))) + int(bonus.get("max_hp", 0))
-		var max_mp := int(p.get("max_mp", p.get("mp", 0))) + int(bonus.get("max_mp", 0))
-		p["atk"] = int(p.get("atk", 0)) + int(bonus.get("atk", 0))
-		p["def"] = int(p.get("def", 0)) + int(bonus.get("def", 0))
-		p["speed"] = int(p.get("speed", 0)) + int(bonus.get("speed", 0))
+		var inner_force: Dictionary = p.get("inner_force", {})
+		var force_bonus: Dictionary = inner_force.get("stat_bonus", {})
+		var bonus_atk := int(bonus.get("atk", 0)) + int(force_bonus.get("atk", 0))
+		var bonus_def := int(bonus.get("def", 0)) + int(force_bonus.get("def", 0))
+		var bonus_speed := int(bonus.get("speed", 0)) + int(force_bonus.get("speed", 0))
+		var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(force_bonus.get("max_hp", 0))
+		var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(force_bonus.get("max_mp", 0))
+		var max_hp := int(p.get("max_hp", p.get("hp", 0))) + bonus_max_hp
+		var max_mp := int(p.get("max_mp", p.get("mp", 0))) + bonus_max_mp
+		p["atk"] = int(p.get("atk", 0)) + bonus_atk
+		p["def"] = int(p.get("def", 0)) + bonus_def
+		p["speed"] = int(p.get("speed", 0)) + bonus_speed
 		p["max_hp"] = max_hp
 		p["max_mp"] = max_mp
 		p["hp"] = min(int(p.get("hp", 0)), max_hp)

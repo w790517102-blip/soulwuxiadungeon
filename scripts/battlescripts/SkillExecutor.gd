@@ -42,23 +42,23 @@ func execute(
 	var skill_name: String = prefix + raw_skill_name
 	result["skill_name"] = skill_name
 
+	var w1: String = String(user.get("weapon_1", ""))
+	var w2: String = String(user.get("weapon_2", ""))
+
+	# 🖐️ 實際「佔手」的實體武器數（拳、掌不算佔手）
+	var real_weapon_count = 0
+	if w1 != "" and w1 != "拳" and w1 != "掌":
+		real_weapon_count += 1
+	if w2 != "" and w2 != "拳" and w2 != "掌":
+		real_weapon_count += 1
+
+	var has_free_hand = real_weapon_count < 2
+
 	# === 類別判斷：外功才檢查武器 ===
 	var category: String = String(skill_data.get("category", "外功"))
 	if category == "外功":
 		var weapon_required: String = String(skill_data.get("weapon_type", ""))
 		var require_free_hand: bool = bool(skill_data.get("require_free_hand", false))
-
-		var w1: String = String(user.get("weapon_1", ""))
-		var w2: String = String(user.get("weapon_2", ""))
-
-		# 🖐️ 實際「佔手」的實體武器數（拳、掌不算佔手）
-		var real_weapon_count = 0
-		if w1 != "" and w1 != "拳" and w1 != "掌":
-			real_weapon_count += 1
-		if w2 != "" and w2 != "拳" and w2 != "掌":
-			real_weapon_count += 1
-
-		var has_free_hand = real_weapon_count < 2
 		var uname: String = String(user.get("name", "???"))
 
 		if weapon_required == "拳" or weapon_required == "掌":
@@ -87,6 +87,20 @@ func execute(
 	var base_attack: float = float(user.get("atk", 10))
 	var multiplier: float = float(skill_data.get("power", 1.0))
 	var dmg: float = base_attack * multiplier
+
+	# === 內功 boost 傷害加成（C-run）===
+	var skill_weapon_type := String(skill_data.get("weapon_type", ""))
+	if skill_weapon_type != "" and not inner_force.is_empty():
+		var boost_weapon := String(inner_force.get("boost_weapon", ""))
+		var boost_pct := float(inner_force.get("boost_damage_pct", 0.0))
+		var require_unarmed := bool(inner_force.get("boost_require_unarmed", false))
+		var boost_ok := (boost_weapon != "" and skill_weapon_type == boost_weapon and boost_pct > 0.0)
+		if boost_ok and require_unarmed and real_weapon_count > 0:
+			boost_ok = false
+		if boost_ok:
+			dmg *= (1.0 + boost_pct)
+			result["boost_applied"] = true
+			result["boost_pct"] = boost_pct
 
 	var context: Dictionary = {}
 
