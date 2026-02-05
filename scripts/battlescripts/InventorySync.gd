@@ -28,12 +28,7 @@ var party_inventory: Array = [
 	{"id": "quest_letter", "count": 1},
 ]
 var party_gold: int = 0
-var equipped := {
-	"weapon_1": "",
-	"weapon_2": "",
-	"armor": "",
-	"accessory": "",
-}
+var equipped_by_actor: Dictionary = {}
 const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed"]
 
 func get_gold() -> int:
@@ -79,7 +74,7 @@ func add_item_stack(id: String, amount: int = 1) -> void:
 	if _add_item_stack_internal(id, amount):
 		inventory_changed.emit()
 
-func equip_item(item_id: String) -> void:
+func equip_item(item_id: String, actor_id: String = "") -> void:
 	var item_def := ItemDB.get_def(item_id)
 	if item_def.is_empty():
 		return
@@ -88,6 +83,7 @@ func equip_item(item_id: String) -> void:
 	var slot := str(item_def.get("equip_slot", ""))
 	if slot == "":
 		return
+	var equipped = _get_equipped_ref(actor_id)
 	if not equipped.has(slot):
 		return
 	var current_id := str(equipped.get(slot, ""))
@@ -99,7 +95,8 @@ func equip_item(item_id: String) -> void:
 	consume_item(item_id, 1)
 	equipment_changed.emit()
 
-func unequip(slot: String) -> void:
+func unequip(slot: String, actor_id: String = "") -> void:
+	var equipped = _get_equipped_ref(actor_id)
 	if not equipped.has(slot):
 		return
 	var current_id := str(equipped.get(slot, ""))
@@ -110,21 +107,23 @@ func unequip(slot: String) -> void:
 	inventory_changed.emit()
 	equipment_changed.emit()
 
-func get_equipped() -> Dictionary:
-	return equipped.duplicate(true)
+func get_equipped(actor_id: String = "") -> Dictionary:
+	return _get_equipped_ref(actor_id).duplicate(true)
 
-func is_equipped(item_id: String) -> bool:
+func is_equipped(item_id: String, actor_id: String = "") -> bool:
 	if item_id == "":
 		return false
+	var equipped = _get_equipped_ref(actor_id)
 	for slot in equipped.keys():
 		if str(equipped.get(slot, "")) == item_id:
 			return true
 	return false
 
-func get_equipment_stat_bonus() -> Dictionary:
+func get_equipment_stat_bonus(actor_id: String = "") -> Dictionary:
 	var bonus := {}
 	for key in STAT_KEYS:
 		bonus[key] = 0
+	var equipped = _get_equipped_ref(actor_id)
 	for slot in equipped.keys():
 		var item_id := str(equipped.get(slot, ""))
 		if item_id == "":
@@ -137,6 +136,24 @@ func get_equipment_stat_bonus() -> Dictionary:
 			if stats.has(key):
 				bonus[key] = int(bonus.get(key, 0)) + int(stats.get(key, 0))
 	return bonus
+
+func _get_equipped_ref(actor_id: String) -> Dictionary:
+	var resolved_id := _resolve_actor_id(actor_id)
+	if not equipped_by_actor.has(resolved_id):
+		equipped_by_actor[resolved_id] = {
+			"weapon_1": "",
+			"weapon_2": "",
+			"armor": "",
+			"accessory": "",
+		}
+	return equipped_by_actor[resolved_id]
+
+func _resolve_actor_id(actor_id: String) -> String:
+	if actor_id != "":
+		return actor_id
+	if TeamData and TeamData.current_team_ids.size() > 0:
+		return str(TeamData.current_team_ids[0])
+	return "liuyu"
 
 func _add_item_stack_internal(id: String, amount: int) -> bool:
 	if id == "" or amount <= 0:

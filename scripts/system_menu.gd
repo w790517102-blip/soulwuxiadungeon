@@ -99,7 +99,7 @@ func _refresh_item_tab() -> void:
 		var count = int(item.get("quantity", item.get("count", 0)))
 		var item_id = str(item.get("id", ""))
 		var label = "%s x%d" % [item.get("name", item_id if item_id != "" else "???"), count]
-		if InventorySync.is_equipped(item_id):
+		if InventorySync.is_equipped(item_id, _get_active_character_id()):
 			label += "（裝備中）"
 		item_list.add_item(label)
 		var item_index = item_list.item_count - 1
@@ -171,7 +171,7 @@ func _refresh_status_tab() -> void:
 	var base_mp := int(actor.get("mp", 0))
 	var base_max_mp := int(actor.get("max_mp", base_mp))
 	var base_speed := int(actor.get("speed", 0))
-	var bonus := InventorySync.get_equipment_stat_bonus()
+	var bonus := InventorySync.get_equipment_stat_bonus(_get_active_character_id())
 	var bonus_atk := int(bonus.get("atk", 0))
 	var bonus_def := int(bonus.get("def", 0))
 	var bonus_max_hp := int(bonus.get("max_hp", 0))
@@ -189,7 +189,7 @@ func _refresh_status_tab() -> void:
 		status_speed_label.text = "身法：%d (+%d)" % [base_speed, bonus_speed]
 
 func _refresh_equipment_tab() -> void:
-	var equipped := InventorySync.get_equipped()
+	var equipped := InventorySync.get_equipped(_get_active_character_id())
 	_set_equipment_button(weapon1_button, "主武器", str(equipped.get("weapon_1", "")), "weapon_1")
 	_set_equipment_button(weapon2_button, "副武器", str(equipped.get("weapon_2", "")), "weapon_2")
 	_set_equipment_button(armor_button, "防具", str(equipped.get("armor", "")), "armor")
@@ -275,9 +275,9 @@ func _on_equip_popup_selected(index: int) -> void:
 		return
 	var item_id = str(equip_popup.get_item_metadata(index))
 	if item_id == "":
-		InventorySync.unequip(_active_equip_slot)
+		InventorySync.unequip(_active_equip_slot, _get_active_character_id())
 		return
-	InventorySync.equip_item(item_id)
+	InventorySync.equip_item(item_id, _get_active_character_id())
 
 func _on_use_pressed() -> void:
 	if item_list == null:
@@ -304,11 +304,11 @@ func _on_use_pressed() -> void:
 		var slot := str(item_def.get("equip_slot", ""))
 		if slot == "":
 			return
-		if InventorySync.is_equipped(item_id):
-			InventorySync.unequip(slot)
+		if InventorySync.is_equipped(item_id, _get_active_character_id()):
+			InventorySync.unequip(slot, _get_active_character_id())
 			print("[Unequip] slot=%s" % slot)
 		else:
-			InventorySync.equip_item(item_id)
+			InventorySync.equip_item(item_id, _get_active_character_id())
 			print("[Equip] slot=%s id=%s" % [slot, item_id])
 		return
 
@@ -340,7 +340,7 @@ func _update_use_button(item_id: String) -> void:
 	if use_action == "equip":
 		if use_scope == "any" or use_scope == "world":
 			use_button.disabled = false
-			use_button.text = "卸下" if InventorySync.is_equipped(item_id) else "裝備"
+			use_button.text = "卸下" if InventorySync.is_equipped(item_id, _get_active_character_id()) else "裝備"
 		else:
 			use_button.disabled = true
 			use_button.text = "不可在此更換"

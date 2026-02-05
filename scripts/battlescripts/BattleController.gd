@@ -125,10 +125,10 @@ func start_battle(context: Dictionary) -> void:
 func _apply_equipment_bonuses() -> void:
 	if InventorySync == null:
 		return
-	var bonus := InventorySync.get_equipment_stat_bonus()
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
 			continue
+		var bonus := InventorySync.get_equipment_stat_bonus(str(p.get("id", "")))
 		var max_hp := int(p.get("max_hp", p.get("hp", 0))) + int(bonus.get("max_hp", 0))
 		var max_mp := int(p.get("max_mp", p.get("mp", 0))) + int(bonus.get("max_mp", 0))
 		p["atk"] = int(p.get("atk", 0)) + int(bonus.get("atk", 0))

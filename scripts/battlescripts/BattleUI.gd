@@ -22,6 +22,8 @@ var tone = ToneMap.new()
 @onready var battle_result_title = $BattleResultOverlay/ResultPanel/ResultContent/ResultTitle
 @onready var battle_result_body = $BattleResultOverlay/ResultPanel/ResultContent/ResultBody
 @onready var battle_result_confirm = $BattleResultOverlay/ResultPanel/ResultContent/ConfirmButton
+@onready var status_hover_popup: PanelContainer = $StatusHoverPopup
+@onready var status_hover_label: RichTextLabel = $StatusHoverPopup/StatusHoverLabel
 
 var character_skill_db: Node = null
 var skill_provider : Node = null
@@ -85,6 +87,103 @@ func _ready() -> void:
 	ally_slots = ally_panel.get_children()
 	enemy_slots = enemy_panel.get_children()
 	battle_result_overlay.hide()
+	_setup_hover_slots()
+	if status_hover_popup:
+		status_hover_popup.hide()
+		status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _setup_hover_slots() -> void:
+	for i in range(ally_slots.size()):
+		var slot = ally_slots[i]
+		if slot is Control:
+			if not slot.mouse_entered.is_connected(_on_slot_hover_entered):
+				slot.mouse_entered.connect(_on_slot_hover_entered.bind(false, i))
+			if not slot.mouse_exited.is_connected(_on_slot_hover_exited):
+				slot.mouse_exited.connect(_on_slot_hover_exited)
+	for i in range(enemy_slots.size()):
+		var enemy_slot = enemy_slots[i]
+		if enemy_slot is Control:
+			if not enemy_slot.mouse_entered.is_connected(_on_slot_hover_entered):
+				enemy_slot.mouse_entered.connect(_on_slot_hover_entered.bind(true, i))
+			if not enemy_slot.mouse_exited.is_connected(_on_slot_hover_exited):
+				enemy_slot.mouse_exited.connect(_on_slot_hover_exited)
+
+func _on_slot_hover_entered(is_enemy: bool, index: int) -> void:
+	if status_hover_popup == null or status_hover_label == null:
+		return
+	var actor: Dictionary = {}
+	if is_enemy:
+		if index >= 0 and index < enemies.size():
+			actor = enemies[index]
+	else:
+		if index >= 0 and index < allies.size():
+			actor = allies[index]
+	if actor.is_empty():
+		return
+	status_hover_label.text = _build_status_hover_text(actor)
+	status_hover_popup.show()
+	status_hover_popup.reset_size()
+	_position_hover_popup(get_viewport().get_mouse_position())
+
+func _on_slot_hover_exited() -> void:
+	if status_hover_popup:
+		status_hover_popup.hide()
+
+func _position_hover_popup(mouse_pos: Vector2) -> void:
+	if status_hover_popup == null:
+		return
+	var viewport_rect := get_viewport_rect()
+	var popup_size := status_hover_popup.size
+	var pos := mouse_pos + Vector2(16, 16)
+	if pos.x + popup_size.x > viewport_rect.size.x:
+		pos.x = max(0.0, viewport_rect.size.x - popup_size.x)
+	if pos.y + popup_size.y > viewport_rect.size.y:
+		pos.y = max(0.0, viewport_rect.size.y - popup_size.y)
+	status_hover_popup.global_position = pos
+
+func _build_status_hover_text(actor: Dictionary) -> String:
+	var name := str(actor.get("display_name", actor.get("name", "???")))
+	var hp := int(actor.get("hp", 0))
+	var max_hp := int(actor.get("max_hp", hp))
+	var mp := int(actor.get("mp", 0))
+	var max_mp := int(actor.get("max_mp", mp))
+	var atk := int(actor.get("atk", 0))
+	var def := int(actor.get("def", 0))
+	var speed := int(actor.get("speed", 0))
+	var lines := []
+	lines.append("[b]%s[/b]" % name)
+	lines.append("HP：%d / %d" % [hp, max_hp])
+	lines.append("MP：%d / %d" % [mp, max_mp])
+	lines.append("ATK：%d   DEF：%d   SPD：%d" % [atk, def, speed])
+	lines.append("狀態：")
+	var effects_text := _format_status_effects(actor)
+	lines.append(effects_text)
+	return "\n".join(lines)
+
+func _format_status_effects(actor: Dictionary) -> String:
+	var effects := actor.get("status_effects", {})
+	if typeof(effects) != TYPE_DICTIONARY or effects.is_empty():
+		return "無"
+	var lines: Array = []
+	for effect_id in effects.keys():
+		var data: Dictionary = effects[effect_id]
+		lines.append(_format_status_effect_line(effect_id, data))
+	return "\n".join(lines)
+
+func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
+	var turns := int(data.get("turns_left", 0))
+	match effect_id:
+		"speed_buff":
+			var delta := int(data.get("payload", {}).get("speed_delta", 0))
+			return "速度提升 +%d（剩 %d 回合）" % [delta, turns]
+		"speed_debuff":
+			var delta2 := int(data.get("payload", {}).get("slow_delta", 0))
+			return "速度降低 -%d（剩 %d 回合）" % [delta2, turns]
+		"force_element":
+			var element := str(data.get("payload", {}).get("element", ""))
+			return "元素變化：%s（剩 %d 回合）" % [element, turns]
+		_:
+			return "%s（剩 %d 回合）" % [effect_id, turns]
 
 
 # =========================
