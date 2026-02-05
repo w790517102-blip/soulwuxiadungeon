@@ -1,6 +1,7 @@
 extends Node
 
 const ToneMapScript = preload("res://scripts/battlestyles/ToneMap.gd")
+const ItemDB = preload("res://scripts/db/ItemDB.gd")
 const StatusEffectManagerScript = preload("res://scripts/battle/StatusEffectManager.gd")
 var tone_map = ToneMapScript.new()
 var status_manager = StatusEffectManagerScript.new()
@@ -93,6 +94,7 @@ func start_battle(context: Dictionary) -> void:
 	regen_policy = context.get("regen_policy", {})
 	_snapshot_player_base_stats()
 	_apply_equipment_bonuses()
+	_sync_actor_weapon_types()
 
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
@@ -138,6 +140,25 @@ func _apply_equipment_bonuses() -> void:
 		p["max_mp"] = max_mp
 		p["hp"] = min(int(p.get("hp", 0)), max_hp)
 		p["mp"] = min(int(p.get("mp", 0)), max_mp)
+
+func _sync_actor_weapon_types() -> void:
+	if InventorySync == null:
+		return
+	for p in player_party:
+		if typeof(p) != TYPE_DICTIONARY:
+			continue
+		var actor_id := str(p.get("id", ""))
+		var equipped := InventorySync.get_equipped(actor_id)
+		p["weapon_1"] = _weapon_type_from_item(str(equipped.get("weapon_1", "")))
+		p["weapon_2"] = _weapon_type_from_item(str(equipped.get("weapon_2", "")))
+
+func _weapon_type_from_item(item_id: String) -> String:
+	if item_id == "":
+		return ""
+	var item_def := ItemDB.get_def(item_id)
+	if item_def.is_empty():
+		return ""
+	return str(item_def.get("weapon_type", ""))
 
 func _play_battle_intro(context: Dictionary) -> void:
 	var tone_block = context.get("tone", {})
