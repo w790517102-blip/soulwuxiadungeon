@@ -112,8 +112,11 @@ func _on_tab_changed(tab_index: int) -> void:
 	if tabs == null:
 		return
 	var item_tab_index = $VBoxContainer/道具.get_index()
+	var martial_tab_index = $VBoxContainer/武術.get_index()
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
+	elif tab_index == martial_tab_index:
+		_refresh_martial_tabs()
 
 func _refresh_item_tab() -> void:
 	if item_list == null or item_desc == null:
@@ -295,8 +298,8 @@ func _update_skill_detail(skill: Dictionary) -> void:
 		lines.append("目標陣營：%s" % target_side)
 	skill_detail.text = "\n".join(lines)
 	if use_skill_button:
-		var is_support := skill.has("effect") or str(skill.get("category", "")).find("恢復") >= 0
-		use_skill_button.disabled = not is_support
+		var menu_usable := bool(skill.get("menu_usable", false))
+		use_skill_button.disabled = not menu_usable
 
 func _on_use_skill_pressed() -> void:
 	if _selected_skill.is_empty():
@@ -333,6 +336,9 @@ func _refresh_inner_force_lists() -> void:
 	var forces: Array = []
 	if not actor.is_empty():
 		forces = actor.get("available_inner_forces", [])
+	var active_prefix := ""
+	if not actor.is_empty():
+		active_prefix = str(actor.get("inner_force", {}).get("prefix", ""))
 	for tab in inner_force_tabs.get_children():
 		if not tab.has_node("InnerForceList"):
 			continue
@@ -344,7 +350,10 @@ func _refresh_inner_force_lists() -> void:
 				continue
 			if str(force.get("element", "")) != element:
 				continue
-			var label := "%s" % str(force.get("prefix", "???"))
+			var prefix := str(force.get("prefix", "???"))
+			var label := prefix
+			if active_prefix != "" and prefix == active_prefix:
+				label += "（使用中）"
 			list.add_item(label)
 			list.set_item_metadata(list.item_count - 1, force)
 
@@ -399,6 +408,7 @@ func _on_switch_inner_force_pressed() -> void:
 	actor["inner_force"] = _selected_inner_force.duplicate(true)
 	print("[InnerForce] switched:", actor.get("name", ""), _selected_inner_force.get("prefix", ""))
 	_refresh_inner_force_lists()
+	_refresh_status_tab()
 
 func _get_actor_by_id(actor_id: String) -> Dictionary:
 	if TeamData == null:
@@ -422,11 +432,12 @@ func _refresh_status_tab() -> void:
 	var base_max_mp := int(actor.get("max_mp", base_mp))
 	var base_speed := int(actor.get("speed", 0))
 	var bonus := InventorySync.get_equipment_stat_bonus(_get_active_character_id())
-	var bonus_atk := int(bonus.get("atk", 0))
-	var bonus_def := int(bonus.get("def", 0))
-	var bonus_max_hp := int(bonus.get("max_hp", 0))
-	var bonus_max_mp := int(bonus.get("max_mp", 0))
-	var bonus_speed := int(bonus.get("speed", 0))
+	var inner_force_bonus: Dictionary = actor.get("inner_force", {}).get("stat_bonus", {})
+	var bonus_atk := int(bonus.get("atk", 0)) + int(inner_force_bonus.get("atk", 0))
+	var bonus_def := int(bonus.get("def", 0)) + int(inner_force_bonus.get("def", 0))
+	var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(inner_force_bonus.get("max_hp", 0))
+	var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(inner_force_bonus.get("max_mp", 0))
+	var bonus_speed := int(bonus.get("speed", 0)) + int(inner_force_bonus.get("speed", 0))
 	if status_atk_label:
 		status_atk_label.text = "攻：%d (+%d)" % [base_atk, bonus_atk]
 	if status_def_label:

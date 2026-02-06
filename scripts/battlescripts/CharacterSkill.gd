@@ -31,6 +31,7 @@ func get_skills(character_id: String) -> Array:
 					"name": "氣療掌",
 					"effect": "heal_hp",
 					"weapon_type": "掌",
+					"menu_usable": true,
 					"category":"單體恢復",
 					"heal_amount": 40,          # 自己調數值
 					"target_scope": "single",   # ✅ 單體
@@ -79,6 +80,7 @@ func get_skills(character_id: String) -> Array:
 	"id": "skill_buff_speed_test",
 	"name": "提氣輕身",
 	"weapon_type": "掌",
+	"menu_usable": false,
 	"effect": "buff_speed",
 	"category": "單體增益",
 	"amount": 3,              # 速度 +3（你可調）
@@ -92,6 +94,7 @@ func get_skills(character_id: String) -> Array:
 	"id": "skill_debuff_speed_test",
 	"name": "凝滯封脈",
 	"weapon_type": "掌",
+	"menu_usable": false,
 	"effect": "debuff_speed",
 	"category": "單體減益",
 	"amount": 3,              # 速度 -3（你可調）
@@ -105,6 +108,7 @@ func get_skills(character_id: String) -> Array:
 	"id": "skill_force_element_test",
 	"name": "轉性訣",
 	"weapon_type": "掌",
+	"menu_usable": false,
 	"effect": "force_element",
 	"category": "屬性變化",
 	"element": "柔",        # ✅ 這裡填你系統吃的 element 字串
