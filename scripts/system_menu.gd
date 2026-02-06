@@ -336,9 +336,15 @@ func _open_skill_target_popup() -> void:
 func _on_skill_target_selected(index: int) -> void:
 	if skill_target_popup == null:
 		return
+	if index < 0 or index >= skill_target_popup.item_count:
+		return
 	var actor_id := str(skill_target_popup.get_item_metadata(index))
+	if actor_id == "":
+		print("[MartialUse] target not found")
+		return
 	var target := _get_actor_by_id(actor_id)
 	if target.is_empty():
+		print("[MartialUse] target not found")
 		return
 	var caster := _get_actor_by_id(_get_active_character_id())
 	if caster.is_empty():
