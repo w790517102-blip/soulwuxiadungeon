@@ -33,6 +33,7 @@ func get_skills(character_id: String) -> Array:
 					"weapon_type": "掌",
 					"menu_usable": true,
 					"category":"單體恢復",
+					"mp_cost": 5,
 					"heal_amount": 40,          # 自己調數值
 					"target_scope": "single",   # ✅ 單體
 					"target_side": "ally"

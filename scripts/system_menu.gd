@@ -25,6 +25,7 @@ extends Panel
 @onready var armor_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorButton")
 @onready var accessory_button: Button = get_node_or_null("VBoxContainer/裝備/AccessoryButton")
 @onready var equip_popup: PopupMenu = get_node_or_null("EquipPopup")
+@onready var skill_target_popup: PopupMenu = get_node_or_null("SkillTargetPopup")
 var _item_entries: Array = []
 var _active_equip_slot := ""
 var _selected_skill: Dictionary = {}
@@ -95,6 +96,8 @@ func _ready():
 		accessory_button.pressed.connect(func(): _open_equip_popup("accessory"))
 	if equip_popup:
 		equip_popup.index_pressed.connect(_on_equip_popup_selected)
+	if skill_target_popup:
+		skill_target_popup.index_pressed.connect(_on_skill_target_selected)
 	_refresh_item_tab()
 	_refresh_gold()
 	_refresh_equipment_tab()
@@ -304,7 +307,60 @@ func _update_skill_detail(skill: Dictionary) -> void:
 func _on_use_skill_pressed() -> void:
 	if _selected_skill.is_empty():
 		return
-	print("[MartialUse] selected:", _selected_skill.get("name", ""))
+	if not bool(_selected_skill.get("menu_usable", false)):
+		return
+	var effect := str(_selected_skill.get("effect", ""))
+	if effect == "heal_hp":
+		_open_skill_target_popup()
+		return
+	print("[MartialUse] not implemented:", _selected_skill.get("name", ""))
+
+func _open_skill_target_popup() -> void:
+	if skill_target_popup == null:
+		return
+	skill_target_popup.clear()
+	var party := TeamData.get_active_party()
+	for actor in party:
+		if typeof(actor) != TYPE_DICTIONARY:
+			continue
+		var actor_id := str(actor.get("id", ""))
+		var actor_name := str(actor.get("name", actor_id))
+		skill_target_popup.add_item(actor_name)
+		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
+	skill_target_popup.popup()
+
+func _on_skill_target_selected(index: int) -> void:
+	if skill_target_popup == null:
+		return
+	var actor_id := str(skill_target_popup.get_item_metadata(index))
+	var target := _get_actor_by_id(actor_id)
+	if target.is_empty():
+		return
+	var caster := _get_actor_by_id(_get_active_character_id())
+	if caster.is_empty():
+		caster = target
+	_apply_world_skill(_selected_skill, caster, target)
+
+func _apply_world_skill(skill: Dictionary, caster: Dictionary, target: Dictionary) -> void:
+	var effect := str(skill.get("effect", ""))
+	if effect != "heal_hp":
+		print("[MartialUse] not implemented:", skill.get("name", ""))
+		return
+	var mp_cost := int(skill.get("mp_cost", 0))
+	var caster_mp := int(caster.get("mp", 0))
+	if caster_mp < mp_cost:
+		print("內力不足")
+		return
+	var heal := int(skill.get("heal_amount", 0))
+	var max_hp := int(target.get("max_hp", target.get("hp", 0)))
+	caster["mp"] = max(caster_mp - mp_cost, 0)
+	target["hp"] = min(int(target.get("hp", 0)) + heal, max_hp)
+	print("%s 施展 %s，氣血回復 %d。" % [
+		str(caster.get("name", "???")),
+		str(skill.get("name", "???")),
+		heal
+	])
+	_refresh_status_tab()
 
 func _refresh_character_select() -> void:
 	if character_select == null:

@@ -18,6 +18,7 @@ offset_bottom = 326.5
 script = ExtResource("1_pg0ij")
 
 [node name="EquipPopup" type="PopupMenu" parent="."]
+[node name="SkillTargetPopup" type="PopupMenu" parent="."]
 [node name="VBoxContainer" type="TabContainer" parent="."]
 layout_mode = 0
 offset_left = 61.0
