@@ -327,6 +327,10 @@ func _open_skill_target_popup() -> void:
 		var actor_name := str(actor.get("name", actor_id))
 		skill_target_popup.add_item(actor_name)
 		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
+	var popup_pos := get_viewport().get_mouse_position()
+	if use_skill_button:
+		popup_pos = use_skill_button.global_position + Vector2(0, use_skill_button.size.y)
+	skill_target_popup.position = popup_pos
 	skill_target_popup.popup()
 
 func _on_skill_target_selected(index: int) -> void:
