@@ -348,7 +348,8 @@ func _on_skill_target_selected(index: int) -> void:
 		return
 	var caster := _get_actor_by_id(_get_active_character_id())
 	if caster.is_empty():
-		caster = target
+		print("[MartialUse] caster not found")
+		return
 	_apply_world_skill(_selected_skill, caster, target)
 
 func _apply_world_skill(skill: Dictionary, caster: Dictionary, target: Dictionary) -> void:
