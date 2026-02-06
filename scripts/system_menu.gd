@@ -12,6 +12,14 @@ extends Panel
 @onready var status_mp_label: Label = get_node_or_null("VBoxContainer/狀態/StatusMpLabel")
 @onready var status_speed_label: Label = get_node_or_null("VBoxContainer/狀態/StatusSpeedLabel")
 @onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
+@onready var martial_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs")
+@onready var weapon_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/WeaponTabs")
+@onready var skill_detail: RichTextLabel = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/SkillDetail")
+@onready var use_skill_button: Button = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/UseSkillButton")
+@onready var character_select: OptionButton = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/CharacterRow/CharacterSelect")
+@onready var inner_force_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceTabs")
+@onready var inner_force_detail: RichTextLabel = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceDetail")
+@onready var switch_inner_force_button: Button = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/SwitchInnerForceButton")
 @onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
 @onready var armor_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorButton")
@@ -19,6 +27,12 @@ extends Panel
 @onready var equip_popup: PopupMenu = get_node_or_null("EquipPopup")
 var _item_entries: Array = []
 var _active_equip_slot := ""
+var _selected_skill: Dictionary = {}
+var _selected_inner_force: Dictionary = {}
+var _selected_inner_force_actor_id := ""
+
+const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
+var _skill_db: Node = CharacterSkillDB.new()
 
 const DEFAULT_UNARMED_NAME := "空手"
 const WEAPON_RULES := {
@@ -57,6 +71,20 @@ func _ready():
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
 		InventorySync.equipment_changed.connect(_on_equipment_changed)
+	if martial_tabs:
+		martial_tabs.tab_changed.connect(_on_martial_tab_changed)
+	if weapon_tabs:
+		weapon_tabs.tab_changed.connect(_on_weapon_tab_changed)
+		_connect_weapon_lists()
+	if use_skill_button:
+		use_skill_button.pressed.connect(_on_use_skill_pressed)
+	if inner_force_tabs:
+		inner_force_tabs.tab_changed.connect(_on_inner_force_tab_changed)
+		_connect_inner_force_lists()
+	if character_select:
+		character_select.item_selected.connect(_on_character_selected)
+	if switch_inner_force_button:
+		switch_inner_force_button.pressed.connect(_on_switch_inner_force_pressed)
 	if weapon1_button:
 		weapon1_button.pressed.connect(func(): _open_equip_popup("weapon_1"))
 	if weapon2_button:
@@ -71,6 +99,7 @@ func _ready():
 	_refresh_gold()
 	_refresh_equipment_tab()
 	_refresh_status_tab()
+	_refresh_martial_tabs()
 	_update_use_button("")
 
 func _unhandled_input(event):
@@ -159,6 +188,227 @@ func _refresh_gold() -> void:
 		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
 		status_gold_label.text = "💰 盤纏：%d文" % gold
+
+func _refresh_martial_tabs() -> void:
+	_refresh_skill_tabs()
+	_refresh_inner_force_tabs()
+
+func _refresh_skill_tabs() -> void:
+	if weapon_tabs == null:
+		return
+	_selected_skill = {}
+	_refresh_weapon_tab_lists()
+	_update_skill_detail({})
+
+func _refresh_inner_force_tabs() -> void:
+	_refresh_character_select()
+	_refresh_inner_force_lists()
+	_update_inner_force_detail({})
+
+func _connect_weapon_lists() -> void:
+	for tab in weapon_tabs.get_children():
+		if tab.has_node("SkillList"):
+			var list: ItemList = tab.get_node("SkillList")
+			if not list.item_selected.is_connected(_on_skill_selected):
+				list.item_selected.connect(_on_skill_selected.bind(list))
+
+func _connect_inner_force_lists() -> void:
+	if inner_force_tabs == null:
+		return
+	for tab in inner_force_tabs.get_children():
+		if tab.has_node("InnerForceList"):
+			var list: ItemList = tab.get_node("InnerForceList")
+			if not list.item_selected.is_connected(_on_inner_force_selected):
+				list.item_selected.connect(_on_inner_force_selected.bind(list))
+
+func _on_martial_tab_changed(_tab_index: int) -> void:
+	_refresh_martial_tabs()
+
+func _on_weapon_tab_changed(_tab_index: int) -> void:
+	_refresh_weapon_tab_lists()
+	_update_skill_detail({})
+
+func _on_inner_force_tab_changed(_tab_index: int) -> void:
+	_refresh_inner_force_lists()
+	_update_inner_force_detail({})
+
+func _refresh_weapon_tab_lists() -> void:
+	var actor_id := _get_active_character_id()
+	var skills := _skill_db.get_skills(actor_id)
+	for tab in weapon_tabs.get_children():
+		if not tab.has_node("SkillList"):
+			continue
+		var list: ItemList = tab.get_node("SkillList")
+		list.clear()
+		var weapon_type := str(tab.name)
+		for skill in skills:
+			if typeof(skill) != TYPE_DICTIONARY:
+				continue
+			var skill_weapon := str(skill.get("weapon_type", ""))
+			if skill_weapon != weapon_type:
+				continue
+			var name := str(skill.get("name", "???"))
+			var mp_cost := int(skill.get("mp_cost", 0))
+			var label := name
+			if mp_cost > 0:
+				label = "%s (MP %d)" % [name, mp_cost]
+			list.add_item(label)
+			list.set_item_metadata(list.item_count - 1, skill)
+
+func _on_skill_selected(index: int, list: ItemList) -> void:
+	if list == null:
+		return
+	var skill = list.get_item_metadata(index)
+	if typeof(skill) != TYPE_DICTIONARY:
+		return
+	_selected_skill = skill
+	_update_skill_detail(skill)
+
+func _update_skill_detail(skill: Dictionary) -> void:
+	if skill_detail == null:
+		return
+	if skill.is_empty():
+		skill_detail.text = "請選擇武術。"
+		if use_skill_button:
+			use_skill_button.disabled = true
+		return
+	var name := str(skill.get("name", "???"))
+	var desc := str(skill.get("desc", ""))
+	var weapon_type := str(skill.get("weapon_type", ""))
+	var power := skill.get("power", null)
+	var target_scope := str(skill.get("target_scope", ""))
+	var target_side := str(skill.get("target_side", ""))
+	var require_free_hand := bool(skill.get("require_free_hand", false))
+	var lines := []
+	lines.append("[b]%s[/b]" % name)
+	if desc != "":
+		lines.append(desc)
+	if power != null:
+		lines.append("威力：%s" % str(power))
+	if weapon_type != "":
+		lines.append("武器類型：%s" % weapon_type)
+	if require_free_hand:
+		lines.append("需求：至少一手空")
+	if target_scope != "":
+		lines.append("目標範圍：%s" % target_scope)
+	if target_side != "":
+		lines.append("目標陣營：%s" % target_side)
+	skill_detail.text = "\n".join(lines)
+	if use_skill_button:
+		var is_support := skill.has("effect") or str(skill.get("category", "")).find("恢復") >= 0
+		use_skill_button.disabled = not is_support
+
+func _on_use_skill_pressed() -> void:
+	if _selected_skill.is_empty():
+		return
+	print("[MartialUse] selected:", _selected_skill.get("name", ""))
+
+func _refresh_character_select() -> void:
+	if character_select == null:
+		return
+	character_select.clear()
+	var party := TeamData.get_active_party()
+	for actor in party:
+		if typeof(actor) != TYPE_DICTIONARY:
+			continue
+		var actor_id := str(actor.get("id", ""))
+		var actor_name := str(actor.get("name", actor_id))
+		character_select.add_item(actor_name)
+		character_select.set_item_metadata(character_select.item_count - 1, actor_id)
+	if character_select.item_count > 0:
+		character_select.select(0)
+		_selected_inner_force_actor_id = str(character_select.get_item_metadata(0))
+
+func _on_character_selected(index: int) -> void:
+	if character_select == null:
+		return
+	_selected_inner_force_actor_id = str(character_select.get_item_metadata(index))
+	_refresh_inner_force_lists()
+	_update_inner_force_detail({})
+
+func _refresh_inner_force_lists() -> void:
+	if inner_force_tabs == null:
+		return
+	var actor := _get_actor_by_id(_selected_inner_force_actor_id)
+	var forces: Array = []
+	if not actor.is_empty():
+		forces = actor.get("available_inner_forces", [])
+	for tab in inner_force_tabs.get_children():
+		if not tab.has_node("InnerForceList"):
+			continue
+		var list: ItemList = tab.get_node("InnerForceList")
+		list.clear()
+		var element := str(tab.name)
+		for force in forces:
+			if typeof(force) != TYPE_DICTIONARY:
+				continue
+			if str(force.get("element", "")) != element:
+				continue
+			var label := "%s" % str(force.get("prefix", "???"))
+			list.add_item(label)
+			list.set_item_metadata(list.item_count - 1, force)
+
+func _on_inner_force_selected(index: int, list: ItemList) -> void:
+	if list == null:
+		return
+	var force = list.get_item_metadata(index)
+	if typeof(force) != TYPE_DICTIONARY:
+		return
+	_selected_inner_force = force
+	_update_inner_force_detail(force)
+
+func _update_inner_force_detail(force: Dictionary) -> void:
+	if inner_force_detail == null:
+		return
+	if force.is_empty():
+		inner_force_detail.text = "請選擇內功。"
+		if switch_inner_force_button:
+			switch_inner_force_button.disabled = true
+		return
+	var prefix := str(force.get("prefix", "???"))
+	var desc := str(force.get("description", ""))
+	var element := str(force.get("element", ""))
+	var boost_weapon := str(force.get("boost_weapon", ""))
+	var boost_pct := float(force.get("boost_damage_pct", 0.0))
+	var require_unarmed := bool(force.get("boost_require_unarmed", false))
+	var stat_bonus: Dictionary = force.get("stat_bonus", {})
+	var lines := []
+	lines.append("[b]%s[/b]" % prefix)
+	if desc != "":
+		lines.append(desc)
+	if element != "":
+		lines.append("屬性：%s" % element)
+	if not stat_bonus.is_empty():
+		lines.append("常駐加成：%s" % str(stat_bonus))
+	if boost_weapon != "":
+		lines.append("強化武器：%s" % boost_weapon)
+	if boost_pct > 0.0:
+		lines.append("傷害加成：+%d%%" % int(boost_pct * 100))
+	if require_unarmed:
+		lines.append("需求：空手")
+	inner_force_detail.text = "\n".join(lines)
+	if switch_inner_force_button:
+		switch_inner_force_button.disabled = false
+
+func _on_switch_inner_force_pressed() -> void:
+	if _selected_inner_force.is_empty():
+		return
+	var actor := _get_actor_by_id(_selected_inner_force_actor_id)
+	if actor.is_empty():
+		return
+	actor["inner_force"] = _selected_inner_force.duplicate(true)
+	print("[InnerForce] switched:", actor.get("name", ""), _selected_inner_force.get("prefix", ""))
+	_refresh_inner_force_lists()
+
+func _get_actor_by_id(actor_id: String) -> Dictionary:
+	if TeamData == null:
+		return {}
+	for actor in TeamData.get_active_party():
+		if typeof(actor) != TYPE_DICTIONARY:
+			continue
+		if str(actor.get("id", "")) == actor_id:
+			return actor
+	return {}
 
 func _refresh_status_tab() -> void:
 	var actor := _get_active_actor()

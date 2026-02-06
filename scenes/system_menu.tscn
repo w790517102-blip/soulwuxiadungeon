@@ -112,13 +112,137 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 3
 
-[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/武術"]
-custom_minimum_size = Vector2(0, 30)
+[node name="MartialTabs" type="TabContainer" parent="VBoxContainer/武術"]
+layout_mode = 2
+current_tab = 0
+
+[node name="武術" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="WeaponTabs" type="TabContainer" parent="VBoxContainer/武術/MartialTabs/武術"]
+layout_mode = 2
+current_tab = 0
+
+[node name="刀" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/刀"]
 layout_mode = 2
 
-[node name="VScrollBar" type="VScrollBar" parent="VBoxContainer/武術/ScrollContainer"]
-custom_minimum_size = Vector2(400, 30)
+[node name="劍" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
 layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/劍"]
+layout_mode = 2
+
+[node name="棍" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/棍"]
+layout_mode = 2
+
+[node name="槍" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/槍"]
+layout_mode = 2
+
+[node name="拳" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/拳"]
+layout_mode = 2
+
+[node name="掌" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+layout_mode = 2
+metadata/_tab_index = 5
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/掌"]
+layout_mode = 2
+
+[node name="琴" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+layout_mode = 2
+metadata/_tab_index = 6
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/琴"]
+layout_mode = 2
+
+[node name="筆" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+layout_mode = 2
+metadata/_tab_index = 7
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/筆"]
+layout_mode = 2
+
+[node name="SkillDetail" type="RichTextLabel" parent="VBoxContainer/武術/MartialTabs/武術"]
+layout_mode = 2
+text = "請選擇武術。"
+
+[node name="UseSkillButton" type="Button" parent="VBoxContainer/武術/MartialTabs/武術"]
+layout_mode = 2
+text = "施展"
+disabled = true
+
+[node name="內功" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs"]
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="CharacterRow" type="HBoxContainer" parent="VBoxContainer/武術/MartialTabs/內功"]
+layout_mode = 2
+
+[node name="CharacterLabel" type="Label" parent="VBoxContainer/武術/MartialTabs/內功/CharacterRow"]
+layout_mode = 2
+text = "角色："
+
+[node name="CharacterSelect" type="OptionButton" parent="VBoxContainer/武術/MartialTabs/內功/CharacterRow"]
+layout_mode = 2
+
+[node name="InnerForceTabs" type="TabContainer" parent="VBoxContainer/武術/MartialTabs/內功"]
+layout_mode = 2
+current_tab = 0
+
+[node name="快" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="InnerForceList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs/快"]
+layout_mode = 2
+
+[node name="遲" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs"]
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="InnerForceList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs/遲"]
+layout_mode = 2
+
+[node name="柔" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs"]
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="InnerForceList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs/柔"]
+layout_mode = 2
+
+[node name="剛" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs"]
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="InnerForceList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/內功/InnerForceTabs/剛"]
+layout_mode = 2
+
+[node name="InnerForceDetail" type="RichTextLabel" parent="VBoxContainer/武術/MartialTabs/內功"]
+layout_mode = 2
+text = "請選擇內功。"
+
+[node name="SwitchInnerForceButton" type="Button" parent="VBoxContainer/武術/MartialTabs/內功"]
+layout_mode = 2
+text = "切換心法"
+disabled = true
 
 [node name="任務" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
