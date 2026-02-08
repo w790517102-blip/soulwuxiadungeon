@@ -7,9 +7,8 @@ class_name SaveSlotUI
 @export var slot_index = 1
 
 var selected = false
-var is_empty_slot = true
 
-signal slot_selected(index: int)
+func _on_select_button_pressed() -> void:
 
 func _ready():
 	select_button.text = "選取"

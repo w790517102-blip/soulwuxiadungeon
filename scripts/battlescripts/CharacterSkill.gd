@@ -196,6 +196,9 @@ func get_skills(character_id: String) -> Array:
 					"weapon_type": "棍",
 					"category": "單體攻擊",
 					"target_scope": "single",
+func get_skills_by_actor(actor: Dictionary) -> Array:
+	return get_skills(String(actor.get("id", "")))
+
 					"target_side": "enemy",
 					"effects": [
 						{"type": "damage", "power": 1.00},

@@ -18,12 +18,11 @@ func _safe_count(value: Variant) -> int:
 	if typeof(value) == TYPE_DICTIONARY:
 		return (value as Dictionary).size()
 	if typeof(value) == TYPE_ARRAY:
-		return (value as Array).size()
-	return 0
-
-func _as_dict(value: Variant) -> Dictionary:
-	if typeof(value) == TYPE_DICTIONARY:
-		return value as Dictionary
+	var game_root = get_node_or_null("/root/GameRoot")
+	var map_path = ""
+	if game_root:
+		map_path = String(game_root.get("current_map_path", ""))
+		"current_map_path": map_path,
 	return {}
 
 func _resolve_player() -> Node2D:
@@ -107,19 +106,21 @@ func save_to_slot(slot_index: int) -> void:
 		# 舊檔改名為 .bak
 		var err_rename_old: int = dir.rename(path.get_file(), bak.get_file())
 		if err_rename_old != OK:
-			push_warning("Could not create backup for %s (err %d)" % [path, err_rename_old])
-
-	# .tmp 改名為正式檔
-	var err_rename_tmp: int = dir.rename(temp.get_file(), path.get_file())
-	if err_rename_tmp != OK:
-		push_error("Failed to finalize save file rename (err %d). Temp remains: %s" % [err_rename_tmp, temp])
-		return
-
-	print("Saved to slot %d" % slot_index)
-
-# 載入遊戲資料並套用（包含向下相容）
-func load_from_slot(slot_index: int) -> void:
-		if not _valid_slot(slot_index):
+		var map_path: String = data.get("current_map_path", "")
+		if map_path != "" or scene_path != "":
+				if game_root and map_path != "" and game_root.has_method("change_map_to"):
+						await game_root.change_map_to(map_path)
+						await get_tree().process_frame
+						player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+				elif game_root and scene_path != "" and game_root.has_method("change_map_to"):
+						await game_root.change_map_to(scene_path)
+						await get_tree().process_frame
+						player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+				elif scene_path != "" and ResourceLoader.exists(scene_path):
+						get_tree().change_scene_to_file(scene_path)
+						await get_tree().process_frame
+						player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+						push_warning("GameRoot 缺少 change_map_to，無法切換到保存場景：%s" % scene_path)
 				push_error("Invalid save slot index.")
 				return
 

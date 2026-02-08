@@ -1,16 +1,18 @@
 extends Node2D
 
 # 遊戲初始是否要直接導向 intro_room（僅限新遊戲）
-var go_to_intro_on_start := true
-var spawn_point_name := "default" # 每次切換地圖時記住要傳送到哪個點
+var go_to_intro_on_start = true
+var spawn_point_name = "default" # 每次切換地圖時記住要傳送到哪個點
+var current_map_path = ""
 
 # 🎵 音樂播放邏輯（動態抓取 BGM 檔案）
-var current_music_tag := ""
-var music_folder := "res://assets/BGM/"
+var current_music_tag = ""
+var music_folder = "res://assets/BGM/"
 
-@onready var music_player := $MusicPlayer  # 音樂播放器節點
+@onready var music_player = $MusicPlayer  # 音樂播放器節點
 
 func change_map_to(path: String):
+	current_map_path = path
 	if $CurrentScene.get_child_count() > 0:
 		$CurrentScene.get_child(0).queue_free()
 	var new_scene = load(path).instantiate()
@@ -24,7 +26,7 @@ func change_map_to(path: String):
 	else:
 		push_warning("Spawn point '%s' not found in %s" % [spawn_point_name, path])
 
-	var is_battle_return := GlobalState.get_meta("pending_battle_return", false) == true
+	var is_battle_return = GlobalState.get_meta("pending_battle_return", false) == true
 	if not is_battle_return and $LiuYu.has_method("reset_encounter_state"):
 		$LiuYu.reset_encounter_state()
 
@@ -32,7 +34,7 @@ func change_map_to(path: String):
 	spawn_point_name = "default"
 
 	# 🎵 自動偵測 music_tag
-	var tag := ""
+	var tag = ""
 	var props = new_scene.get_property_list()
 	for p in props:
 		if p.name == "music_tag":
@@ -59,7 +61,7 @@ func change_map_to(path: String):
 		GlobalState.remove_meta("pending_battle_return")
 
 		var return_pos: Vector2 = GlobalState.get_meta("return_player_pos", $LiuYu.global_position)
-		var cooldown_distance := float(GlobalState.get_meta("return_encounter_cooldown", 0.0))
+		var cooldown_distance = float(GlobalState.get_meta("return_encounter_cooldown", 0.0))
 
 		if GlobalState.has_meta("return_player_pos"):
 			GlobalState.remove_meta("return_player_pos")
@@ -81,7 +83,7 @@ func change_map_to(path: String):
 
 		print("[GameRoot Return] liuyu visible=", $LiuYu.visible, " can_move=", $LiuYu.get("can_move"))
 
-func play_music_by_tag(tag: String, fade_time := 1.5):
+func play_music_by_tag(tag: String, fade_time = 1.5):
 	if tag == current_music_tag:
 		print("[音樂] music_tag 無變化（仍為：", tag, "）")
 		return
