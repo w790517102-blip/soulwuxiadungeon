@@ -14,6 +14,13 @@ func _ensure_save_dir() -> void:
 	if not dir.dir_exists("save"):
 		dir.make_dir("save")
 
+func _safe_count(value: Variant) -> int:
+	if typeof(value) == TYPE_DICTIONARY:
+		return (value as Dictionary).size()
+	if typeof(value) == TYPE_ARRAY:
+		return (value as Array).size()
+	return 0
+
 # --- helpers ---
 func _slot_path(slot_index: int) -> String:
 	return "%s%s%02d%s" % [SAVE_FOLDER, SAVE_PREFIX, slot_index, SAVE_EXT]
@@ -150,6 +157,8 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		return {}
+	var bytes := FileAccess.get_file_as_bytes(path).size()
+	print("[SaveManager] slot=", slot_index, " bytes=", bytes)
 	var v := f.get_var()
 	print("[SaveManager] slot=", slot_index, " path=", path, " type=", typeof(v))
 	if typeof(v) == TYPE_DICTIONARY:
@@ -173,13 +182,15 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		return {}
 	var data: Dictionary = v as Dictionary
 	f.close()
+	var flags_value = data.get("flags")
+	var quests_value = data.get("side_quests")
 	return {
 		"timestamp": data.get("timestamp", 0),
 		"ethics": data.get("ethics", 0),
 		"grudge": data.get("grudge", 0),
 		"affection": data.get("affection", 0),
-		"flags_count": (data.get("flags", {}) as Dictionary).size(),
-		"quests_count": (data.get("side_quests", {}) as Dictionary).size(),
+		"flags_count": _safe_count(flags_value),
+		"quests_count": _safe_count(quests_value),
 		"current_scene_path": data.get("current_scene_path", ""),
 	}
 
