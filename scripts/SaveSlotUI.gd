@@ -12,9 +12,12 @@ var is_empty_slot := true
 signal slot_selected(index: int)
 
 func _ready():
-        select_button.text = "選取"
-        select_button.pressed.connect(_on_select_pressed)
-        _refresh_label()
+	select_button.text = "選取"
+	select_button.pressed.connect(_on_select_pressed)
+
+func set_slot_index(index: int) -> void:
+	slot_index = index
+	_refresh_label()
 
 func _on_select_pressed():
         emit_signal("slot_selected", slot_index)

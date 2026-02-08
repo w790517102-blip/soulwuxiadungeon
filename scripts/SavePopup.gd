@@ -16,7 +16,7 @@ func _ready():
 
 	for i in range(slots.size()):
 		var slot = slots[i]
-		slot.slot_index = i + 1
+		slot.set_slot_index(i + 1)
 		slot.connect("slot_selected", Callable(self, "_on_slot_selected"))
 
 	save_button.pressed.connect(_on_save_button_pressed)

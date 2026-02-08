@@ -21,6 +21,11 @@ func _safe_count(value: Variant) -> int:
 		return (value as Array).size()
 	return 0
 
+func _as_dict(value: Variant) -> Dictionary:
+	if typeof(value) == TYPE_DICTIONARY:
+		return value as Dictionary
+	return {}
+
 # --- helpers ---
 func _slot_path(slot_index: int) -> String:
 	return "%s%s%02d%s" % [SAVE_FOLDER, SAVE_PREFIX, slot_index, SAVE_EXT]
@@ -125,11 +130,11 @@ func load_from_slot(slot_index: int) -> void:
 				push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
 
 		# Managers
-		SideQuestManager.load_all(data.get("side_quests", {}))
+		SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
 
 		# GlobalState
-		GlobalState.triggered_flags = data.get("flags", {})
-		GlobalState.relationship = data.get("relationships", {})
+		GlobalState.triggered_flags = _as_dict(data.get("flags", {}))
+		GlobalState.relationship = _as_dict(data.get("relationships", {}))
 		GlobalState.ethics = int(data.get("ethics", 0))
 		GlobalState.grudge = int(data.get("grudge", 0))
 		GlobalState.affection = int(data.get("affection", 0))
