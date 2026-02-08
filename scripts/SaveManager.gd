@@ -152,6 +152,13 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		return {}
 	var v := f.get_var()
 	print("[SaveManager] slot=", slot_index, " path=", path, " type=", typeof(v))
+	if typeof(v) == TYPE_DICTIONARY:
+		var keys := (v as Dictionary).keys()
+		print("[SaveManager] slot=", slot_index, " keys=", keys)
+		var flags_value = (v as Dictionary).get("flags")
+		var quests_value = (v as Dictionary).get("side_quests")
+		print("[SaveManager] slot=", slot_index, " flags_type=", typeof(flags_value))
+		print("[SaveManager] slot=", slot_index, " side_quests_type=", typeof(quests_value))
 	if typeof(v) == TYPE_STRING:
 		var preview := String(v)
 		if preview.length() > 80:
