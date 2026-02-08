@@ -27,16 +27,16 @@ extends Panel
 @onready var equip_popup: PopupMenu = get_node_or_null("EquipPopup")
 @onready var skill_target_popup: PopupMenu = get_node_or_null("SkillTargetPopup")
 var _item_entries: Array = []
-var _active_equip_slot := ""
+var _active_equip_slot = ""
 var _selected_skill: Dictionary = {}
 var _selected_inner_force: Dictionary = {}
-var _selected_inner_force_actor_id := ""
+var _selected_inner_force_actor_id = ""
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 var _skill_db: Node = CharacterSkillDB.new()
 
-const DEFAULT_UNARMED_NAME := "空手"
-const WEAPON_RULES := {
+const DEFAULT_UNARMED_NAME = "空手"
+const WEAPON_RULES = {
 	"liuyu": {
 		"weapon_1": ["劍"],
 		"weapon_2": [],
@@ -125,7 +125,7 @@ func _refresh_item_tab() -> void:
 	if item_list == null or item_desc == null:
 		return
 	var selected_index = item_list.get_selected_items()
-	var selected_id := ""
+	var selected_id = ""
 	if selected_index.size() > 0:
 		selected_id = str(item_list.get_item_metadata(selected_index[0]))
 	item_list.clear()
@@ -189,7 +189,7 @@ func _on_gold_changed(_new_gold: int) -> void:
 	_refresh_gold()
 
 func _refresh_gold() -> void:
-	var gold := InventorySync.get_gold()
+	var gold = InventorySync.get_gold()
 	if gold_label:
 		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
@@ -239,23 +239,23 @@ func _on_inner_force_tab_changed(_tab_index: int) -> void:
 	_update_inner_force_detail({})
 
 func _refresh_weapon_tab_lists() -> void:
-	var actor_id := _get_active_character_id()
-	var skills := _skill_db.get_skills(actor_id)
+	var actor_id = _get_active_character_id()
+	var skills = _skill_db.get_skills(actor_id)
 	for tab in weapon_tabs.get_children():
 		if not tab.has_node("SkillList"):
 			continue
 		var list: ItemList = tab.get_node("SkillList")
 		list.clear()
-		var weapon_type := str(tab.name)
+		var weapon_type = str(tab.name)
 		for skill in skills:
 			if typeof(skill) != TYPE_DICTIONARY:
 				continue
-			var skill_weapon := str(skill.get("weapon_type", ""))
+			var skill_weapon = str(skill.get("weapon_type", ""))
 			if skill_weapon != weapon_type:
 				continue
-			var name := str(skill.get("name", "???"))
-			var mp_cost := int(skill.get("mp_cost", 0))
-			var label := name
+			var name = str(skill.get("name", "???"))
+			var mp_cost = int(skill.get("mp_cost", 0))
+			var label = name
 			if mp_cost > 0:
 				label = "%s (MP %d)" % [name, mp_cost]
 			list.add_item(label)
@@ -278,14 +278,14 @@ func _update_skill_detail(skill: Dictionary) -> void:
 		if use_skill_button:
 			use_skill_button.disabled = true
 		return
-	var name := str(skill.get("name", "???"))
-	var desc := str(skill.get("desc", ""))
-	var weapon_type := str(skill.get("weapon_type", ""))
-	var power := skill.get("power", null)
-	var target_scope := str(skill.get("target_scope", ""))
-	var target_side := str(skill.get("target_side", ""))
-	var require_free_hand := bool(skill.get("require_free_hand", false))
-	var lines := []
+	var name = str(skill.get("name", "???"))
+	var desc = str(skill.get("desc", ""))
+	var weapon_type = str(skill.get("weapon_type", ""))
+	var power = skill.get("power", null)
+	var target_scope = str(skill.get("target_scope", ""))
+	var target_side = str(skill.get("target_side", ""))
+	var require_free_hand = bool(skill.get("require_free_hand", false))
+	var lines = []
 	lines.append("[b]%s[/b]" % name)
 	if desc != "":
 		lines.append(desc)
@@ -301,7 +301,7 @@ func _update_skill_detail(skill: Dictionary) -> void:
 		lines.append("目標陣營：%s" % target_side)
 	skill_detail.text = "\n".join(lines)
 	if use_skill_button:
-		var menu_usable := bool(skill.get("menu_usable", false))
+		var menu_usable = bool(skill.get("menu_usable", false))
 		use_skill_button.disabled = not menu_usable
 
 func _on_use_skill_pressed() -> void:
@@ -309,7 +309,7 @@ func _on_use_skill_pressed() -> void:
 		return
 	if not bool(_selected_skill.get("menu_usable", false)):
 		return
-	var effect := str(_selected_skill.get("effect", ""))
+	var effect = str(_selected_skill.get("effect", ""))
 	if effect == "heal_hp":
 		_open_skill_target_popup()
 		return
@@ -319,15 +319,15 @@ func _open_skill_target_popup() -> void:
 	if skill_target_popup == null:
 		return
 	skill_target_popup.clear()
-	var party := TeamData.get_active_party()
+	var party = TeamData.get_active_party()
 	for actor in party:
-		if typeof(actor) != TYPE_DICTIONARY:
+		var actor_id = _get_actor_id_from_entry(actor)
+		if actor_id == "":
 			continue
-		var actor_id := str(actor.get("id", ""))
-		var actor_name := str(actor.get("name", actor_id))
+		var actor_name = _get_actor_name_from_entry(actor, actor_id)
 		skill_target_popup.add_item(actor_name)
 		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
-	var popup_pos := get_viewport().get_mouse_position()
+	var popup_pos = get_viewport().get_mouse_position()
 	if use_skill_button:
 		popup_pos = use_skill_button.global_position + Vector2(0, use_skill_button.size.y)
 	skill_target_popup.position = popup_pos
@@ -338,36 +338,36 @@ func _on_skill_target_selected(index: int) -> void:
 		return
 	if index < 0 or index >= skill_target_popup.item_count:
 		return
-	var actor_id := str(skill_target_popup.get_item_metadata(index))
+	var actor_id = str(skill_target_popup.get_item_metadata(index))
 	if actor_id == "":
 		print("[MartialUse] target not found")
 		return
-	var target := _get_actor_by_id(actor_id)
-	if target.is_empty():
+	var target = _get_actor_by_id(actor_id)
+	if target == null:
 		print("[MartialUse] target not found")
 		return
-	var caster := _get_actor_by_id(_get_active_character_id())
-	if caster.is_empty():
+	var caster = _get_actor_by_id(_get_active_character_id())
+	if caster == null:
 		print("[MartialUse] caster not found")
 		return
 	_apply_world_skill(_selected_skill, caster, target)
 
-func _apply_world_skill(skill: Dictionary, caster: Dictionary, target: Dictionary) -> void:
-	var effect := str(skill.get("effect", ""))
+func _apply_world_skill(skill: Dictionary, caster, target) -> void:
+	var effect = str(skill.get("effect", ""))
 	if effect != "heal_hp":
 		print("[MartialUse] not implemented:", skill.get("name", ""))
 		return
-	var mp_cost := int(skill.get("mp_cost", 0))
-	var caster_mp := int(caster.get("mp", 0))
+	var mp_cost = int(skill.get("mp_cost", 0))
+	var caster_mp = int(_get_actor_value(caster, "mp", 0))
 	if caster_mp < mp_cost:
 		print("內力不足")
 		return
-	var heal := int(skill.get("heal_amount", 0))
-	var max_hp := int(target.get("max_hp", target.get("hp", 0)))
-	caster["mp"] = max(caster_mp - mp_cost, 0)
-	target["hp"] = min(int(target.get("hp", 0)) + heal, max_hp)
+	var heal = int(skill.get("heal_amount", 0))
+	var max_hp = int(_get_actor_value(target, "max_hp", _get_actor_value(target, "hp", 0)))
+	_set_actor_value(caster, "mp", max(caster_mp - mp_cost, 0))
+	_set_actor_value(target, "hp", min(int(_get_actor_value(target, "hp", 0)) + heal, max_hp))
 	print("%s 施展 %s，氣血回復 %d。" % [
-		str(caster.get("name", "???")),
+		str(_get_actor_value(caster, "name", "???")),
 		str(skill.get("name", "???")),
 		heal
 	])
@@ -377,12 +377,12 @@ func _refresh_character_select() -> void:
 	if character_select == null:
 		return
 	character_select.clear()
-	var party := TeamData.get_active_party()
+	var party = TeamData.get_active_party()
 	for actor in party:
-		if typeof(actor) != TYPE_DICTIONARY:
+		var actor_id = _get_actor_id_from_entry(actor)
+		if actor_id == "":
 			continue
-		var actor_id := str(actor.get("id", ""))
-		var actor_name := str(actor.get("name", actor_id))
+		var actor_name = _get_actor_name_from_entry(actor, actor_id)
 		character_select.add_item(actor_name)
 		character_select.set_item_metadata(character_select.item_count - 1, actor_id)
 	if character_select.item_count > 0:
@@ -399,26 +399,26 @@ func _on_character_selected(index: int) -> void:
 func _refresh_inner_force_lists() -> void:
 	if inner_force_tabs == null:
 		return
-	var actor := _get_actor_by_id(_selected_inner_force_actor_id)
+	var actor = _get_actor_by_id(_selected_inner_force_actor_id)
 	var forces: Array = []
-	if not actor.is_empty():
-		forces = actor.get("available_inner_forces", [])
-	var active_prefix := ""
-	if not actor.is_empty():
-		active_prefix = str(actor.get("inner_force", {}).get("prefix", ""))
+	if actor != null:
+		forces = _get_actor_value(actor, "available_inner_forces", [])
+	var active_prefix = ""
+	if actor != null:
+		active_prefix = str(_get_actor_value(actor, "inner_force", {}).get("prefix", ""))
 	for tab in inner_force_tabs.get_children():
 		if not tab.has_node("InnerForceList"):
 			continue
 		var list: ItemList = tab.get_node("InnerForceList")
 		list.clear()
-		var element := str(tab.name)
+		var element = str(tab.name)
 		for force in forces:
 			if typeof(force) != TYPE_DICTIONARY:
 				continue
 			if str(force.get("element", "")) != element:
 				continue
-			var prefix := str(force.get("prefix", "???"))
-			var label := prefix
+			var prefix = str(force.get("prefix", "???"))
+			var label = prefix
 			if active_prefix != "" and prefix == active_prefix:
 				label += "（使用中）"
 			list.add_item(label)
@@ -441,14 +441,14 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 		if switch_inner_force_button:
 			switch_inner_force_button.disabled = true
 		return
-	var prefix := str(force.get("prefix", "???"))
-	var desc := str(force.get("description", ""))
-	var element := str(force.get("element", ""))
-	var boost_weapon := str(force.get("boost_weapon", ""))
-	var boost_pct := float(force.get("boost_damage_pct", 0.0))
-	var require_unarmed := bool(force.get("boost_require_unarmed", false))
+	var prefix = str(force.get("prefix", "???"))
+	var desc = str(force.get("description", ""))
+	var element = str(force.get("element", ""))
+	var boost_weapon = str(force.get("boost_weapon", ""))
+	var boost_pct = float(force.get("boost_damage_pct", 0.0))
+	var require_unarmed = bool(force.get("boost_require_unarmed", false))
 	var stat_bonus: Dictionary = force.get("stat_bonus", {})
-	var lines := []
+	var lines = []
 	lines.append("[b]%s[/b]" % prefix)
 	if desc != "":
 		lines.append(desc)
@@ -469,42 +469,88 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 func _on_switch_inner_force_pressed() -> void:
 	if _selected_inner_force.is_empty():
 		return
-	var actor := _get_actor_by_id(_selected_inner_force_actor_id)
-	if actor.is_empty():
+	var actor = _get_actor_by_id(_selected_inner_force_actor_id)
+	if actor == null:
 		return
-	actor["inner_force"] = _selected_inner_force.duplicate(true)
-	print("[InnerForce] switched:", actor.get("name", ""), _selected_inner_force.get("prefix", ""))
+	_set_actor_value(actor, "inner_force", _selected_inner_force.duplicate(true))
+	print("[InnerForce] switched:", _get_actor_value(actor, "name", ""), _selected_inner_force.get("prefix", ""))
 	_refresh_inner_force_lists()
 	_refresh_status_tab()
 
-func _get_actor_by_id(actor_id: String) -> Dictionary:
+func _get_actor_id_from_entry(actor) -> String:
+	if actor == null:
+		return ""
+	if typeof(actor) == TYPE_DICTIONARY:
+		return str(actor.get("id", ""))
+	if actor is Object:
+		var id_value = actor.get("id")
+		if typeof(id_value) == TYPE_STRING and id_value != "":
+			return String(id_value)
+		if actor is Node:
+			return String(actor.name)
+	return ""
+
+func _get_actor_name_from_entry(actor, fallback_id: String) -> String:
+	if actor == null:
+		return fallback_id
+	if typeof(actor) == TYPE_DICTIONARY:
+		return str(actor.get("name", fallback_id))
+	if actor is Object:
+		var name_value = actor.get("name")
+		if typeof(name_value) == TYPE_STRING and name_value != "":
+			return String(name_value)
+		if actor is Node:
+			return String(actor.name)
+	return fallback_id
+
+func _get_actor_value(actor, key: String, default_value):
+	if actor == null:
+		return default_value
+	if typeof(actor) == TYPE_DICTIONARY:
+		return actor.get(key, default_value)
+	if actor is Object:
+		var value = actor.get(key)
+		if value == null:
+			return default_value
+		return value
+	return default_value
+
+func _set_actor_value(actor, key: String, value) -> void:
+	if actor == null:
+		return
+	if typeof(actor) == TYPE_DICTIONARY:
+		actor[key] = value
+		return
+	if actor is Object:
+		actor.set(key, value)
+
+func _get_actor_by_id(actor_id: String):
 	if TeamData == null:
-		return {}
+		return null
 	for actor in TeamData.get_active_party():
-		if typeof(actor) != TYPE_DICTIONARY:
-			continue
-		if str(actor.get("id", "")) == actor_id:
+		var entry_id = _get_actor_id_from_entry(actor)
+		if entry_id == actor_id:
 			return actor
-	return {}
+	return null
 
 func _refresh_status_tab() -> void:
-	var actor := _get_active_actor()
-	if actor.is_empty():
+	var actor = _get_active_actor()
+	if actor == null:
 		return
-	var base_atk := int(actor.get("atk", 0))
-	var base_def := int(actor.get("def", 0))
-	var base_hp := int(actor.get("hp", 0))
-	var base_max_hp := int(actor.get("max_hp", base_hp))
-	var base_mp := int(actor.get("mp", 0))
-	var base_max_mp := int(actor.get("max_mp", base_mp))
-	var base_speed := int(actor.get("speed", 0))
-	var bonus := InventorySync.get_equipment_stat_bonus(_get_active_character_id())
-	var inner_force_bonus: Dictionary = actor.get("inner_force", {}).get("stat_bonus", {})
-	var bonus_atk := int(bonus.get("atk", 0)) + int(inner_force_bonus.get("atk", 0))
-	var bonus_def := int(bonus.get("def", 0)) + int(inner_force_bonus.get("def", 0))
-	var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(inner_force_bonus.get("max_hp", 0))
-	var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(inner_force_bonus.get("max_mp", 0))
-	var bonus_speed := int(bonus.get("speed", 0)) + int(inner_force_bonus.get("speed", 0))
+	var base_atk = int(_get_actor_value(actor, "atk", 0))
+	var base_def = int(_get_actor_value(actor, "def", 0))
+	var base_hp = int(_get_actor_value(actor, "hp", 0))
+	var base_max_hp = int(_get_actor_value(actor, "max_hp", base_hp))
+	var base_mp = int(_get_actor_value(actor, "mp", 0))
+	var base_max_mp = int(_get_actor_value(actor, "max_mp", base_mp))
+	var base_speed = int(_get_actor_value(actor, "speed", 0))
+	var bonus = InventorySync.get_equipment_stat_bonus(_get_active_character_id())
+	var inner_force_bonus: Dictionary = _get_actor_value(actor, "inner_force", {}).get("stat_bonus", {})
+	var bonus_atk = int(bonus.get("atk", 0)) + int(inner_force_bonus.get("atk", 0))
+	var bonus_def = int(bonus.get("def", 0)) + int(inner_force_bonus.get("def", 0))
+	var bonus_max_hp = int(bonus.get("max_hp", 0)) + int(inner_force_bonus.get("max_hp", 0))
+	var bonus_max_mp = int(bonus.get("max_mp", 0)) + int(inner_force_bonus.get("max_mp", 0))
+	var bonus_speed = int(bonus.get("speed", 0)) + int(inner_force_bonus.get("speed", 0))
 	if status_atk_label:
 		status_atk_label.text = "攻：%d (+%d)" % [base_atk, bonus_atk]
 	if status_def_label:
@@ -517,7 +563,7 @@ func _refresh_status_tab() -> void:
 		status_speed_label.text = "身法：%d (+%d)" % [base_speed, bonus_speed]
 
 func _refresh_equipment_tab() -> void:
-	var equipped := InventorySync.get_equipped(_get_active_character_id())
+	var equipped = InventorySync.get_equipped(_get_active_character_id())
 	_set_equipment_button(weapon1_button, "主武器", str(equipped.get("weapon_1", "")), "weapon_1")
 	_set_equipment_button(weapon2_button, "副武器", str(equipped.get("weapon_2", "")), "weapon_2")
 	_set_equipment_button(armor_button, "防具", str(equipped.get("armor", "")), "armor")
@@ -526,9 +572,9 @@ func _refresh_equipment_tab() -> void:
 func _set_equipment_button(button: Button, prefix: String, item_id: String, slot: String) -> void:
 	if button == null:
 		return
-	var display_name := "—"
+	var display_name = "—"
 	if item_id != "":
-		var item_def := ItemDB.get_def(item_id)
+		var item_def = ItemDB.get_def(item_id)
 		if not item_def.is_empty():
 			display_name = str(item_def.get("name", item_id))
 	elif slot.begins_with("weapon"):
@@ -554,12 +600,12 @@ func _open_equip_popup(slot: String) -> void:
 	equip_popup.clear()
 	equip_popup.add_item("<卸下>")
 	equip_popup.set_item_metadata(0, "")
-	var index := 1
+	var index = 1
 	for item in InventorySync.get_items():
-		var item_id := str(item.get("id", ""))
+		var item_id = str(item.get("id", ""))
 		if item_id == "":
 			continue
-		var item_def := ItemDB.get_def(item_id)
+		var item_def = ItemDB.get_def(item_id)
 		if item_def.is_empty():
 			continue
 		if str(item_def.get("use_action", "none")) != "equip":
@@ -568,7 +614,7 @@ func _open_equip_popup(slot: String) -> void:
 			continue
 		if not _is_weapon_type_allowed(item_def, slot):
 			continue
-		var name := str(item_def.get("name", item_id))
+		var name = str(item_def.get("name", item_id))
 		equip_popup.add_item(name)
 		equip_popup.set_item_metadata(index, item_id)
 		index += 1
@@ -577,11 +623,11 @@ func _open_equip_popup(slot: String) -> void:
 func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
 	if not slot.begins_with("weapon"):
 		return true
-	var rules := WEAPON_RULES.get(_get_active_character_id(), {})
+	var rules = WEAPON_RULES.get(_get_active_character_id(), {})
 	var allowed_types: Array = rules.get(slot, [])
 	if allowed_types.is_empty():
 		return true
-	var weapon_type := str(item_def.get("weapon_type", ""))
+	var weapon_type = str(item_def.get("weapon_type", ""))
 	return allowed_types.has(weapon_type)
 
 func _get_active_character_id() -> String:
@@ -589,12 +635,12 @@ func _get_active_character_id() -> String:
 		return str(TeamData.current_team_ids[0])
 	return "liuyu"
 
-func _get_active_actor() -> Dictionary:
+func _get_active_actor():
 	if TeamData:
-		var party := TeamData.get_active_party()
-		if party.size() > 0 and typeof(party[0]) == TYPE_DICTIONARY:
+		var party = TeamData.get_active_party()
+		if party.size() > 0:
 			return party[0]
-	return {}
+	return null
 
 func _on_equip_popup_selected(index: int) -> void:
 	if equip_popup == null:
@@ -616,11 +662,11 @@ func _on_use_pressed() -> void:
 	var item_id = str(item_list.get_item_metadata(selected_items[0]))
 	if item_id == "":
 		return
-	var item_def := InventorySync.get_item_by_id(item_id)
+	var item_def = InventorySync.get_item_by_id(item_id)
 	if item_def.is_empty():
 		return
-	var use_action := str(item_def.get("use_action", "none"))
-	var use_scope := str(item_def.get("use_scope", "none"))
+	var use_action = str(item_def.get("use_action", "none"))
+	var use_scope = str(item_def.get("use_scope", "none"))
 	if use_action == "consume":
 		if use_scope == "any" or use_scope == "world":
 			InventorySync.consume_item(item_id, 1)
@@ -629,7 +675,7 @@ func _on_use_pressed() -> void:
 	if use_action == "equip":
 		if use_scope != "any" and use_scope != "world":
 			return
-		var slot := str(item_def.get("equip_slot", ""))
+		var slot = str(item_def.get("equip_slot", ""))
 		if slot == "":
 			return
 		if InventorySync.is_equipped(item_id, _get_active_character_id()):
@@ -647,13 +693,13 @@ func _update_use_button(item_id: String) -> void:
 		use_button.disabled = true
 		use_button.text = "不可使用"
 		return
-	var item_def := InventorySync.get_item_by_id(item_id)
+	var item_def = InventorySync.get_item_by_id(item_id)
 	if item_def.is_empty():
 		use_button.disabled = true
 		use_button.text = "不可使用"
 		return
-	var use_action := str(item_def.get("use_action", "none"))
-	var use_scope := str(item_def.get("use_scope", "none"))
+	var use_action = str(item_def.get("use_action", "none"))
+	var use_scope = str(item_def.get("use_scope", "none"))
 	if use_action == "consume":
 		if use_scope == "any" or use_scope == "world":
 			use_button.disabled = false

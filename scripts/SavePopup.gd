@@ -1,14 +1,14 @@
 extends Panel
 
-@onready var save_button := $SaveButton
-@onready var load_button := $LoadButton
-@onready var slots := [
+@onready var save_button = $SaveButton
+@onready var load_button = $LoadButton
+@onready var slots = [
 	$VBoxContainer/SaveSlot1,
 	$VBoxContainer/SaveSlot2,
 	$VBoxContainer/SaveSlot3
 ]
 
-var selected_slot_index := -1
+var selected_slot_index = -1
 var quest_party_serializer: QuestPartySerializerInstance = null
 
 func _ready():
@@ -26,7 +26,7 @@ func _ready():
 func _on_slot_selected(index: int):
 	selected_slot_index = index
 	print("Selected slot:", index)
-	var slot := slots[selected_slot_index - 1]
+	var slot = slots[selected_slot_index - 1]
 	load_button.disabled = slot.is_empty()
 
 func _on_save_button_pressed():
@@ -37,7 +37,8 @@ func _on_save_button_pressed():
 	# 改為直接讓 SaveManager 自行取得當前序列化資料
 	SaveManager.save_to_slot(selected_slot_index)
 
-	slots[selected_slot_index - 1]._refresh_label()
+	for slot in slots:
+		slot._refresh_label()
 
 func _on_load_button_pressed():
 	if selected_slot_index == -1:

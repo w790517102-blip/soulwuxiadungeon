@@ -1,10 +1,10 @@
 extends Node
 
-const SAVE_FOLDER := "user://save/"
-const SLOT_COUNT := 3
-const SAVE_PREFIX := "slot_"
-const SAVE_EXT := ".save"
-const SAVE_VERSION := 1
+const SAVE_FOLDER = "user://save/"
+const SLOT_COUNT = 3
+const SAVE_PREFIX = "slot_"
+const SAVE_EXT = ".save"
+const SAVE_VERSION = 1
 
 func _ready():
 	_ensure_save_dir()
@@ -25,6 +25,13 @@ func _as_dict(value: Variant) -> Dictionary:
 	if typeof(value) == TYPE_DICTIONARY:
 		return value as Dictionary
 	return {}
+
+func _resolve_player() -> Node2D:
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() > 0 and players[0] is Node2D:
+		return players[0] as Node2D
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+	return liuyu
 
 # --- helpers ---
 func _slot_path(slot_index: int) -> String:
@@ -49,11 +56,17 @@ func save_to_slot(slot_index: int) -> void:
 	var player: Node2D = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 	var current_scene: Node = get_tree().current_scene
 	var scene_path: String = ""
-	if current_scene and current_scene.has_method("get_scene_file_path"):
-		scene_path = current_scene.call("get_scene_file_path") as String
-	elif current_scene and current_scene.has_meta("_edit_lock_" ):
-		# Fallback（有些情形 current_scene.scene_file_path 可直接讀）
-		scene_path = current_scene.get("scene_file_path") if current_scene.has("scene_file_path") else ""
+	if current_scene:
+		var scene_file_path = current_scene.get("scene_file_path")
+		if typeof(scene_file_path) == TYPE_STRING and scene_file_path != "":
+			scene_path = String(scene_file_path)
+		elif current_scene.has_method("get_scene_file_path"):
+			scene_path = current_scene.call("get_scene_file_path") as String
+	var map_id: String = ""
+	if current_scene:
+		var map_value = current_scene.get("map_id")
+		if typeof(map_value) == TYPE_STRING:
+			map_id = String(map_value)
 
 	var save_data: Dictionary = {
 		"version": SAVE_VERSION,
@@ -71,11 +84,14 @@ func save_to_slot(slot_index: int) -> void:
 		"player_position": player.global_position if player else Vector2.ZERO,
 		# Scene snapshot
 		"current_scene_path": scene_path,
+		"current_map_id": map_id,
 	}
 
 	var path: String = _slot_path(slot_index)
 	var temp: String = _slot_temp_path(slot_index)
 	var bak: String = _slot_backup_path(slot_index)
+	DirAccess.make_dir_recursive_absolute(SAVE_FOLDER)
+	print("[SaveManager] save path=", path)
 
 	# 先寫入 .tmp，成功後再覆蓋正式檔（避免半寫入損毀檔案）
 	var f: FileAccess = FileAccess.open(temp, FileAccess.WRITE)
@@ -116,7 +132,7 @@ func load_from_slot(slot_index: int) -> void:
 		if f == null:
 				push_error("Failed to open file for reading: %s" % path)
 				return
-		var v := f.get_var()
+		var v = f.get_var()
 		if typeof(v) != TYPE_DICTIONARY:
 				f.close()
 				print("[SaveManager] load slot=", slot_index, " invalid root type=", typeof(v))
@@ -142,14 +158,26 @@ func load_from_slot(slot_index: int) -> void:
 
 		# Scene snapshot（如果你有自己的場景管理器，這邊可以交給它處理）
 		var scene_path: String = data.get("current_scene_path", "")
+		var map_id: String = data.get("current_map_id", "")
 		var player: Node2D = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
-		if scene_path != "":
-				var game_root := get_node_or_null("/root/GameRoot")
+		if scene_path != "" or map_id != "":
+				var game_root = get_node_or_null("/root/GameRoot")
 				if game_root and game_root.has_method("change_map_to"):
-						await game_root.change_map_to(scene_path)
-						player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+						var target_path = ""
+						if map_id != "" and ResourceLoader.exists(map_id):
+								target_path = map_id
+						elif scene_path != "":
+								target_path = scene_path
+						if target_path != "":
+								await game_root.change_map_to(target_path)
+								player = _resolve_player()
 				else:
-						push_warning("GameRoot 缺少 change_map_to，無法切換到保存場景：%s" % scene_path)
+						if scene_path != "" and ResourceLoader.exists(scene_path):
+								get_tree().change_scene_to_file(scene_path)
+								await get_tree().process_frame
+								player = _resolve_player()
+						else:
+								push_warning("GameRoot 缺少 change_map_to，無法切換到保存場景：%s" % scene_path)
 
 		# Player snapshot（放在切換場景之後，以便正確取得玩家節點）
 		if player:
@@ -167,19 +195,19 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		return {"_status": "empty"}
-	var bytes := FileAccess.get_file_as_bytes(path).size()
+	var bytes = FileAccess.get_file_as_bytes(path).size()
 	print("[SaveManager] slot=", slot_index, " bytes=", bytes)
-	var v := f.get_var()
+	var v = f.get_var()
 	print("[SaveManager] slot=", slot_index, " path=", path, " type=", typeof(v))
 	if typeof(v) == TYPE_DICTIONARY:
-		var keys := (v as Dictionary).keys()
+		var keys = (v as Dictionary).keys()
 		print("[SaveManager] slot=", slot_index, " keys=", keys)
 		var flags_value = (v as Dictionary).get("flags")
 		var quests_value = (v as Dictionary).get("side_quests")
 		print("[SaveManager] slot=", slot_index, " flags_type=", typeof(flags_value))
 		print("[SaveManager] slot=", slot_index, " side_quests_type=", typeof(quests_value))
 	if typeof(v) == TYPE_STRING:
-		var preview := String(v)
+		var preview = String(v)
 		if preview.length() > 80:
 			preview = preview.substr(0, 80)
 		print("[SaveManager] slot=", slot_index, " string_preview=", preview)
