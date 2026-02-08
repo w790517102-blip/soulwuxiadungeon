@@ -21,10 +21,13 @@ func _ready():
 
 	save_button.pressed.connect(_on_save_button_pressed)
 	load_button.pressed.connect(_on_load_button_pressed)
+	load_button.disabled = true
 
 func _on_slot_selected(index: int):
 	selected_slot_index = index
 	print("Selected slot:", index)
+	var slot := slots[selected_slot_index - 1]
+	load_button.disabled = slot.is_empty()
 
 func _on_save_button_pressed():
 	if selected_slot_index == -1:

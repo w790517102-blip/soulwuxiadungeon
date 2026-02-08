@@ -7,6 +7,7 @@ class_name SaveSlotUI
 @export var slot_index := 1
 
 var selected := false
+var is_empty_slot := true
 
 signal slot_selected(index: int)
 
@@ -19,22 +20,27 @@ func _on_select_pressed():
         emit_signal("slot_selected", slot_index)
 
 func _refresh_label():
-        var summary := SaveManager.get_slot_summary(slot_index)
-        if summary.is_empty():
-                label.text = "存檔 %d｜尚無資料" % slot_index
-                return
+	var summary := SaveManager.get_slot_summary(slot_index)
+	if summary.is_empty():
+		is_empty_slot = true
+		label.text = "存檔 %d｜空" % slot_index
+		return
 
-        var timestamp := int(summary.get("timestamp", 0))
-        var timestamp_text := ""
-        if timestamp > 0:
-                timestamp_text = Time.get_datetime_string_from_unix_time(timestamp, true)
-        else:
+	is_empty_slot = false
+	var timestamp := int(summary.get("timestamp", 0))
+	var timestamp_text := ""
+	if timestamp > 0:
+		timestamp_text = Time.get_datetime_string_from_unix_time(timestamp, true)
+	else:
                 timestamp_text = "未知時間"
 
         var scene_path := String(summary.get("current_scene_path", ""))
         var scene_name := scene_path.get_file().get_basename() if scene_path != "" else "未知場景"
 
-        label.text = "存檔 %d｜%s｜%s" % [slot_index, timestamp_text, scene_name]
+	label.text = "存檔 %d｜%s｜%s" % [slot_index, timestamp_text, scene_name]
+
+func is_empty() -> bool:
+	return is_empty_slot
 
 func mark_selected():
         selected = true

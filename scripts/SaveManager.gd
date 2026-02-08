@@ -111,7 +111,12 @@ func load_from_slot(slot_index: int) -> void:
 		if f == null:
 				push_error("Failed to open file for reading: %s" % path)
 				return
-		var data: Dictionary = f.get_var() as Dictionary
+		var v := f.get_var()
+		if typeof(v) != TYPE_DICTIONARY:
+				f.close()
+				print("[SaveManager] load slot=", slot_index, " invalid root type=", typeof(v))
+				return
+		var data: Dictionary = v as Dictionary
 		f.close()
 
 		# --- 套用資料（提供預設，避免老存檔缺欄位報錯） ---
