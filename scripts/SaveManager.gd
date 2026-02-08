@@ -142,25 +142,39 @@ func load_from_slot(slot_index: int) -> void:
 
 # 讀取存檔的摘要（例如做選單顯示）
 func get_slot_summary(slot_index: int) -> Dictionary:
-		if not _valid_slot(slot_index):
-				return {}
-		var path: String = _slot_path(slot_index)
-		if not FileAccess.file_exists(path):
-				return {}
-		var f: FileAccess = FileAccess.open(path, FileAccess.READ)
-		if f == null:
-				return {}
-		var data: Dictionary = f.get_var() as Dictionary
+	if not _valid_slot(slot_index):
+		return {}
+	var path: String = _slot_path(slot_index)
+	if not FileAccess.file_exists(path):
+		return {}
+	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {}
+	var v := f.get_var()
+	print("[SaveManager] slot=", slot_index, " path=", path, " type=", typeof(v))
+	if typeof(v) == TYPE_STRING:
+		var preview := String(v)
+		if preview.length() > 80:
+			preview = preview.substr(0, 80)
+		print("[SaveManager] slot=", slot_index, " string_preview=", preview)
+	elif typeof(v) == TYPE_ARRAY:
+		print("[SaveManager] slot=", slot_index, " array_size=", (v as Array).size())
+	elif v == null:
+		print("[SaveManager] slot=", slot_index, " null")
+	if typeof(v) != TYPE_DICTIONARY:
 		f.close()
-		return {
-				"timestamp": data.get("timestamp", 0),
-				"ethics": data.get("ethics", 0),
-				"grudge": data.get("grudge", 0),
-				"affection": data.get("affection", 0),
-				"flags_count": (data.get("flags", {}) as Dictionary).size(),
-				"quests_count": (data.get("side_quests", {}) as Dictionary).size(),
-				"current_scene_path": data.get("current_scene_path", ""),
-		}
+		return {}
+	var data: Dictionary = v as Dictionary
+	f.close()
+	return {
+		"timestamp": data.get("timestamp", 0),
+		"ethics": data.get("ethics", 0),
+		"grudge": data.get("grudge", 0),
+		"affection": data.get("affection", 0),
+		"flags_count": (data.get("flags", {}) as Dictionary).size(),
+		"quests_count": (data.get("side_quests", {}) as Dictionary).size(),
+		"current_scene_path": data.get("current_scene_path", ""),
+	}
 
 # 小幫手：確認事件是否觸發過（範例）
 func has_triggered_market_melody_event() -> bool:
