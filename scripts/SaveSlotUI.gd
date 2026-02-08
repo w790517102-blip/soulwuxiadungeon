@@ -24,9 +24,14 @@ func _on_select_pressed():
 
 func _refresh_label():
 	var summary := SaveManager.get_slot_summary(slot_index)
-	if summary.is_empty():
+	var status := String(summary.get("_status", "empty"))
+	if status == "empty":
 		is_empty_slot = true
 		label.text = "存檔 %d｜空" % slot_index
+		return
+	if status == "invalid":
+		is_empty_slot = true
+		label.text = "存檔 %d｜異常格式" % slot_index
 		return
 
 	is_empty_slot = false

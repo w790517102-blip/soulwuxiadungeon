@@ -163,10 +163,10 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		return {}
 	var path: String = _slot_path(slot_index)
 	if not FileAccess.file_exists(path):
-		return {}
+		return {"_status": "empty"}
 	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if f == null:
-		return {}
+		return {"_status": "empty"}
 	var bytes := FileAccess.get_file_as_bytes(path).size()
 	print("[SaveManager] slot=", slot_index, " bytes=", bytes)
 	var v := f.get_var()
@@ -189,12 +189,17 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		print("[SaveManager] slot=", slot_index, " null")
 	if typeof(v) != TYPE_DICTIONARY:
 		f.close()
-		return {}
+		return {
+			"_status": "invalid",
+			"bytes": bytes,
+			"root_type": typeof(v),
+		}
 	var data: Dictionary = v as Dictionary
 	f.close()
 	var flags_value = data.get("flags")
 	var quests_value = data.get("side_quests")
 	return {
+		"_status": "ok",
 		"timestamp": data.get("timestamp", 0),
 		"ethics": data.get("ethics", 0),
 		"grudge": data.get("grudge", 0),
