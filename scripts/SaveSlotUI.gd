@@ -9,6 +9,8 @@ class_name SaveSlotUI
 var selected = false
 
 
+	if not select_button.pressed.is_connected(_on_select_button_pressed):
+		select_button.pressed.connect(_on_select_button_pressed)
 func set_slot_index(index: int) -> void:
 	slot_index = index
 	_refresh_label()

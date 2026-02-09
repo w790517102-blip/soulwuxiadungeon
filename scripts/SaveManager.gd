@@ -14,9 +14,19 @@ func _ensure_save_dir() -> void:
 	if not dir.dir_exists("save"):
 		dir.make_dir("save")
 
-func _safe_count(value: Variant) -> int:
+func _as_dict(value) -> Dictionary:
 	if typeof(value) == TYPE_DICTIONARY:
-		return (value as Dictionary).size()
+		return value
+	return {}
+
+	DirAccess.make_dir_recursive_absolute(SAVE_FOLDER)
+	var save_dir: DirAccess = DirAccess.open(SAVE_FOLDER)
+	if save_dir == null:
+		push_error("Failed to open save directory: %s" % SAVE_FOLDER)
+		return
+
+		var err_rename_old: int = save_dir.rename(path.get_file(), bak.get_file())
+	var err_rename_tmp: int = save_dir.rename(temp.get_file(), path.get_file())
 	if typeof(value) == TYPE_ARRAY:
 	var game_root = get_node_or_null("/root/GameRoot")
 	var map_path = ""
