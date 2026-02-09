@@ -86,12 +86,17 @@ func save_to_slot(slot_index: int) -> void:
 		"current_map_id": map_id,
 	}
 
-	var path: String = _slot_path(slot_index)
-	var temp: String = _slot_temp_path(slot_index)
-	var bak: String = _slot_backup_path(slot_index)
-	DirAccess.make_dir_recursive_absolute(SAVE_FOLDER)
-	print("[SaveManager] save path=", path)
-
+		var v = f.get_var()
+		if typeof(v) != TYPE_DICTIONARY:
+				f.close()
+				print("[SaveManager] load slot=", slot_index, " invalid root type=", typeof(v))
+				return
+		var data: Dictionary = v as Dictionary
+		SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
+		GlobalState.triggered_flags = _as_dict(data.get("flags", {}))
+		GlobalState.relationship = _as_dict(data.get("relationships", {}))
+						game_root.change_map_to(map_path)
+						game_root.change_map_to(scene_path)
 	# 先寫入 .tmp，成功後再覆蓋正式檔（避免半寫入損毀檔案）
 	var f: FileAccess = FileAccess.open(temp, FileAccess.WRITE)
 	if f == null:

@@ -8,7 +8,10 @@ class_name SaveSlotUI
 
 var selected = false
 
-func _on_select_button_pressed() -> void:
+
+func set_slot_index(index: int) -> void:
+	slot_index = index
+	_refresh_label()
 
 func _ready():
 	select_button.text = "選取"

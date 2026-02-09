@@ -196,8 +196,14 @@ func get_skills(character_id: String) -> Array:
 					"weapon_type": "棍",
 					"category": "單體攻擊",
 					"target_scope": "single",
-func get_skills_by_actor(actor: Dictionary) -> Array:
-	return get_skills(String(actor.get("id", "")))
+func get_skills_by_actor(actor) -> Array:
+	if typeof(actor) == TYPE_DICTIONARY:
+		return get_skills(String(actor.get("id", "")))
+	if actor is Object:
+		var id_value = actor.get("id")
+		if typeof(id_value) == TYPE_STRING and id_value != "":
+			return get_skills(String(id_value))
+	return []
 
 					"target_side": "enemy",
 					"effects": [
