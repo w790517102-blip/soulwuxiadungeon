@@ -7,7 +7,6 @@ const SAVE_EXT = ".save"
 const SAVE_VERSION = 1
 
 func _ensure_save_dir() -> void:
-	# 確保 user://save/ 存在（避免 DirAccess.open 失敗）
 	DirAccess.make_dir_recursive_absolute(SAVE_FOLDER)
 
 func _as_dict(value) -> Dictionary:
@@ -27,24 +26,25 @@ func _safe_count(value) -> int:
 
 	var player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 
-	# current_scene 多半是 GameRoot（不是地圖），這裡留作 fallback
+	# current_scene 多半是 GameRoot（保留當 fallback）
 	var current_scene = get_tree().current_scene
 	var scene_path = ""
 		if typeof(scene_file_path) == TYPE_STRING and String(scene_file_path) != "":
 			scene_path = String(current_scene.call("get_scene_file_path"))
 
-	# ✅ 真正用來還原地圖的來源：GameRoot.current_map_path
+	# ✅ 正解：用 GameRoot.current_map_path
 	var game_root = get_node_or_null("/root/GameRoot")
-		map_path = String(game_root.get("current_map_path"))
+		map_path = String(game_root.get("current_map_path", ""))
 	var save_data = {
+
+
 		# GlobalState
+
+
 
 	var path = _slot_path(slot_index)
 	var temp = _slot_temp_path(slot_index)
 	var bak = _slot_backup_path(slot_index)
-	var f = FileAccess.open(temp, FileAccess.WRITE)
-		var err_rename_old = save_dir.rename(path.get_file(), bak.get_file())
-	var err_rename_tmp = save_dir.rename(temp.get_file(), path.get_file())
 
 	if not _valid_slot(slot_index):
 		push_error("Invalid save slot index.")
@@ -67,15 +67,12 @@ func _safe_count(value) -> int:
 
 	var data = v as Dictionary
 
-	# --- 套用資料（提供預設，避免老存檔缺欄位報錯） ---
 	var version = int(data.get("version", 0))
 	if version > SAVE_VERSION:
 		push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
 
-	# Managers
 	SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
 
-	# GlobalState
 	GlobalState.triggered_flags = _as_dict(data.get("flags", {}))
 	GlobalState.relationship = _as_dict(data.get("relationships", {}))
 	GlobalState.ethics = int(data.get("ethics", 0))
@@ -83,20 +80,18 @@ func _safe_count(value) -> int:
 	GlobalState.affection = int(data.get("affection", 0))
 	GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
 
-	# Scene snapshot
 	var map_path = String(data.get("current_map_path", ""))
 	var scene_path = String(data.get("current_scene_path", ""))
 
 	var game_root = get_node_or_null("/root/GameRoot")
 	var player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 
-	# ✅ 優先用 map_path 還原（因為 current_scene_path 多半只會是 GameRoot）
 	if game_root and game_root.has_method("change_map_to") and map_path != "":
-		game_root.change_map_to(map_path)
+		await game_root.change_map_to(map_path)
 		await get_tree().process_frame
 		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 	elif game_root and game_root.has_method("change_map_to") and scene_path != "":
-		game_root.change_map_to(scene_path)
+		await game_root.change_map_to(scene_path)
 		await get_tree().process_frame
 		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 	elif scene_path != "" and ResourceLoader.exists(scene_path):
@@ -104,7 +99,6 @@ func _safe_count(value) -> int:
 		await get_tree().process_frame
 		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 
-	# Player snapshot（放在切換場景之後，以便正確取得玩家節點）
 	if player:
 		player.global_position = data.get("player_position", player.global_position)
 

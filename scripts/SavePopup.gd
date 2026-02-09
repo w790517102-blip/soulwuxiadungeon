@@ -11,7 +11,7 @@ extends Panel
 var selected_slot_index = -1
 var quest_party_serializer = null
 
-func _ready():
+func _ready() -> void:
 	quest_party_serializer = get_node_or_null("/root/QuestPartySerializer")
 
 	for i in range(slots.size()):
@@ -28,12 +28,13 @@ func _on_slot_selected(index: int) -> void:
 	var slot = slots[selected_slot_index - 1]
 	load_button.disabled = slot.is_empty()
 
+func _on_save_button_pressed() -> void:
+
+func _on_load_button_pressed() -> void:
+
 	var active_slot = slots[selected_slot_index - 1]
-	load_button.disabled = active_slot.is_empty()
-	var slot = slots[selected_slot_index - 1]
-	if slot.is_empty():
-		push_warning("此存檔槽沒有可讀取的資料。")
-		return
+	if active_slot.is_empty():
+		push_warning("該存檔槽沒有可讀取資料。")
 func _on_slot_selected(index: int):
 	selected_slot_index = index
 	print("Selected slot:", index)

@@ -5,9 +5,9 @@ signal slot_selected(index: int)
 @onready var label = $Label
 @onready var select_button = $SelectButton
 
-var slot_index = 1
+@export var slot_index = 1
 var is_empty_slot = true
-	if not select_button.pressed.is_connected(_on_select_button_pressed):
+func _ready() -> void:
 		select_button.pressed.connect(_on_select_button_pressed)
 
 func _on_select_button_pressed() -> void:
@@ -15,13 +15,16 @@ func _on_select_button_pressed() -> void:
 
 func _refresh_label() -> void:
 	var status = String(summary.get("_status", "empty"))
+
 	if status == "empty":
 		is_empty_slot = true
+
 	if status == "invalid":
 		is_empty_slot = true
 		label.text = "存檔 %d｜異常格式" % slot_index
 		return
 	is_empty_slot = false
+
 	var timestamp_text = "未知時間"
 	var map_path = String(summary.get("current_map_path", ""))
 	var path_for_name = map_path if map_path != "" else scene_path
