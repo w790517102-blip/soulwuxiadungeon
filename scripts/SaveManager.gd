@@ -1,134 +1,145 @@
 extends Node
 
-const SAVE_FOLDER = "user://save/"
 const SLOT_COUNT = 3
+const SAVE_FOLDER = "user://save/"
 const SAVE_PREFIX = "slot_"
 const SAVE_EXT = ".save"
 const SAVE_VERSION = 1
 
-func _ready():
-	_ensure_save_dir()
-
 func _ensure_save_dir() -> void:
-	var dir: DirAccess = DirAccess.open("user://")
-	if not dir.dir_exists("save"):
-		dir.make_dir("save")
+	# 確保 user://save/ 存在（避免 DirAccess.open 失敗）
+	DirAccess.make_dir_recursive_absolute(SAVE_FOLDER)
 
 func _as_dict(value) -> Dictionary:
 	if typeof(value) == TYPE_DICTIONARY:
 		return value
 	return {}
 
-	DirAccess.make_dir_recursive_absolute(SAVE_FOLDER)
-	var save_dir: DirAccess = DirAccess.open(SAVE_FOLDER)
-	if save_dir == null:
-		push_error("Failed to open save directory: %s" % SAVE_FOLDER)
-		return
-
-		var err_rename_old: int = save_dir.rename(path.get_file(), bak.get_file())
-	var err_rename_tmp: int = save_dir.rename(temp.get_file(), path.get_file())
+func _safe_count(value) -> int:
+	if typeof(value) == TYPE_DICTIONARY:
+		return (value as Dictionary).size()
 	if typeof(value) == TYPE_ARRAY:
+		return (value as Array).size()
+	return 0
+
+	_ensure_save_dir()
+	var save_dir = DirAccess.open(SAVE_FOLDER)
+
+	var player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+
+	# current_scene 多半是 GameRoot（不是地圖），這裡留作 fallback
+	var current_scene = get_tree().current_scene
+	var scene_path = ""
+		if typeof(scene_file_path) == TYPE_STRING and String(scene_file_path) != "":
+			scene_path = String(current_scene.call("get_scene_file_path"))
+
+	# ✅ 真正用來還原地圖的來源：GameRoot.current_map_path
 	var game_root = get_node_or_null("/root/GameRoot")
-	var map_path = ""
-	if game_root:
-		map_path = String(game_root.get("current_map_path", ""))
-		"current_map_path": map_path,
-	return {}
+		map_path = String(game_root.get("current_map_path"))
+	var save_data = {
+		# GlobalState
 
-func _resolve_player() -> Node2D:
-	var players = get_tree().get_nodes_in_group("player")
-	if players.size() > 0 and players[0] is Node2D:
-		return players[0] as Node2D
-	var liuyu = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
-	return liuyu
+	var path = _slot_path(slot_index)
+	var temp = _slot_temp_path(slot_index)
+	var bak = _slot_backup_path(slot_index)
+	var f = FileAccess.open(temp, FileAccess.WRITE)
+		var err_rename_old = save_dir.rename(path.get_file(), bak.get_file())
+	var err_rename_tmp = save_dir.rename(temp.get_file(), path.get_file())
 
-# --- helpers ---
-func _slot_path(slot_index: int) -> String:
-	return "%s%s%02d%s" % [SAVE_FOLDER, SAVE_PREFIX, slot_index, SAVE_EXT]
-
-func _slot_backup_path(slot_index: int) -> String:
-	return "%s%s%02d.bak" % [SAVE_FOLDER, SAVE_PREFIX, slot_index]
-
-func _slot_temp_path(slot_index: int) -> String:
-	return "%s%s%02d.tmp" % [SAVE_FOLDER, SAVE_PREFIX, slot_index]
-
-func _valid_slot(slot_index: int) -> bool:
-	return slot_index >= 1 and slot_index <= SLOT_COUNT
-
-# --- public API ---
-# 儲存遊戲資料（含任務、全域旗標、屬性、主角位置、場景等）
-func save_to_slot(slot_index: int) -> void:
 	if not _valid_slot(slot_index):
 		push_error("Invalid save slot index.")
 		return
-
-	var player: Node2D = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
-	var current_scene: Node = get_tree().current_scene
-	var scene_path: String = ""
-	if current_scene:
-		var scene_file_path = current_scene.get("scene_file_path")
-		if typeof(scene_file_path) == TYPE_STRING and scene_file_path != "":
-			scene_path = String(scene_file_path)
-		elif current_scene.has_method("get_scene_file_path"):
-			scene_path = current_scene.call("get_scene_file_path") as String
-	var map_id: String = ""
-	if current_scene:
-		var map_value = current_scene.get("map_id")
-		if typeof(map_value) == TYPE_STRING:
-			map_id = String(map_value)
-
-	var save_data: Dictionary = {
-		"version": SAVE_VERSION,
-		"timestamp": Time.get_unix_time_from_system(),
-		# Managers
-		"side_quests": SideQuestManager.save_all(),
-		# GlobalState（完整持久化，避免健忘）
-		"flags": GlobalState.triggered_flags,
-		"relationships": GlobalState.relationship,
-		"ethics": GlobalState.ethics,
-		"grudge": GlobalState.grudge,
-		"affection": GlobalState.affection,
-		"last_facing_direction": GlobalState.last_facing_direction,
-		# Player snapshot
-		"player_position": player.global_position if player else Vector2.ZERO,
-		# Scene snapshot
-		"current_scene_path": scene_path,
-		"current_map_id": map_id,
-	}
-
-		var v = f.get_var()
-		if typeof(v) != TYPE_DICTIONARY:
-				f.close()
-				print("[SaveManager] load slot=", slot_index, " invalid root type=", typeof(v))
-				return
-		var data: Dictionary = v as Dictionary
-		SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
-		GlobalState.triggered_flags = _as_dict(data.get("flags", {}))
-		GlobalState.relationship = _as_dict(data.get("relationships", {}))
-						game_root.change_map_to(map_path)
-						game_root.change_map_to(scene_path)
-	# 先寫入 .tmp，成功後再覆蓋正式檔（避免半寫入損毀檔案）
-	var f: FileAccess = FileAccess.open(temp, FileAccess.WRITE)
-	if f == null:
-		push_error("Failed to open temp save file: %s" % temp)
+	var path = _slot_path(slot_index)
+	if not FileAccess.file_exists(path):
+		print("No save found in slot %d" % slot_index)
 		return
-	f.store_var(save_data)
-	f.flush()
+
+	var f = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		push_error("Failed to open file for reading: %s" % path)
+		return
+	var v = f.get_var()
 	f.close()
 
-	var dir: DirAccess = DirAccess.open(SAVE_FOLDER)
-	if FileAccess.file_exists(path):
-		# 舊檔改名為 .bak
-		var err_rename_old: int = dir.rename(path.get_file(), bak.get_file())
-		if err_rename_old != OK:
-		var map_path: String = data.get("current_map_path", "")
-		if map_path != "" or scene_path != "":
-				if game_root and map_path != "" and game_root.has_method("change_map_to"):
-						await game_root.change_map_to(map_path)
-						await get_tree().process_frame
-						player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
-				elif game_root and scene_path != "" and game_root.has_method("change_map_to"):
-						await game_root.change_map_to(scene_path)
+	if typeof(v) != TYPE_DICTIONARY:
+		print("[SaveManager] load slot=", slot_index, " invalid root type=", typeof(v))
+		return
+
+	var data = v as Dictionary
+
+	# --- 套用資料（提供預設，避免老存檔缺欄位報錯） ---
+	var version = int(data.get("version", 0))
+	if version > SAVE_VERSION:
+		push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
+
+	# Managers
+	SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
+
+	# GlobalState
+	GlobalState.triggered_flags = _as_dict(data.get("flags", {}))
+	GlobalState.relationship = _as_dict(data.get("relationships", {}))
+	GlobalState.ethics = int(data.get("ethics", 0))
+	GlobalState.grudge = int(data.get("grudge", 0))
+	GlobalState.affection = int(data.get("affection", 0))
+	GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
+
+	# Scene snapshot
+	var map_path = String(data.get("current_map_path", ""))
+	var scene_path = String(data.get("current_scene_path", ""))
+
+	var game_root = get_node_or_null("/root/GameRoot")
+	var player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+
+	# ✅ 優先用 map_path 還原（因為 current_scene_path 多半只會是 GameRoot）
+	if game_root and game_root.has_method("change_map_to") and map_path != "":
+		game_root.change_map_to(map_path)
+		await get_tree().process_frame
+		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+	elif game_root and game_root.has_method("change_map_to") and scene_path != "":
+		game_root.change_map_to(scene_path)
+		await get_tree().process_frame
+		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+	elif scene_path != "" and ResourceLoader.exists(scene_path):
+		get_tree().change_scene_to_file(scene_path)
+		await get_tree().process_frame
+		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+
+	# Player snapshot（放在切換場景之後，以便正確取得玩家節點）
+	if player:
+		player.global_position = data.get("player_position", player.global_position)
+
+	print("Loaded from slot %d" % slot_index)
+	if not _valid_slot(slot_index):
+		return {}
+
+	var path = _slot_path(slot_index)
+	if not FileAccess.file_exists(path):
+		return {"_status": "empty"}
+
+	var f = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {"_status": "empty"}
+
+	var bytes = FileAccess.get_file_as_bytes(path).size()
+	var v = f.get_var()
+	f.close()
+
+	if typeof(v) != TYPE_DICTIONARY:
+			"_status": "invalid",
+			"bytes": bytes,
+			"root_type": typeof(v),
+	var data = v as Dictionary
+	return {
+		"_status": "ok",
+		"timestamp": data.get("timestamp", 0),
+		"ethics": data.get("ethics", 0),
+		"grudge": data.get("grudge", 0),
+		"affection": data.get("affection", 0),
+		"flags_count": _safe_count(data.get("flags")),
+		"quests_count": _safe_count(data.get("side_quests")),
+		"current_scene_path": data.get("current_scene_path", ""),
+		"current_map_path": data.get("current_map_path", ""),
+	}
 						await get_tree().process_frame
 						player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 				elif scene_path != "" and ResourceLoader.exists(scene_path):

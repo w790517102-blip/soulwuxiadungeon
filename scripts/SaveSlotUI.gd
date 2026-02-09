@@ -1,33 +1,33 @@
 extends HBoxContainer
-class_name SaveSlotUI
+
+signal slot_selected(index: int)
 
 @onready var label = $Label
-@onready var select_button = $SelectButton # <- 修正這裡！SaveButton 實際上是 SelectButton
+@onready var select_button = $SelectButton
 
-@export var slot_index = 1
-
-var selected = false
-
-
+var slot_index = 1
+var is_empty_slot = true
 	if not select_button.pressed.is_connected(_on_select_button_pressed):
 		select_button.pressed.connect(_on_select_button_pressed)
-func set_slot_index(index: int) -> void:
-	slot_index = index
-	_refresh_label()
 
-func _ready():
-	select_button.text = "選取"
-	select_button.pressed.connect(_on_select_pressed)
-
-func set_slot_index(index: int) -> void:
-	slot_index = index
-	_refresh_label()
-
-func _on_select_pressed():
+func _on_select_button_pressed() -> void:
 	emit_signal("slot_selected", slot_index)
 
-func _refresh_label():
-	var summary = SaveManager.get_slot_summary(slot_index)
+func _refresh_label() -> void:
+	var status = String(summary.get("_status", "empty"))
+	if status == "empty":
+		is_empty_slot = true
+	if status == "invalid":
+		is_empty_slot = true
+		label.text = "存檔 %d｜異常格式" % slot_index
+		return
+	is_empty_slot = false
+	var timestamp_text = "未知時間"
+	var map_path = String(summary.get("current_map_path", ""))
+	var path_for_name = map_path if map_path != "" else scene_path
+	var scene_name = path_for_name.get_file().get_basename() if path_for_name != "" else "未知場景"
+func is_empty() -> bool:
+	return is_empty_slot
 	var status = String(summary.get("_status", "empty"))
 	if status == "empty":
 		is_empty_slot = true
