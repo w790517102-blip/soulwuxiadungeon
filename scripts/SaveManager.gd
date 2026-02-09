@@ -35,7 +35,9 @@ func _safe_count(value) -> int:
 	# ✅ 正解：用 GameRoot.current_map_path
 	var game_root = get_node_or_null("/root/GameRoot")
 		map_path = String(game_root.get("current_map_path", ""))
-	var save_data = {
+		var map_val = game_root.get("current_map_path")
+		if typeof(map_val) == TYPE_STRING:
+			map_path = String(map_val)
 
 
 		# GlobalState
@@ -99,6 +101,8 @@ func _safe_count(value) -> int:
 		await get_tree().process_frame
 		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 
+
+	# ✅ 優先 map_path
 	if player:
 		player.global_position = data.get("player_position", player.global_position)
 
