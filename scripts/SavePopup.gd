@@ -8,7 +8,7 @@ extends Panel
 	$VBoxContainer/SaveSlot3
 ]
 
-var selected_slot_index = -1
+var selected_slot_index: int = -1
 var quest_party_serializer = null
 
 func _ready() -> void:
@@ -17,44 +17,46 @@ func _ready() -> void:
 	for i in range(slots.size()):
 		var slot = slots[i]
 		slot.set_slot_index(i + 1)
-		var cb = Callable(self, "_on_slot_selected")
+
+		var cb := Callable(self, "_on_slot_selected")
 		if not slot.is_connected("slot_selected", cb):
 			slot.connect("slot_selected", cb)
 
 	save_button.pressed.connect(_on_save_button_pressed)
 	load_button.pressed.connect(_on_load_button_pressed)
 	load_button.disabled = true
+
+
 func _on_slot_selected(index: int) -> void:
-	var slot = slots[selected_slot_index - 1]
-	load_button.disabled = slot.is_empty()
-
-func _on_save_button_pressed() -> void:
-
-func _on_load_button_pressed() -> void:
-
-	var active_slot = slots[selected_slot_index - 1]
-	if active_slot.is_empty():
-		push_warning("該存檔槽沒有可讀取資料。")
-func _on_slot_selected(index: int):
 	selected_slot_index = index
 	print("Selected slot:", index)
+
 	var slot = slots[selected_slot_index - 1]
 	load_button.disabled = slot.is_empty()
 
-func _on_save_button_pressed():
+
+func _on_save_button_pressed() -> void:
 	if selected_slot_index == -1:
 		push_warning("尚未選擇存檔槽！")
 		return
 
-	# 改為直接讓 SaveManager 自行取得當前序列化資料
 	SaveManager.save_to_slot(selected_slot_index)
 
 	for slot in slots:
 		slot._refresh_label()
 
-func _on_load_button_pressed():
+	var active_slot = slots[selected_slot_index - 1]
+	load_button.disabled = active_slot.is_empty()
+
+
+func _on_load_button_pressed() -> void:
 	if selected_slot_index == -1:
 		push_warning("尚未選擇讀取槽！")
+		return
+
+	var active_slot = slots[selected_slot_index - 1]
+	if active_slot.is_empty():
+		push_warning("該存檔槽沒有可讀取資料。")
 		return
 
 	SaveManager.load_from_slot(selected_slot_index)

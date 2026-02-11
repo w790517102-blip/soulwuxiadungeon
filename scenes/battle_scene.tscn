@@ -1,4 +1,4 @@
-[gd_scene load_steps=74 format=3 uid="uid://bqa7bwydf6gxp"]
+[gd_scene load_steps=75 format=3 uid="uid://bqa7bwydf6gxp"]
 
 [ext_resource type="Script" uid="uid://cmsitrldg0lw6" path="res://scripts/battlescripts/BattleController.gd" id="1_idkgt"]
 [ext_resource type="Script" uid="uid://ccles58frpsnf" path="res://scripts/battlescripts/BattleScene.gd" id="1_xr8tn"]
@@ -10,8 +10,8 @@
 [ext_resource type="Script" uid="uid://b4cc072wxnf5v" path="res://scripts/battlescripts/CharacterSkill.gd" id="5_pxwbd"]
 [ext_resource type="Script" uid="uid://c747gfhv5jsun" path="res://scripts/battlescripts/TargetSelectPopup.gd" id="5_ti0og"]
 [ext_resource type="Script" uid="uid://di1n4fdr4eftg" path="res://scripts/battlescripts/TeamMateSlot.gd" id="5_yt3ua"]
-[ext_resource type="Script" uid="uid://csns442ydm1k0" path="res://scripts/battlescripts/VictoryHandler.gd" id="6_6yp1m"]
 [ext_resource type="Texture2D" uid="uid://dxcg3vsxgdjd0" path="res://assets/fx/fx_slash_sword.png" id="6_3xrod"]
+[ext_resource type="Script" uid="uid://c5x8p4bp5l3cv" path="res://scripts/battlescripts/VictoryHandler.gd" id="6_6yp1m"]
 [ext_resource type="Texture2D" uid="uid://bnv5xrl8ffdkf" path="res://assets/fx/fx_brush_stroke.png" id="6_7mjbx"]
 [ext_resource type="Texture2D" uid="uid://blrewhf5lp55i" path="res://assets/fx/123.png" id="6_jrwob"]
 [ext_resource type="Texture2D" uid="uid://bov0d0ixgbeoa" path="res://assets/fx/fx_hit_small.png" id="6_sjku2"]
@@ -382,10 +382,10 @@ script = ExtResource("2_kinr6")
 
 [node name="StatusHoverPopup" type="PanelContainer" parent="BattleUILayer/BattleUI"]
 visible = false
-mouse_filter = 2
 layout_mode = 0
 offset_right = 240.0
 offset_bottom = 140.0
+mouse_filter = 2
 
 [node name="StatusHoverLabel" type="RichTextLabel" parent="BattleUILayer/BattleUI/StatusHoverPopup"]
 layout_mode = 2
@@ -907,16 +907,19 @@ sprite_frames = SubResource("SpriteFrames_porms")
 animation = &"fx_brush_stroke"
 
 [node name="BattleResultOverlay" type="Control" parent="BattleUILayer/BattleUI"]
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
 [node name="Dim" type="ColorRect" parent="BattleUILayer/BattleUI/BattleResultOverlay"]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0, 0, 0, 0.6)
 
 [node name="ResultPanel" type="Panel" parent="BattleUILayer/BattleUI/BattleResultOverlay"]
+layout_mode = 0
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -927,6 +930,7 @@ offset_right = 220.0
 offset_bottom = 130.0
 
 [node name="ResultContent" type="VBoxContainer" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel"]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
@@ -935,14 +939,19 @@ offset_right = -16.0
 offset_bottom = -16.0
 
 [node name="ResultTitle" type="Label" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel/ResultContent"]
+layout_mode = 2
 text = "戰鬥勝利"
 horizontal_alignment = 1
 
 [node name="ResultBody" type="Label" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel/ResultContent"]
-text = "經驗：0\n金幣：0\n掉落：無"
+layout_mode = 2
+text = "經驗：0
+金幣：0
+掉落：無"
 autowrap_mode = 3
 
 [node name="ConfirmButton" type="Button" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel/ResultContent"]
+layout_mode = 2
 text = "確認"
 
 [node name="BattleAudio" type="Node" parent="."]
