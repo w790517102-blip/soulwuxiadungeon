@@ -3,6 +3,9 @@ extends Node
 @onready var system_menu_scene := preload("res://scenes/system_menu.tscn")
 var system_menu_instance: Control = null
 
+const GAME_ROOT_PATH := "/root/GameRoot"
+const UI_ROOT_NAME := "UIRoot"
+
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
 		if system_menu_instance:
@@ -14,7 +17,9 @@ func _open_system_menu():
 	if system_menu_instance:
 		return
 	system_menu_instance = system_menu_scene.instantiate()
-	get_tree().root.add_child(system_menu_instance)
+	var parent := _resolve_ui_parent()
+	parent.add_child(system_menu_instance)
+	_center_menu_on_viewport(system_menu_instance)
 	system_menu_instance.set_process_unhandled_input(true)
 	system_menu_instance.grab_focus()
 
@@ -26,3 +31,21 @@ func _close_system_menu():
 		system_menu_instance.queue_free()
 		system_menu_instance = null
 		GlobalState.set_meta("menu_open", false)
+
+func _resolve_ui_parent() -> Node:
+	var game_root := get_node_or_null(GAME_ROOT_PATH)
+	if game_root:
+		var ui_root = game_root.get_node_or_null(UI_ROOT_NAME)
+		if ui_root == null:
+			ui_root = CanvasLayer.new()
+			ui_root.name = UI_ROOT_NAME
+			game_root.add_child(ui_root)
+		return ui_root
+	return get_tree().root
+
+func _center_menu_on_viewport(menu: Control) -> void:
+	if menu == null:
+		return
+
+	menu.set_anchors_preset(Control.PRESET_CENTER, false)
+	menu.position = -menu.size * 0.5
