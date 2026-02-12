@@ -401,11 +401,15 @@ func _refresh_inner_force_lists() -> void:
 		return
 	var actor = _get_actor_by_id(_selected_inner_force_actor_id)
 	var forces: Array = []
-	if actor != null:
+	if TeamData and TeamData.has_method("get_known_inner_forces"):
+		forces = TeamData.get_known_inner_forces(_selected_inner_force_actor_id)
+	elif actor != null:
 		forces = _get_actor_value(actor, "available_inner_forces", [])
-	var active_prefix = ""
-	if actor != null:
-		active_prefix = str(_get_actor_value(actor, "inner_force", {}).get("prefix", ""))
+	var active_force_id = ""
+	if TeamData and TeamData.has_method("get_current_inner_force_id"):
+		active_force_id = String(TeamData.get_current_inner_force_id(_selected_inner_force_actor_id))
+	elif actor != null:
+		active_force_id = str(_get_actor_value(actor, "inner_force", {}).get("id", ""))
 	for tab in inner_force_tabs.get_children():
 		if not tab.has_node("InnerForceList"):
 			continue
@@ -417,9 +421,10 @@ func _refresh_inner_force_lists() -> void:
 				continue
 			if str(force.get("element", "")) != element:
 				continue
-			var prefix = str(force.get("prefix", "???"))
-			var label = prefix
-			if active_prefix != "" and prefix == active_prefix:
+			var force_id = str(force.get("id", ""))
+			var force_name = "%s%s" % [str(force.get("prefix", "???")), str(force.get("type", ""))]
+			var label = force_name
+			if active_force_id != "" and force_id == active_force_id:
 				label += "（使用中）"
 			list.add_item(label)
 			list.set_item_metadata(list.item_count - 1, force)
@@ -472,7 +477,16 @@ func _on_switch_inner_force_pressed() -> void:
 	var actor = _get_actor_by_id(_selected_inner_force_actor_id)
 	if actor == null:
 		return
-	_set_actor_value(actor, "inner_force", _selected_inner_force.duplicate(true))
+	var force_id = str(_selected_inner_force.get("id", ""))
+	var switched = false
+	if TeamData and TeamData.has_method("set_inner_force") and force_id != "":
+		switched = bool(TeamData.set_inner_force(_selected_inner_force_actor_id, force_id))
+	else:
+		_set_actor_value(actor, "inner_force", _selected_inner_force.duplicate(true))
+		switched = true
+	if not switched:
+		push_warning("無法切換內功：%s" % force_id)
+		return
 	print("[InnerForce] switched:", _get_actor_value(actor, "name", ""), _selected_inner_force.get("prefix", ""))
 	_refresh_inner_force_lists()
 	_refresh_status_tab()

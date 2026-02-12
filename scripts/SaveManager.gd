@@ -78,6 +78,7 @@ func save_to_slot(slot_index: int) -> void:
 		"grudge": GlobalState.grudge,
 		"affection": GlobalState.affection,
 		"last_facing_direction": GlobalState.last_facing_direction,
+		"team_data": TeamData.export_team_state() if TeamData and TeamData.has_method("export_team_state") else {},
 
 		# Player snapshot
 		"player_position": player.global_position if player else Vector2.ZERO,
@@ -149,6 +150,8 @@ func load_from_slot(slot_index: int) -> void:
 	GlobalState.grudge = int(data.get("grudge", 0))
 	GlobalState.affection = int(data.get("affection", 0))
 	GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
+	if TeamData and TeamData.has_method("import_team_state"):
+		TeamData.import_team_state(_as_dict(data.get("team_data", {})))
 
 	var map_path = String(data.get("current_map_path", ""))
 	var scene_path = String(data.get("current_scene_path", ""))
