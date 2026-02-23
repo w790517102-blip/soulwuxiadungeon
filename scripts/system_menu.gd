@@ -33,7 +33,9 @@ var _selected_inner_force: Dictionary = {}
 var _selected_inner_force_actor_id = ""
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
+const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 var _skill_db: Node = CharacterSkillDB.new()
+var _skill_data_db: Node = SkillDBScript.new()
 
 const DEFAULT_UNARMED_NAME = "空手"
 const WEAPON_RULES = {
@@ -240,7 +242,13 @@ func _on_inner_force_tab_changed(_tab_index: int) -> void:
 
 func _refresh_weapon_tab_lists() -> void:
 	var actor_id = _get_active_character_id()
-	var skills = _skill_db.get_skills(actor_id)
+	var actor = TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else null
+	var skill_ids: Array = TeamData.get_known_skill_ids(actor_id) if TeamData and TeamData.has_method("get_known_skill_ids") else []
+	var skills: Array = []
+	if not skill_ids.is_empty():
+		skills = _skill_data_db.get_skills_for_actor(actor_id, actor, skill_ids)
+	else:
+		skills = _skill_db.get_skills(actor_id)
 	for tab in weapon_tabs.get_children():
 		if not tab.has_node("SkillList"):
 			continue
@@ -249,6 +257,10 @@ func _refresh_weapon_tab_lists() -> void:
 		var weapon_type = str(tab.name)
 		for skill in skills:
 			if typeof(skill) != TYPE_DICTIONARY:
+				continue
+			if not _skill_data_db.is_available_for_actor(str(skill.get("id", "")), actor_id):
+				continue
+			if actor != null and not _skill_data_db.is_weapon_compatible(skill, actor):
 				continue
 			var skill_weapon = str(skill.get("weapon_type", ""))
 			if skill_weapon != weapon_type:
@@ -279,7 +291,7 @@ func _update_skill_detail(skill: Dictionary) -> void:
 			use_skill_button.disabled = true
 		return
 	var name = str(skill.get("name", "???"))
-	var desc = str(skill.get("desc", ""))
+	var desc = str(skill.get("description", skill.get("desc", "")))
 	var weapon_type = str(skill.get("weapon_type", ""))
 	var power = skill.get("power", null)
 	var target_scope = str(skill.get("target_scope", ""))
@@ -310,6 +322,12 @@ func _on_use_skill_pressed() -> void:
 	if not bool(_selected_skill.get("menu_usable", false)):
 		return
 	var effect = str(_selected_skill.get("effect", ""))
+	if effect == "":
+		var effects = _selected_skill.get("effects", [])
+		if typeof(effects) == TYPE_ARRAY and (effects as Array).size() > 0:
+			var first = (effects as Array)[0]
+			if typeof(first) == TYPE_DICTIONARY:
+				effect = str((first as Dictionary).get("type", ""))
 	if effect == "heal_hp":
 		_open_skill_target_popup()
 		return

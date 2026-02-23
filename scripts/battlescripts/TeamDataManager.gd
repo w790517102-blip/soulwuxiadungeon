@@ -4,7 +4,9 @@
 extends Node
 
 const InnerForceDBScript = preload("res://scripts/battlescripts/InnerForceDB.gd")
+const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 var _inner_force_db: Node = InnerForceDBScript.new()
+var _skill_db: Node = SkillDBScript.new()
 
 # === 所有可用角色（包含未上場） ===
 var all_characters: Dictionary = {
@@ -72,9 +74,15 @@ var all_characters: Dictionary = {
 
 # === 目前出戰隊伍（用角色 ID 陣列） ===
 var current_team_ids: Array = ["liuyu", "shumian", "lieshao"]
+var known_skill_ids_by_actor: Dictionary = {
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18"],
+	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_debuff_speed_test", "skill_force_element_test", "skill_mobishuxin"],
+	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa"],
+}
 
 func _ready() -> void:
 	_normalize_all_characters()
+	_normalize_known_skills()
 
 # === 回傳目前出戰角色完整資料（用 ID 反查） ===
 func get_active_party() -> Array:
@@ -146,6 +154,29 @@ func get_character_by_id(id: String) -> Dictionary:
 	_normalize_character(actor)
 	return actor
 
+func get_known_skill_ids(actor_id: String) -> Array:
+	if not known_skill_ids_by_actor.has(actor_id):
+		known_skill_ids_by_actor[actor_id] = _skill_db.get_default_skill_ids(actor_id)
+	var ids = known_skill_ids_by_actor.get(actor_id, [])
+	if typeof(ids) != TYPE_ARRAY:
+		return []
+	return (ids as Array).duplicate()
+
+func knows_skill(actor_id: String, skill_id: String) -> bool:
+	return get_known_skill_ids(actor_id).has(skill_id)
+
+func learn_skill(actor_id: String, skill_id: String) -> void:
+	var canonical_id := _skill_db.coerce_skill_id(skill_id)
+	if canonical_id == "":
+		return
+	if not _skill_db.is_available_for_actor(canonical_id, actor_id):
+		return
+	var ids = get_known_skill_ids(actor_id)
+	if ids.has(canonical_id):
+		return
+	ids.append(canonical_id)
+	known_skill_ids_by_actor[actor_id] = ids
+
 func get_current_inner_force_id(actor_id: String) -> String:
 	if not all_characters.has(actor_id):
 		return ""
@@ -181,6 +212,7 @@ func set_inner_force(actor_id: String, force_id: String) -> bool:
 func export_team_state() -> Dictionary:
 	var out := {
 		"current_team_ids": current_team_ids.duplicate(),
+		"known_skill_ids_by_actor": known_skill_ids_by_actor.duplicate(true),
 		"all_characters": {},
 	}
 	var chars: Dictionary = out["all_characters"]
@@ -202,6 +234,8 @@ func import_team_state(data: Dictionary) -> void:
 		return
 	if typeof(data.get("current_team_ids", null)) == TYPE_ARRAY:
 		current_team_ids = (data.get("current_team_ids", []) as Array).duplicate()
+	if typeof(data.get("known_skill_ids_by_actor", null)) == TYPE_DICTIONARY:
+		known_skill_ids_by_actor = (data.get("known_skill_ids_by_actor", {}) as Dictionary).duplicate(true)
 	var chars = data.get("all_characters", {})
 	if typeof(chars) == TYPE_DICTIONARY:
 		for actor_id in chars.keys():
@@ -221,6 +255,26 @@ func import_team_state(data: Dictionary) -> void:
 			_normalize_character(actor)
 			all_characters[actor_id] = actor
 	_normalize_all_characters()
+	_normalize_known_skills()
+
+func _normalize_known_skills() -> void:
+	for actor_id in all_characters.keys():
+		var ids: Array = []
+		if known_skill_ids_by_actor.has(actor_id):
+			var from_map = known_skill_ids_by_actor[actor_id]
+			if typeof(from_map) == TYPE_ARRAY:
+				ids = (from_map as Array).duplicate()
+		if ids.is_empty():
+			ids = _skill_db.get_default_skill_ids(String(actor_id))
+		var normalized: Array = []
+		for raw_id in ids:
+			var skill_id := _skill_db.coerce_skill_id(raw_id)
+			if skill_id == "" or normalized.has(skill_id):
+				continue
+			if not _skill_db.is_available_for_actor(skill_id, String(actor_id)):
+				continue
+			normalized.append(skill_id)
+		known_skill_ids_by_actor[String(actor_id)] = normalized
 
 func _normalize_all_characters() -> void:
 	for actor_id in all_characters.keys():
