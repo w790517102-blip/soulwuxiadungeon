@@ -310,7 +310,7 @@ const DEFAULT_SKILL_IDS_BY_ACTOR := {
 func get_skill(skill_id: String) -> Dictionary:
 	if not SKILLS.has(skill_id):
 		return {}
-	return _normalize_skill((SKILLS[skill_id] as Dictionary).duplicate(true))
+	return normalize_skill_def((SKILLS[skill_id] as Dictionary).duplicate(true))
 
 func get_all_skills() -> Array:
 	var out: Array = []
@@ -358,7 +358,7 @@ func is_available_for_actor(skill_id: String, actor_id: String) -> bool:
 func is_weapon_compatible(skill: Dictionary, actor) -> bool:
 	if skill.is_empty():
 		return false
-	var weapon_type := String(skill.get("weapon_type", "通用"))
+	var weapon_type := String(skill.get("weapon_type", ""))
 	if weapon_type == "" or weapon_type == "通用":
 		return true
 
@@ -404,9 +404,15 @@ func coerce_skill_id(value) -> String:
 	push_warning("[SkillDB] Unsupported skill id value type: %s" % typeof(value))
 	return ""
 
-func _normalize_skill(skill: Dictionary) -> Dictionary:
+func normalize_skill_def(skill: Dictionary) -> Dictionary:
 	if skill.is_empty():
 		return {}
+	if not skill.has("kind"):
+		skill["kind"] = "武學"
+	if not skill.has("ui_category"):
+		skill["ui_category"] = String(skill.get("category", ""))
+	if not skill.has("category"):
+		skill["category"] = String(skill.get("ui_category", ""))
 	if not skill.has("description"):
 		skill["description"] = String(skill.get("desc", ""))
 	if not skill.has("desc"):
@@ -421,6 +427,15 @@ func _normalize_skill(skill: Dictionary) -> Dictionary:
 		skill["target_side"] = "enemy"
 	if not skill.has("effects"):
 		skill["effects"] = _legacy_effect_to_effects(skill)
+	if not skill.has("power"):
+		var effects = skill.get("effects", [])
+		if typeof(effects) == TYPE_ARRAY:
+			for effect in effects:
+				if typeof(effect) != TYPE_DICTIONARY:
+					continue
+				if String((effect as Dictionary).get("type", "")) == "damage":
+					skill["power"] = float((effect as Dictionary).get("power", 1.0))
+					break
 	if not skill.has("available"):
 		skill["available"] = {"mode": "all"}
 
@@ -430,6 +445,9 @@ func _normalize_skill(skill: Dictionary) -> Dictionary:
 			skill["effects"] = [{"type": "heal_hp", "amount": int(skill.get("heal_amount", 0))}]
 
 	return skill
+
+func _normalize_skill(skill: Dictionary) -> Dictionary:
+	return normalize_skill_def(skill)
 
 func _legacy_effect_to_effects(skill: Dictionary) -> Array:
 	if skill.has("power"):

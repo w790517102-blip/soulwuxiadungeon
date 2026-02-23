@@ -54,9 +54,9 @@ func execute(
 
 	var has_free_hand = real_weapon_count < 2
 
-	# === 類別判斷：外功才檢查武器 ===
-	var category: String = String(skill_data.get("category", "外功"))
-	if category == "外功":
+	# === 邏輯分類判斷：武學才檢查武器（不要用 UI 分類欄位） ===
+	var kind: String = String(skill_data.get("kind", "武學"))
+	if kind == "武學":
 		var weapon_required: String = String(skill_data.get("weapon_type", ""))
 		var require_free_hand: bool = bool(skill_data.get("require_free_hand", false))
 		var uname: String = String(user.get("name", "???"))
