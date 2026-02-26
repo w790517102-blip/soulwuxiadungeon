@@ -31,6 +31,7 @@ var _active_equip_slot = ""
 var _selected_skill: Dictionary = {}
 var _selected_inner_force: Dictionary = {}
 var _selected_inner_force_actor_id = ""
+var _skill_debug_logged: bool = false
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -249,6 +250,14 @@ func _refresh_weapon_tab_lists() -> void:
 		skills = _skill_data_db.get_skills_for_actor(actor_id, actor, skill_ids)
 	else:
 		skills = _skill_db.get_skills(actor_id)
+	if not _skill_debug_logged:
+		var liuyu_count = TeamData.get_known_skill_ids("liuyu").size() if TeamData and TeamData.has_method("get_known_skill_ids") else -1
+		var shumian_count = TeamData.get_known_skill_ids("shumian").size() if TeamData and TeamData.has_method("get_known_skill_ids") else -1
+		var lieshao_count = TeamData.get_known_skill_ids("lieshao").size() if TeamData and TeamData.has_method("get_known_skill_ids") else -1
+		print("[SkillDebug] all_skills=", _skill_data_db.get_all_skills().size(), " qiliaozhang_found=", not _skill_data_db.get_skill("skill_qiliaozhang").is_empty())
+		print("[SkillDebug] known_ids liuyu=", liuyu_count, " shumian=", shumian_count, " lieshao=", lieshao_count)
+		print("[SkillDebug] actor_id=", actor_id, " menu_skills_after_filter=", skills.size())
+		_skill_debug_logged = true
 	for tab in weapon_tabs.get_children():
 		if not tab.has_node("SkillList"):
 			continue

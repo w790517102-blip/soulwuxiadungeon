@@ -156,7 +156,7 @@ func get_character_by_id(id: String) -> Dictionary:
 
 func get_known_skill_ids(actor_id: String) -> Array:
 	if not known_skill_ids_by_actor.has(actor_id):
-		known_skill_ids_by_actor[actor_id] = _skill_db.get_default_skill_ids(actor_id)
+		known_skill_ids_by_actor[actor_id] = _get_default_skill_ids_for_actor(actor_id)
 	var ids = known_skill_ids_by_actor.get(actor_id, [])
 	if typeof(ids) != TYPE_ARRAY:
 		return []
@@ -265,7 +265,7 @@ func _normalize_known_skills() -> void:
 			if typeof(from_map) == TYPE_ARRAY:
 				ids = (from_map as Array).duplicate()
 		if ids.is_empty():
-			ids = _skill_db.get_default_skill_ids(String(actor_id))
+			ids = _get_default_skill_ids_for_actor(String(actor_id))
 		var normalized: Array = []
 		for raw_id in ids:
 			var skill_id := _skill_db.coerce_skill_id(raw_id)
@@ -274,7 +274,32 @@ func _normalize_known_skills() -> void:
 			if not _skill_db.is_available_for_actor(skill_id, String(actor_id)):
 				continue
 			normalized.append(skill_id)
+		if normalized.is_empty():
+			normalized = _get_default_skill_ids_for_actor(String(actor_id))
 		known_skill_ids_by_actor[String(actor_id)] = normalized
+
+func _get_default_skill_ids_for_actor(actor_id: String) -> Array:
+	var out: Array = []
+	for raw_id in _skill_db.get_default_skill_ids(actor_id):
+		var skill_id := _skill_db.coerce_skill_id(raw_id)
+		if skill_id == "" or out.has(skill_id):
+			continue
+		if _skill_db.is_available_for_actor(skill_id, actor_id):
+			out.append(skill_id)
+
+	for skill in _skill_db.get_all_skills():
+		if typeof(skill) != TYPE_DICTIONARY:
+			continue
+		var weapon_type := String(skill.get("weapon_type", ""))
+		if weapon_type != "":
+			continue
+		var skill_id := String(skill.get("id", ""))
+		if skill_id == "" or out.has(skill_id):
+			continue
+		if _skill_db.is_available_for_actor(skill_id, actor_id):
+			out.append(skill_id)
+
+	return out
 
 func _normalize_all_characters() -> void:
 	for actor_id in all_characters.keys():
