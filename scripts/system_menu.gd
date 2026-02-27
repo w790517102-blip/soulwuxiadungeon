@@ -187,6 +187,10 @@ func _on_equipment_changed() -> void:
 	_refresh_item_tab()
 	_refresh_equipment_tab()
 	_refresh_status_tab()
+	if tabs and tabs.current_tab == $VBoxContainer/武術.get_index():
+		_refresh_weapon_tab_lists()
+		if not _selected_skill.is_empty():
+			_update_skill_detail(_selected_skill)
 
 func _on_gold_changed(_new_gold: int) -> void:
 	_refresh_gold()
@@ -243,11 +247,10 @@ func _on_inner_force_tab_changed(_tab_index: int) -> void:
 
 func _refresh_weapon_tab_lists() -> void:
 	var actor_id = _get_active_character_id()
-	var actor = TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else null
 	var skill_ids: Array = TeamData.get_known_skill_ids(actor_id) if TeamData and TeamData.has_method("get_known_skill_ids") else []
 	var skills: Array = []
 	if not skill_ids.is_empty():
-		skills = _skill_data_db.get_skills_for_actor(actor_id, actor, skill_ids)
+		skills = _skill_data_db.get_skills_for_actor(actor_id, null, skill_ids)
 	else:
 		skills = _skill_db.get_skills(actor_id)
 	if not _skill_debug_logged:
@@ -269,16 +272,17 @@ func _refresh_weapon_tab_lists() -> void:
 				continue
 			if not _skill_data_db.is_available_for_actor(str(skill.get("id", "")), actor_id):
 				continue
-			if actor != null and not _skill_data_db.is_weapon_compatible(skill, actor):
-				continue
 			var skill_weapon = str(skill.get("weapon_type", ""))
 			if skill_weapon != weapon_type:
 				continue
 			var name = str(skill.get("name", "???"))
 			var mp_cost = int(skill.get("mp_cost", 0))
+			var can_use_now := _can_use_skill_now(skill, actor_id)
 			var label = name
 			if mp_cost > 0:
 				label = "%s (MP %d)" % [name, mp_cost]
+			if not can_use_now:
+				label += "（不可施展）"
 			list.add_item(label)
 			list.set_item_metadata(list.item_count - 1, skill)
 
@@ -323,7 +327,7 @@ func _update_skill_detail(skill: Dictionary) -> void:
 	skill_detail.text = "\n".join(lines)
 	if use_skill_button:
 		var menu_usable = bool(skill.get("menu_usable", false))
-		use_skill_button.disabled = not menu_usable
+		use_skill_button.disabled = (not menu_usable) or (not _can_use_skill_now(skill, _get_active_character_id()))
 
 func _on_use_skill_pressed() -> void:
 	if _selected_skill.is_empty():
@@ -682,6 +686,40 @@ func _get_active_actor():
 		if party.size() > 0:
 			return party[0]
 	return null
+
+func _can_use_skill_now(skill: Dictionary, actor_id: String) -> bool:
+	if skill.is_empty():
+		return false
+	var weapon_required := String(skill.get("weapon_type", ""))
+	if weapon_required == "":
+		return true
+
+	var equipped = InventorySync.get_equipped(actor_id) if InventorySync else {}
+	var w1_type := _resolve_equipped_weapon_type(String(equipped.get("weapon_1", "")))
+	var w2_type := _resolve_equipped_weapon_type(String(equipped.get("weapon_2", "")))
+	var real_weapon_count := 0
+	if w1_type != "" and w1_type != "拳" and w1_type != "掌":
+		real_weapon_count += 1
+	if w2_type != "" and w2_type != "拳" and w2_type != "掌":
+		real_weapon_count += 1
+
+	if bool(skill.get("require_free_hand", false)) and real_weapon_count >= 2:
+		return false
+
+	if weapon_required == "拳" or weapon_required == "掌":
+		return true
+	if weapon_required == "空手":
+		return real_weapon_count == 0
+
+	return w1_type == weapon_required or w2_type == weapon_required
+
+func _resolve_equipped_weapon_type(item_id: String) -> String:
+	if item_id == "":
+		return ""
+	var item_def = ItemDB.get_def(item_id)
+	if item_def.is_empty():
+		return ""
+	return String(item_def.get("weapon_type", ""))
 
 func _on_equip_popup_selected(index: int) -> void:
 	if equip_popup == null:
