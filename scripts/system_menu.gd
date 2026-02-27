@@ -220,19 +220,17 @@ func _refresh_inner_force_tabs() -> void:
 
 func _connect_weapon_lists() -> void:
 	for tab in weapon_tabs.get_children():
-		if tab.has_node("SkillList"):
-			var list: ItemList = tab.get_node("SkillList")
-			if not list.item_selected.is_connected(_on_skill_selected):
-				list.item_selected.connect(_on_skill_selected.bind(list))
+		var list := _find_item_list(tab, "SkillList")
+		if list and not list.item_selected.is_connected(_on_skill_selected):
+			list.item_selected.connect(_on_skill_selected.bind(list))
 
 func _connect_inner_force_lists() -> void:
 	if inner_force_tabs == null:
 		return
 	for tab in inner_force_tabs.get_children():
-		if tab.has_node("InnerForceList"):
-			var list: ItemList = tab.get_node("InnerForceList")
-			if not list.item_selected.is_connected(_on_inner_force_selected):
-				list.item_selected.connect(_on_inner_force_selected.bind(list))
+		var list := _find_item_list(tab, "InnerForceList")
+		if list and not list.item_selected.is_connected(_on_inner_force_selected):
+			list.item_selected.connect(_on_inner_force_selected.bind(list))
 
 func _on_martial_tab_changed(_tab_index: int) -> void:
 	_refresh_martial_tabs()
@@ -260,19 +258,23 @@ func _refresh_weapon_tab_lists() -> void:
 		print("[SkillDebug] all_skills=", _skill_data_db.get_all_skills().size(), " qiliaozhang_found=", not _skill_data_db.get_skill("skill_qiliaozhang").is_empty())
 		print("[SkillDebug] known_ids liuyu=", liuyu_count, " shumian=", shumian_count, " lieshao=", lieshao_count)
 		print("[SkillDebug] actor_id=", actor_id, " menu_skills_after_filter=", skills.size())
-		_skill_debug_logged = true
+
 	for tab in weapon_tabs.get_children():
-		if not tab.has_node("SkillList"):
+		var list := _find_item_list(tab, "SkillList")
+		if list == null:
+			if not _skill_debug_logged:
+				print("[SkillDebug] weapon tab=", tab.name, " list_not_found")
 			continue
-		var list: ItemList = tab.get_node("SkillList")
 		list.clear()
-		var weapon_type = str(tab.name)
+		var weapon_type = String(tab.name).strip_edges()
+		if not _skill_debug_logged:
+			print("[SkillDebug] weapon tab=", tab.name, " list_path=", list.get_path())
 		for skill in skills:
 			if typeof(skill) != TYPE_DICTIONARY:
 				continue
 			if not _skill_data_db.is_available_for_actor(str(skill.get("id", "")), actor_id):
 				continue
-			var skill_weapon = str(skill.get("weapon_type", ""))
+			var skill_weapon = String(skill.get("weapon_type", "")).strip_edges()
 			if skill_weapon != weapon_type:
 				continue
 			var name = str(skill.get("name", "???"))
@@ -285,6 +287,10 @@ func _refresh_weapon_tab_lists() -> void:
 				label += "（不可施展）"
 			list.add_item(label)
 			list.set_item_metadata(list.item_count - 1, skill)
+		if not _skill_debug_logged:
+			print("[SkillDebug] weapon tab=", tab.name, " item_count=", list.item_count)
+	if not _skill_debug_logged:
+		_skill_debug_logged = true
 
 func _on_skill_selected(index: int, list: ItemList) -> void:
 	if list == null:
@@ -442,15 +448,19 @@ func _refresh_inner_force_lists() -> void:
 	elif actor != null:
 		active_force_id = str(_get_actor_value(actor, "inner_force", {}).get("id", ""))
 	for tab in inner_force_tabs.get_children():
-		if not tab.has_node("InnerForceList"):
+		var list := _find_item_list(tab, "InnerForceList")
+		if list == null:
+			if not _skill_debug_logged:
+				print("[SkillDebug] inner tab=", tab.name, " list_not_found")
 			continue
-		var list: ItemList = tab.get_node("InnerForceList")
 		list.clear()
-		var element = str(tab.name)
+		var element = String(tab.name).strip_edges()
+		if not _skill_debug_logged:
+			print("[SkillDebug] inner tab=", tab.name, " list_path=", list.get_path())
 		for force in forces:
 			if typeof(force) != TYPE_DICTIONARY:
 				continue
-			if str(force.get("element", "")) != element:
+			if String(force.get("element", "")).strip_edges() != element:
 				continue
 			var force_id = str(force.get("id", ""))
 			var force_name = "%s%s" % [str(force.get("prefix", "???")), str(force.get("type", ""))]
@@ -459,6 +469,22 @@ func _refresh_inner_force_lists() -> void:
 				label += "（使用中）"
 			list.add_item(label)
 			list.set_item_metadata(list.item_count - 1, force)
+		if not _skill_debug_logged:
+			print("[SkillDebug] inner tab=", tab.name, " item_count=", list.item_count)
+
+func _find_item_list(tab: Node, name_hint: String) -> ItemList:
+	if tab == null:
+		return null
+	var direct = tab.get_node_or_null(name_hint)
+	if direct is ItemList:
+		return direct
+	var by_name = tab.find_child(name_hint, true, false)
+	if by_name is ItemList:
+		return by_name
+	for child in tab.find_children("*", "ItemList", true, false):
+		if child is ItemList:
+			return child
+	return null
 
 func _on_inner_force_selected(index: int, list: ItemList) -> void:
 	if list == null:
