@@ -32,6 +32,7 @@ var _selected_skill: Dictionary = {}
 var _selected_inner_force: Dictionary = {}
 var _selected_inner_force_actor_id = ""
 var _skill_debug_logged: bool = false
+var _inner_force_debug_logged: bool = false
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -450,12 +451,12 @@ func _refresh_inner_force_lists() -> void:
 	for tab in inner_force_tabs.get_children():
 		var list := _find_item_list(tab, "InnerForceList")
 		if list == null:
-			if not _skill_debug_logged:
+			if not _inner_force_debug_logged:
 				print("[SkillDebug] inner tab=", tab.name, " list_not_found")
 			continue
 		list.clear()
 		var element = String(tab.name).strip_edges()
-		if not _skill_debug_logged:
+		if not _inner_force_debug_logged:
 			print("[SkillDebug] inner tab=", tab.name, " list_path=", list.get_path())
 		for force in forces:
 			if typeof(force) != TYPE_DICTIONARY:
@@ -469,8 +470,10 @@ func _refresh_inner_force_lists() -> void:
 				label += "（使用中）"
 			list.add_item(label)
 			list.set_item_metadata(list.item_count - 1, force)
-		if not _skill_debug_logged:
+		if not _inner_force_debug_logged:
 			print("[SkillDebug] inner tab=", tab.name, " item_count=", list.item_count)
+	if not _inner_force_debug_logged:
+		_inner_force_debug_logged = true
 
 func _find_item_list(tab: Node, name_hint: String) -> ItemList:
 	if tab == null:
