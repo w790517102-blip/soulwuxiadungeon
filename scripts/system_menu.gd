@@ -418,12 +418,17 @@ func _apply_world_skill(skill: Dictionary, caster, target) -> void:
 	if effects.is_empty():
 		print("[MartialUse] no effects:", skill.get("name", ""))
 		return
+
+	var caster_id := _get_actor_id_from_entry(caster)
+	var target_id := _get_actor_id_from_entry(target)
 	var mp_cost = int(skill.get("mp_cost", 0))
 	var caster_mp = int(_get_actor_value(caster, "mp", 0))
 	if caster_mp < mp_cost:
 		print("內力不足")
 		return
-	_set_actor_value(caster, "mp", max(caster_mp - mp_cost, 0))
+	var caster_max_mp := _get_effective_max_mp(caster, caster_id)
+	_set_actor_value(caster, "mp", clamp(caster_mp - mp_cost, 0, caster_max_mp))
+
 	for eff in effects:
 		if typeof(eff) != TYPE_DICTIONARY:
 			continue
@@ -431,9 +436,16 @@ func _apply_world_skill(skill: Dictionary, caster, target) -> void:
 		match effect_type:
 			"heal_hp", "heal":
 				var heal := int((eff as Dictionary).get("amount", skill.get("heal_amount", 0)))
-				var max_hp = int(_get_actor_value(target, "max_hp", _get_actor_value(target, "hp", 0)))
-				_set_actor_value(target, "hp", min(int(_get_actor_value(target, "hp", 0)) + heal, max_hp))
-				print("[WorldSkill] heal_hp target=", _get_actor_value(target, "name", "?"), " +", heal)
+				var target_hp := int(_get_actor_value(target, "hp", 0))
+				var max_hp := _get_effective_max_hp(target, target_id)
+				_set_actor_value(target, "hp", min(target_hp + heal, max_hp))
+				print("[WorldSkill] heal_hp target=", _get_actor_value(target, "name", "?"), " +", heal, " / max=", max_hp)
+			"mp_heal":
+				var restore_mp := int((eff as Dictionary).get("amount", skill.get("amount", 0)))
+				var target_mp := int(_get_actor_value(target, "mp", 0))
+				var max_mp := _get_effective_max_mp(target, target_id)
+				_set_actor_value(target, "mp", min(target_mp + restore_mp, max_mp))
+				print("[WorldSkill] mp_heal target=", _get_actor_value(target, "name", "?"), " +", restore_mp, " / max=", max_mp)
 			"buff_speed":
 				print("[WorldSkill] buff_speed target=", _get_actor_value(target, "name", "?"), " +", int((eff as Dictionary).get("amount", 0)), " turns=", int((eff as Dictionary).get("turns", 0)))
 			"debuff_speed":
@@ -635,6 +647,37 @@ func _set_actor_value(actor, key: String, value) -> void:
 	if actor is Object:
 		actor.set(key, value)
 
+func _get_inner_force_bonus(actor) -> Dictionary:
+	var inner_force = _get_actor_value(actor, "inner_force", {})
+	if typeof(inner_force) != TYPE_DICTIONARY:
+		return {}
+	var bonus = (inner_force as Dictionary).get("stat_bonus", {})
+	if typeof(bonus) != TYPE_DICTIONARY:
+		return {}
+	return (bonus as Dictionary)
+
+func _get_effective_max_hp(actor, actor_id: String = "") -> int:
+	var current_hp := int(_get_actor_value(actor, "hp", 1))
+	var base_max_hp := int(_get_actor_value(actor, "max_hp", current_hp))
+	var actual_actor_id := actor_id if actor_id != "" else _get_actor_id_from_entry(actor)
+	var equip_bonus: Dictionary = {}
+	if InventorySync and InventorySync.has_method("get_equipment_stat_bonus"):
+		equip_bonus = InventorySync.get_equipment_stat_bonus(actual_actor_id)
+	var inner_bonus := _get_inner_force_bonus(actor)
+	var effective := base_max_hp + int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
+	return max(effective, 1)
+
+func _get_effective_max_mp(actor, actor_id: String = "") -> int:
+	var current_mp := int(_get_actor_value(actor, "mp", 0))
+	var base_max_mp := int(_get_actor_value(actor, "max_mp", current_mp))
+	var actual_actor_id := actor_id if actor_id != "" else _get_actor_id_from_entry(actor)
+	var equip_bonus: Dictionary = {}
+	if InventorySync and InventorySync.has_method("get_equipment_stat_bonus"):
+		equip_bonus = InventorySync.get_equipment_stat_bonus(actual_actor_id)
+	var inner_bonus := _get_inner_force_bonus(actor)
+	var effective := base_max_mp + int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	return max(effective, 0)
+
 func _get_actor_by_id(actor_id: String):
 	if TeamData == null:
 		return null
@@ -806,13 +849,14 @@ func _open_party_target_popup() -> void:
 func _apply_world_item(item_id: String, effect: String, amount: int, target) -> void:
 	if target == null:
 		return
+	var target_id := _get_actor_id_from_entry(target)
 	var target_hp = int(_get_actor_value(target, "hp", 0))
 	var target_mp = int(_get_actor_value(target, "mp", 0))
 	if effect == "heal" or effect == "heal_hp":
-		var max_hp = int(_get_actor_value(target, "max_hp", target_hp))
+		var max_hp := _get_effective_max_hp(target, target_id)
 		_set_actor_value(target, "hp", min(target_hp + amount, max_hp))
 	elif effect == "mp_heal":
-		var max_mp = int(_get_actor_value(target, "max_mp", target_mp))
+		var max_mp := _get_effective_max_mp(target, target_id)
 		_set_actor_value(target, "mp", min(target_mp + amount, max_mp))
 	else:
 		print("[ItemUse] unsupported world effect:", effect)
