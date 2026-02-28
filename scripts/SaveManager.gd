@@ -70,6 +70,7 @@ func save_to_slot(slot_index: int) -> void:
 
 		# Managers
 		"side_quests": SideQuestManager.save_all(),
+		"main_quest": QuestManager.get_main_quest_state() if QuestManager and QuestManager.has_method("get_main_quest_state") else {},
 
 		# GlobalState
 		"flags": GlobalState.triggered_flags,
@@ -79,6 +80,7 @@ func save_to_slot(slot_index: int) -> void:
 		"affection": GlobalState.affection,
 		"last_facing_direction": GlobalState.last_facing_direction,
 		"team_data": TeamData.export_team_state() if TeamData and TeamData.has_method("export_team_state") else {},
+		"inventory_data": InventorySync.export_inventory_state() if InventorySync and InventorySync.has_method("export_inventory_state") else {},
 
 		# Player snapshot
 		"player_position": player.global_position if player else Vector2.ZERO,
@@ -140,8 +142,8 @@ func load_from_slot(slot_index: int) -> void:
 	if version > SAVE_VERSION:
 		push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
 
-	# Managers
-	SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
+	if GlobalState and GlobalState.has_method("begin_load"):
+		GlobalState.begin_load()
 
 	# GlobalState（硬化 legacy 欄位）
 	GlobalState.triggered_flags = _as_dict(data.get("flags", {}))
@@ -150,8 +152,6 @@ func load_from_slot(slot_index: int) -> void:
 	GlobalState.grudge = int(data.get("grudge", 0))
 	GlobalState.affection = int(data.get("affection", 0))
 	GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
-	if TeamData and TeamData.has_method("import_team_state"):
-		TeamData.import_team_state(_as_dict(data.get("team_data", {})))
 
 	var map_path = String(data.get("current_map_path", ""))
 	var scene_path = String(data.get("current_scene_path", ""))
@@ -176,6 +176,18 @@ func load_from_slot(slot_index: int) -> void:
 
 	if player:
 		player.global_position = data.get("player_position", player.global_position)
+
+	# Managers + runtime snapshot（地圖切換完成後再套用，避免 _ready 初始化覆蓋）
+	SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
+	if QuestManager and QuestManager.has_method("load_main_quest"):
+		QuestManager.load_main_quest(_as_dict(data.get("main_quest", {})))
+	if TeamData and TeamData.has_method("import_team_state"):
+		TeamData.import_team_state(_as_dict(data.get("team_data", {})))
+	if InventorySync and InventorySync.has_method("import_inventory_state"):
+		InventorySync.import_inventory_state(_as_dict(data.get("inventory_data", {})))
+
+	if GlobalState and GlobalState.has_method("end_load"):
+		GlobalState.end_load()
 
 	print("Loaded from slot %d" % slot_index)
 

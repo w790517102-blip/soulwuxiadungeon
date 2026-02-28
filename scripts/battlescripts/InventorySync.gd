@@ -31,6 +31,26 @@ var party_gold: int = 0
 var equipped_by_actor: Dictionary = {}
 const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed"]
 
+func export_inventory_state() -> Dictionary:
+	return {
+		"party_inventory": party_inventory.duplicate(true),
+		"party_gold": party_gold,
+		"equipped_by_actor": equipped_by_actor.duplicate(true),
+	}
+
+func import_inventory_state(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	if typeof(data.get("party_inventory", null)) == TYPE_ARRAY:
+		party_inventory = (data.get("party_inventory", []) as Array).duplicate(true)
+	if typeof(data.get("party_gold", null)) in [TYPE_INT, TYPE_FLOAT]:
+		party_gold = int(data.get("party_gold", 0))
+	if typeof(data.get("equipped_by_actor", null)) == TYPE_DICTIONARY:
+		equipped_by_actor = (data.get("equipped_by_actor", {}) as Dictionary).duplicate(true)
+	inventory_changed.emit()
+	gold_changed.emit(party_gold)
+	equipment_changed.emit()
+
 func get_gold() -> int:
 	return party_gold
 

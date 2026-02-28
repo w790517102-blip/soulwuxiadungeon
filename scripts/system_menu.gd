@@ -26,13 +26,18 @@ extends Panel
 @onready var accessory_button: Button = get_node_or_null("VBoxContainer/裝備/AccessoryButton")
 @onready var equip_popup: PopupMenu = get_node_or_null("EquipPopup")
 @onready var skill_target_popup: PopupMenu = get_node_or_null("SkillTargetPopup")
+@onready var equipment_tab: VBoxContainer = get_node_or_null("VBoxContainer/裝備")
 var _item_entries: Array = []
 var _active_equip_slot = ""
 var _selected_skill: Dictionary = {}
 var _selected_inner_force: Dictionary = {}
 var _selected_inner_force_actor_id = ""
+var _selected_actor_id = ""
 var _skill_debug_logged: bool = false
 var _inner_force_debug_logged: bool = false
+var _pending_item_use_id = ""
+var _pending_item_effect = ""
+var _pending_item_amount = 0
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -102,6 +107,7 @@ func _ready():
 		equip_popup.index_pressed.connect(_on_equip_popup_selected)
 	if skill_target_popup:
 		skill_target_popup.index_pressed.connect(_on_skill_target_selected)
+	_setup_equipment_character_select()
 	_refresh_item_tab()
 	_refresh_gold()
 	_refresh_equipment_tab()
@@ -384,6 +390,12 @@ func _on_skill_target_selected(index: int) -> void:
 	if target == null:
 		print("[MartialUse] target not found")
 		return
+	if _pending_item_use_id != "":
+		_apply_world_item(_pending_item_use_id, _pending_item_effect, _pending_item_amount, target)
+		_pending_item_use_id = ""
+		_pending_item_effect = ""
+		_pending_item_amount = 0
+		return
 	var caster = _get_actor_by_id(_get_active_character_id())
 	if caster == null:
 		print("[MartialUse] caster not found")
@@ -391,23 +403,48 @@ func _on_skill_target_selected(index: int) -> void:
 	_apply_world_skill(_selected_skill, caster, target)
 
 func _apply_world_skill(skill: Dictionary, caster, target) -> void:
-	var effect = str(skill.get("effect", ""))
-	if effect != "heal_hp":
-		print("[MartialUse] not implemented:", skill.get("name", ""))
+	var effects: Array = []
+	if typeof(skill.get("effects", null)) == TYPE_ARRAY:
+		effects = skill.get("effects", [])
+	if effects.is_empty():
+		var effect = str(skill.get("effect", ""))
+		if effect != "":
+			effects.append({
+				"type": effect,
+				"amount": int(skill.get("amount", skill.get("heal_amount", 0))),
+				"turns": int(skill.get("turns", 0)),
+				"element": String(skill.get("element", "")),
+			})
+	if effects.is_empty():
+		print("[MartialUse] no effects:", skill.get("name", ""))
 		return
 	var mp_cost = int(skill.get("mp_cost", 0))
 	var caster_mp = int(_get_actor_value(caster, "mp", 0))
 	if caster_mp < mp_cost:
 		print("內力不足")
 		return
-	var heal = int(skill.get("heal_amount", 0))
-	var max_hp = int(_get_actor_value(target, "max_hp", _get_actor_value(target, "hp", 0)))
 	_set_actor_value(caster, "mp", max(caster_mp - mp_cost, 0))
-	_set_actor_value(target, "hp", min(int(_get_actor_value(target, "hp", 0)) + heal, max_hp))
-	print("%s 施展 %s，氣血回復 %d。" % [
+	for eff in effects:
+		if typeof(eff) != TYPE_DICTIONARY:
+			continue
+		var effect_type := String((eff as Dictionary).get("type", ""))
+		match effect_type:
+			"heal_hp", "heal":
+				var heal := int((eff as Dictionary).get("amount", skill.get("heal_amount", 0)))
+				var max_hp = int(_get_actor_value(target, "max_hp", _get_actor_value(target, "hp", 0)))
+				_set_actor_value(target, "hp", min(int(_get_actor_value(target, "hp", 0)) + heal, max_hp))
+				print("[WorldSkill] heal_hp target=", _get_actor_value(target, "name", "?"), " +", heal)
+			"buff_speed":
+				print("[WorldSkill] buff_speed target=", _get_actor_value(target, "name", "?"), " +", int((eff as Dictionary).get("amount", 0)), " turns=", int((eff as Dictionary).get("turns", 0)))
+			"debuff_speed":
+				print("[WorldSkill] debuff_speed target=", _get_actor_value(target, "name", "?"), " -", int((eff as Dictionary).get("amount", 0)), " turns=", int((eff as Dictionary).get("turns", 0)))
+			"force_element":
+				print("[WorldSkill] force_element target=", _get_actor_value(target, "name", "?"), " ->", String((eff as Dictionary).get("element", "")), " turns=", int((eff as Dictionary).get("turns", 0)))
+			_:
+				print("[WorldSkill] unsupported effect=", effect_type)
+	print("%s 施展 %s。" % [
 		str(_get_actor_value(caster, "name", "???")),
-		str(skill.get("name", "???")),
-		heal
+		str(skill.get("name", "???"))
 	])
 	_refresh_status_tab()
 
@@ -705,6 +742,8 @@ func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
 	return allowed_types.has(weapon_type)
 
 func _get_active_character_id() -> String:
+	if _selected_actor_id != "":
+		return _selected_actor_id
 	if TeamData and TeamData.current_team_ids.size() > 0:
 		return str(TeamData.current_team_ids[0])
 	return "liuyu"
@@ -712,9 +751,75 @@ func _get_active_character_id() -> String:
 func _get_active_actor():
 	if TeamData:
 		var party = TeamData.get_active_party()
+		for actor in party:
+			if _get_actor_id_from_entry(actor) == _get_active_character_id():
+				return actor
 		if party.size() > 0:
 			return party[0]
 	return null
+
+func _setup_equipment_character_select() -> void:
+	if equipment_tab == null or TeamData == null:
+		return
+	if equipment_tab.get_node_or_null("EquipmentCharacterRow"):
+		return
+	var row = HBoxContainer.new()
+	row.name = "EquipmentCharacterRow"
+	var label = Label.new()
+	label.text = "角色："
+	row.add_child(label)
+	var selector = OptionButton.new()
+	selector.name = "EquipmentCharacterSelect"
+	row.add_child(selector)
+	equipment_tab.add_child(row)
+	equipment_tab.move_child(row, 0)
+
+	for actor in TeamData.get_active_party():
+		var actor_id = _get_actor_id_from_entry(actor)
+		if actor_id == "":
+			continue
+		selector.add_item(_get_actor_name_from_entry(actor, actor_id))
+		selector.set_item_metadata(selector.item_count - 1, actor_id)
+	if selector.item_count > 0:
+		selector.select(0)
+		_selected_actor_id = str(selector.get_item_metadata(0))
+	selector.item_selected.connect(func(index: int):
+		_selected_actor_id = str(selector.get_item_metadata(index))
+		_refresh_equipment_tab()
+		_refresh_status_tab()
+		_refresh_weapon_tab_lists()
+		_update_skill_detail(_selected_skill)
+	)
+
+func _open_party_target_popup() -> void:
+	if skill_target_popup == null:
+		return
+	skill_target_popup.clear()
+	for actor in TeamData.get_active_party():
+		var actor_id = _get_actor_id_from_entry(actor)
+		if actor_id == "":
+			continue
+		skill_target_popup.add_item(_get_actor_name_from_entry(actor, actor_id))
+		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
+	skill_target_popup.popup()
+
+func _apply_world_item(item_id: String, effect: String, amount: int, target) -> void:
+	if target == null:
+		return
+	var target_hp = int(_get_actor_value(target, "hp", 0))
+	var target_mp = int(_get_actor_value(target, "mp", 0))
+	if effect == "heal" or effect == "heal_hp":
+		var max_hp = int(_get_actor_value(target, "max_hp", target_hp))
+		_set_actor_value(target, "hp", min(target_hp + amount, max_hp))
+	elif effect == "mp_heal":
+		var max_mp = int(_get_actor_value(target, "max_mp", target_mp))
+		_set_actor_value(target, "mp", min(target_mp + amount, max_mp))
+	else:
+		print("[ItemUse] unsupported world effect:", effect)
+		return
+	InventorySync.consume_item(item_id, 1)
+	_refresh_status_tab()
+	_refresh_item_tab()
 
 func _can_use_skill_now(skill: Dictionary, actor_id: String) -> bool:
 	if skill.is_empty():
@@ -777,8 +882,18 @@ func _on_use_pressed() -> void:
 	var use_scope = str(item_def.get("use_scope", "none"))
 	if use_action == "consume":
 		if use_scope == "any" or use_scope == "world":
-			InventorySync.consume_item(item_id, 1)
-			print("[ItemUse] used:", item_id)
+			var effect = str(item_def.get("effect", ""))
+			var amount = int(item_def.get("amount", 0))
+			var target_scope = str(item_def.get("target_scope", "ally_single"))
+			if target_scope == "ally_single" or target_scope == "single":
+				_pending_item_use_id = item_id
+				_pending_item_effect = effect
+				_pending_item_amount = amount
+				_open_party_target_popup()
+			else:
+				var target = _get_actor_by_id(_get_active_character_id())
+				if target:
+					_apply_world_item(item_id, effect, amount, target)
 		return
 	if use_action == "equip":
 		if use_scope != "any" and use_scope != "world":

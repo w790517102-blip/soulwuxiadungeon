@@ -30,6 +30,14 @@ var triggered_flags := {
 	# 範例："found_cat_early": true
 }
 
+var is_loading: bool = false
+
+func begin_load() -> void:
+	is_loading = true
+
+func end_load() -> void:
+	is_loading = false
+
 
 
 # 🔄 移除旗標（可用於重置或NG+）
