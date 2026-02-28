@@ -866,30 +866,28 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target) -> 
 	_refresh_item_tab()
 
 func _can_use_skill_now(skill: Dictionary, actor_id: String) -> bool:
-	if skill.is_empty():
-		return false
-	var weapon_required := String(skill.get("weapon_type", ""))
-	if weapon_required == "":
-		return true
-
-	var equipped = InventorySync.get_equipped(actor_id) if InventorySync else {}
-	var w1_type := _resolve_equipped_weapon_type(String(equipped.get("weapon_1", "")))
-	var w2_type := _resolve_equipped_weapon_type(String(equipped.get("weapon_2", "")))
-	var real_weapon_count := 0
-	if w1_type != "" and w1_type != "拳" and w1_type != "掌":
-		real_weapon_count += 1
-	if w2_type != "" and w2_type != "拳" and w2_type != "掌":
-		real_weapon_count += 1
-
-	if bool(skill.get("require_free_hand", false)) and real_weapon_count >= 2:
+	if skill.is_empty() or actor_id == "":
 		return false
 
-	if weapon_required == "拳" or weapon_required == "掌":
-		return true
-	if weapon_required == "空手":
-		return real_weapon_count == 0
+	# 優先走 SkillDB 同一套武器相容判定，避免 UI / Battle 規則漂移
+	if _skill_data_db and _skill_data_db.has_method("is_weapon_compatible"):
+		var actor = _get_actor_by_id(actor_id)
+		if actor == null:
+			return false
+		var actor_for_check = actor
+		if InventorySync and InventorySync.has_method("get_equipped"):
+			var equipped = InventorySync.get_equipped(actor_id)
+			if typeof(equipped) == TYPE_DICTIONARY:
+				var actor_copy: Dictionary = {}
+				if typeof(actor) == TYPE_DICTIONARY:
+					actor_copy = (actor as Dictionary).duplicate(true)
+				actor_copy["weapon_1"] = _resolve_equipped_weapon_type(String((equipped as Dictionary).get("weapon_1", "")))
+				actor_copy["weapon_2"] = _resolve_equipped_weapon_type(String((equipped as Dictionary).get("weapon_2", "")))
+				actor_for_check = actor_copy
+		return bool(_skill_data_db.is_weapon_compatible(skill, actor_for_check))
 
-	return w1_type == weapon_required or w2_type == weapon_required
+	# fallback（理論上不應走到）
+	return true
 
 func _resolve_equipped_weapon_type(item_id: String) -> String:
 	if item_id == "":
