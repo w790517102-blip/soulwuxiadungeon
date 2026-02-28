@@ -360,25 +360,30 @@ func is_weapon_compatible(skill: Dictionary, actor) -> bool:
 		return false
 	var weapon_type := String(skill.get("weapon_type", ""))
 	if weapon_type == "" or weapon_type == "通用":
+		# 通用技能不做武器限制，也不吃 require_free_hand
 		return true
 
 	var w1 := String(_actor_get(actor, "weapon_1", ""))
 	var w2 := String(_actor_get(actor, "weapon_2", ""))
-	var equipped: Array = []
-	if w1 != "":
-		equipped.append(w1)
-	if w2 != "":
-		equipped.append(w2)
-	if equipped.is_empty():
-		equipped.append("拳")
-		equipped.append("掌")
-		equipped.append("空手")
+	var real_weapon_count := 0
+	if w1 != "" and w1 != "拳" and w1 != "掌":
+		real_weapon_count += 1
+	if w2 != "" and w2 != "拳" and w2 != "掌":
+		real_weapon_count += 1
+	var has_free_hand := real_weapon_count < 2
 
-	if bool(skill.get("require_free_hand", false)) and w1 != "" and w2 != "":
+	var require_free_hand := bool(skill.get("require_free_hand", false))
+	if require_free_hand and not has_free_hand:
 		return false
+
+	if weapon_type == "拳" or weapon_type == "掌":
+		# 拳/掌技能預設不做「必須裝拳掌武器」檢查
+		return true
 	if weapon_type == "空手":
-		return w1 == "" and w2 == ""
-	return equipped.has(weapon_type)
+		return real_weapon_count == 0
+
+	# 其他武器技能必須裝備對應武器
+	return w1 == weapon_type or w2 == weapon_type
 
 func coerce_skill_id(value) -> String:
 	if typeof(value) == TYPE_STRING:
