@@ -5,6 +5,10 @@ var side_quests := {}
 
 # 註冊任務：初始化階段與完成狀態
 func register_quest(id: String, data: Dictionary) -> void:
+	if GlobalState and GlobalState.get("is_loading") == true:
+		if not side_quests.has(id) and not data.is_empty():
+			side_quests[id] = data.duplicate(true)
+		return
 	if not side_quests.has(id):
 		side_quests[id] = data
 		side_quests[id]["stage"] = 0

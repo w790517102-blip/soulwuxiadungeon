@@ -210,16 +210,14 @@ func _restore_player_base_stats() -> void:
 		var snapshot: Dictionary = _player_base_snapshot[key].duplicate(true)
 		var keep_hp = int(p.get("hp", snapshot.get("hp", 0)))
 		var keep_mp = int(p.get("mp", snapshot.get("mp", 0)))
-		var keep_max_hp = int(p.get("max_hp", snapshot.get("max_hp", keep_hp)))
-		var keep_max_mp = int(p.get("max_mp", snapshot.get("max_mp", keep_mp)))
 		print("[BattleRestore] before status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
 		p.clear()
 		for field in snapshot.keys():
 			p[field] = snapshot[field]
-		p["hp"] = keep_hp
-		p["mp"] = keep_mp
-		p["max_hp"] = keep_max_hp
-		p["max_mp"] = keep_max_mp
+		var restored_max_hp = int(p.get("max_hp", keep_hp))
+		var restored_max_mp = int(p.get("max_mp", keep_mp))
+		p["hp"] = min(keep_hp, restored_max_hp)
+		p["mp"] = min(keep_mp, restored_max_mp)
 		print("[BattleRestore] after status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
 
 
@@ -648,6 +646,10 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 # ✅ 改版：可以接受指定 target，給玩家選目標用
 func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionary = {}) -> void:
 	var effect: String = str(skill_data.get("effect", ""))
+	if effect == "" and skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
+		var arr: Array = skill_data.get("effects", [])
+		if not arr.is_empty() and typeof(arr[0]) == TYPE_DICTIONARY:
+			effect = str((arr[0] as Dictionary).get("type", ""))
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	var support_status_effects = ["buff_speed", "debuff_speed", "force_element"]
@@ -971,6 +973,11 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	var skill_name: String = skill_data.get("name", "???")
 	var effect: String     = str(skill_data.get("effect", "heal_hp"))
 	var scope: String      = str(skill_data.get("target_scope", "single"))  # "single" / "ally_all"
+	var effects: Array = []
+	if skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
+		effects = skill_data.get("effects", [])
+	if effect == "" and not effects.is_empty() and typeof(effects[0]) == TYPE_DICTIONARY:
+		effect = str((effects[0] as Dictionary).get("type", "heal_hp"))
 
 	# 狀態類支援：速度增減、屬性強制
 	if effect == "buff_speed" or effect == "debuff_speed" or effect == "force_element":
@@ -1007,6 +1014,26 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 
 	# 🔢 回復量：優先 heal_amount，沒有就用 power
 	var base_amount: int = int(skill_data.get("heal_amount", skill_data.get("power", 0)))
+	if not effects.is_empty():
+		for entry in effects:
+			if typeof(entry) != TYPE_DICTIONARY:
+				continue
+			var t = str((entry as Dictionary).get("type", ""))
+			if t == "heal_hp" or t == "mp_heal":
+				effect = t
+				base_amount = int((entry as Dictionary).get("amount", base_amount))
+				break
+			if t == "buff_speed" or t == "debuff_speed" or t == "force_element":
+				var patched = skill_data.duplicate(true)
+				patched["effect"] = t
+				patched["amount"] = int((entry as Dictionary).get("amount", skill_data.get("amount", 0)))
+				patched["turns"] = int((entry as Dictionary).get("turns", skill_data.get("turns", 3)))
+				if t == "force_element":
+					patched["element"] = str((entry as Dictionary).get("element", skill_data.get("element", "")))
+				var ok2 = await _execute_support_status_action(user, patched, target)
+				if not ok2:
+					_log("WARN: support status failed: %s" % t)
+				return
 	if base_amount <= 0:
 		base_amount = 1
 
