@@ -7,7 +7,8 @@ const GAME_ROOT_PATH := "/root/GameRoot"
 const UI_ROOT_NAME := "UIRoot"
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	set_process_unhandled_input(true)
 
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
