@@ -6,6 +6,8 @@ const SAVE_PREFIX = "slot_"
 const SAVE_EXT = ".save"
 const SAVE_VERSION = 1
 
+var cached_world_thumb: Image = null
+
 func _ensure_save_dir() -> void:
 	DirAccess.make_dir_recursive_absolute(SAVE_FOLDER)
 
@@ -32,6 +34,42 @@ func _slot_temp_path(slot_index: int) -> String:
 
 func _valid_slot(slot_index: int) -> bool:
 	return slot_index >= 1 and slot_index <= SLOT_COUNT
+
+
+func _thumb_path(slot_index: int) -> String:
+	return "%sthumb_slot_%02d.png" % [SAVE_FOLDER, slot_index]
+
+func _fallback_map_display_name(map_path: String, scene_path: String) -> String:
+	var path_for_name: String = map_path if map_path != "" else scene_path
+	if path_for_name == "":
+		return "未知地點"
+	return path_for_name.get_file().get_basename()
+
+func _get_current_map_display_name(map_path: String, scene_path: String) -> String:
+	var fallback := _fallback_map_display_name(map_path, scene_path)
+	var game_root = get_node_or_null("/root/GameRoot")
+	if game_root:
+		var current_scene_node = game_root.get_node_or_null("CurrentScene")
+		if current_scene_node and current_scene_node.get_child_count() > 0:
+			var map_node = current_scene_node.get_child(0)
+			if map_node and map_node.has_method("get_map_display_name"):
+				var name_v = map_node.call("get_map_display_name")
+				if typeof(name_v) == TYPE_STRING and String(name_v).strip_edges() != "":
+					return String(name_v).strip_edges()
+			if map_node and map_node.get("map_display_name") != null:
+				var prop_name = String(map_node.get("map_display_name")).strip_edges()
+				if prop_name != "":
+					return prop_name
+	return fallback
+
+func cache_world_thumbnail() -> void:
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	if img == null:
+		return
+	img.flip_y()
+	img.resize(320, 180, Image.INTERPOLATE_LANCZOS)
+	cached_world_thumb = img
 
 func save_to_slot(slot_index: int) -> void:
 	if not _valid_slot(slot_index):
@@ -65,6 +103,12 @@ func save_to_slot(slot_index: int) -> void:
 			map_path = String(map_val)
 
 	print("[SaveManager] save slot=", slot_index, " flags_count=", _safe_count(GlobalState.flags), " triggered_flags_count=", _safe_count(GlobalState.triggered_flags))
+	var map_display_name := _get_current_map_display_name(map_path, scene_path)
+	var thumb_path := _thumb_path(slot_index)
+	if cached_world_thumb != null:
+		var err_thumb = cached_world_thumb.save_png(thumb_path)
+		if err_thumb != OK:
+			push_warning("Failed to write thumbnail for slot %d (err %d)" % [slot_index, err_thumb])
 
 	var save_data = {
 		"version": SAVE_VERSION,
@@ -91,6 +135,8 @@ func save_to_slot(slot_index: int) -> void:
 		# Scene snapshot
 		"current_scene_path": scene_path,
 		"current_map_path": map_path,
+		"map_display_name": map_display_name,
+		"thumb_path": thumb_path,
 	}
 
 	var path = _slot_path(slot_index)
@@ -144,6 +190,10 @@ func load_from_slot(slot_index: int) -> void:
 	var version = int(data.get("version", 0))
 	if version > SAVE_VERSION:
 		push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
+
+	var menu_ctrl_pre = get_node_or_null("/root/SystemMenu")
+	if menu_ctrl_pre and menu_ctrl_pre.has_method("close_menu_if_open"):
+		menu_ctrl_pre.call("close_menu_if_open")
 
 	if GlobalState and GlobalState.has_method("begin_load"):
 		GlobalState.begin_load()
@@ -215,6 +265,10 @@ func load_from_slot(slot_index: int) -> void:
 	if GlobalState and GlobalState.has_method("end_load"):
 		GlobalState.end_load()
 
+	var menu_ctrl = get_node_or_null("/root/SystemMenu")
+	if menu_ctrl and menu_ctrl.has_method("close_menu_if_open"):
+		menu_ctrl.call("close_menu_if_open")
+
 	print("Loaded from slot %d" % slot_index)
 
 func get_slot_summary(slot_index: int) -> Dictionary:
@@ -241,6 +295,8 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		}
 
 	var data = v as Dictionary
+	var map_path: String = String(data.get("current_map_path", ""))
+	var scene_path: String = String(data.get("current_scene_path", ""))
 	return {
 		"_status": "ok",
 		"timestamp": data.get("timestamp", 0),
@@ -249,6 +305,8 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		"affection": data.get("affection", 0),
 		"flags_count": _safe_count(data.get("flags")),
 		"quests_count": _safe_count(data.get("side_quests")),
-		"current_scene_path": data.get("current_scene_path", ""),
-		"current_map_path": data.get("current_map_path", ""),
+		"current_scene_path": scene_path,
+		"current_map_path": map_path,
+		"map_display_name": data.get("map_display_name", _fallback_map_display_name(map_path, scene_path)),
+		"thumb_path": data.get("thumb_path", ""),
 	}

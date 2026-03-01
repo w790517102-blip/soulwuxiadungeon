@@ -6,6 +6,9 @@ var system_menu_instance: Control = null
 const GAME_ROOT_PATH := "/root/GameRoot"
 const UI_ROOT_NAME := "UIRoot"
 
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
 		if system_menu_instance:
@@ -16,6 +19,10 @@ func _unhandled_input(event):
 func _open_system_menu():
 	if system_menu_instance:
 		return
+	if not _can_open_menu_now():
+		return
+	if SaveManager and SaveManager.has_method("cache_world_thumbnail"):
+		await SaveManager.cache_world_thumbnail()
 	system_menu_instance = system_menu_scene.instantiate()
 	var parent := _resolve_ui_parent()
 	parent.add_child(system_menu_instance)
@@ -24,13 +31,15 @@ func _open_system_menu():
 	system_menu_instance.set_process_unhandled_input(true)
 	system_menu_instance.grab_focus()
 
-	# 🚫 不 pause 遊戲，而是透過旗標或全域鎖定角色輸入
+	system_menu_instance.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	get_tree().paused = true
 	GlobalState.set_meta("menu_open", true)
 
 func _close_system_menu():
 	if system_menu_instance:
 		system_menu_instance.queue_free()
 		system_menu_instance = null
+		get_tree().paused = false
 		GlobalState.set_meta("menu_open", false)
 
 func _resolve_ui_parent() -> Node:
@@ -54,3 +63,14 @@ func _center_menu_on_viewport(menu: Control) -> void:
 
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
 	menu.position = (vp_size - menu.size) * 0.5
+
+func close_menu_if_open() -> void:
+	_close_system_menu()
+
+func _can_open_menu_now() -> bool:
+	if GlobalState and GlobalState.get("is_loading") == true:
+		return false
+	var liu_yu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liu_yu and liu_yu.get("can_move") != null and bool(liu_yu.get("can_move")) == false:
+		return false
+	return true

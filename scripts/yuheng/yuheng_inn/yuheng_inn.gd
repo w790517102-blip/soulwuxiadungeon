@@ -6,6 +6,7 @@ extends Node2D
 @export var music_tag := "yuheng_inner"
 @export var camera_bounds := Rect2(Vector2.ZERO, Vector2(1097, 815))
 @export var camera_lock: bool = false  # 可選；true = 無論大小都鎖定鏡頭於中心
+@export var map_display_name: String = "玉衡鎮客棧"
 
 func _ready():
 	overlay.modulate.a = 1.5
@@ -15,10 +16,13 @@ func _ready():
 	
 	show_map_name()
 
+func get_map_display_name() -> String:
+	return map_display_name
+
 func show_map_name():
 	var map_popup = get_node_or_null("CanvasLayer/MapNamePopup")
 	if map_popup:
-		map_popup.text = "玉衡鎮客棧"
+		map_popup.text = map_display_name
 		map_popup.visible = true
 		map_popup.modulate.a = 1.0
 		await get_tree().create_timer(2.0).timeout
