@@ -62,7 +62,14 @@ func _refresh_label() -> void:
 		var path_for_name: String = map_path if map_path != "" else scene_path
 		map_name = path_for_name.get_file().get_basename() if path_for_name != "" else "未知場景"
 
-	label.text = "存檔 %d｜%s｜%s" % [slot_index, timestamp_text, map_name]
+	var quest_display := String(summary.get("main_quest_display", "")).strip_edges()
+	if quest_display == "":
+		var qid := String(summary.get("main_quest_id", "")).strip_edges()
+		var qstage := int(summary.get("main_quest_stage", 0))
+		quest_display = "主線：%s｜第%d步" % [qid if qid != "" else "—", qstage]
+
+	label.text = "存檔 %d｜%s｜%s
+%s" % [slot_index, timestamp_text, map_name, quest_display]
 	_refresh_thumbnail(summary)
 
 func is_empty() -> bool:

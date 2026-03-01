@@ -23,6 +23,19 @@ func _safe_count(value) -> int:
 		return (value as Array).size()
 	return 0
 
+
+func _main_quest_display(value) -> String:
+	var q := _as_dict(value)
+	if q.is_empty():
+		return "主線：—"
+	var qid := String(q.get("id", ""))
+	var stage := int(q.get("stage", 0))
+	var desc := String(q.get("description", "")).strip_edges()
+	var title := qid if qid != "" else "主線"
+	if desc != "":
+		return "主線：%s｜第%d步｜%s" % [title, stage, desc]
+	return "主線：%s｜第%d步" % [title, stage]
+
 func _slot_path(slot_index: int) -> String:
 	return "%s%s%02d%s" % [SAVE_FOLDER, SAVE_PREFIX, slot_index, SAVE_EXT]
 
@@ -67,7 +80,6 @@ func cache_world_thumbnail() -> void:
 	var img := get_viewport().get_texture().get_image()
 	if img == null:
 		return
-	img.flip_y()
 	img.resize(320, 180, Image.INTERPOLATE_LANCZOS)
 	cached_world_thumb = img
 
@@ -297,6 +309,7 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 	var data = v as Dictionary
 	var map_path: String = String(data.get("current_map_path", ""))
 	var scene_path: String = String(data.get("current_scene_path", ""))
+	var main_quest: Dictionary = _as_dict(data.get("main_quest", {}))
 	return {
 		"_status": "ok",
 		"timestamp": data.get("timestamp", 0),
@@ -309,4 +322,8 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		"current_map_path": map_path,
 		"map_display_name": data.get("map_display_name", _fallback_map_display_name(map_path, scene_path)),
 		"thumb_path": data.get("thumb_path", ""),
+		"main_quest_id": main_quest.get("id", ""),
+		"main_quest_stage": int(main_quest.get("stage", 0)),
+		"main_quest_description": main_quest.get("description", ""),
+		"main_quest_display": _main_quest_display(main_quest),
 	}

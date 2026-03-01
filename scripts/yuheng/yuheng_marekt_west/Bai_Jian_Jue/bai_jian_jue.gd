@@ -3,6 +3,7 @@ extends Node2D
 @export var yuheng_market_west : String = "res://scenes/yuheng/yuheng_market_west/yuheng_market_west.tscn"
 @onready var overlay := $BlackOverlay
 @export var music_tag := "yuheng_inner"
+@export var map_display_name: String = "白箋居"
 
 
 func _ready():
@@ -13,10 +14,13 @@ func _ready():
 	
 	show_map_name()
 
+func get_map_display_name() -> String:
+	return map_display_name
+
 func show_map_name():
 	var map_popup = get_node_or_null("CanvasLayer/MapNamePopup")
 	if map_popup:
-		map_popup.text = "白箋居"
+		map_popup.text = map_display_name
 		map_popup.visible = true
 		map_popup.modulate.a = 1.0
 		await get_tree().create_timer(2.0).timeout

@@ -2,6 +2,7 @@ extends Node2D
 
 @export var next_scene_path : String = "res://scenes/yuheng_inn_room_02.tscn"
 @export var yuheng_inn : String = "res://scenes/yuheng_inn.tscn"
+@export var map_display_name: String = "玉衡鎮客棧房間"
 
 var dialogue_lines = [
 	"劉語塵: 「……」",
@@ -152,10 +153,13 @@ func _on_room_exit_body_entered(body):
 		get_node("/root/GameRoot").spawn_point_name = "from_intro_room"
 		get_node("/root/GameRoot").change_map_to(next_scene_path)
 
+func get_map_display_name() -> String:
+	return map_display_name
+
 func show_map_name():
 	var map_popup = get_node_or_null("CanvasLayer/MapNamePopup")
 	if map_popup:
-		map_popup.text = "玉衡鎮客棧房間"
+		map_popup.text = map_display_name
 		map_popup.visible = true
 		map_popup.modulate.a = 1.0
 		await get_tree().create_timer(2.0).timeout
