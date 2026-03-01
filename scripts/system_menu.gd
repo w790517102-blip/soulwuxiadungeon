@@ -347,6 +347,14 @@ func _on_use_skill_pressed() -> void:
 		return
 	if not bool(_selected_skill.get("menu_usable", false)):
 		return
+	var caster = _get_actor_by_id(_get_active_character_id())
+	if caster == null:
+		print("[MartialUse] caster not found")
+		return
+	var target_scope := String(_selected_skill.get("target_scope", "single"))
+	if target_scope == "ally_all":
+		_apply_world_skill(_selected_skill, caster, null)
+		return
 	var effect = str(_selected_skill.get("effect", ""))
 	if effect == "":
 		var effects = _selected_skill.get("effects", [])
@@ -354,7 +362,7 @@ func _on_use_skill_pressed() -> void:
 			var first = (effects as Array)[0]
 			if typeof(first) == TYPE_DICTIONARY:
 				effect = str((first as Dictionary).get("type", ""))
-	if effect == "heal_hp":
+	if effect == "heal_hp" or effect == "mp_heal":
 		_open_skill_target_popup()
 		return
 	print("[MartialUse] not implemented:", _selected_skill.get("name", ""))
@@ -420,7 +428,6 @@ func _apply_world_skill(skill: Dictionary, caster, target) -> void:
 		return
 
 	var caster_id := _get_actor_id_from_entry(caster)
-	var target_id := _get_actor_id_from_entry(target)
 	var mp_cost = int(skill.get("mp_cost", 0))
 	var caster_mp = int(_get_actor_value(caster, "mp", 0))
 	if caster_mp < mp_cost:
@@ -429,31 +436,46 @@ func _apply_world_skill(skill: Dictionary, caster, target) -> void:
 	var caster_max_mp := _get_effective_max_mp(caster, caster_id)
 	_set_actor_value(caster, "mp", clamp(caster_mp - mp_cost, 0, caster_max_mp))
 
-	for eff in effects:
-		if typeof(eff) != TYPE_DICTIONARY:
-			continue
-		var effect_type := String((eff as Dictionary).get("type", ""))
-		match effect_type:
-			"heal_hp", "heal":
-				var heal := int((eff as Dictionary).get("amount", skill.get("heal_amount", 0)))
-				var target_hp := int(_get_actor_value(target, "hp", 0))
-				var max_hp := _get_effective_max_hp(target, target_id)
-				_set_actor_value(target, "hp", min(target_hp + heal, max_hp))
-				print("[WorldSkill] heal_hp target=", _get_actor_value(target, "name", "?"), " +", heal, " / max=", max_hp)
-			"mp_heal":
-				var restore_mp := int((eff as Dictionary).get("amount", skill.get("amount", 0)))
-				var target_mp := int(_get_actor_value(target, "mp", 0))
-				var max_mp := _get_effective_max_mp(target, target_id)
-				_set_actor_value(target, "mp", min(target_mp + restore_mp, max_mp))
-				print("[WorldSkill] mp_heal target=", _get_actor_value(target, "name", "?"), " +", restore_mp, " / max=", max_mp)
-			"buff_speed":
-				print("[WorldSkill] buff_speed target=", _get_actor_value(target, "name", "?"), " +", int((eff as Dictionary).get("amount", 0)), " turns=", int((eff as Dictionary).get("turns", 0)))
-			"debuff_speed":
-				print("[WorldSkill] debuff_speed target=", _get_actor_value(target, "name", "?"), " -", int((eff as Dictionary).get("amount", 0)), " turns=", int((eff as Dictionary).get("turns", 0)))
-			"force_element":
-				print("[WorldSkill] force_element target=", _get_actor_value(target, "name", "?"), " ->", String((eff as Dictionary).get("element", "")), " turns=", int((eff as Dictionary).get("turns", 0)))
-			_:
-				print("[WorldSkill] unsupported effect=", effect_type)
+	var target_scope := String(skill.get("target_scope", "single"))
+	var targets: Array = []
+	if target_scope == "ally_all":
+		if TeamData and TeamData.has_method("get_active_party"):
+			targets = TeamData.get_active_party()
+	else:
+		if target != null:
+			targets.append(target)
+
+	if targets.is_empty():
+		print("[MartialUse] target not found")
+		return
+
+	for t in targets:
+		var target_id := _get_actor_id_from_entry(t)
+		for eff in effects:
+			if typeof(eff) != TYPE_DICTIONARY:
+				continue
+			var effect_type := String((eff as Dictionary).get("type", ""))
+			match effect_type:
+				"heal_hp", "heal":
+					var heal := int((eff as Dictionary).get("amount", skill.get("heal_amount", 0)))
+					var target_hp := int(_get_actor_value(t, "hp", 0))
+					var max_hp := _get_effective_max_hp(t, target_id)
+					_set_actor_value(t, "hp", min(target_hp + heal, max_hp))
+					print("[WorldSkill] heal_hp target=", _get_actor_value(t, "name", "?"), " +", heal, " / max=", max_hp)
+				"mp_heal":
+					var restore_mp := int((eff as Dictionary).get("amount", skill.get("amount", 0)))
+					var target_mp := int(_get_actor_value(t, "mp", 0))
+					var max_mp := _get_effective_max_mp(t, target_id)
+					_set_actor_value(t, "mp", min(target_mp + restore_mp, max_mp))
+					print("[WorldSkill] mp_heal target=", _get_actor_value(t, "name", "?"), " +", restore_mp, " / max=", max_mp)
+				"buff_speed":
+					print("[WorldSkill] buff_speed target=", _get_actor_value(t, "name", "?"), " +", int((eff as Dictionary).get("amount", 0)), " turns=", int((eff as Dictionary).get("turns", 0)))
+				"debuff_speed":
+					print("[WorldSkill] debuff_speed target=", _get_actor_value(t, "name", "?"), " -", int((eff as Dictionary).get("amount", 0)), " turns=", int((eff as Dictionary).get("turns", 0)))
+				"force_element":
+					print("[WorldSkill] force_element target=", _get_actor_value(t, "name", "?"), " ->", String((eff as Dictionary).get("element", "")), " turns=", int((eff as Dictionary).get("turns", 0)))
+				_:
+					print("[WorldSkill] unsupported effect=", effect_type)
 	print("%s 施展 %s。" % [
 		str(_get_actor_value(caster, "name", "???")),
 		str(skill.get("name", "???"))
@@ -846,7 +868,7 @@ func _open_party_target_popup() -> void:
 		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
 	skill_target_popup.popup()
 
-func _apply_world_item(item_id: String, effect: String, amount: int, target) -> void:
+func _apply_world_item(item_id: String, effect: String, amount: int, target, consume_item: bool = true) -> void:
 	if target == null:
 		return
 	var target_id := _get_actor_id_from_entry(target)
@@ -861,9 +883,10 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target) -> 
 	else:
 		print("[ItemUse] unsupported world effect:", effect)
 		return
-	InventorySync.consume_item(item_id, 1)
-	_refresh_status_tab()
-	_refresh_item_tab()
+	if consume_item:
+		InventorySync.consume_item(item_id, 1)
+		_refresh_status_tab()
+		_refresh_item_tab()
 
 func _can_use_skill_now(skill: Dictionary, actor_id: String) -> bool:
 	if skill.is_empty() or actor_id == "":
@@ -932,6 +955,13 @@ func _on_use_pressed() -> void:
 				_pending_item_effect = effect
 				_pending_item_amount = amount
 				_open_party_target_popup()
+			elif target_scope == "ally_all":
+				if TeamData and TeamData.has_method("get_active_party"):
+					for party_member in TeamData.get_active_party():
+						_apply_world_item(item_id, effect, amount, party_member, false)
+					InventorySync.consume_item(item_id, 1)
+					_refresh_status_tab()
+					_refresh_item_tab()
 			else:
 				var target = _get_actor_by_id(_get_active_character_id())
 				if target:
