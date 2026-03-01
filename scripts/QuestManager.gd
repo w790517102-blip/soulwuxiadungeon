@@ -14,6 +14,14 @@ func load_main_quest(data: Dictionary) -> void:
 	main_quest = data
 	print("[任務] 主線載入成功:", main_quest)
 
+func reset_main_quest() -> void:
+	main_quest = {
+		"id": "main_001",
+		"stage": 1,
+		"description": "打聽左飲的消息"
+	}
+
+
 # ✅ 新增主線進度推進方法
 func advance_main_quest(new_stage: int, new_description: String) -> void:
 	if GlobalState and GlobalState.get("is_loading") == true:

@@ -48,3 +48,6 @@ func save_all() -> Dictionary:
 # ✅ 載入任務資料（從存檔）
 func load_all(saved_data: Dictionary) -> void:
 	side_quests = saved_data.duplicate(true)
+
+func reset_all() -> void:
+	side_quests.clear()

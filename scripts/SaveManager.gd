@@ -64,6 +64,8 @@ func save_to_slot(slot_index: int) -> void:
 		if typeof(map_val) == TYPE_STRING:
 			map_path = String(map_val)
 
+	print("[SaveManager] save slot=", slot_index, " flags_count=", _safe_count(GlobalState.flags), " triggered_flags_count=", _safe_count(GlobalState.triggered_flags))
+
 	var save_data = {
 		"version": SAVE_VERSION,
 		"timestamp": Time.get_unix_time_from_system(),
@@ -73,7 +75,8 @@ func save_to_slot(slot_index: int) -> void:
 		"main_quest": QuestManager.get_main_quest_state() if QuestManager and QuestManager.has_method("get_main_quest_state") else {},
 
 		# GlobalState
-		"flags": GlobalState.triggered_flags,
+		"flags": GlobalState.flags,
+		"triggered_flags": GlobalState.triggered_flags,
 		"relationships": GlobalState.relationship,
 		"ethics": GlobalState.ethics,
 		"grudge": GlobalState.grudge,
@@ -146,7 +149,23 @@ func load_from_slot(slot_index: int) -> void:
 		GlobalState.begin_load()
 
 	# GlobalState（硬化 legacy 欄位）
-	GlobalState.triggered_flags = _as_dict(data.get("flags", {}))
+	print("[SaveManager] load slot=", slot_index, " before flags_count=", _safe_count(GlobalState.flags), " triggered_flags_count=", _safe_count(GlobalState.triggered_flags))
+	if GlobalState and GlobalState.has_method("reset_for_load"):
+		GlobalState.reset_for_load()
+	else:
+		GlobalState.flags = {}
+		GlobalState.triggered_flags = {}
+
+	var loaded_flags := _as_dict(data.get("flags", {}))
+	var loaded_triggered := _as_dict(data.get("triggered_flags", loaded_flags))
+	if loaded_flags.is_empty() and not loaded_triggered.is_empty():
+		loaded_flags = loaded_triggered.duplicate(true)
+	if loaded_triggered.is_empty() and not loaded_flags.is_empty():
+		loaded_triggered = loaded_flags.duplicate(true)
+	GlobalState.flags = loaded_flags
+	GlobalState.triggered_flags = loaded_triggered
+	print("[SaveManager] load slot=", slot_index, " imported flags_count=", _safe_count(GlobalState.flags), " triggered_flags_count=", _safe_count(GlobalState.triggered_flags))
+
 	GlobalState.relationship = _as_dict(data.get("relationships", {}))
 	GlobalState.ethics = int(data.get("ethics", 0))
 	GlobalState.grudge = int(data.get("grudge", 0))
@@ -178,6 +197,11 @@ func load_from_slot(slot_index: int) -> void:
 		player.global_position = data.get("player_position", player.global_position)
 
 	# Managers + runtime snapshot（地圖切換完成後再套用，避免 _ready 初始化覆蓋）
+	if SideQuestManager and SideQuestManager.has_method("reset_all"):
+		SideQuestManager.reset_all()
+	if QuestManager and QuestManager.has_method("reset_main_quest"):
+		QuestManager.reset_main_quest()
+
 	SideQuestManager.load_all(_as_dict(data.get("side_quests", {})))
 	if QuestManager and QuestManager.has_method("load_main_quest"):
 		QuestManager.load_main_quest(_as_dict(data.get("main_quest", {})))
@@ -185,6 +209,8 @@ func load_from_slot(slot_index: int) -> void:
 		TeamData.import_team_state(_as_dict(data.get("team_data", {})))
 	if InventorySync and InventorySync.has_method("import_inventory_state"):
 		InventorySync.import_inventory_state(_as_dict(data.get("inventory_data", {})))
+
+	print("[SaveManager] load slot=", slot_index, " post-import flags_count=", _safe_count(GlobalState.flags), " triggered_flags_count=", _safe_count(GlobalState.triggered_flags))
 
 	if GlobalState and GlobalState.has_method("end_load"):
 		GlobalState.end_load()

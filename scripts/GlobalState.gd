@@ -38,6 +38,10 @@ func begin_load() -> void:
 func end_load() -> void:
 	is_loading = false
 
+func reset_for_load() -> void:
+	flags.clear()
+	triggered_flags.clear()
+
 
 
 # 🔄 移除旗標（可用於重置或NG+）
