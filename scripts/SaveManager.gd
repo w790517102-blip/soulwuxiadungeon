@@ -138,6 +138,7 @@ func save_to_slot(slot_index: int) -> void:
 		"grudge": GlobalState.grudge,
 		"affection": GlobalState.affection,
 		"last_facing_direction": GlobalState.last_facing_direction,
+		"shop_runtime_stock": _as_dict(GlobalState.shop_runtime_stock),
 		"team_data": TeamData.export_team_state() if TeamData and TeamData.has_method("export_team_state") else {},
 		"inventory_data": InventorySync.export_inventory_state() if InventorySync and InventorySync.has_method("export_inventory_state") else {},
 
@@ -233,6 +234,7 @@ func load_from_slot(slot_index: int) -> void:
 	GlobalState.grudge = int(data.get("grudge", 0))
 	GlobalState.affection = int(data.get("affection", 0))
 	GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
+	GlobalState.shop_runtime_stock = _as_dict(data.get("shop_runtime_stock", {}))
 
 	var map_path = String(data.get("current_map_path", ""))
 	var scene_path = String(data.get("current_scene_path", ""))

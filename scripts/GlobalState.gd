@@ -31,6 +31,7 @@ var triggered_flags := {
 }
 
 var is_loading: bool = false
+var shop_runtime_stock := {}
 
 func begin_load() -> void:
 	is_loading = true
@@ -41,6 +42,7 @@ func end_load() -> void:
 func reset_for_load() -> void:
 	flags.clear()
 	triggered_flags.clear()
+	shop_runtime_stock.clear()
 
 
 

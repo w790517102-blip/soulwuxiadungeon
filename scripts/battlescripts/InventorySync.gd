@@ -250,3 +250,16 @@ func add_gold(amount: int) -> void:
 		return
 	party_gold += amount
 	gold_changed.emit(party_gold)
+
+
+func is_item_equipped_anywhere(item_id: String) -> bool:
+	if item_id == "":
+		return false
+	for actor_id in equipped_by_actor.keys():
+		var equipped = equipped_by_actor[actor_id]
+		if typeof(equipped) != TYPE_DICTIONARY:
+			continue
+		for slot in (equipped as Dictionary).keys():
+			if str((equipped as Dictionary).get(slot, "")) == item_id:
+				return true
+	return false

@@ -216,6 +216,13 @@ const BASE_PRICES := {
 	"mat_herb_pouch": 14,
 	"throw_stone_pack": 12,
 	"misc_little_box": 16,
+	"iron_sword": 40,
+	"bronze_sword": 55,
+	"ink_brush": 48,
+	"yaoqin": 58,
+	"short_dao": 36,
+	"cloth_armor": 35,
+	"jade_pendant": 42,
 }
 
 static func get_def(id: String) -> Dictionary:
