@@ -13,7 +13,7 @@ const SHOPS := {
 			{"item_id": "med_calm_pill", "price": 22, "stock": -1},
 			{"item_id": "med_qi_restore_small", "price": 20, "stock": -1},
 			{"item_id": "med_warm_wine", "price": 25, "stock": -1},
-			{"item_id": "med_heartguard_small", "price": 45, "stock": 2},
+			{"item_id": "med_heartguard_small", "price": 45, "stock": 2, "restock_rule": "never"},
 			{"item_id": "mat_herb_bundle", "price": 10, "stock": -1},
 		],
 	},

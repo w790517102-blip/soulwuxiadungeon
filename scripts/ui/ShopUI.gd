@@ -160,6 +160,7 @@ func _get_runtime_stock(item_id: String, entry: Dictionary) -> int:
 	var template_stock := _template_stock(entry)
 	if template_stock < 0:
 		return -1
+	# finite stock items in current towns are designed as non-restocking
 	if GlobalState == null:
 		return template_stock
 	var key := _runtime_stock_key(item_id)
