@@ -27,7 +27,8 @@ var party_inventory: Array = [
 	{"id": "jade_pendant", "count": 1},
 	{"id": "quest_letter", "count": 1},
 ]
-var party_gold: int = 0
+const NEW_GAME_START_GOLD: int = 1000
+var party_gold: int = NEW_GAME_START_GOLD
 var equipped_by_actor: Dictionary = {}
 const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed"]
 
