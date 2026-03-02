@@ -80,7 +80,13 @@ func cache_world_thumbnail() -> void:
 	var img := get_viewport().get_texture().get_image()
 	if img == null:
 		return
-	img.resize(320, 180, Image.INTERPOLATE_LANCZOS)
+	var src_w := img.get_width()
+	var src_h := img.get_height()
+	if src_w <= 0 or src_h <= 0:
+		return
+	var target_h := 140
+	var target_w := max(1, int(round(float(src_w) * float(target_h) / float(src_h))))
+	img.resize(target_w, target_h, Image.INTERPOLATE_LANCZOS)
 	cached_world_thumb = img
 
 func save_to_slot(slot_index: int) -> void:
