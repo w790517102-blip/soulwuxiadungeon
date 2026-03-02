@@ -187,6 +187,37 @@ const ITEM_DEFS := {
 	},
 }
 
+const BASE_PRICES := {
+	"med_bandage": 12,
+	"med_stopbleed_herb": 8,
+	"med_jinchuang_small": 18,
+	"med_antidote_powder": 15,
+	"med_awaken_tonic": 18,
+	"med_calm_pill": 22,
+	"med_qi_restore_small": 20,
+	"med_warm_wine": 25,
+	"med_heartguard_small": 45,
+	"mat_herb_bundle": 10,
+	"wep_wood_sword": 25,
+	"wep_short_blade": 45,
+	"wep_qingfeng_sword": 60,
+	"wep_bamboo_staff": 55,
+	"arm_cloth": 35,
+	"acc_bracer": 25,
+	"arm_straw_sandals": 28,
+	"arm_thin_leather": 80,
+	"misc_tinderbox": 15,
+	"misc_hemp_twine": 10,
+	"misc_small_rope": 18,
+	"misc_sachet": 20,
+	"misc_empty_bottle": 8,
+	"food_dried_rations": 12,
+	"misc_paper_ink": 10,
+	"mat_herb_pouch": 14,
+	"throw_stone_pack": 12,
+	"misc_little_box": 16,
+}
+
 static func get_def(id: String) -> Dictionary:
 	if not ITEM_DEFS.has(id):
 		push_warning("Item def not found: %s" % id)
@@ -208,6 +239,12 @@ static func get_def(id: String) -> Dictionary:
 		out["weapon_type"] = ""
 	if not out.has("stats"):
 		out["stats"] = {}
+	if not out.has("base_price"):
+		out["base_price"] = int(BASE_PRICES.get(id, 0))
+	if not out.has("price"):
+		out["price"] = int(out.get("base_price", 0))
+	if not out.has("can_sell"):
+		out["can_sell"] = str(out.get("type", "consumable")) != "quest" and int(out.get("base_price", 0)) > 0
 	return out
 
 static func make_item(id: String) -> Dictionary:
