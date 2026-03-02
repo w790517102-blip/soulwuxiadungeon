@@ -9,6 +9,7 @@ extends CharacterBody2D
 @export var wander_speed := 60.0
 @export var use_path_patrol := true
 @export var path_node: NodePath
+@export var shop_id: String = "yuheng_general_store_d"
 
 @onready var animated_sprite := $AnimatedSprite2D
 var dialog_manager: Node = null
@@ -24,6 +25,7 @@ var patrol_progress := 0.0
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
 var _mark_flag_after_close := false  # 對話結束時才落旗
+var _open_shop_after_dialog := false
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -151,15 +153,31 @@ func _unhandled_input(event):
 		dialog_manager.show_dialog_sequence(dialog_lines, self)
 		# ✅ 在 reset_dialog_state 裡落旗與重建台詞
 		_mark_flag_after_close = not GlobalState.get_flag("met_yuheng_store_keeper_d")
+		_open_shop_after_dialog = true
 
 func reset_dialog_state():
-	get_node("/root/GameRoot/LiuYu").can_move = true
+	var liuyu = get_node("/root/GameRoot/LiuYu")
+	liuyu.can_move = true
 	is_talking = false
 	if _mark_flag_after_close:
 		GlobalState.set_flag("met_yuheng_store_keeper_d", true)
 		_mark_flag_after_close = false
 		# 旗標落地後，重建成「精簡循環版」
 		dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
+	if _open_shop_after_dialog:
+		_open_shop_after_dialog = false
+		_dealing()
+
+func _dealing():
+	is_talking = true
+	var liuyu = get_node("/root/GameRoot/LiuYu")
+	liuyu.can_move = false
+	open_shop()
+	is_talking = false
+	liuyu.can_move = true
+
+func open_shop():
+	print("[Shop] 開啟雜貨商店 id=%s" % shop_id)
 
 func _get_main_stage_safely() -> int:
 	var qm := get_node_or_null("/root/QuestManager")
