@@ -1,6 +1,8 @@
 
 extends CharacterBody2D
 
+const ShopUI = preload("res://scripts/ui/ShopUI.gd")
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/empty.png"
 @export var speaker_id := 1
@@ -172,12 +174,10 @@ func _dealing():
 	is_talking = true
 	var liuyu = get_node("/root/GameRoot/LiuYu")
 	liuyu.can_move = false
-	open_shop()
+	await ShopUI.open_shop(shop_id, liuyu)
 	is_talking = false
 	liuyu.can_move = true
 
-func open_shop():
-	print("[Shop] 開啟雜貨商店 id=%s" % shop_id)
 
 func _get_main_stage_safely() -> int:
 	var qm := get_node_or_null("/root/QuestManager")

@@ -234,3 +234,18 @@ func _make_item_list(source_inventory: Array) -> Array:
 		item["description"] = item.get("desc", item.get("description", ""))
 		items.append(item)
 	return items
+
+func spend_gold(amount: int) -> bool:
+	if amount <= 0:
+		return true
+	if party_gold < amount:
+		return false
+	party_gold -= amount
+	gold_changed.emit(party_gold)
+	return true
+
+func add_gold(amount: int) -> void:
+	if amount == 0:
+		return
+	party_gold += amount
+	gold_changed.emit(party_gold)

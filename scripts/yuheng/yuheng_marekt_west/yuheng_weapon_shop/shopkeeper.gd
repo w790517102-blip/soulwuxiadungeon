@@ -1,9 +1,12 @@
 # 武器店老闆腳本
 extends CharacterBody2D
 
+const ShopUI = preload("res://scripts/ui/ShopUI.gd")
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/empty.png"
 @export var speaker_id := 1
+@export var shop_id: String = "yuheng_weapon_shop"
 @onready var animated_sprite := $AnimatedSprite2D
 
 var dialog_manager: Node = null
@@ -60,11 +63,11 @@ func _on_intro_finished(npc_node):
 func _dealing():
 	dialog_manager.choice_box.hide_choices()
 	is_talking = true
-	dialog_lines = [
-		{ "text": "「咱哥倆一個鑄劍、一個經商，各守本分。真要說起來，我這手藝啊，\n還真得謝謝墨箴公當年借的那口爐子。」", "speaker": speaker_id, "portrait": portrait_path }
-	]
-	dialog_manager.dialog_sequence_finished.connect(_on_done_reset)
-	dialog_manager.show_dialog_sequence(dialog_lines, self)
+	var player = get_node("/root/GameRoot/LiuYu")
+	player.can_move = false
+	await ShopUI.open_shop(shop_id, player)
+	is_talking = false
+	player.can_move = true
 
 func _chat():
 	dialog_manager.choice_box.hide_choices()
