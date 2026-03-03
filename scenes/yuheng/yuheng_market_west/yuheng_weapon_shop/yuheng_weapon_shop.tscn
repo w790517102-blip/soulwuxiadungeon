@@ -6301,6 +6301,7 @@ position = Vector2(-38.94, 6.375)
 scale = Vector2(0.695, 0.695)
 script = ExtResource("4_bnc2b")
 portrait_path = "res://assets/sprites/empty.png"
+shop_id = "yuheng_weapon_shop"
 
 [node name="Local_guest" parent="NPC" instance=ExtResource("4_d1a1p")]
 position = Vector2(116.06, -23.625)

@@ -332,7 +332,7 @@ func _on_confirmed() -> void:
 func _execute_buy(entry: Dictionary) -> void:
 	var item_id := String(entry.get("item_id", ""))
 	var price := int(entry.get("price", 0))
-	var qty := max(int(entry.get("selected_qty", 1)), 1)
+	var qty = max(int(entry.get("selected_qty", 1)), 1)
 	if item_id == "" or InventorySync == null or price <= 0:
 		return
 	var runtime_stock := int(entry.get("runtime_stock", int(entry.get("stock", -1))))
@@ -349,9 +349,11 @@ func _execute_buy(entry: Dictionary) -> void:
 	if not InventorySync.spend_gold(price * qty):
 		_show_notice("盤纏不足。")
 		return
+
 	InventorySync.add_item_stack(item_id, qty)
 	if runtime_stock > 0:
 		_set_runtime_stock(item_id, runtime_stock - qty)
+
 	_refresh_gold()
 	_refresh_items()
 
@@ -360,7 +362,7 @@ func _execute_sell(entry: Dictionary) -> void:
 		return
 	var item_id := String(entry.get("item_id", ""))
 	var sell_price := int(entry.get("sell_price", 0))
-	var qty := max(int(entry.get("selected_qty", 1)), 1)
+	var qty = max(int(entry.get("selected_qty", 1)), 1)
 	if item_id == "" or sell_price <= 0:
 		return
 	if bool(entry.get("equipped_blocked", false)):

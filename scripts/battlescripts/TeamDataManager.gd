@@ -131,7 +131,7 @@ func set_active_party(party: Array) -> void:
 			base["known_inner_force_ids"] = member.get("known_inner_force_ids", base.get("known_inner_force_ids", []))
 
 			if typeof(member.get("inner_force", null)) == TYPE_DICTIONARY:
-				var legacy_force_id := _inner_force_db.resolve_legacy_force_id(member.get("inner_force", {}))
+				var legacy_force_id = _inner_force_db.resolve_legacy_force_id(member.get("inner_force", {}))
 				if legacy_force_id != "":
 					base["inner_force_id"] = legacy_force_id
 
@@ -166,7 +166,7 @@ func knows_skill(actor_id: String, skill_id: String) -> bool:
 	return get_known_skill_ids(actor_id).has(skill_id)
 
 func learn_skill(actor_id: String, skill_id: String) -> void:
-	var canonical_id := _skill_db.coerce_skill_id(skill_id)
+	var canonical_id = _skill_db.coerce_skill_id(skill_id)
 	if canonical_id == "":
 		return
 	if not _skill_db.is_available_for_actor(canonical_id, actor_id):
@@ -268,7 +268,7 @@ func _normalize_known_skills() -> void:
 			ids = _get_default_skill_ids_for_actor(String(actor_id))
 		var normalized: Array = []
 		for raw_id in ids:
-			var skill_id := _skill_db.coerce_skill_id(raw_id)
+			var skill_id = _skill_db.coerce_skill_id(raw_id)
 			if skill_id == "" or normalized.has(skill_id):
 				continue
 			if not _skill_db.is_available_for_actor(skill_id, String(actor_id)):
@@ -281,7 +281,7 @@ func _normalize_known_skills() -> void:
 func _get_default_skill_ids_for_actor(actor_id: String) -> Array:
 	var out: Array = []
 	for raw_id in _skill_db.get_default_skill_ids(actor_id):
-		var skill_id := _skill_db.coerce_skill_id(raw_id)
+		var skill_id = _skill_db.coerce_skill_id(raw_id)
 		if skill_id == "" or out.has(skill_id):
 			continue
 		if _skill_db.is_available_for_actor(skill_id, actor_id):
@@ -319,7 +319,7 @@ func _normalize_character(actor: Dictionary) -> void:
 		known_ids = _resolve_known_force_ids_from_legacy(actor_id, actor.get("available_inner_forces", []))
 
 	if known_ids.is_empty() and typeof(actor.get("inner_force", null)) == TYPE_DICTIONARY:
-		var legacy_id := _inner_force_db.resolve_legacy_force_id(actor.get("inner_force", {}))
+		var legacy_id = _inner_force_db.resolve_legacy_force_id(actor.get("inner_force", {}))
 		if legacy_id != "":
 			known_ids.append(legacy_id)
 
@@ -350,7 +350,7 @@ func _normalize_character(actor: Dictionary) -> void:
 func _apply_inner_force_to_actor(actor: Dictionary) -> void:
 	var actor_id := String(actor.get("id", ""))
 	var force_id := String(actor.get("inner_force_id", ""))
-	var force := _inner_force_db.get_force(force_id)
+	var force = _inner_force_db.get_force(force_id)
 	if force.is_empty() and not _default_known_force_ids(actor_id).is_empty():
 		force_id = String(_default_known_force_ids(actor_id)[0])
 		actor["inner_force_id"] = force_id
@@ -365,7 +365,7 @@ func _resolve_known_force_ids_from_legacy(actor_id: String, legacy_forces: Array
 	for force in legacy_forces:
 		if typeof(force) != TYPE_DICTIONARY:
 			continue
-		var force_id := _inner_force_db.resolve_legacy_force_id(force)
+		var force_id = _inner_force_db.resolve_legacy_force_id(force)
 		if force_id == "":
 			continue
 		if out.has(force_id):
