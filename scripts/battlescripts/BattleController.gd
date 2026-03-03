@@ -495,6 +495,11 @@ func check_battle_status() -> void:
 		_begin_end_battle("victory")
 		return
 
+func request_escape_from_item(_user: Dictionary, _item: Dictionary) -> void:
+	if battle_finished or _ending:
+		return
+	_begin_end_battle("escape")
+
 func _begin_end_battle(result: String) -> void:
 	if _ending:
 		return
@@ -532,9 +537,13 @@ func _begin_end_battle(result: String) -> void:
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 
-	_log("戰勢已定，眾人緩緩收勢。", true)
-	_log("風聲漸歇，殺氣散去。", true)
-	_log("片刻寂靜後，你們回過神來。", true)
+	if result == "escape":
+		_log("你們撤出戰圈，暫時脫離了危險。", true)
+		_log("此戰視為撤退，無戰利品可得。", true)
+	else:
+		_log("戰勢已定，眾人緩緩收勢。", true)
+		_log("風聲漸歇，殺氣散去。", true)
+		_log("片刻寂靜後，你們回過神來。", true)
 
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
@@ -549,11 +558,14 @@ func _begin_end_battle(result: String) -> void:
 		battle_ui.show_battle_result(battle_result)
 		await battle_ui.battle_result_confirmed
 
-	_restore_player_base_stats()
+	if result != "escape":
+		_restore_player_base_stats()
 
 	if victory_handler:
 		if result == "victory":
 			victory_handler.victory(battle_result)
+		elif result == "escape" and victory_handler.has_method("escape"):
+			victory_handler.escape(battle_result)
 		else:
 			victory_handler.defeat(battle_result)
 	else:

@@ -104,6 +104,26 @@ func equip_item(item_id: String, actor_id: String = "") -> void:
 	var slot := str(item_def.get("equip_slot", ""))
 	if slot == "":
 		return
+	equip_item_to_slot(item_id, slot, actor_id)
+
+func equip_item_to_slot(item_id: String, slot: String, actor_id: String = "") -> void:
+	if item_id == "" or slot == "":
+		return
+	var item_def := ItemDB.get_def(item_id)
+	if item_def.is_empty():
+		return
+	if get_item_by_id(item_id).is_empty():
+		return
+	if str(item_def.get("use_action", "none")) != "equip":
+		return
+
+	var item_slot := str(item_def.get("equip_slot", ""))
+	if slot.begins_with("weapon"):
+		if not item_slot.begins_with("weapon"):
+			return
+	elif item_slot != slot:
+		return
+
 	var equipped = _get_equipped_ref(actor_id)
 	if not equipped.has(slot):
 		return

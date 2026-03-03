@@ -16,6 +16,10 @@ func defeat(battle_result: Dictionary = {}) -> void:
 	print("[VictoryHandler] defeat called")
 	_request_return_to_map("defeat", battle_result)
 
+func escape(battle_result: Dictionary = {}) -> void:
+	print("[VictoryHandler] escape called")
+	_request_return_to_map("escape", battle_result)
+
 func _request_return_to_map(result: String, battle_result: Dictionary) -> void:
 	if _returning:
 		return

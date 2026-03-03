@@ -21,6 +21,8 @@ func apply(controller, user: Dictionary, item: Dictionary, target: Dictionary) -
 			return _handle_bomb_single(controller, user, item, target)
 		"bomb_aoe":
 			return _handle_bomb_aoe(controller, user, item, target)
+		"escape_battle":
+			return _handle_escape_battle(controller, user, item)
 		_:
 			return _handle_unimplemented(controller, user, item)
 
@@ -244,6 +246,17 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 				target_name
 		]
 		controller._log(line_no_effect2)
+	return true
+
+
+func _handle_escape_battle(controller, user: Dictionary, item: Dictionary) -> bool:
+	if controller == null or not controller.has_method("request_escape_from_item"):
+		return false
+
+	var user_name: String = user.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	controller._log("%s 猛地擲出 %s，濃煙翻湧，眾人趁亂抽身撤離。" % [user_name, item_name])
+	controller.request_escape_from_item(user, item)
 	return true
 
 

@@ -48,7 +48,7 @@ const DEFAULT_UNARMED_NAME = "空手"
 const WEAPON_RULES = {
 	"liuyu": {
 		"weapon_1": ["劍"],
-		"weapon_2": [],
+		"weapon_2": {"deny": ["劍"]},
 	},
 	"shumian": {
 		"weapon_1": ["筆"],
@@ -786,7 +786,11 @@ func _open_equip_popup(slot: String) -> void:
 			continue
 		if str(item_def.get("use_action", "none")) != "equip":
 			continue
-		if str(item_def.get("equip_slot", "")) != slot:
+		var item_equip_slot := str(item_def.get("equip_slot", ""))
+		if slot.begins_with("weapon"):
+			if not item_equip_slot.begins_with("weapon"):
+				continue
+		elif item_equip_slot != slot:
 			continue
 		if not _is_weapon_type_allowed(item_def, slot):
 			continue
@@ -800,10 +804,21 @@ func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
 	if not slot.begins_with("weapon"):
 		return true
 	var rules = WEAPON_RULES.get(_get_active_character_id(), {})
-	var allowed_types: Array = rules.get(slot, [])
+	var weapon_type = str(item_def.get("weapon_type", ""))
+	var slot_rule = rules.get(slot, [])
+
+	if typeof(slot_rule) == TYPE_DICTIONARY:
+		var deny_types: Array = slot_rule.get("deny", [])
+		if not deny_types.is_empty() and deny_types.has(weapon_type):
+			return false
+		var allow_types: Array = slot_rule.get("allow", [])
+		if allow_types.is_empty():
+			return true
+		return allow_types.has(weapon_type)
+
+	var allowed_types: Array = slot_rule if typeof(slot_rule) == TYPE_ARRAY else []
 	if allowed_types.is_empty():
 		return true
-	var weapon_type = str(item_def.get("weapon_type", ""))
 	return allowed_types.has(weapon_type)
 
 func _get_active_character_id() -> String:
@@ -929,7 +944,10 @@ func _on_equip_popup_selected(index: int) -> void:
 	if item_id == "":
 		InventorySync.unequip(_active_equip_slot, _get_active_character_id())
 		return
-	InventorySync.equip_item(item_id, _get_active_character_id())
+	if InventorySync.has_method("equip_item_to_slot"):
+		InventorySync.equip_item_to_slot(item_id, _active_equip_slot, _get_active_character_id())
+	else:
+		InventorySync.equip_item(item_id, _get_active_character_id())
 
 func _on_use_pressed() -> void:
 	if item_list == null:
