@@ -18,10 +18,10 @@ const ITEM_DEFS := {
 	"wep_short_blade": {"name": "短刀", "desc": "短柄單刀。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_2", "weapon_type": "刀", "stats": {"atk": 2}},
 	"wep_qingfeng_sword": {"name": "青鋒劍", "desc": "均衡劍器。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 3}},
 	"wep_bamboo_staff": {"name": "竹槍", "desc": "竹製長槍。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "槍", "stats": {"atk": 2}},
-	"arm_cloth": {"name": "布衣", "desc": "輕便布衣。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor", "stats": {"def": 1}},
-	"acc_bracer": {"name": "護腕", "desc": "簡易護腕。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "accessory", "stats": {"def": 1}},
-	"arm_straw_sandals": {"name": "草履", "desc": "結實草履。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor", "stats": {"speed": 1}},
-	"arm_thin_leather": {"name": "皮甲·薄", "desc": "輕薄皮甲。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor", "stats": {"def": 2, "max_hp": 5}},
+	"arm_cloth": {"name": "布衣", "desc": "輕便布衣。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 1}},
+	"acc_bracer": {"name": "護腕", "desc": "簡易護腕。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 1}},
+	"arm_straw_sandals": {"name": "草履", "desc": "結實草履。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_feet", "stats": {"speed": 1}},
+	"arm_thin_leather": {"name": "皮甲·薄", "desc": "輕薄皮甲。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 2, "max_hp": 5}},
 	"misc_tinderbox": {"name": "火折子", "desc": "可點火的雜貨。", "type": "misc", "use_scope": "none", "use_action": "none"},
 	"misc_hemp_twine": {"name": "麻線", "desc": "耐用麻線。", "type": "material", "use_scope": "none", "use_action": "none"},
 	"misc_small_rope": {"name": "麻繩", "desc": "簡易麻繩。", "type": "material", "use_scope": "none", "use_action": "none"},
@@ -167,7 +167,7 @@ const ITEM_DEFS := {
 		"type": "equipment",
 		"use_scope": "world",
 		"use_action": "equip",
-		"equip_slot": "armor",
+		"equip_slot": "armor_body",
 		"stats": {"def": 2, "max_hp": 10},
 	},
 	"jade_pendant": {
@@ -176,7 +176,7 @@ const ITEM_DEFS := {
 		"type": "equipment",
 		"use_scope": "world",
 		"use_action": "equip",
-		"equip_slot": "accessory",
+		"equip_slot": "accessory_1",
 		"stats": {"max_mp": 15, "def": 1},
 	},
 	"quest_letter": {
@@ -244,6 +244,7 @@ static func get_def(id: String) -> Dictionary:
 		out["use_action"] = "none"
 	if not out.has("equip_slot"):
 		out["equip_slot"] = ""
+	out["equip_slot"] = _normalize_equip_slot(str(out.get("equip_slot", "")))
 	if not out.has("weapon_type"):
 		out["weapon_type"] = ""
 	if not out.has("stats"):
@@ -255,6 +256,15 @@ static func get_def(id: String) -> Dictionary:
 	if not out.has("can_sell"):
 		out["can_sell"] = str(out.get("type", "consumable")) != "quest" and int(out.get("base_price", 0)) > 0
 	return out
+
+static func _normalize_equip_slot(slot: String) -> String:
+	match slot:
+		"armor":
+			return "armor_body"
+		"accessory":
+			return "accessory_1"
+		_:
+			return slot
 
 static func make_item(id: String) -> Dictionary:
 	var data: Dictionary = get_def(id)

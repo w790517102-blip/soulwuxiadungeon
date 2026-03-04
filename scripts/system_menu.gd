@@ -24,6 +24,12 @@ extends Panel
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
 @onready var armor_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorButton")
 @onready var accessory_button: Button = get_node_or_null("VBoxContainer/裝備/AccessoryButton")
+@onready var armor_head_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHeadButton")
+@onready var armor_body_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorBodyButton")
+@onready var armor_hands_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHandsButton")
+@onready var armor_feet_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorFeetButton")
+@onready var accessory1_button: Button = get_node_or_null("VBoxContainer/裝備/Accessory1Button")
+@onready var accessory2_button: Button = get_node_or_null("VBoxContainer/裝備/Accessory2Button")
 @onready var equip_popup: PopupMenu = get_node_or_null("EquipPopup")
 @onready var skill_target_popup: PopupMenu = get_node_or_null("SkillTargetPopup")
 @onready var equipment_tab: VBoxContainer = get_node_or_null("VBoxContainer/裝備")
@@ -100,9 +106,21 @@ func _ready():
 	if weapon2_button:
 		weapon2_button.pressed.connect(func(): _open_equip_popup("weapon_2"))
 	if armor_button:
-		armor_button.pressed.connect(func(): _open_equip_popup("armor"))
+		armor_button.pressed.connect(func(): _open_equip_popup("armor_body"))
 	if accessory_button:
-		accessory_button.pressed.connect(func(): _open_equip_popup("accessory"))
+		accessory_button.pressed.connect(func(): _open_equip_popup("accessory_1"))
+	if armor_head_button:
+		armor_head_button.pressed.connect(func(): _open_equip_popup("armor_head"))
+	if armor_body_button:
+		armor_body_button.pressed.connect(func(): _open_equip_popup("armor_body"))
+	if armor_hands_button:
+		armor_hands_button.pressed.connect(func(): _open_equip_popup("armor_hands"))
+	if armor_feet_button:
+		armor_feet_button.pressed.connect(func(): _open_equip_popup("armor_feet"))
+	if accessory1_button:
+		accessory1_button.pressed.connect(func(): _open_equip_popup("accessory_1"))
+	if accessory2_button:
+		accessory2_button.pressed.connect(func(): _open_equip_popup("accessory_2"))
 	if equip_popup:
 		equip_popup.index_pressed.connect(_on_equip_popup_selected)
 	if skill_target_popup:
@@ -742,8 +760,14 @@ func _refresh_equipment_tab() -> void:
 	var equipped = InventorySync.get_equipped(_get_active_character_id())
 	_set_equipment_button(weapon1_button, "主武器", str(equipped.get("weapon_1", "")), "weapon_1")
 	_set_equipment_button(weapon2_button, "副武器", str(equipped.get("weapon_2", "")), "weapon_2")
-	_set_equipment_button(armor_button, "防具", str(equipped.get("armor", "")), "armor")
-	_set_equipment_button(accessory_button, "飾品", str(equipped.get("accessory", "")), "accessory")
+	_set_equipment_button(armor_button, "防具", str(equipped.get("armor_body", "")), "armor_body")
+	_set_equipment_button(accessory_button, "飾品", str(equipped.get("accessory_1", "")), "accessory_1")
+	_set_equipment_button(armor_head_button, "頭部", str(equipped.get("armor_head", "")), "armor_head")
+	_set_equipment_button(armor_body_button, "身體", str(equipped.get("armor_body", "")), "armor_body")
+	_set_equipment_button(armor_hands_button, "手部", str(equipped.get("armor_hands", "")), "armor_hands")
+	_set_equipment_button(armor_feet_button, "腳部", str(equipped.get("armor_feet", "")), "armor_feet")
+	_set_equipment_button(accessory1_button, "飾品一", str(equipped.get("accessory_1", "")), "accessory_1")
+	_set_equipment_button(accessory2_button, "飾品二", str(equipped.get("accessory_2", "")), "accessory_2")
 
 func _set_equipment_button(button: Button, prefix: String, item_id: String, slot: String) -> void:
 	if button == null:

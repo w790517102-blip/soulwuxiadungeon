@@ -107,6 +107,30 @@ text = "防具：—"
 layout_mode = 2
 text = "飾品：—"
 
+[node name="ArmorHeadButton" type="Button" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "頭部：—"
+
+[node name="ArmorBodyButton" type="Button" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "身體：—"
+
+[node name="ArmorHandsButton" type="Button" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "手部：—"
+
+[node name="ArmorFeetButton" type="Button" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "腳部：—"
+
+[node name="Accessory1Button" type="Button" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "飾品一：—"
+
+[node name="Accessory2Button" type="Button" parent="VBoxContainer/裝備"]
+layout_mode = 2
+text = "飾品二：—"
+
 [node name="GridContainer" type="GridContainer" parent="VBoxContainer/裝備"]
 layout_mode = 2
 

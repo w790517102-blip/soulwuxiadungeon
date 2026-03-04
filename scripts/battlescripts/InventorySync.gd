@@ -31,6 +31,16 @@ const NEW_GAME_START_GOLD: int = 1000
 var party_gold: int = NEW_GAME_START_GOLD
 var equipped_by_actor: Dictionary = {}
 const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed"]
+const EQUIP_SLOTS := [
+	"weapon_1",
+	"weapon_2",
+	"armor_head",
+	"armor_body",
+	"armor_hands",
+	"armor_feet",
+	"accessory_1",
+	"accessory_2",
+]
 
 func export_inventory_state() -> Dictionary:
 	return {
@@ -48,6 +58,7 @@ func import_inventory_state(data: Dictionary) -> void:
 		party_gold = int(data.get("party_gold", 0))
 	if typeof(data.get("equipped_by_actor", null)) == TYPE_DICTIONARY:
 		equipped_by_actor = (data.get("equipped_by_actor", {}) as Dictionary).duplicate(true)
+		_migrate_equipped_data()
 	inventory_changed.emit()
 	gold_changed.emit(party_gold)
 	equipment_changed.emit()
@@ -181,13 +192,39 @@ func get_equipment_stat_bonus(actor_id: String = "") -> Dictionary:
 func _get_equipped_ref(actor_id: String) -> Dictionary:
 	var resolved_id := _resolve_actor_id(actor_id)
 	if not equipped_by_actor.has(resolved_id):
-		equipped_by_actor[resolved_id] = {
-			"weapon_1": "",
-			"weapon_2": "",
-			"armor": "",
-			"accessory": "",
-		}
+		equipped_by_actor[resolved_id] = _make_empty_equipped_dict()
+	_migrate_equipped_entry(equipped_by_actor[resolved_id])
 	return equipped_by_actor[resolved_id]
+
+func _make_empty_equipped_dict() -> Dictionary:
+	var out: Dictionary = {}
+	for slot in EQUIP_SLOTS:
+		out[slot] = ""
+	return out
+
+func _migrate_equipped_data() -> void:
+	for actor_id in equipped_by_actor.keys():
+		var entry = equipped_by_actor[actor_id]
+		if typeof(entry) != TYPE_DICTIONARY:
+			equipped_by_actor[actor_id] = _make_empty_equipped_dict()
+			continue
+		_migrate_equipped_entry(entry)
+
+func _migrate_equipped_entry(entry: Dictionary) -> void:
+	for slot in EQUIP_SLOTS:
+		if not entry.has(slot):
+			entry[slot] = ""
+
+	var legacy_armor := str(entry.get("armor", ""))
+	if legacy_armor != "" and str(entry.get("armor_body", "")) == "":
+		entry["armor_body"] = legacy_armor
+
+	var legacy_accessory := str(entry.get("accessory", ""))
+	if legacy_accessory != "" and str(entry.get("accessory_1", "")) == "":
+		entry["accessory_1"] = legacy_accessory
+
+	entry.erase("armor")
+	entry.erase("accessory")
 
 func _resolve_actor_id(actor_id: String) -> String:
 	if actor_id != "":
