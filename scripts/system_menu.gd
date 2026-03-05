@@ -5,12 +5,8 @@ extends Panel
 @onready var item_list: ItemList = $VBoxContainer/道具/ItemList
 @onready var item_desc: RichTextLabel = $VBoxContainer/道具/RichTextLabel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
+@onready var status_tab: VBoxContainer = get_node_or_null("VBoxContainer/狀態")
 @onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
-@onready var status_atk_label: Label = get_node_or_null("VBoxContainer/狀態/StatusAtkLabel")
-@onready var status_def_label: Label = get_node_or_null("VBoxContainer/狀態/StatusDefLabel")
-@onready var status_hp_label: Label = get_node_or_null("VBoxContainer/狀態/StatusHpLabel")
-@onready var status_mp_label: Label = get_node_or_null("VBoxContainer/狀態/StatusMpLabel")
-@onready var status_speed_label: Label = get_node_or_null("VBoxContainer/狀態/StatusSpeedLabel")
 @onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
 @onready var martial_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs")
 @onready var weapon_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/WeaponTabs")
@@ -22,8 +18,6 @@ extends Panel
 @onready var switch_inner_force_button: Button = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/SwitchInnerForceButton")
 @onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
-@onready var armor_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorButton")
-@onready var accessory_button: Button = get_node_or_null("VBoxContainer/裝備/AccessoryButton")
 @onready var armor_head_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHeadButton")
 @onready var armor_body_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorBodyButton")
 @onready var armor_hands_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHandsButton")
@@ -44,6 +38,7 @@ var _inner_force_debug_logged: bool = false
 var _pending_item_use_id = ""
 var _pending_item_effect = ""
 var _pending_item_amount = 0
+var _status_member_slots: Array = []
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -105,10 +100,6 @@ func _ready():
 		weapon1_button.pressed.connect(func(): _open_equip_popup("weapon_1"))
 	if weapon2_button:
 		weapon2_button.pressed.connect(func(): _open_equip_popup("weapon_2"))
-	if armor_button:
-		armor_button.pressed.connect(func(): _open_equip_popup("armor_body"))
-	if accessory_button:
-		accessory_button.pressed.connect(func(): _open_equip_popup("accessory_1"))
 	if armor_head_button:
 		armor_head_button.pressed.connect(func(): _open_equip_popup("armor_head"))
 	if armor_body_button:
@@ -125,6 +116,7 @@ func _ready():
 		equip_popup.index_pressed.connect(_on_equip_popup_selected)
 	if skill_target_popup:
 		skill_target_popup.index_pressed.connect(_on_skill_target_selected)
+	_setup_status_member_slots()
 	_setup_equipment_character_select()
 	_refresh_item_tab()
 	_refresh_gold()
@@ -728,40 +720,22 @@ func _get_actor_by_id(actor_id: String):
 	return null
 
 func _refresh_status_tab() -> void:
-	var actor = _get_active_actor()
-	if actor == null:
+	if _status_member_slots.is_empty():
 		return
-	var base_atk = int(_get_actor_value(actor, "atk", 0))
-	var base_def = int(_get_actor_value(actor, "def", 0))
-	var base_hp = int(_get_actor_value(actor, "hp", 0))
-	var base_max_hp = int(_get_actor_value(actor, "max_hp", base_hp))
-	var base_mp = int(_get_actor_value(actor, "mp", 0))
-	var base_max_mp = int(_get_actor_value(actor, "max_mp", base_mp))
-	var base_speed = int(_get_actor_value(actor, "speed", 0))
-	var bonus = InventorySync.get_equipment_stat_bonus(_get_active_character_id())
-	var inner_force_bonus: Dictionary = _get_actor_value(actor, "inner_force", {}).get("stat_bonus", {})
-	var bonus_atk = int(bonus.get("atk", 0)) + int(inner_force_bonus.get("atk", 0))
-	var bonus_def = int(bonus.get("def", 0)) + int(inner_force_bonus.get("def", 0))
-	var bonus_max_hp = int(bonus.get("max_hp", 0)) + int(inner_force_bonus.get("max_hp", 0))
-	var bonus_max_mp = int(bonus.get("max_mp", 0)) + int(inner_force_bonus.get("max_mp", 0))
-	var bonus_speed = int(bonus.get("speed", 0)) + int(inner_force_bonus.get("speed", 0))
-	if status_atk_label:
-		status_atk_label.text = "攻：%d (+%d)" % [base_atk, bonus_atk]
-	if status_def_label:
-		status_def_label.text = "防：%d (+%d)" % [base_def, bonus_def]
-	if status_hp_label:
-		status_hp_label.text = "氣血：%d/%d (+%d max)" % [base_hp, base_max_hp + bonus_max_hp, bonus_max_hp]
-	if status_mp_label:
-		status_mp_label.text = "內力：%d/%d (+%d max)" % [base_mp, base_max_mp + bonus_max_mp, bonus_max_mp]
-	if status_speed_label:
-		status_speed_label.text = "身法：%d (+%d)" % [base_speed, bonus_speed]
+	var party: Array = []
+	if TeamData and TeamData.has_method("get_active_party"):
+		party = TeamData.get_active_party()
+
+	for i in range(_status_member_slots.size()):
+		if i < party.size():
+			_fill_status_member_slot(_status_member_slots[i], party[i])
+		else:
+			_fill_status_member_slot_empty(_status_member_slots[i])
 
 func _refresh_equipment_tab() -> void:
 	var equipped = InventorySync.get_equipped(_get_active_character_id())
 	_set_equipment_button(weapon1_button, "主武器", str(equipped.get("weapon_1", "")), "weapon_1")
 	_set_equipment_button(weapon2_button, "副武器", str(equipped.get("weapon_2", "")), "weapon_2")
-	_set_equipment_button(armor_button, "防具", str(equipped.get("armor_body", "")), "armor_body")
-	_set_equipment_button(accessory_button, "飾品", str(equipped.get("accessory_1", "")), "accessory_1")
 	_set_equipment_button(armor_head_button, "頭部", str(equipped.get("armor_head", "")), "armor_head")
 	_set_equipment_button(armor_body_button, "身體", str(equipped.get("armor_body", "")), "armor_body")
 	_set_equipment_button(armor_hands_button, "手部", str(equipped.get("armor_hands", "")), "armor_hands")
@@ -890,10 +864,83 @@ func _setup_equipment_character_select() -> void:
 	selector.item_selected.connect(func(index: int):
 		_selected_actor_id = str(selector.get_item_metadata(index))
 		_refresh_equipment_tab()
-		_refresh_status_tab()
 		_refresh_weapon_tab_lists()
 		_update_skill_detail(_selected_skill)
 	)
+
+func _setup_status_member_slots() -> void:
+	if status_tab == null:
+		return
+	var row := status_tab.get_node_or_null("PartyStatusRow") as HBoxContainer
+	if row == null:
+		return
+	_status_member_slots.clear()
+	for i in range(3):
+		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
+		if member == null:
+			continue
+		_status_member_slots.append({
+			"name": member.get_node_or_null("Name") as Label,
+			"portrait": member.get_node_or_null("Portrait") as TextureRect,
+			"stats": member.get_node_or_null("Stats") as Label,
+		})
+
+func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
+	var actor_id := _get_actor_id_from_entry(actor)
+	var actor_name := _get_actor_name_from_entry(actor, actor_id)
+	var base_hp := int(_get_actor_value(actor, "hp", 0))
+	var base_max_hp := int(_get_actor_value(actor, "max_hp", base_hp))
+	var base_mp := int(_get_actor_value(actor, "mp", 0))
+	var base_max_mp := int(_get_actor_value(actor, "max_mp", base_mp))
+	var base_atk := int(_get_actor_value(actor, "atk", 0))
+	var base_def := int(_get_actor_value(actor, "def", 0))
+	var base_speed := int(_get_actor_value(actor, "speed", 0))
+	var equip_bonus: Dictionary = InventorySync.get_equipment_stat_bonus(actor_id)
+	var inner_bonus := _get_inner_force_bonus(actor)
+	var bonus_atk := int(equip_bonus.get("atk", 0)) + int(inner_bonus.get("atk", 0))
+	var bonus_def := int(equip_bonus.get("def", 0)) + int(inner_bonus.get("def", 0))
+	var bonus_max_hp := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
+	var bonus_max_mp := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	var bonus_speed := int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0))
+
+	var name_label := slot_data.get("name") as Label
+	if name_label:
+		name_label.text = actor_name
+
+	var portrait := slot_data.get("portrait") as TextureRect
+	if portrait:
+		portrait.texture = _get_actor_portrait(actor)
+		portrait.modulate = Color(1, 1, 1, 1)
+
+	var stats_label := slot_data.get("stats") as Label
+	if stats_label:
+		stats_label.text = "氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)" % [
+			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
+			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
+			base_atk, bonus_atk,
+			base_def, bonus_def,
+			base_speed, bonus_speed,
+		]
+
+func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
+	var name_label := slot_data.get("name") as Label
+	if name_label:
+		name_label.text = "—"
+	var portrait := slot_data.get("portrait") as TextureRect
+	if portrait:
+		portrait.texture = null
+		portrait.modulate = Color(0.4, 0.4, 0.4, 1)
+	var stats_label := slot_data.get("stats") as Label
+	if stats_label:
+		stats_label.text = "空位"
+
+func _get_actor_portrait(actor) -> Texture2D:
+	var portrait_path := str(_get_actor_value(actor, "portrait_path", ""))
+	if portrait_path != "":
+		var tex = load(portrait_path)
+		if tex is Texture2D:
+			return tex
+	return null
 
 func _open_party_target_popup() -> void:
 	if skill_target_popup == null:
