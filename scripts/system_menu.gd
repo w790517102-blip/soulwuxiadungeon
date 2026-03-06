@@ -960,12 +960,50 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 	var target_id := _get_actor_id_from_entry(target)
 	var target_hp = int(_get_actor_value(target, "hp", 0))
 	var target_mp = int(_get_actor_value(target, "mp", 0))
+	var item_def: Dictionary = InventorySync.get_item_by_id(item_id)
 	if effect == "heal" or effect == "heal_hp":
 		var max_hp := _get_effective_max_hp(target, target_id)
 		_set_actor_value(target, "hp", min(target_hp + amount, max_hp))
 	elif effect == "mp_heal":
 		var max_mp := _get_effective_max_mp(target, target_id)
 		_set_actor_value(target, "mp", min(target_mp + amount, max_mp))
+	elif effect == "cure_status":
+		if item_def.is_empty():
+			return
+		var status_id := str(item_def.get("status_id", ""))
+		if status_id == "":
+			return
+		if not _ensure_world_status_effects(target):
+			return
+		var effects = _get_actor_value(target, "status_effects", {})
+		if typeof(effects) == TYPE_DICTIONARY:
+			effects.erase(status_id)
+			_set_actor_value(target, "status_effects", effects)
+	elif effect == "warm_wine":
+		if not _ensure_world_status_effects(target):
+			return
+		var effects = _get_actor_value(target, "status_effects", {})
+		if typeof(effects) != TYPE_DICTIONARY:
+			return
+		if effects.has("slow"):
+			effects.erase("slow")
+			_set_actor_value(target, "status_effects", effects)
+		else:
+			var turns := 3
+			if not item_def.is_empty():
+				turns = max(int(item_def.get("turns", 3)), 1)
+			effects["warm_wine_buff"] = {
+				"payload": {"speed_delta": 10, "accuracy_delta": -5},
+				"turns_left": turns,
+			}
+			_set_actor_value(target, "status_effects", effects)
+			var base_speed := int(_get_actor_value(target, "base_speed", _get_actor_value(target, "speed", 0)))
+			_set_actor_value(target, "base_speed", base_speed)
+			_set_actor_value(target, "speed", base_speed + 10)
+			var base_accuracy := int(_get_actor_value(target, "base_accuracy", _get_actor_value(target, "accuracy", 100)))
+			_set_actor_value(target, "base_accuracy", base_accuracy)
+			_set_actor_value(target, "accuracy", base_accuracy - 5)
+			_set_actor_value(target, "accuracy_mod", -5)
 	else:
 		print("[ItemUse] unsupported world effect:", effect)
 		return
@@ -973,6 +1011,12 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 		InventorySync.consume_item(item_id, 1)
 		_refresh_status_tab()
 		_refresh_item_tab()
+
+func _ensure_world_status_effects(target) -> bool:
+	var effects = _get_actor_value(target, "status_effects", null)
+	if typeof(effects) != TYPE_DICTIONARY:
+		_set_actor_value(target, "status_effects", {})
+	return true
 
 func _can_use_skill_now(skill: Dictionary, actor_id: String) -> bool:
 	if skill.is_empty() or actor_id == "":

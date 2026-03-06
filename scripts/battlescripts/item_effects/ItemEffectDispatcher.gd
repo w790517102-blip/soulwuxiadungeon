@@ -21,6 +21,10 @@ func apply(controller, user: Dictionary, item: Dictionary, target: Dictionary) -
 			return _handle_bomb_single(controller, user, item, target)
 		"bomb_aoe":
 			return _handle_bomb_aoe(controller, user, item, target)
+		"cure_status":
+			return _handle_cure_status(controller, user, item, target)
+		"warm_wine":
+			return _handle_warm_wine(controller, user, item, target)
 		"escape_battle":
 			return _handle_escape_battle(controller, user, item)
 		_:
@@ -313,6 +317,88 @@ func _handle_escape_battle(controller, user: Dictionary, item: Dictionary) -> bo
 	var item_name: String = item.get("name", "???")
 	controller._log("%s 猛地擲出 %s，濃煙翻湧，眾人趁亂抽身撤離。" % [user_name, item_name])
 	controller.request_escape_from_item(user, item)
+	return true
+
+
+func _status_display_name(status_id: String) -> String:
+	match status_id:
+		"poison":
+			return "中毒"
+		"stun":
+			return "暈眩"
+		"slow":
+			return "緩速"
+		"confuse":
+			return "混亂"
+		_:
+			return status_id
+
+
+func _handle_cure_status(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	if controller == null or controller.status_manager == null:
+		return false
+
+	var status_id := str(item.get("status_id", ""))
+	if status_id == "":
+		controller._log("WARN: cure_status missing status_id: %s" % str(item.get("id", "")))
+		return false
+
+	var user_name: String = user.get("name", "???")
+	var target_name: String = target.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	var status_name := _status_display_name(status_id)
+
+	var had_effect := false
+	if controller.status_manager.has_method("has_effect"):
+		had_effect = bool(controller.status_manager.has_effect(target, status_id))
+
+	controller.status_manager.remove_effect(target, status_id)
+
+	if had_effect:
+		controller._log("%s 對 %s 使用了 %s，解除了「%s」。" % [user_name, target_name, item_name, status_name])
+	else:
+		controller._log("%s 對 %s 使用了 %s，但對方並未處於「%s」。" % [user_name, target_name, item_name, status_name])
+	return true
+
+
+func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	if controller == null or controller.status_manager == null:
+		return false
+
+	var user_name: String = user.get("name", "???")
+	var target_name: String = target.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	var status_manager = controller.status_manager
+
+	var has_slow := false
+	if status_manager.has_method("has_effect"):
+		has_slow = bool(status_manager.has_effect(target, "slow"))
+
+	if has_slow:
+		status_manager.remove_effect(target, "slow")
+		controller._log("%s 對 %s 使用了 %s，酒力驅寒，解除了「緩速」。" % [user_name, target_name, item_name])
+		return true
+
+	var turns := int(item.get("turns", 3))
+	if turns <= 0:
+		turns = 3
+	var ok = status_manager.apply_effect(target, "warm_wine_buff", {
+		"speed_delta": 10,
+		"accuracy_delta": -5,
+	}, turns)
+	if not ok:
+		return false
+
+	controller._log("%s 對 %s 使用了 %s，身法提升 10、命中修正 -5（%d 回合）。" % [
+		user_name,
+		target_name,
+		item_name,
+		turns
+	])
 	return true
 
 

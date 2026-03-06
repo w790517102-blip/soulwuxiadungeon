@@ -1,6 +1,15 @@
 extends Node
 class_name StatusEffectManager
 
+const DEFAULT_SLOW_DELTA := 10
+
+func has_effect(target: Dictionary, effect_id: String) -> bool:
+	if target.is_empty() or effect_id == "":
+		return false
+	if not target.has("status_effects") or typeof(target["status_effects"]) != TYPE_DICTIONARY:
+		return false
+	return (target["status_effects"] as Dictionary).has(effect_id)
+
 
 func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, turns: int, refresh := true) -> bool:
 	if target.is_empty():
@@ -11,6 +20,8 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 	if not target.has("base_speed"):
 		target["base_speed"] = int(target.get("speed", 0))
 		# TODO: 裝備 / 升級導致的永久速度變化，之後應同步更新 base_speed 或改為動態計算。
+	if not target.has("base_accuracy"):
+		target["base_accuracy"] = int(target.get("accuracy", 100))
 
 	if not target.has("status_effects") or typeof(target["status_effects"]) != TYPE_DICTIONARY:
 		target["status_effects"] = {}
@@ -77,6 +88,35 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 				"turns_left": turns,
 			}
 			return true
+		"poison", "stun", "confuse":
+			effects[effect_id] = {
+				"payload": payload_copy,
+				"turns_left": turns,
+			}
+			return true
+		"slow":
+			var slow_payload := payload_copy.duplicate(true)
+			if int(slow_payload.get("slow_delta", 0)) <= 0:
+				slow_payload["slow_delta"] = DEFAULT_SLOW_DELTA
+			effects[effect_id] = {
+				"payload": slow_payload,
+				"turns_left": turns,
+			}
+			_recalc_speed(target)
+			return true
+		"warm_wine_buff":
+			var wine_payload := payload_copy.duplicate(true)
+			if int(wine_payload.get("speed_delta", 0)) == 0:
+				wine_payload["speed_delta"] = 10
+			if int(wine_payload.get("accuracy_delta", 0)) == 0:
+				wine_payload["accuracy_delta"] = -5
+			effects[effect_id] = {
+				"payload": wine_payload,
+				"turns_left": turns,
+			}
+			_recalc_speed(target)
+			_recalc_accuracy(target)
+			return true
 		_:
 			return false
 
@@ -117,9 +157,10 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 	var effect_data: Dictionary = effects[effect_id]
 
 	match effect_id:
-		"speed_buff", "speed_debuff":
+		"speed_buff", "speed_debuff", "slow", "warm_wine_buff":
 			effects.erase(effect_id)
 			_recalc_speed(target)
+			_recalc_accuracy(target)
 			return
 		"force_element":
 			if effect_data.has("prev_element"):
@@ -139,5 +180,20 @@ func _recalc_speed(target: Dictionary) -> void:
 			buff = int(effects["speed_buff"].get("payload", {}).get("speed_delta", 0))
 		if effects.has("speed_debuff"):
 			debuff = int(effects["speed_debuff"].get("payload", {}).get("slow_delta", 0))
+		if effects.has("slow"):
+			debuff += int(effects["slow"].get("payload", {}).get("slow_delta", 0))
+		if effects.has("warm_wine_buff"):
+			buff += int(effects["warm_wine_buff"].get("payload", {}).get("speed_delta", 0))
 
 	target["speed"] = max(base + buff - debuff, 0)
+
+
+func _recalc_accuracy(target: Dictionary) -> void:
+	var base := int(target.get("base_accuracy", target.get("accuracy", 100)))
+	var effects = target.get("status_effects", {})
+	var delta := 0
+	if typeof(effects) == TYPE_DICTIONARY:
+		if effects.has("warm_wine_buff"):
+			delta += int(effects["warm_wine_buff"].get("payload", {}).get("accuracy_delta", 0))
+	target["accuracy"] = base + delta
+	target["accuracy_mod"] = delta
