@@ -1,8 +1,11 @@
 extends CharacterBody2D
 
+const ShopUI = preload("res://scripts/ui/ShopUI.gd")
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot1.png"
 @export var speaker_id := 1
+@export var shop_id: String = "bai_jian_jue_bookstore"
 @onready var animated_sprite := $AnimatedSprite2D
 
 var dialog_manager: Node = null
@@ -57,6 +60,9 @@ func _on_interact():
 	stage = QuestManager.get_main_quest_state()["stage"]
 	face_towards(get_node("/root/GameRoot/LiuYu").global_position)
 	var main_stage := _get_main_stage_safely()
+	if _can_open_shop() and stage >= 2:
+		_open_shop()
+		return
 	
 	if stage == 1:
 		var met_A := GlobalState.get_flag("met_bai_jian_jue_guestA")
@@ -126,6 +132,21 @@ func _on_interact():
 			{ "text": "辛苦你了!", "speaker": speaker_id, "portrait": portrait_path }
 		]
 		show_dialog_sequence(dialog_lines)
+
+
+func _can_open_shop() -> bool:
+	return bool(GlobalState.get_flag("met_Su_Mien")) and _get_main_stage_safely() >= 2
+
+
+func _open_shop() -> void:
+	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu == null:
+		return
+	is_talking = true
+	liuyu.can_move = false
+	await ShopUI.open_shop(shop_id, liuyu)
+	liuyu.can_move = true
+	is_talking = false
 
 func _get_main_stage_safely() -> int:
 	# AutoLoad 版本（建議）

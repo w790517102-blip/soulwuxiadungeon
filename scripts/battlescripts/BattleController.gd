@@ -560,6 +560,7 @@ func _begin_end_battle(result: String) -> void:
 
 	if result != "escape":
 		_restore_player_base_stats()
+	_clear_next_battle_modifiers_for_party()
 
 	if victory_handler:
 		if result == "victory":
@@ -1601,3 +1602,18 @@ func _filter_targets_by_hp(source: Array, include_dead: bool) -> Array:
 		if hp > 0 or include_dead:
 			result.append(a)
 	return result
+
+
+func _clear_next_battle_modifiers_for_party() -> void:
+	if team_data_manager == null or not team_data_manager.has_method("clear_next_battle_modifiers"):
+		return
+	var cleared: Dictionary = {}
+	for actor in player_party:
+		if typeof(actor) != TYPE_DICTIONARY:
+			continue
+		var actor_id := String(actor.get("id", ""))
+		if actor_id == "" or cleared.has(actor_id):
+			continue
+		team_data_manager.clear_next_battle_modifiers(actor_id)
+		actor["battle_modifiers"] = {}
+		cleared[actor_id] = true

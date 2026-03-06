@@ -914,12 +914,20 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 
 	var stats_label := slot_data.get("stats") as Label
 	if stats_label:
-		stats_label.text = "氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)" % [
+		var stat_str := "STR:%d  AGI:%d  INT:%d  CON:%d  LUCK:%d" % [
+			int(_get_actor_value(actor, "str", 5)),
+			int(_get_actor_value(actor, "agi", 5)),
+			int(_get_actor_value(actor, "int", 5)),
+			int(_get_actor_value(actor, "con", 5)),
+			int(_get_actor_value(actor, "luck", 5)),
+		]
+		stats_label.text = "氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)\n%s" % [
 			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
 			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
 			base_atk, bonus_atk,
 			base_def, bonus_def,
 			base_speed, bonus_speed,
+			stat_str,
 		]
 
 func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
@@ -967,6 +975,20 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 	elif effect == "mp_heal":
 		var max_mp := _get_effective_max_mp(target, target_id)
 		_set_actor_value(target, "mp", min(target_mp + amount, max_mp))
+	elif effect == "perm_stat":
+		if not _apply_world_perm_stat(target, item_def):
+			return
+	elif effect == "heal_by_stat":
+		var heal_amount := _calc_world_scaled_item_amount(item_def, target)
+		var max_hp2 := _get_effective_max_hp(target, target_id)
+		_set_actor_value(target, "hp", min(target_hp + heal_amount, max_hp2))
+	elif effect == "mp_heal_by_stat":
+		var mp_heal_amount := _calc_world_scaled_item_amount(item_def, target)
+		var max_mp2 := _get_effective_max_mp(target, target_id)
+		_set_actor_value(target, "mp", min(target_mp + mp_heal_amount, max_mp2))
+	elif effect == "apply_battle_buff":
+		if not _apply_world_next_battle_buff(target, item_def):
+			return
 	elif effect == "cure_status":
 		if item_def.is_empty():
 			return
@@ -1011,6 +1033,48 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 		InventorySync.consume_item(item_id, 1)
 		_refresh_status_tab()
 		_refresh_item_tab()
+
+
+func _calc_world_scaled_item_amount(item_def: Dictionary, target) -> int:
+	var stat_key := str(item_def.get("stat_key", "")).to_lower()
+	var stat_val := int(_get_actor_value(target, stat_key, 0))
+	var base_amount := int(item_def.get("base_amount", item_def.get("amount", 0)))
+	var scale := float(item_def.get("scale", 1.0))
+	var raw_amount := int(round(base_amount + stat_val * scale))
+	var min_amount := int(item_def.get("min_amount", raw_amount))
+	var max_amount := int(item_def.get("max_amount", raw_amount))
+	if max_amount < min_amount:
+		max_amount = min_amount
+	return clamp(raw_amount, min_amount, max_amount)
+
+
+func _apply_world_perm_stat(target, item_def: Dictionary) -> bool:
+	if TeamData == null or not TeamData.has_method("add_perm_stat"):
+		return false
+	var actor_id := _get_actor_id_from_entry(target)
+	if actor_id == "":
+		return false
+	var stat_key := str(item_def.get("stat_key", "")).to_lower()
+	var amount := int(item_def.get("amount", 0))
+	if stat_key == "" or amount == 0:
+		return false
+	if not bool(TeamData.add_perm_stat(actor_id, stat_key, amount)):
+		return false
+	_set_actor_value(target, stat_key, int(_get_actor_value(target, stat_key, 0)) + amount)
+	return true
+
+
+func _apply_world_next_battle_buff(target, item_def: Dictionary) -> bool:
+	if TeamData == null or not TeamData.has_method("add_next_battle_modifier"):
+		return false
+	var actor_id := _get_actor_id_from_entry(target)
+	if actor_id == "":
+		return false
+	var buff_key := str(item_def.get("buff_key", ""))
+	var buff_value := float(item_def.get("buff_value", 0.0))
+	if buff_key == "" or buff_value == 0.0:
+		return false
+	return bool(TeamData.add_next_battle_modifier(actor_id, buff_key, buff_value))
 
 func _ensure_world_status_effects(target) -> bool:
 	var effects = _get_actor_value(target, "status_effects", null)

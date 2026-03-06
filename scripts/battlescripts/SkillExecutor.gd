@@ -113,6 +113,19 @@ func execute(
 	else:
 		context["element_advantage"] = false
 
+	# --- 書籍戰鬥修飾（筆系技能） ---
+	if skill_weapon_type == "筆":
+		var atk_mods = user.get("battle_modifiers", {})
+		if typeof(atk_mods) == TYPE_DICTIONARY:
+			var up := float(atk_mods.get("pen_damage_up", 0.0))
+			if up != 0.0:
+				dmg *= (1.0 + up)
+		var def_mods = target.get("battle_modifiers", {})
+		if typeof(def_mods) == TYPE_DICTIONARY:
+			var resist := float(def_mods.get("pen_damage_resist", 0.0))
+			if resist != 0.0:
+				dmg *= max(0.0, 1.0 - resist)
+
 	# --- 暴擊 ---
 	if randf() < 0.1:
 		dmg *= 1.5

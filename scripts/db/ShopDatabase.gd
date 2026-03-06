@@ -45,6 +45,24 @@ const SHOPS := {
 			{"item_id": "misc_little_box", "price": 16, "stock": -1},
 		],
 	},
+	"bai_jian_jue_bookstore": {
+		"name": "白箋居",
+		"items": [
+			{"item_id": "book_poem_a_int", "price": 88, "stock": 1, "restock_rule": "never"},
+			{"item_id": "book_poem_b_luck", "price": 88, "stock": 1, "restock_rule": "never"},
+			{"item_id": "book_essay_c_pen_up", "price": 72, "stock": 1, "restock_rule": "never"},
+			{"item_id": "book_essay_d_pen_resist", "price": 72, "stock": 1, "restock_rule": "never"},
+		],
+	},
+	"zueyue_teashop": {
+		"name": "醉月茶坊",
+		"items": [
+			{"item_id": "tea_refresh_agi", "price": 70, "stock": 1, "restock_rule": "never"},
+			{"item_id": "tea_rich_con", "price": 70, "stock": 1, "restock_rule": "never"},
+			{"item_id": "tea_tasting_mp", "price": 16, "stock": -1},
+			{"item_id": "tea_snack_hp", "price": 22, "stock": -1},
+		],
+	},
 }
 
 static func get_shop(shop_id: String) -> Dictionary:

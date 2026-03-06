@@ -9,6 +9,14 @@ func apply(controller, user: Dictionary, item: Dictionary, target: Dictionary) -
 			return _handle_heal_hp(controller, user, item, target)
 		"mp_heal":
 			return _handle_mp_heal(controller, user, item, target)
+		"perm_stat":
+			return _handle_perm_stat(controller, user, item, target)
+		"heal_by_stat":
+			return _handle_heal_by_stat(controller, user, item, target)
+		"mp_heal_by_stat":
+			return _handle_mp_heal_by_stat(controller, user, item, target)
+		"apply_battle_buff":
+			return _handle_apply_battle_buff(controller, user, item, target)
 		"buff_speed":
 			return _handle_buff_speed(controller, user, item, target)
 		"debuff_speed":
@@ -317,6 +325,94 @@ func _handle_escape_battle(controller, user: Dictionary, item: Dictionary) -> bo
 	var item_name: String = item.get("name", "???")
 	controller._log("%s 猛地擲出 %s，濃煙翻湧，眾人趁亂抽身撤離。" % [user_name, item_name])
 	controller.request_escape_from_item(user, item)
+	return true
+
+
+func _resolve_actor_stat(actor: Dictionary, stat_key: String) -> int:
+	var key := String(stat_key).to_lower()
+	return int(actor.get(key, 0))
+
+
+func _calc_scaled_amount(item: Dictionary, actor: Dictionary) -> int:
+	var base_amount := int(item.get("base_amount", item.get("amount", 0)))
+	var scale := float(item.get("scale", 1.0))
+	var stat_key := String(item.get("stat_key", ""))
+	var stat_value := _resolve_actor_stat(actor, stat_key)
+	var raw_amount := int(round(base_amount + stat_value * scale))
+	var min_amount := int(item.get("min_amount", raw_amount))
+	var max_amount := int(item.get("max_amount", raw_amount))
+	if max_amount < min_amount:
+		max_amount = min_amount
+	return clamp(raw_amount, min_amount, max_amount)
+
+
+func _handle_perm_stat(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	var actor_id := String(target.get("id", ""))
+	var stat_key := String(item.get("stat_key", "")).to_lower()
+	var amount := int(item.get("amount", 0))
+	if actor_id == "" or stat_key == "" or amount == 0:
+		return false
+	if controller == null or controller.team_data_manager == null:
+		return false
+	if not controller.team_data_manager.has_method("add_perm_stat"):
+		return false
+	if not bool(controller.team_data_manager.add_perm_stat(actor_id, stat_key, amount)):
+		return false
+	target[stat_key] = int(target.get(stat_key, 0)) + amount
+	var user_name: String = user.get("name", "???")
+	var target_name: String = target.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	controller._log("%s 對 %s 使用了 %s，%s 永久提升 %s 點。" % [user_name, target_name, item_name, stat_key.to_upper(), amount])
+	return true
+
+
+func _handle_heal_by_stat(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	var amount := _calc_scaled_amount(item, target)
+	if amount <= 0:
+		return false
+	var temp_item := item.duplicate(true)
+	temp_item["amount"] = amount
+	return _handle_heal_hp(controller, user, temp_item, target)
+
+
+func _handle_mp_heal_by_stat(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	var amount := _calc_scaled_amount(item, target)
+	if amount <= 0:
+		return false
+	var temp_item := item.duplicate(true)
+	temp_item["amount"] = amount
+	return _handle_mp_heal(controller, user, temp_item, target)
+
+
+func _handle_apply_battle_buff(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	if controller == null or controller.team_data_manager == null:
+		return false
+	var actor_id := String(target.get("id", ""))
+	var buff_key := String(item.get("buff_key", ""))
+	var buff_value := float(item.get("buff_value", 0.0))
+	if actor_id == "" or buff_key == "" or buff_value == 0.0:
+		return false
+	if not controller.team_data_manager.has_method("add_next_battle_modifier"):
+		return false
+	if not bool(controller.team_data_manager.add_next_battle_modifier(actor_id, buff_key, buff_value)):
+		return false
+	var mods: Dictionary = target.get("battle_modifiers", {})
+	if typeof(mods) != TYPE_DICTIONARY:
+		mods = {}
+	mods[buff_key] = float(mods.get(buff_key, 0.0)) + buff_value
+	target["battle_modifiers"] = mods
+	var user_name: String = user.get("name", "???")
+	var target_name: String = target.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	controller._log("%s 對 %s 使用了 %s，下一場戰鬥將獲得 %s 效果。" % [user_name, target_name, item_name, buff_key])
 	return true
 
 

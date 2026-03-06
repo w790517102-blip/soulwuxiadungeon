@@ -1,9 +1,12 @@
 # res://npc/tea_house_boss.gd
 extends CharacterBody2D
 
+const ShopUI = preload("res://scripts/ui/ShopUI.gd")
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/NPC/Yuheng/Teahouse_Boss_headshot.png"
 @export var speaker_id := 1
+@export var shop_id: String = "zueyue_teashop"
 @export var wander_range := 160
 @export var wander_interval := 2.0
 @export var wander_speed := 30.0
@@ -23,6 +26,7 @@ var has_recently_talked: bool = false
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
 var _mark_flag_after_close := false
+var _open_shop_after_dialog := false
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -123,6 +127,7 @@ func _unhandled_input(event):
 		dialog_manager.show_dialog_sequence(dialog_lines, self)
 		# ✅ 在 reset_dialog_state 裡落旗與重建台詞
 		_mark_flag_after_close = not GlobalState.set_flag("met_yuheng_teahouse_boss", true)
+		_open_shop_after_dialog = true
 
 func reset_dialog_state():
 	get_node("/root/GameRoot/LiuYu").can_move = true
@@ -133,7 +138,20 @@ func reset_dialog_state():
 		# 旗標落地後，重建成「精簡循環版」
 		dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
 		animated_sprite.play("idle")
+	if _open_shop_after_dialog:
+		_open_shop_after_dialog = false
+		await _open_shop()
 			
+
+func _open_shop() -> void:
+	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu == null:
+		return
+	is_talking = true
+	liuyu.can_move = false
+	await ShopUI.open_shop(shop_id, liuyu)
+	liuyu.can_move = true
+	is_talking = false
 
 func _get_main_stage_safely() -> int:
 	var qm := get_node_or_null("/root/QuestManager")

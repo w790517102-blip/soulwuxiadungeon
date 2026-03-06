@@ -29,6 +29,12 @@ var all_characters: Dictionary = {
 		"inner_force_id": "qingfeng_jue",
 		"known_inner_force_ids": ["qingfeng_jue", "wuji_zhenjing"],
 		"inner_force_used_prefixes": [],
+		"str": 5,
+		"agi": 5,
+		"int": 5,
+		"con": 5,
+		"luck": 5,
+		"battle_modifiers": {},
 	},
 	"lieshao": {
 		"id": "lieshao",
@@ -49,6 +55,12 @@ var all_characters: Dictionary = {
 		"inner_force_id": "chi_yang_zhenjing",
 		"known_inner_force_ids": ["chi_yang_zhenjing", "po_jun_zhenjing"],
 		"inner_force_used_prefixes": [],
+		"str": 5,
+		"agi": 5,
+		"int": 5,
+		"con": 5,
+		"luck": 5,
+		"battle_modifiers": {},
 	},
 	"shumian": {
 		"id": "shumian",
@@ -69,6 +81,12 @@ var all_characters: Dictionary = {
 		"inner_force_id": "meng_ying_xinfa",
 		"known_inner_force_ids": ["meng_ying_xinfa", "ling_feng_jue"],
 		"inner_force_used_prefixes": [],
+		"str": 5,
+		"agi": 5,
+		"int": 5,
+		"con": 5,
+		"luck": 5,
+		"battle_modifiers": {},
 	},
 }
 
@@ -154,6 +172,43 @@ func get_character_by_id(id: String) -> Dictionary:
 	_normalize_character(actor)
 	return actor
 
+func add_perm_stat(actor_id: String, stat_key: String, delta: int) -> bool:
+	if delta == 0:
+		return false
+	if not all_characters.has(actor_id):
+		return false
+	var key := String(stat_key).to_lower()
+	if not ["str", "agi", "int", "con", "luck"].has(key):
+		return false
+	var actor: Dictionary = all_characters[actor_id]
+	_normalize_character(actor)
+	actor[key] = int(actor.get(key, 0)) + delta
+	all_characters[actor_id] = actor
+	return true
+
+func add_next_battle_modifier(actor_id: String, mod_key: String, value: float) -> bool:
+	if actor_id == "" or mod_key == "" or value == 0.0:
+		return false
+	if not all_characters.has(actor_id):
+		return false
+	var actor: Dictionary = all_characters[actor_id]
+	_normalize_character(actor)
+	var mods: Dictionary = actor.get("battle_modifiers", {})
+	if typeof(mods) != TYPE_DICTIONARY:
+		mods = {}
+	mods[mod_key] = float(mods.get(mod_key, 0.0)) + value
+	actor["battle_modifiers"] = mods
+	all_characters[actor_id] = actor
+	return true
+
+func clear_next_battle_modifiers(actor_id: String) -> void:
+	if actor_id == "" or not all_characters.has(actor_id):
+		return
+	var actor: Dictionary = all_characters[actor_id]
+	_normalize_character(actor)
+	actor["battle_modifiers"] = {}
+	all_characters[actor_id] = actor
+
 func get_known_skill_ids(actor_id: String) -> Array:
 	if not known_skill_ids_by_actor.has(actor_id):
 		known_skill_ids_by_actor[actor_id] = _get_default_skill_ids_for_actor(actor_id)
@@ -226,6 +281,12 @@ func export_team_state() -> Dictionary:
 			"max_mp": actor.get("max_mp", 0),
 			"inner_force_id": actor.get("inner_force_id", ""),
 			"known_inner_force_ids": (actor.get("known_inner_force_ids", []) as Array).duplicate(),
+			"str": actor.get("str", 5),
+			"agi": actor.get("agi", 5),
+			"int": actor.get("int", 5),
+			"con": actor.get("con", 5),
+			"luck": actor.get("luck", 5),
+			"battle_modifiers": (actor.get("battle_modifiers", {}) as Dictionary).duplicate(true),
 		}
 	return out
 
@@ -250,6 +311,13 @@ func import_team_state(data: Dictionary) -> void:
 			actor["mp"] = patch.get("mp", actor.get("mp", 0))
 			actor["max_mp"] = patch.get("max_mp", actor.get("max_mp", actor.get("mp", 0)))
 			actor["inner_force_id"] = patch.get("inner_force_id", actor.get("inner_force_id", ""))
+			actor["str"] = patch.get("str", actor.get("str", 5))
+			actor["agi"] = patch.get("agi", actor.get("agi", 5))
+			actor["int"] = patch.get("int", actor.get("int", 5))
+			actor["con"] = patch.get("con", actor.get("con", 5))
+			actor["luck"] = patch.get("luck", actor.get("luck", 5))
+			if typeof(patch.get("battle_modifiers", null)) == TYPE_DICTIONARY:
+				actor["battle_modifiers"] = (patch.get("battle_modifiers", {}) as Dictionary).duplicate(true)
 			if typeof(patch.get("known_inner_force_ids", null)) == TYPE_ARRAY:
 				actor["known_inner_force_ids"] = patch.get("known_inner_force_ids", []).duplicate()
 			_normalize_character(actor)
@@ -344,6 +412,13 @@ func _normalize_character(actor: Dictionary) -> void:
 		else:
 			inner_force_id = String(unique_known[0])
 	actor["inner_force_id"] = inner_force_id
+	actor["str"] = int(actor.get("str", 5))
+	actor["agi"] = int(actor.get("agi", 5))
+	actor["int"] = int(actor.get("int", 5))
+	actor["con"] = int(actor.get("con", 5))
+	actor["luck"] = int(actor.get("luck", 5))
+	if not actor.has("battle_modifiers") or typeof(actor.get("battle_modifiers", {})) != TYPE_DICTIONARY:
+		actor["battle_modifiers"] = {}
 
 	_apply_inner_force_to_actor(actor)
 
