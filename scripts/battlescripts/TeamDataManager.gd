@@ -5,8 +5,10 @@ extends Node
 
 const InnerForceDBScript = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
+const CharacterDBScript = preload("res://scripts/db/CharacterDB.gd")
 var _inner_force_db: Node = InnerForceDBScript.new()
 var _skill_db: Node = SkillDBScript.new()
+var _character_db: Node = CharacterDBScript.new()
 
 # === 所有可用角色（包含未上場） ===
 var all_characters: Dictionary = {
@@ -412,13 +414,16 @@ func _normalize_character(actor: Dictionary) -> void:
 		else:
 			inner_force_id = String(unique_known[0])
 	actor["inner_force_id"] = inner_force_id
-	actor["str"] = int(actor.get("str", 5))
-	actor["agi"] = int(actor.get("agi", 5))
-	actor["int"] = int(actor.get("int", 5))
-	actor["con"] = int(actor.get("con", 5))
-	actor["luck"] = int(actor.get("luck", 5))
-	if not actor.has("battle_modifiers") or typeof(actor.get("battle_modifiers", {})) != TYPE_DICTIONARY:
-		actor["battle_modifiers"] = {}
+	if _character_db != null and _character_db.has_method("ensure_actor_stats"):
+		actor = _character_db.ensure_actor_stats(actor_id, actor)
+	else:
+		actor["str"] = int(actor.get("str", 5))
+		actor["agi"] = int(actor.get("agi", 5))
+		actor["int"] = int(actor.get("int", 5))
+		actor["con"] = int(actor.get("con", 5))
+		actor["luck"] = int(actor.get("luck", 5))
+		if not actor.has("battle_modifiers") or typeof(actor.get("battle_modifiers", {})) != TYPE_DICTIONARY:
+			actor["battle_modifiers"] = {}
 
 	_apply_inner_force_to_actor(actor)
 

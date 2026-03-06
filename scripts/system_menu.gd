@@ -914,7 +914,7 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 
 	var stats_label := slot_data.get("stats") as Label
 	if stats_label:
-		var stat_str := "STR:%d  AGI:%d  INT:%d  CON:%d  LUCK:%d" % [
+		var stat_str := "STR %d  AGI %d  INT %d  CON %d  LUCK %d" % [
 			int(_get_actor_value(actor, "str", 5)),
 			int(_get_actor_value(actor, "agi", 5)),
 			int(_get_actor_value(actor, "int", 5)),
