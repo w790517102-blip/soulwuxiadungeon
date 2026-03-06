@@ -3,13 +3,13 @@ class_name ItemDB
 
 const ITEM_DEFS := {
 
-	"med_bandage": {"name": "繃帶", "desc": "常見止血繃帶。", "type": "consumable", "use_scope": "none", "use_action": "none"},
-	"med_stopbleed_herb": {"name": "止血草", "desc": "簡易止血草藥。", "type": "consumable", "use_scope": "none", "use_action": "none"},
-	"med_jinchuang_small": {"name": "金創藥·小", "desc": "小份量金創藥。", "type": "consumable", "use_scope": "none", "use_action": "none"},
+	"med_bandage": {"name": "繃帶", "desc": "常見止血繃帶。回復20點HP。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "heal", "amount": 20, "target_scope": "ally_single"},
+	"med_stopbleed_herb": {"name": "止血草", "desc": "簡易止血草藥。回復75點HP。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "heal", "amount": 75, "target_scope": "ally_single"},
+	"med_jinchuang_small": {"name": "金創藥·小", "desc": "小份量金創藥。全體回復50點HP。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "heal", "amount": 50, "target_scope": "ally_all"},
 	"med_antidote_powder": {"name": "解毒散", "desc": "常見解毒粉。", "type": "consumable", "use_scope": "none", "use_action": "none"},
 	"med_awaken_tonic": {"name": "醒神湯", "desc": "提神藥湯。", "type": "consumable", "use_scope": "none", "use_action": "none"},
 	"med_calm_pill": {"name": "清心丸", "desc": "安神定心。", "type": "consumable", "use_scope": "none", "use_action": "none"},
-	"med_qi_restore_small": {"name": "回氣散·小", "desc": "小量回氣。", "type": "consumable", "use_scope": "none", "use_action": "none"},
+	"med_qi_restore_small": {"name": "回氣散·小", "desc": "小量回氣。全體回復10點內力。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "mp_heal", "amount": 10, "target_scope": "ally_all"},
 	"med_warm_wine": {"name": "暖身酒", "desc": "溫身散寒。", "type": "consumable", "use_scope": "none", "use_action": "none"},
 	"med_heartguard_small": {"name": "小護心丹", "desc": "前期保命丹藥。", "type": "consumable", "use_scope": "none", "use_action": "none"},
 	"misc_smoke_pellet": {"name": "煙霧丸", "desc": "投擲後煙霧四散，可趁隙脫離戰場。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "escape_battle", "target_scope": "self"},

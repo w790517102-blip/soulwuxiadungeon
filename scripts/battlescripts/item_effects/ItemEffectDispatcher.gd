@@ -33,6 +33,9 @@ func _handle_heal_hp(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 		return false
 
+	if str(item.get("target_scope", "ally_single")) == "ally_all":
+		return _handle_heal_hp_all(controller, user, item, amount)
+
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")
@@ -95,6 +98,9 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 		return false
 
+	if str(item.get("target_scope", "ally_single")) == "ally_all":
+		return _handle_mp_heal_all(controller, user, item, amount_mp)
+
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")
@@ -148,6 +154,56 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 
 		if controller.battle_ui and controller.battle_ui.has_method("play_heal_react"):
 			controller.battle_ui.play_heal_react(target)
+	return true
+
+
+func _handle_heal_hp_all(controller, user: Dictionary, item: Dictionary, amount: int) -> bool:
+	var user_name: String = user.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	var has_restore := false
+	for ally in controller.player_party:
+		if typeof(ally) != TYPE_DICTIONARY:
+			continue
+		if int(ally.get("hp", 0)) <= 0:
+			continue
+		var before_hp: int = int(ally.get("hp", 0))
+		var max_hp: int = int(ally.get("max_hp", before_hp))
+		var after_hp: int = min(before_hp + amount, max_hp)
+		ally["hp"] = after_hp
+		if after_hp > before_hp:
+			has_restore = true
+			if controller.battle_ui and controller.battle_ui.has_method("play_heal_react"):
+				controller.battle_ui.play_heal_react(ally)
+
+	if has_restore:
+		controller._log("%s 使用了 %s，全隊恢復了生命。" % [user_name, item_name])
+	else:
+		controller._log("%s 使用了 %s，但全隊傷勢已平，藥力無從發揮。" % [user_name, item_name])
+	return true
+
+
+func _handle_mp_heal_all(controller, user: Dictionary, item: Dictionary, amount_mp: int) -> bool:
+	var user_name: String = user.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	var has_restore := false
+	for ally in controller.player_party:
+		if typeof(ally) != TYPE_DICTIONARY:
+			continue
+		if int(ally.get("hp", 0)) <= 0:
+			continue
+		var before_mp: int = int(ally.get("mp", 0))
+		var max_mp: int = int(ally.get("max_mp", before_mp))
+		var after_mp: int = min(before_mp + amount_mp, max_mp)
+		ally["mp"] = after_mp
+		if after_mp > before_mp:
+			has_restore = true
+			if controller.battle_ui and controller.battle_ui.has_method("play_heal_react"):
+				controller.battle_ui.play_heal_react(ally)
+
+	if has_restore:
+		controller._log("%s 使用了 %s，全隊恢復了內力。" % [user_name, item_name])
+	else:
+		controller._log("%s 使用了 %s，但全隊真氣充盈，藥力幾乎白白散去。" % [user_name, item_name])
 	return true
 
 
