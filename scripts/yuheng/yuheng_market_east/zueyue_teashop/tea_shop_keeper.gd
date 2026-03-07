@@ -25,8 +25,6 @@ var is_talking: bool = false
 var has_recently_talked: bool = false
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
-var _mark_flag_after_close := false
-var _open_shop_after_dialog := false
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -119,33 +117,54 @@ func _unhandled_input(event):
 		var liuyu := get_node("/root/GameRoot/LiuYu")
 		liuyu.can_move = false
 		face_towards(liuyu.global_position)
+		if GlobalState.get_flag("met_yuheng_teahouse_boss"):
+			_show_interaction_menu()
+			return
+		_show_chat_dialog(true)
 
-		# ✅ 這行是關鍵：在互動瞬間依目前旗標/主線重新組台詞
-		var main_stage := _get_main_stage_safely()
-		dialog_lines = _build_lines_for_stage(main_stage)
 
-		dialog_manager.show_dialog_sequence(dialog_lines, self)
-		# ✅ 在 reset_dialog_state 裡落旗與重建台詞
-		_mark_flag_after_close = not GlobalState.set_flag("met_yuheng_teahouse_boss", true)
-		_open_shop_after_dialog = true
+func _show_interaction_menu() -> void:
+	dialog_manager.show_choice([
+		{ "text": "購買", "callback": Callable(self, "_choose_buy") },
+		{ "text": "閒聊", "callback": Callable(self, "_choose_chat") },
+	])
+
+
+func _choose_buy() -> void:
+	dialog_manager.choice_box.hide_choices()
+	var lines := [
+		{ "text": "「客倌，既然都來了，要不買包茶？也可買些點心佐茶～」", "speaker": speaker_id, "portrait": portrait_path },
+	]
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_finished
+	await _open_shop()
+
+
+func _choose_chat() -> void:
+	dialog_manager.choice_box.hide_choices()
+	_show_chat_dialog(false)
+
+
+func _show_chat_dialog(mark_met: bool) -> void:
+	var main_stage := _get_main_stage_safely()
+	dialog_lines = _build_lines_for_stage(main_stage)
+	dialog_manager.show_dialog_sequence(dialog_lines, self)
+	await dialog_manager.dialog_finished
+	if mark_met:
+		GlobalState.set_flag("met_yuheng_teahouse_boss", true)
+	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
+	is_talking = false
+
 
 func reset_dialog_state():
-	get_node("/root/GameRoot/LiuYu").can_move = true
-	is_talking = false
-	if _mark_flag_after_close:
-		GlobalState.set_flag("met_yuheng_teahouse_boss", true)
-		_mark_flag_after_close = false
-		# 旗標落地後，重建成「精簡循環版」
-		dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
-		animated_sprite.play("idle")
-	if _open_shop_after_dialog:
-		_open_shop_after_dialog = false
-		await _open_shop()
-			
+	pass
 
 func _open_shop() -> void:
 	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
 	if liuyu == null:
+		is_talking = false
 		return
 	is_talking = true
 	liuyu.can_move = false

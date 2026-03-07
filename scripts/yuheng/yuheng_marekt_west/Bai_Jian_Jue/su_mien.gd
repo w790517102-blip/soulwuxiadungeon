@@ -60,9 +60,6 @@ func _on_interact():
 	stage = QuestManager.get_main_quest_state()["stage"]
 	face_towards(get_node("/root/GameRoot/LiuYu").global_position)
 	var main_stage := _get_main_stage_safely()
-	if _can_open_shop() and stage >= 2:
-		_open_shop()
-		return
 	
 	if stage == 1:
 		var met_A := GlobalState.get_flag("met_bai_jian_jue_guestA")
@@ -190,23 +187,57 @@ func _unhandled_input(event):
 		if is_talking:
 			return
 		is_talking = true
-
-		# ✅ 鎖住劉語塵
 		var liuyu := get_node("/root/GameRoot/LiuYu")
 		liuyu.can_move = false
-
 		face_towards(liuyu.global_position)
-		_on_interact()
+		_show_interaction_menu()
 
-		# ✅ 等對話結束
-		await dialog_manager.dialog_finished
 
-		# ✅ 解鎖
-		liuyu.can_move = true
+func _show_interaction_menu() -> void:
+	if dialog_manager == null:
 		is_talking = false
+		var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+		if liuyu:
+			liuyu.can_move = true
+		return
+	dialog_manager.show_choice([
+		{ "text": "交易", "callback": Callable(self, "_choose_trade") },
+		{ "text": "閒聊", "callback": Callable(self, "_choose_chat") },
+	])
 
-		
+
+func _choose_trade() -> void:
+	if dialog_manager and dialog_manager.has_node("ChoiceBox"):
+		dialog_manager.choice_box.hide_choices()
+	if not _can_open_shop():
+		var lock_lines := [
+			{ "text": "書眠：（輕聲）「眼下還不是談書的時候…等你準備好了再來。」", "speaker": speaker_id, "portrait": portrait_path },
+		]
+		show_dialog_sequence(lock_lines)
+		await dialog_manager.dialog_finished
+		var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+		if liuyu:
+			liuyu.can_move = true
+		is_talking = false
+		return
+	var lines := [
+		{ "text": "書眠：「劉少俠，若不嫌棄…願意過目一下小女子的拙筆嗎？」", "speaker": speaker_id, "portrait": portrait_path },
+	]
+	show_dialog_sequence(lines)
+	await dialog_manager.dialog_finished
+	await _open_shop()
+
+
+func _choose_chat() -> void:
+	if dialog_manager and dialog_manager.has_node("ChoiceBox"):
+		dialog_manager.choice_box.hide_choices()
+	_on_interact()
+	await dialog_manager.dialog_finished
+	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
+	is_talking = false
+
 
 func reset_dialog_state():
-	is_talking = false
 	has_recently_talked = false
