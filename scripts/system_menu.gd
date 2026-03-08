@@ -965,6 +965,7 @@ func _open_party_target_popup() -> void:
 func _apply_world_item(item_id: String, effect: String, amount: int, target, consume_item: bool = true) -> void:
 	if target == null:
 		return
+	var should_consume := true
 	var target_id := _get_actor_id_from_entry(target)
 	var target_hp = int(_get_actor_value(target, "hp", 0))
 	var target_mp = int(_get_actor_value(target, "mp", 0))
@@ -989,6 +990,19 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 	elif effect == "apply_battle_buff":
 		if not _apply_world_next_battle_buff(target, item_def):
 			return
+	elif effect == "walnut":
+		var req_key := str(item_def.get("require_stat", "str")).to_lower()
+		var req_min := int(item_def.get("require_min", 31))
+		var req_val := int(_get_actor_value(target, req_key, 0))
+		if req_val < req_min:
+			should_consume = false
+		else:
+			var hp_restore := int(item_def.get("hp_restore", 30))
+			var mp_restore := int(item_def.get("mp_restore", 10))
+			var max_hp3 := _get_effective_max_hp(target, target_id)
+			var max_mp3 := _get_effective_max_mp(target, target_id)
+			_set_actor_value(target, "hp", min(target_hp + hp_restore, max_hp3))
+			_set_actor_value(target, "mp", min(target_mp + mp_restore, max_mp3))
 	elif effect == "cure_status":
 		if item_def.is_empty():
 			return
@@ -1029,10 +1043,10 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 	else:
 		print("[ItemUse] unsupported world effect:", effect)
 		return
-	if consume_item:
+	if consume_item and should_consume:
 		InventorySync.consume_item(item_id, 1)
-		_refresh_status_tab()
-		_refresh_item_tab()
+	_refresh_status_tab()
+	_refresh_item_tab()
 
 
 func _calc_world_scaled_item_amount(item_def: Dictionary, target) -> int:

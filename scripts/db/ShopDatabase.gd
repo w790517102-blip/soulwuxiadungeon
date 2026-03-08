@@ -15,6 +15,7 @@ const SHOPS := {
 			{"item_id": "med_warm_wine", "price": 25, "stock": -1},
 			{"item_id": "med_heartguard_small", "price": 45, "stock": 2, "restock_rule": "never"},
 			{"item_id": "mat_herb_bundle", "price": 10, "stock": -1},
+			{"item_id": "food_walnut", "price": 6, "stock": -1},
 		],
 	},
 	"yuheng_weapon_shop": {
@@ -28,6 +29,8 @@ const SHOPS := {
 			{"item_id": "acc_bracer", "price": 25, "stock": -1},
 			{"item_id": "arm_straw_sandals", "price": 28, "stock": -1},
 			{"item_id": "arm_thin_leather", "price": 80, "stock": -1},
+			{"item_id": "tool_zhuge_crossbow", "price": 120, "stock": -1},
+			{"item_id": "ammo_arrow", "price": 1, "stock": -1},
 		],
 	},
 	"yuheng_general_store_d": {

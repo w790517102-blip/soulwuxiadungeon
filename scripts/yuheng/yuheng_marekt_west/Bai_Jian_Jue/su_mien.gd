@@ -211,14 +211,11 @@ func _choose_trade() -> void:
 		dialog_manager.choice_box.hide_choices()
 	if not _can_open_shop():
 		var lock_lines := [
-			{ "text": "書眠：（輕聲）「眼下還不是談書的時候…等你準備好了再來。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "書眠：（輕聲）「眼下還不是談書的時候…不是不賣。只是，你還沒讀到那一頁。」", "speaker": speaker_id, "portrait": portrait_path },
 		]
 		show_dialog_sequence(lock_lines)
 		await dialog_manager.dialog_finished
-		var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
-		if liuyu:
-			liuyu.can_move = true
-		is_talking = false
+		_show_interaction_menu()
 		return
 	var lines := [
 		{ "text": "書眠：「劉少俠，若不嫌棄…願意過目一下小女子的拙筆嗎？」", "speaker": speaker_id, "portrait": portrait_path },

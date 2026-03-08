@@ -1510,8 +1510,8 @@ func use_item(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
 	# ✅ 套用效果（dispatcher）
 	var ok = item_dispatcher.apply(self, user, item, target)
 
-	# ✅ 套用成功才消耗道具
-	if ok:
+	# ✅ 套用成功才消耗道具（可由道具設為 no_consume）
+	if ok and not bool(item.get("no_consume", false)):
 		InventorySync.consume_item(item.get("id", ""))
 
 	# ✅ 道具效果跑完後，同步 UI（避免自補 / 互補更新不同步）

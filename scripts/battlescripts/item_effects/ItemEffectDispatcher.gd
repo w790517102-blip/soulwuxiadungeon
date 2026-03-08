@@ -17,6 +17,10 @@ func apply(controller, user: Dictionary, item: Dictionary, target: Dictionary) -
 			return _handle_mp_heal_by_stat(controller, user, item, target)
 		"apply_battle_buff":
 			return _handle_apply_battle_buff(controller, user, item, target)
+		"walnut":
+			return _handle_walnut(controller, user, item, target)
+		"zhuge_crossbow":
+			return _handle_zhuge_crossbow(controller, user, item, target)
 		"buff_speed":
 			return _handle_buff_speed(controller, user, item, target)
 		"debuff_speed":
@@ -496,6 +500,63 @@ func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: D
 		turns
 	])
 	return true
+
+
+func _handle_walnut(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		target = user
+	var user_name: String = user.get("name", "???")
+	var stat_key := String(item.get("require_stat", "str")).to_lower()
+	var require_min := int(item.get("require_min", 31))
+	var stat_val := int(user.get(stat_key, 0))
+	if stat_val < require_min:
+		controller._log("%s 面紅耳赤的捏著胡桃，但即使雙手通紅，胡桃仍然無動於衷。" % [user_name])
+		return false
+
+	var hp_restore := int(item.get("hp_restore", 30))
+	var mp_restore := int(item.get("mp_restore", 10))
+	var before_hp := int(target.get("hp", 0))
+	var before_mp := int(target.get("mp", 0))
+	var max_hp := int(target.get("max_hp", before_hp))
+	var max_mp := int(target.get("max_mp", before_mp))
+	target["hp"] = min(before_hp + hp_restore, max_hp)
+	target["mp"] = min(before_mp + mp_restore, max_mp)
+	controller._log("%s 雙指一掐，胡桃殼應聲破裂，隨即將掌中那充滿香氣的果仁塞入口中，陶醉地咀嚼著。" % [user_name])
+	return true
+
+
+func _handle_zhuge_crossbow(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	var user_name: String = user.get("name", "???")
+	var target_name: String = target.get("name", "???")
+	var power := int(item.get("power", 18))
+	var agi_total := int(user.get("agi", 0))
+	var hits_raw := clamp(int(floor(float(agi_total) / 20.0)) + 1, 1, 5)
+	var ammo_id := String(item.get("ammo_item_id", "ammo_arrow"))
+	var ammo_item := InventorySync.get_item_by_id(ammo_id)
+	var arrow_count := int(ammo_item.get("count", 0))
+	if arrow_count <= 0:
+		controller._log("箭矢已耗盡！")
+		return false
+	var hits := min(hits_raw, arrow_count)
+	if arrow_count < hits_raw:
+		controller._log("箭矢不足，只射出 %d 發！" % hits)
+	InventorySync.consume_item(ammo_id, hits)
+	var total_damage := 0
+	for _i in range(hits):
+		if int(target.get("hp", 0)) <= 0:
+			break
+		var before_hp := int(target.get("hp", 0))
+		var dealt := min(power, before_hp)
+		target["hp"] = max(0, before_hp - power)
+		total_damage += dealt
+	controller._log("%s 催動諸葛連弩，連射 %d 發！" % [user_name, hits])
+	controller._log("對 %s 造成總計 [color=#ffd447]%d[/color] 傷害。" % [target_name, total_damage])
+	if int(target.get("hp", 0)) <= 0:
+		target["is_dead"] = true
+		controller._log("%s 倒下了，已無力再戰。" % target_name)
+	return false
 
 
 func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
