@@ -17,6 +17,17 @@ var current_items: Array = []
 var selected_index = -1
 var user_actor: Dictionary = {}
 
+
+func _is_item_usable_in_battle(item: Dictionary) -> bool:
+	if item.is_empty():
+		return false
+	if str(item.get("use_action", "none")) != "consume":
+		return false
+	var scope := str(item.get("use_scope", "none"))
+	if not ["battle", "any"].has(scope):
+		return false
+	return item.has("effect")
+
 func _ready():
 	btn_confirm.pressed.connect(_on_confirm_pressed)
 	btn_cancel.pressed.connect(_on_cancel_pressed)
@@ -34,10 +45,12 @@ func show_items(actor: Dictionary):
 
 	var inventory = InventorySync.get_items()
 	for item in inventory:
-		if item.has("effect"):
+		if _is_item_usable_in_battle(item):
 			current_items.append(item)
 			item_list.add_item(item.get("name", "無名道具"))
 
+		if current_items.is_empty():
+		description.text = "戰鬥中沒有可使用的道具。"
 	popup_centered()
 
 func _on_item_selected(index):

@@ -758,12 +758,17 @@ func _on_ItemListPopup_item_selected(item) -> void:
 
 	# ⭐ 讀道具的 target_scope，預設還是 ally_single
 	var scope = String(item.get("target_scope", "ally_single"))
-
-	var item_name: String = item.name if item is Object and item.has_method("get") == false else str(item.get("name", "???"))
-	_log_system("你使用了「%s」。" % item_name)
+	var use_scope := String(item.get("use_scope", "none"))
+	var item_name: String = str(item.get("name", "???"))
+	if not ["battle", "any"].has(use_scope):
+		_log_system("戰鬥中無法使用")
+		pending_item = {}
+		pending_item_user = {}
+		return
 
 	pending_item = item
 	pending_item_user = current_actor
+	_log_system("你使用了「%s」。" % item_name)
 
 	# =========================
 	# 先處理「不用選目標」的情況
