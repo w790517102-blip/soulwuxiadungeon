@@ -508,8 +508,10 @@ func _handle_walnut(controller, user: Dictionary, item: Dictionary, target: Dict
 	var user_name: String = user.get("name", "???")
 	var stat_key := String(item.get("require_stat", "str")).to_lower()
 	var require_min := int(item.get("require_min", 31))
-	var stat_val := int(user.get(stat_key, 0))
-	if stat_val < require_min:
+	var stat_val := int(target.get(stat_key, 0))
+	var cracker_count := int(InventorySync.get_item_by_id("misc_walnut_cracker").get("count", 0))
+	var has_cracker := cracker_count > 0
+	if stat_val < require_min and not has_cracker:
 		controller._log("%s 面紅耳赤的捏著胡桃，但即使雙手通紅，胡桃仍然無動於衷。" % [user_name])
 		return false
 

@@ -46,6 +46,7 @@ const SHOPS := {
 			{"item_id": "mat_herb_pouch", "price": 14, "stock": -1},
 			{"item_id": "throw_stone_pack", "price": 12, "stock": -1},
 			{"item_id": "misc_little_box", "price": 16, "stock": -1},
+			{"item_id": "misc_walnut_cracker", "price": 40, "stock": -1},
 		],
 	},
 	"bai_jian_jue_bookstore": {

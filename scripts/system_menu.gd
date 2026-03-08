@@ -950,6 +950,22 @@ func _get_actor_portrait(actor) -> Texture2D:
 			return tex
 	return null
 
+
+
+func _has_walnut_cracker() -> bool:
+	var cracker = InventorySync.get_item_by_id("misc_walnut_cracker")
+	return int(cracker.get("count", 0)) > 0
+
+
+func _party_can_use_walnut() -> bool:
+	if _has_walnut_cracker():
+		return true
+	if TeamData and TeamData.has_method("get_active_party"):
+		for party_member in TeamData.get_active_party():
+			if int(_get_actor_value(party_member, "str", 0)) > 30:
+				return true
+	return false
+
 func _open_party_target_popup() -> void:
 	if skill_target_popup == null:
 		return
@@ -994,7 +1010,8 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 		var req_key := str(item_def.get("require_stat", "str")).to_lower()
 		var req_min := int(item_def.get("require_min", 31))
 		var req_val := int(_get_actor_value(target, req_key, 0))
-		if req_val < req_min:
+		var has_cracker := _has_walnut_cracker()
+		if req_val < req_min and not has_cracker:
 			should_consume = false
 		else:
 			var hp_restore := int(item_def.get("hp_restore", 30))
@@ -1160,6 +1177,10 @@ func _on_use_pressed() -> void:
 		if use_scope == "any" or use_scope == "world":
 			var effect = str(item_def.get("effect", ""))
 			var amount = int(item_def.get("amount", 0))
+			if effect == "walnut" and not _party_can_use_walnut():
+				if item_desc:
+					item_desc.text = "未達到條件，無法使用"
+				return
 			var target_scope = str(item_def.get("target_scope", "ally_single"))
 			if target_scope == "ally_single" or target_scope == "single":
 				_pending_item_use_id = item_id
