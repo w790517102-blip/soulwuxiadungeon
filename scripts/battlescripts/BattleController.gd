@@ -277,6 +277,11 @@ func _on_turn_started(actor: Dictionary) -> void:
 		if battle_ui:
 			battle_ui.clear_defend_motion(actor)  # 下面第 2 步會加這個函式
 
+	# ⚡ v1: 暈眩（stun）在回合開始立即判定，直接跳過行動
+	if _try_consume_stun(actor):
+		_end_turn_due_to_stun()
+		return
+
 	# 🪦 安全檢查：如果這個人已經倒下，就直接略過他的回合
 	var hp = int(actor.get("hp", 0))
 	if hp <= 0:
@@ -297,6 +302,25 @@ func _on_turn_started(actor: Dictionary) -> void:
 	if actor in player_party and battle_ui:
 		print("🟦 Begin UI for: ", actor.get("name", "???"))
 		battle_ui.begin_turn(actor)
+
+
+func _try_consume_stun(actor: Dictionary) -> bool:
+	if actor.is_empty() or status_manager == null:
+		return false
+	if not status_manager.has_method("has_effect"):
+		return false
+	if not bool(status_manager.has_effect(actor, "stun")):
+		return false
+	var actor_name := String(actor.get("name", "???"))
+	_log_system("%s 暈眩了，無法行動！" % actor_name)
+	if status_manager.has_method("remove_effect"):
+		status_manager.remove_effect(actor, "stun")
+	return true
+
+
+func _end_turn_due_to_stun() -> void:
+	# 避免在 turn_started signal callback 直接重入 end_turn
+	call_deferred("safe_end_turn")
 
 func _on_turn_ended(actor: Dictionary) -> void:
 	# ❌ 不在這裡清 defending，單純交棒就好
