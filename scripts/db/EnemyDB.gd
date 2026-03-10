@@ -150,22 +150,18 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.0, "min": 0, "max": 0},
 		"drops": [],
 		"ai_profile": "aggressive",
+		"skills_mode": "cycle",
 		"skills": [
-			{
-				"skill_id": "skill_enemy_panshi_gangquan",
-				"category": "attack",
-				"weight": 28,
-				"cd_turns": 1,
-				"target": "enemy_single"
-			},
-			{
-				"skill_id": "skill_enemy_zhishui_yinzhang",
-				"category": "debuff",
-				"weight": 20,
-				"cd_turns": 2,
-				"target": "enemy_single",
-				"conditions": {"min_turn": 2}
-			}
+			{"skill_id": "skill_enemy_stun_palm", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_poison_fang", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_confuse_shout", "category": "debuff", "weight": 10, "cd_turns": 2, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_weaken_strike", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_break_def_strike", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_weak_curse", "category": "debuff", "weight": 10, "cd_turns": 2, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_seal_acupoint", "category": "debuff", "weight": 10, "cd_turns": 2, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_blind_sand", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_root_bind", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_panshi_gangquan", "category": "attack", "weight": 8, "cd_turns": 0, "mp_cost": 0, "target": "enemy_single"}
 		]
 	}
 }
@@ -193,6 +189,8 @@ static func make_enemy(id: String) -> Dictionary:
 		enemy["exp"] = 0
 	if not enemy.has("ai_profile"):
 		enemy["ai_profile"] = "default"
+	if not enemy.has("skills_mode"):
+		enemy["skills_mode"] = "weighted"
 	if typeof(enemy.get("skills", [])) != TYPE_ARRAY:
 		enemy["skills"] = []
 	enemy["gold"] = _normalize_gold(enemy.get("gold", {"chance": 0.0, "min": 0, "max": 0}))

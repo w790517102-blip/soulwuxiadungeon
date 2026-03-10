@@ -21,22 +21,51 @@ func get_action(enemy: Dictionary, player_party: Array, fallback_skill_list: Arr
 	_tick_enemy_cooldowns(state)
 
 	var profile := String(enemy.get("ai_profile", "default"))
-	var skills := _build_enemy_skill_entries(enemy, fallback_skill_list)
+	var skills_mode := String(enemy.get("skills_mode", "weighted"))
+	var skill_entries := _build_enemy_skill_entries(enemy, fallback_skill_list)
+	if skill_entries.is_empty():
+		return _fallback_basic_attack(alive_players)
+
+	if skills_mode == "cycle":
+		return _cycle_pick_action(enemy, alive_players, skill_entries, state)
+
+	return _weighted_pick_action(enemy, alive_players, skill_entries, state, profile)
+
+func _cycle_pick_action(enemy: Dictionary, alive_players: Array, entries: Array, state: Dictionary) -> Dictionary:
+	var total := entries.size()
+	if total <= 0:
+		return _fallback_basic_attack(alive_players)
+	var rotation_index := int(state.get("rotation_index", 0))
+	rotation_index = posmod(rotation_index, total)
+	for offset in range(total):
+		var idx := (rotation_index + offset) % total
+		var entry = entries[idx]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var packaged := _package_candidate(enemy, entry, alive_players, state)
+		if packaged.is_empty():
+			continue
+		state["rotation_index"] = (idx + 1) % total
+		_apply_cooldown(state, packaged.get("entry", {}))
+		return {
+			"skill": packaged.get("skill", {}),
+			"target": packaged.get("target", {})
+		}
+	return _fallback_basic_attack(alive_players)
+
+func _weighted_pick_action(enemy: Dictionary, alive_players: Array, entries: Array, state: Dictionary, profile: String) -> Dictionary:
 	var candidates: Array = []
-	for entry in skills:
-		if not _is_skill_entry_usable(enemy, entry, alive_players, state):
+	for entry in entries:
+		if typeof(entry) != TYPE_DICTIONARY:
 			continue
-		var skill_id := String(entry.get("skill_id", ""))
-		var skill := _skill_db.get_skill(skill_id)
-		if skill.is_empty():
+		var packaged := _package_candidate(enemy, entry, alive_players, state)
+		if packaged.is_empty():
 			continue
-		var target := _choose_target_for_entry(enemy, entry, alive_players)
-		if target.is_empty():
-			continue
-		var weight := _profile_adjusted_weight(profile, entry)
+		var weight := _profile_adjusted_weight(profile, packaged.get("entry", {}))
 		if weight <= 0:
 			continue
-		candidates.append({"entry": entry, "skill": skill, "target": target, "weight": weight})
+		packaged["weight"] = weight
+		candidates.append(packaged)
 
 	if candidates.is_empty():
 		return _fallback_basic_attack(alive_players)
@@ -44,17 +73,33 @@ func get_action(enemy: Dictionary, player_party: Array, fallback_skill_list: Arr
 	var picked := _weighted_pick(candidates)
 	if picked.is_empty():
 		return _fallback_basic_attack(alive_players)
-
-	var picked_entry: Dictionary = picked.get("entry", {})
-	var picked_id := String(picked_entry.get("skill_id", ""))
-	var cd_turns := int(picked_entry.get("cd_turns", 0))
-	if cd_turns > 0 and picked_id != "":
-		state["cooldowns"][picked_id] = cd_turns
-
+	_apply_cooldown(state, picked.get("entry", {}))
 	return {
 		"skill": picked.get("skill", {}),
 		"target": picked.get("target", {})
 	}
+
+func _package_candidate(enemy: Dictionary, entry: Dictionary, alive_players: Array, state: Dictionary) -> Dictionary:
+	if not _is_skill_entry_usable(enemy, entry, alive_players, state):
+		return {}
+	var skill_id := String(entry.get("skill_id", ""))
+	var skill := _skill_db.get_skill(skill_id)
+	if skill.is_empty():
+		return {}
+	var target := _choose_target_for_entry(enemy, entry, alive_players)
+	if target.is_empty():
+		return {}
+	return {
+		"entry": entry,
+		"skill": skill,
+		"target": target
+	}
+
+func _apply_cooldown(state: Dictionary, entry: Dictionary) -> void:
+	var picked_id := String(entry.get("skill_id", ""))
+	var cd_turns := int(entry.get("cd_turns", 0))
+	if cd_turns > 0 and picked_id != "":
+		state["cooldowns"][picked_id] = cd_turns
 
 func _fallback_basic_attack(alive_players: Array) -> Dictionary:
 	var t0: Dictionary = alive_players[randi() % alive_players.size()]
@@ -103,14 +148,20 @@ func _build_enemy_skill_entries(enemy: Dictionary, fallback_skill_list: Array) -
 		})
 	return entries
 
-func _ensure_enemy_state(enemy: Dictionary) -> Dictionary:
+func _enemy_state_key(enemy: Dictionary) -> String:
 	var enemy_id := String(enemy.get("id", "unknown"))
-	if not _runtime_state.has(enemy_id):
-		_runtime_state[enemy_id] = {
+	var ui_index := int(enemy.get("ui_index", -1))
+	return "%s#%d" % [enemy_id, ui_index]
+
+func _ensure_enemy_state(enemy: Dictionary) -> Dictionary:
+	var key := _enemy_state_key(enemy)
+	if not _runtime_state.has(key):
+		_runtime_state[key] = {
 			"turn_count": 0,
-			"cooldowns": {}
+			"cooldowns": {},
+			"rotation_index": 0
 		}
-	return _runtime_state[enemy_id]
+	return _runtime_state[key]
 
 func _tick_enemy_cooldowns(state: Dictionary) -> void:
 	state["turn_count"] = int(state.get("turn_count", 0)) + 1
@@ -176,7 +227,6 @@ func _profile_adjusted_weight(profile: String, entry: Dictionary) -> int:
 
 func _choose_target_for_entry(enemy: Dictionary, entry: Dictionary, alive_players: Array) -> Dictionary:
 	var target_mode := String(entry.get("target", "enemy_single"))
-	var allies := [enemy]
 	if target_mode in ["self", "ally_single", "ally_all"]:
 		return enemy
 	if alive_players.is_empty():
