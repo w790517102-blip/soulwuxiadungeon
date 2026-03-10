@@ -4,6 +4,8 @@
 # ==============================
 extends CharacterBody2D
 
+const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/NPC/YinHuo/Xan_Bu_Lay_headshot.png"
 @export var speaker_id := 1
@@ -136,6 +138,9 @@ func _unhandled_input(event):
 		var liuyu := get_node("/root/GameRoot/LiuYu")
 		liuyu.can_move = false
 		face_towards(liuyu.global_position)
+		if GlobalState.get_flag("met_yuheng_teahouse_guard"):
+			_show_interaction_menu()
+			return
 
 		# ✅ 這行是關鍵：在互動瞬間依目前旗標/主線重新組台詞
 		var main_stage := _get_main_stage_safely()
@@ -144,6 +149,68 @@ func _unhandled_input(event):
 		dialog_manager.show_dialog_sequence(dialog_lines, self)
 		# ✅ 在 reset_dialog_state 裡落旗與重建台詞
 		_mark_flag_after_close = not GlobalState.set_flag("met_yuheng_teahouse_guard", true)
+
+func _show_interaction_menu() -> void:
+	dialog_manager.show_choice([
+		{ "text": "比武", "callback": Callable(self, "_choose_spar") },
+		{ "text": "閒聊", "callback": Callable(self, "_choose_chat") },
+	])
+
+
+func _choose_chat() -> void:
+	dialog_manager.choice_box.hide_choices()
+	var main_stage := _get_main_stage_safely()
+	dialog_lines = _build_lines_for_stage(main_stage)
+	dialog_manager.show_dialog_sequence(dialog_lines, self)
+
+
+func _choose_spar() -> void:
+	dialog_manager.choice_box.hide_choices()
+	var lines := [
+		{ "text": "單步雷: 「劉少俠，若願切磋，單某奉陪到底。點到為止。」", "speaker": speaker_id, "portrait": portrait_path },
+	]
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_finished
+	await _start_training_battle()
+
+
+func _start_training_battle() -> void:
+	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu == null:
+		is_talking = false
+		return
+	var game_root = get_node_or_null("/root/GameRoot")
+	if game_root == null:
+		liuyu.can_move = true
+		is_talking = false
+		return
+	var current_scene = game_root.get_node_or_null("CurrentScene")
+	if current_scene and current_scene.get_child_count() > 0:
+		var current_map = String(current_scene.get_child(0).scene_file_path)
+		if current_map != "":
+			GlobalState.set_meta("return_map_path", current_map)
+	GlobalState.set_meta("return_player_pos", liuyu.global_position)
+
+	var enemy := EnemyDB.make_enemy("tea_house_guest_guard")
+	if enemy.is_empty():
+		liuyu.can_move = true
+		is_talking = false
+		return
+	enemy["ui_index"] = 0
+	var context = {
+		"player_party": TeamData.get_active_party(),
+		"enemy_party": [enemy],
+		"ruleset": {"id": "sparring"},
+		"regen_policy": {"id": "round_end_mp_regen_default"},
+		"tone": {"intro_key": "battle_intro_default"},
+		"zone_id": "zueyue_teashop_training",
+		"no_rewards": true
+	}
+	GlobalState.set_meta("pending_battle_context", context)
+	liuyu.can_move = false
+	if liuyu.has_method("lock_for_battle"):
+		liuyu.lock_for_battle()
+	game_root.change_map_to("res://scenes/battle_scene.tscn")
 
 func reset_dialog_state():
 	get_node("/root/GameRoot/LiuYu").can_move = true

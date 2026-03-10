@@ -112,6 +112,9 @@ func start_battle(context: Dictionary) -> void:
 			e["ui_index"] = i
 		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 
+	if enemy_ai and enemy_ai.has_method("begin_battle"):
+		enemy_ai.begin_battle(enemy_party)
+
 	if battle_ui:
 		battle_ui.set_teams(player_party, enemy_party)
 		battle_ui.apply_ruleset(ruleset)
@@ -372,6 +375,8 @@ func _build_battle_result(result: String) -> Dictionary:
 	}
 
 	if result != "victory":
+		return out
+	if bool(battle_context.get("no_rewards", false)):
 		return out
 
 	var exp_total := 0

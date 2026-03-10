@@ -13,7 +13,9 @@ const ENEMY_DEFS := {
 		"element": "遲",
 		"exp": 8,
 		"gold": {"chance": 0.4, "min": 2, "max": 5},
-		"drops": []
+		"drops": [],
+		"ai_profile": "default",
+		"skills": []
 	},
 	"bamboo_bandit_archer": {
 		"display_name": "山賊弓手",
@@ -26,7 +28,9 @@ const ENEMY_DEFS := {
 		"element": "巧",
 		"exp": 9,
 		"gold": {"chance": 0.45, "min": 2, "max": 6},
-		"drops": []
+		"drops": [],
+		"ai_profile": "aggressive",
+		"skills": []
 	},
 	"bamboo_wild_boar": {
 		"display_name": "野豬",
@@ -39,7 +43,9 @@ const ENEMY_DEFS := {
 		"element": "剛",
 		"exp": 12,
 		"gold": {"chance": 0.35, "min": 3, "max": 7},
-		"drops": []
+		"drops": [],
+		"ai_profile": "aggressive",
+		"skills": []
 	},
 	"bamboo_poison_snake": {
 		"display_name": "毒蛇",
@@ -52,7 +58,9 @@ const ENEMY_DEFS := {
 		"element": "毒",
 		"exp": 10,
 		"gold": {"chance": 0.3, "min": 1, "max": 4},
-		"drops": []
+		"drops": [],
+		"ai_profile": "aggressive",
+		"skills": []
 	},
 	"bamboo_youmei": {
 		"display_name": "語魅",
@@ -65,7 +73,9 @@ const ENEMY_DEFS := {
 		"element": "遲",
 		"exp": 14,
 		"gold": {"chance": 0.5, "min": 4, "max": 9},
-		"drops": []
+		"drops": [],
+		"ai_profile": "support",
+		"skills": []
 	},
 	"sewer_rat_swarm": {
 		"display_name": "鼠群",
@@ -78,7 +88,9 @@ const ENEMY_DEFS := {
 		"element": "群",
 		"exp": 9,
 		"gold": {"chance": 0.35, "min": 2, "max": 5},
-		"drops": []
+		"drops": [],
+		"ai_profile": "default",
+		"skills": []
 	},
 	"sewer_thug": {
 		"display_name": "下水道匪徒",
@@ -91,7 +103,9 @@ const ENEMY_DEFS := {
 		"element": "剛",
 		"exp": 13,
 		"gold": {"chance": 0.45, "min": 3, "max": 8},
-		"drops": []
+		"drops": [],
+		"ai_profile": "default",
+		"skills": []
 	},
 	"sewer_ooze_slime": {
 		"display_name": "污泥怪",
@@ -104,7 +118,9 @@ const ENEMY_DEFS := {
 		"element": "濁",
 		"exp": 16,
 		"gold": {"chance": 0.4, "min": 4, "max": 10},
-		"drops": []
+		"drops": [],
+		"ai_profile": "default",
+		"skills": []
 	},
 	"sewer_drowned_wight": {
 		"display_name": "溺魂",
@@ -117,7 +133,40 @@ const ENEMY_DEFS := {
 		"element": "陰",
 		"exp": 18,
 		"gold": {"chance": 0.5, "min": 5, "max": 12},
-		"drops": []
+		"drops": [],
+		"ai_profile": "support",
+		"skills": []
+	},
+	"tea_house_guest_guard": {
+		"display_name": "單步雷",
+		"hp": 220,
+		"max_hp": 220,
+		"mp": 60,
+		"atk": 24,
+		"def": 16,
+		"speed": 18,
+		"element": "剛",
+		"exp": 0,
+		"gold": {"chance": 0.0, "min": 0, "max": 0},
+		"drops": [],
+		"ai_profile": "aggressive",
+		"skills": [
+			{
+				"skill_id": "skill_enemy_panshi_gangquan",
+				"category": "attack",
+				"weight": 28,
+				"cd_turns": 1,
+				"target": "enemy_single"
+			},
+			{
+				"skill_id": "skill_enemy_zhishui_yinzhang",
+				"category": "debuff",
+				"weight": 20,
+				"cd_turns": 2,
+				"target": "enemy_single",
+				"conditions": {"min_turn": 2}
+			}
+		]
 	}
 }
 
@@ -142,6 +191,10 @@ static func make_enemy(id: String) -> Dictionary:
 		enemy["max_hp"] = enemy["hp"]
 	if not enemy.has("exp"):
 		enemy["exp"] = 0
+	if not enemy.has("ai_profile"):
+		enemy["ai_profile"] = "default"
+	if typeof(enemy.get("skills", [])) != TYPE_ARRAY:
+		enemy["skills"] = []
 	enemy["gold"] = _normalize_gold(enemy.get("gold", {"chance": 0.0, "min": 0, "max": 0}))
 	enemy["drops"] = _normalize_drops(enemy.get("drops", []))
 	return enemy
