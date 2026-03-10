@@ -483,6 +483,8 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 
 	var skill = action.skill
 	var target = action.target
+	var scope := String(skill.get("target_scope", "single"))
+	target = _resolve_confuse_target(enemy, target, scope)
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
@@ -611,7 +613,15 @@ func _maybe_end_turn() -> void:
 		if not bool(a.get("acted_this_turn", false)):
 			return
 
-	status_manager.tick_end_of_turn(alive)
+	var status_events: Array = status_manager.tick_end_of_turn(alive)
+	for event in status_events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if String(event.get("type", "")) == "poison_tick":
+			var evt_actor: Dictionary = event.get("actor", {})
+			var dmg := int(event.get("damage", 0))
+			if not evt_actor.is_empty() and dmg > 0:
+				_log("%s 中毒發作，損失 [color=#9cff66]%d[/color] 點生命！" % [String(evt_actor.get("name", "???")), dmg])
 
 	for a in alive:
 		_update_ui_for_actor(a)
@@ -689,6 +699,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			effect = str((arr[0] as Dictionary).get("type", ""))
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
+	target = _resolve_confuse_target(actor, target, scope)
 	var support_status_effects = ["buff_speed", "debuff_speed", "force_element"]
 	var mp_cost = int(skill_data.get("mp_cost", 0))
 	var actor_mp = int(actor.get("mp", 0))
@@ -969,7 +980,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 					else:
 						_log("WARN: skill force_element apply failed: %s" % str(skill_data.get("name", "???")))
 				_:
-					_log("WARN: unsupported skill effect: %s" % effect_type)
+					if not _try_apply_skill_status_effect(effect_target, effect_type, entry):
+						_log("WARN: unsupported skill effect: %s" % effect_type)
 
 			_update_ui_for_actor(effect_target)
 
@@ -992,6 +1004,92 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	_maybe_end_turn()
 
 
+
+
+func _is_single_target_scope(scope: String) -> bool:
+	return ["single", "enemy_single", "ally_single", "all_single"].has(scope)
+
+
+func _pick_random_alive_actor() -> Dictionary:
+	var alive: Array = []
+	for a in (player_party + enemy_party):
+		if typeof(a) != TYPE_DICTIONARY:
+			continue
+		if int(a.get("hp", 0)) <= 0:
+			continue
+		alive.append(a)
+	if alive.is_empty():
+		return {}
+	return alive[randi() % alive.size()]
+
+
+func _resolve_confuse_target(actor: Dictionary, target: Dictionary, scope: String) -> Dictionary:
+	if actor.is_empty() or status_manager == null:
+		return target
+	if not _is_single_target_scope(scope):
+		return target
+	if not status_manager.has_method("has_effect"):
+		return target
+	if not bool(status_manager.has_effect(actor, "confuse")):
+		return target
+	var randomized := _pick_random_alive_actor()
+	if randomized.is_empty():
+		return target
+	_log_system("%s 神智混亂，出手方向失控！" % String(actor.get("name", "???")))
+	return randomized
+
+
+func _default_turns_for_status(effect_type: String) -> int:
+	match effect_type:
+		"poison":
+			return 3
+		"confuse":
+			return 2
+		"root":
+			return 2
+		"stun":
+			return 1
+		_:
+			return 3
+
+
+func _build_status_payload_from_skill_effect(effect_type: String, entry: Dictionary) -> Dictionary:
+	var payload := {}
+	var amount := int(entry.get("amount", 0))
+	match effect_type:
+		"weaken":
+			payload["atk_delta"] = -abs(amount if amount > 0 else 10)
+		"break_def":
+			payload["def_delta"] = -abs(amount if amount > 0 else 10)
+		"weak":
+			payload["max_hp_delta"] = -abs(amount if amount > 0 else 30)
+		"seal_mp":
+			payload["max_mp_delta"] = -abs(amount if amount > 0 else 15)
+		"blind":
+			payload["accuracy_delta"] = -abs(amount if amount > 0 else 15)
+		"root":
+			payload["evasion_delta"] = -abs(amount if amount > 0 else 20)
+		"slow":
+			payload["slow_delta"] = abs(amount if amount > 0 else 10)
+		_:
+			pass
+	return payload
+
+
+func _try_apply_skill_status_effect(effect_target: Dictionary, effect_type: String, entry: Dictionary) -> bool:
+	if status_manager == null:
+		return false
+	var supported = ["poison", "stun", "confuse", "weaken", "break_def", "weak", "seal_mp", "blind", "root", "slow"]
+	if not supported.has(effect_type):
+		return false
+	var turns := int(entry.get("turns", _default_turns_for_status(effect_type)))
+	if turns <= 0:
+		turns = _default_turns_for_status(effect_type)
+	var payload := _build_status_payload_from_skill_effect(effect_type, entry)
+	var ok := bool(status_manager.apply_effect(effect_target, effect_type, payload, turns))
+	if ok:
+		_log("%s 陷入「%s」，持續 %d 回合。" % [effect_target.get("name", "???"), effect_type, turns])
+	return ok
 
 func defend_action(actor: Dictionary) -> void:
 	actor["defending"] = true

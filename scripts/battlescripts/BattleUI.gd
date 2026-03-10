@@ -188,6 +188,24 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 			return "暈眩（剩 %d 回合）" % turns
 		"confuse":
 			return "混亂（剩 %d 回合）" % turns
+		"weaken":
+			var atk_delta := int(data.get("payload", {}).get("atk_delta", 0))
+			return "無力：攻擊 %+d（剩 %d 回合）" % [atk_delta, turns]
+		"break_def":
+			var def_delta := int(data.get("payload", {}).get("def_delta", 0))
+			return "破防：防禦 %+d（剩 %d 回合）" % [def_delta, turns]
+		"weak":
+			var hp_delta := int(data.get("payload", {}).get("max_hp_delta", 0))
+			return "虛弱：生命上限 %+d（剩 %d 回合）" % [hp_delta, turns]
+		"seal_mp":
+			var mp_delta := int(data.get("payload", {}).get("max_mp_delta", 0))
+			return "封穴：內力上限 %+d（剩 %d 回合）" % [mp_delta, turns]
+		"blind":
+			var acc_delta := int(data.get("payload", {}).get("accuracy_delta", 0))
+			return "目盲：命中 %+d（剩 %d 回合）" % [acc_delta, turns]
+		"root":
+			var eva_delta := int(data.get("payload", {}).get("evasion_delta", 0))
+			return "定身：閃避 %+d（剩 %d 回合）" % [eva_delta, turns]
 		"warm_wine_buff":
 			var spd := int(data.get("payload", {}).get("speed_delta", 0))
 			var acc := int(data.get("payload", {}).get("accuracy_delta", 0))
