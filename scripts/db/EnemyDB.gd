@@ -161,7 +161,7 @@ const ENEMY_DEFS := {
 			{"skill_id": "skill_enemy_seal_acupoint", "category": "debuff", "weight": 10, "cd_turns": 2, "mp_cost": 0, "target": "enemy_single"},
 			{"skill_id": "skill_enemy_blind_sand", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
 			{"skill_id": "skill_enemy_root_bind", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
-			{"skill_id": "skill_enemy_panshi_gangquan", "category": "attack", "weight": 8, "cd_turns": 0, "mp_cost": 0, "target": "enemy_single"}
+			{"skill_id": "skill_enemy_sparring_palm", "category": "attack", "weight": 8, "cd_turns": 0, "mp_cost": 0, "target": "enemy_single"}
 		]
 	}
 }
