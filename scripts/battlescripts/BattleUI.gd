@@ -46,6 +46,29 @@ var allies: Array = []      # 由 BattleController / TeamDataManager 傳進來
 var enemies: Array = []
 var ally_slots: Array = []  # AllyPanel 底下的 TeamMate_1/2/3
 var enemy_slots: Array = [] # EnemyPanel 底下的敵人 slot（之後你可以做 EnemySlot.gd）
+var _ally_status_labels: Array = []
+var _enemy_status_labels: Array = []
+var _status_abbrev_accum := 0.0
+var _has_blinking_tokens := false
+
+const DEBUFF_ABBREV := {
+	"poison": "毒",
+	"stun": "暈",
+	"slow": "緩",
+	"confuse": "亂",
+	"weaken": "弱",
+	"break_def": "破",
+	"weak": "衰",
+	"seal_mp": "損",
+	"blind": "盲",
+	"root": "困",
+}
+
+const BUFF_ABBREV := {
+	"speed_buff": "速",
+	"warm_wine_buff": "攻",
+	"force_element": "功",
+}
 
 
 # 🔹 共用 log helper：系統 / 敘事分色
@@ -86,6 +109,8 @@ func _ready() -> void:
 	# 把 AllyPanel / EnemyPanel 底下現有的 slot 存起來（例如 TeamMate_1, TeamMate_2...）
 	ally_slots = ally_panel.get_children()
 	enemy_slots = enemy_panel.get_children()
+	_ensure_status_abbrev_labels()
+	set_process(true)
 	battle_result_overlay.hide()
 	_setup_hover_slots()
 	if status_hover_popup:
@@ -232,6 +257,7 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	enemies = enemies_data
 	update_ally_panel()
 	update_enemy_panel()
+	_refresh_all_status_abbrev_labels()
 
 func apply_ruleset(ruleset: Dictionary) -> void:
 	var allow_items = bool(ruleset.get("allow_items", true))
@@ -297,6 +323,7 @@ func begin_turn(actor: Dictionary) -> void:
 
 	update_ally_panel()
 	update_enemy_panel()
+	_refresh_all_status_abbrev_labels()
 
 	# ⭐ 新增：更新回合高亮
 	_update_turn_highlight()
@@ -359,6 +386,7 @@ func update_ally_panel() -> void:
 			slot.update_from_actor(actor)
 		elif slot.has_method("setup_from_actor"):
 			slot.setup_from_actor(actor)
+	_refresh_all_status_abbrev_labels()
 
 
 ## 整隊敵方 UI 刷新
@@ -391,6 +419,7 @@ func update_enemy_panel() -> void:
 				slot.clear_slot()
 			else:
 				slot.hide()
+	_refresh_all_status_abbrev_labels()
 
 ## 單一我方成員狀態更新（被打 / 回血 時由 BattleController 呼叫）
 func update_ally_status(index: int, actor: Dictionary) -> void:
@@ -399,6 +428,7 @@ func update_ally_status(index: int, actor: Dictionary) -> void:
 	var slot = ally_slots[index]
 	if slot.has_method("update_from_actor"):
 		slot.update_from_actor(actor)
+	_refresh_all_status_abbrev_labels()
 
 
 ## 單一敵方成員狀態更新
@@ -408,6 +438,7 @@ func update_enemy_status(index: int, actor: Dictionary) -> void:
 	var slot = enemy_slots[index]
 	if slot.has_method("update_from_actor"):
 		slot.update_from_actor(actor)
+	_refresh_all_status_abbrev_labels()
 
 # =========================
 #  攻擊動畫橋接：讓 Controller 不用管 slot 細節
@@ -553,6 +584,114 @@ func play_enemy_hit_fx(index: int, effect: String) -> void:
 	var slot = enemy_slots[index]
 	if slot and slot.has_method("play_hit_fx"):
 		slot.play_hit_fx(effect)
+
+func _process(delta: float) -> void:
+	_status_abbrev_accum += delta
+	if _status_abbrev_accum < 0.15:
+		return
+	_status_abbrev_accum = 0.0
+	if _has_blinking_tokens:
+		_refresh_all_status_abbrev_labels()
+
+
+func _ensure_status_abbrev_labels() -> void:
+	_ally_status_labels.clear()
+	for slot in ally_slots:
+		_ally_status_labels.append(_ensure_slot_status_label(slot))
+	_enemy_status_labels.clear()
+	for slot in enemy_slots:
+		_enemy_status_labels.append(_ensure_slot_status_label(slot))
+
+
+func _ensure_slot_status_label(slot: Node) -> RichTextLabel:
+	if slot == null:
+		return null
+	var status_ui: VBoxContainer = slot.get_node_or_null("StatusUI") as VBoxContainer
+	if status_ui == null:
+		return null
+	var label: RichTextLabel = status_ui.get_node_or_null("StatusAbbrev") as RichTextLabel
+	if label == null:
+		label = RichTextLabel.new()
+		label.name = "StatusAbbrev"
+		label.fit_content = true
+		label.bbcode_enabled = true
+		label.scroll_active = false
+		label.custom_minimum_size = Vector2(0, 18)
+		status_ui.add_child(label)
+	label.text = ""
+	return label
+
+
+func _refresh_all_status_abbrev_labels() -> void:
+	_has_blinking_tokens = false
+	for i in range(_ally_status_labels.size()):
+		var label: RichTextLabel = _ally_status_labels[i]
+		if label == null:
+			continue
+		if i >= allies.size():
+			label.text = ""
+			continue
+		var packed := _build_status_abbrev_text(allies[i])
+		label.text = String(packed.get("text", ""))
+		if bool(packed.get("blink", false)):
+			_has_blinking_tokens = true
+
+	for i in range(_enemy_status_labels.size()):
+		var label: RichTextLabel = _enemy_status_labels[i]
+		if label == null:
+			continue
+		if i >= enemies.size():
+			label.text = ""
+			continue
+		var enemy: Dictionary = enemies[i]
+		if int(enemy.get("hp", 0)) <= 0:
+			label.text = ""
+			continue
+		var packed_enemy := _build_status_abbrev_text(enemy)
+		label.text = String(packed_enemy.get("text", ""))
+		if bool(packed_enemy.get("blink", false)):
+			_has_blinking_tokens = true
+
+
+func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
+	var effects: Dictionary = actor.get("status_effects", {}) if typeof(actor.get("status_effects", {})) == TYPE_DICTIONARY else {}
+	var debuff_tokens: Array = []
+	var buff_tokens: Array = []
+	var has_blink := false
+	var blink_visible := sin(float(Time.get_ticks_msec()) / 180.0) > 0.0
+
+	for effect_id in effects.keys():
+		var turns_left := int(effects[effect_id].get("turns_left", 0))
+		if DEBUFF_ABBREV.has(effect_id):
+			var dtoken := String(DEBUFF_ABBREV[effect_id])
+			if turns_left == 1:
+				has_blink = true
+				dtoken = dtoken if blink_visible else "·"
+			debuff_tokens.append(dtoken)
+		elif BUFF_ABBREV.has(effect_id):
+			var btoken := String(BUFF_ABBREV[effect_id])
+			if turns_left == 1:
+				has_blink = true
+				btoken = btoken if blink_visible else "·"
+			buff_tokens.append(btoken)
+
+	var battle_mods = actor.get("battle_modifiers", {})
+	if typeof(battle_mods) == TYPE_DICTIONARY:
+		if float(battle_mods.get("pen_damage_up", 0.0)) > 0.0:
+			buff_tokens.append("攻")
+		if float(battle_mods.get("pen_damage_resist", 0.0)) > 0.0:
+			buff_tokens.append("防")
+
+	var parts: Array = []
+	if debuff_tokens.size() > 0:
+		parts.append("[color=#ff6b6b]%s[/color]" % " ".join(debuff_tokens))
+	if buff_tokens.size() > 0:
+		parts.append("[color=#67e08a]%s[/color]" % " ".join(buff_tokens))
+	return {
+		"text": "    ".join(parts),
+		"blink": has_blink
+	}
+
 
 func hide_all_popups() -> void:
 	skill_list_popup.hide()
