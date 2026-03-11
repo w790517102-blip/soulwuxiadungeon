@@ -227,6 +227,27 @@ var tone_map := {
 	}
 }
 
+
+var status_apply_tones := {
+	"stun": "點穴落在要害，氣脈驟然一滯。",
+	"poison": "暗勁無聲滲入經脈，毒意已悄然伏下。",
+	"confuse": "言語如霧，心神被撥得搖搖欲墜。",
+	"weak": "一縷虛耗之勁纏上胸膈，元氣頓時浮動。",
+	"seal_mp": "指勁封鎖關節要穴，內息流轉瞬間受阻。",
+	"default": "勁力一轉，異常之勢已悄然種下。"
+}
+
+var status_suffer_tones := {
+	"stun": "眼前一黑，四肢像被釘在原地。",
+	"poison": "胸口微麻，毒性正沿著血脈悄悄擴散。",
+	"confuse": "耳畔嗡鳴不止，出手方向忽然失了準頭。",
+	"weak": "氣海一沉，連呼吸都變得虛浮乏力。",
+	"seal_mp": "經脈像被鎖住，真氣難再順勢運行。",
+	"root": "下盤被勁力纏住，步法轉挪大受牽制。",
+	"blind": "砂影掠過眼前，視野瞬間晃成一片。",
+	"default": "異常感在體內擴散，行動明顯受阻。"
+}
+
 # 🩸 被擊中時的反應語（區分我方 ally / 敵方 enemy）
 # key:
 #   - "normal"     : 一般被擊中（非剋制、非防禦）
@@ -331,6 +352,10 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 	# 🔹 特例：被擊中語氣（category = "hit", key = hit_kind）
 	if category == "hit":
 		return _get_hit_text(user_id, key, side)
+	if category == "status_apply":
+		return String(status_apply_tones.get(key, status_apply_tones.get("default", "")))
+	if category == "status_suffer":
+		return String(status_suffer_tones.get(key, status_suffer_tones.get("default", "")))
 
 	if not tone_map.has(category):
 		return ""

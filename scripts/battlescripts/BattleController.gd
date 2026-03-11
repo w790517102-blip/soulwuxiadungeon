@@ -494,6 +494,8 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
 	var enemy_logs = await _play_attack_cinematic(enemy, target, skill, result)
+	var enemy_applied: Array = _apply_skill_effects(enemy, target, skill, [target])
+	_log_applied_statuses(enemy_applied)
 
 	if enemy_logs.size() > 0:
 		for line in enemy_logs:
@@ -624,9 +626,12 @@ func _maybe_end_turn() -> void:
 			continue
 		if String(event.get("type", "")) == "poison_tick":
 			var evt_actor: Dictionary = event.get("actor", {})
-			var dmg := int(event.get("damage", 0))
+			var dmg = int(event.get("damage", 0))
 			if not evt_actor.is_empty() and dmg > 0:
-				_log("%s 中毒發作，損失 [color=#9cff66]%d[/color] 點生命！" % [String(evt_actor.get("name", "???")), dmg])
+				var remain = 0
+				if evt_actor.has("status_effects") and typeof(evt_actor["status_effects"]) == TYPE_DICTIONARY and evt_actor["status_effects"].has("poison"):
+					remain = int(evt_actor["status_effects"]["poison"].get("turns_left", 0))
+				_log("%s 中毒發作，損失 [color=#9cff66]%d[/color] 點生命！（剩 %d 回合）" % [String(evt_actor.get("name", "???")), dmg, remain])
 
 	for a in alive:
 		_update_ui_for_actor(a)
@@ -801,6 +806,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			enemy["hp"] = entry["after_hp"]
 			_update_ui_for_actor(enemy)
 			alive_targets.append(enemy)
+		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, alive_targets)
+		_log_applied_statuses(aoe_applied)
 
 		# 💥 全體受擊動畫（同時播放）
 		if battle_ui:
@@ -928,67 +935,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	# 🎬 單體：照舊跑 cinematic（描述＋動畫）
 	var attack_logs = await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
 
-	if not effects.is_empty():
-		for entry in effects:
-			if typeof(entry) != TYPE_DICTIONARY:
-				continue
-			var effect_type = str(entry.get("type", ""))
-			if effect_type == "damage":
-				continue
-
-			var effect_target: Dictionary = actual_target
-			if str(entry.get("target", "")) == "self":
-				effect_target = actor
-
-			var turns = int(entry.get("turns", 0))
-			match effect_type:
-				"buff_speed":
-					var amt = int(entry.get("amount", 0))
-					if amt <= 0 or turns <= 0:
-						_log("WARN: skill buff_speed missing data: %s" % str(skill_data.get("name", "???")))
-						continue
-					var ok_buff = status_manager.apply_effect(effect_target, "speed_buff", {"speed_delta": amt}, turns)
-					if ok_buff:
-						_log("%s 的速度提升 %d，持續 %d 回合。" % [
-							effect_target.get("name", "???"),
-							amt,
-							turns
-						])
-					else:
-						_log("WARN: skill buff_speed apply failed: %s" % str(skill_data.get("name", "???")))
-				"debuff_speed":
-					var slow_amt = int(entry.get("amount", 0))
-					if slow_amt <= 0 or turns <= 0:
-						_log("WARN: skill debuff_speed missing data: %s" % str(skill_data.get("name", "???")))
-						continue
-					var ok_debuff = status_manager.apply_effect(effect_target, "speed_debuff", {"slow_delta": slow_amt}, turns)
-					if ok_debuff:
-						_log("%s 的速度降低 %d，持續 %d 回合。" % [
-							effect_target.get("name", "???"),
-							slow_amt,
-							turns
-						])
-					else:
-						_log("WARN: skill debuff_speed apply failed: %s" % str(skill_data.get("name", "???")))
-				"force_element":
-					var new_ele = str(entry.get("element", ""))
-					if new_ele == "" or turns <= 0:
-						_log("WARN: skill force_element missing data: %s" % str(skill_data.get("name", "???")))
-						continue
-					var ok_force = status_manager.apply_effect(effect_target, "force_element", {"element": new_ele}, turns)
-					if ok_force:
-						_log("%s 的屬性轉為「%s」，持續 %d 回合。" % [
-							effect_target.get("name", "???"),
-							new_ele,
-							turns
-						])
-					else:
-						_log("WARN: skill force_element apply failed: %s" % str(skill_data.get("name", "???")))
-				_:
-					if not _try_apply_skill_status_effect(effect_target, effect_type, entry):
-						_log("WARN: unsupported skill effect: %s" % effect_type)
-
-			_update_ui_for_actor(effect_target)
+	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, [actual_target])
+	_log_applied_statuses(single_applied)
 
 	if attack_logs.size() > 0:
 		for line in attack_logs:
@@ -1044,6 +992,101 @@ func _resolve_confuse_target(actor: Dictionary, target: Dictionary, scope: Strin
 	return randomized
 
 
+func _log_applied_statuses(applied_statuses: Array) -> void:
+	for row in applied_statuses:
+		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		var tone_cast := String(row.get("tone_cast", ""))
+		if tone_cast != "":
+			_log_narration(tone_cast)
+		var desc := String(row.get("desc", ""))
+		if desc != "":
+			_log(desc)
+		var tone_suffer := String(row.get("tone_suffer", ""))
+		if tone_suffer != "":
+			_log_narration(tone_suffer)
+
+
+func _apply_skill_effects(user: Dictionary, primary_target: Dictionary, skill_data: Dictionary, target_pool: Array = []) -> Array:
+	var applied: Array = []
+	if not skill_data.has("effects") or typeof(skill_data.get("effects")) != TYPE_ARRAY:
+		return applied
+	var effects: Array = skill_data.get("effects", [])
+	for entry in effects:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var effect_type := str(entry.get("type", ""))
+		if effect_type == "" or effect_type == "damage":
+			continue
+		var targets: Array = []
+		var scope := str(skill_data.get("target_scope", "single"))
+		var side := str(skill_data.get("target_side", "enemy"))
+		if str(entry.get("target", "")) == "self":
+			targets = [user]
+		elif scope == "enemy_all" and side == "enemy":
+			targets = target_pool
+		else:
+			targets = [primary_target]
+
+		for t in targets:
+			if typeof(t) != TYPE_DICTIONARY or t.is_empty():
+				continue
+			var record := _apply_single_skill_effect(user, t, effect_type, entry, skill_data)
+			if record.is_empty():
+				continue
+			applied.append(record)
+			_update_ui_for_actor(t)
+	return applied
+
+
+func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, effect_type: String, entry: Dictionary, skill_data: Dictionary) -> Dictionary:
+	var turns = int(entry.get("turns", _default_turns_for_status(effect_type)))
+	if turns <= 0:
+		turns = _default_turns_for_status(effect_type)
+	var payload := _build_status_payload_from_skill_effect(effect_type, entry)
+	var normalized_effect_id := effect_type
+	match effect_type:
+		"buff_speed":
+			normalized_effect_id = "speed_buff"
+			if int(payload.get("speed_delta", 0)) <= 0:
+				payload["speed_delta"] = int(entry.get("amount", 0))
+		"debuff_speed":
+			normalized_effect_id = "speed_debuff"
+			if int(payload.get("slow_delta", 0)) <= 0:
+				payload["slow_delta"] = int(entry.get("amount", 0))
+		"force_element":
+			normalized_effect_id = "force_element"
+			payload["element"] = str(entry.get("element", ""))
+		_:
+			pass
+
+	if status_manager == null:
+		return {}
+	var ok := bool(status_manager.apply_effect(effect_target, normalized_effect_id, payload, turns))
+	if not ok:
+		return {}
+	var effect_record := {}
+	if effect_target.has("status_effects") and typeof(effect_target["status_effects"]) == TYPE_DICTIONARY:
+		effect_record = effect_target["status_effects"].get(normalized_effect_id, {})
+	var desc := ""
+	if status_manager.has_method("describe_effect"):
+		desc = String(status_manager.describe_effect(normalized_effect_id, effect_target, effect_record))
+	var tone_cast := ""
+	var tone_suffer := ""
+	if tone_map != null:
+		tone_cast = tone_map.get_tone_text("status_apply", normalized_effect_id, str(user.get("id", "")))
+		tone_suffer = tone_map.get_tone_text("status_suffer", normalized_effect_id, str(effect_target.get("id", "")))
+	return {
+		"effect_id": normalized_effect_id,
+		"turns": turns,
+		"payload": payload,
+		"target": effect_target,
+		"desc": desc,
+		"tone_cast": tone_cast,
+		"tone_suffer": tone_suffer,
+	}
+
+
 func _default_turns_for_status(effect_type: String) -> int:
 	match effect_type:
 		"poison":
@@ -1054,6 +1097,8 @@ func _default_turns_for_status(effect_type: String) -> int:
 			return 2
 		"stun":
 			return 1
+		"buff_speed", "debuff_speed", "force_element":
+			return 2
 		_:
 			return 3
 
@@ -1062,6 +1107,12 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 	var payload := {}
 	var amount := int(entry.get("amount", 0))
 	match effect_type:
+		"buff_speed":
+			payload["speed_delta"] = abs(amount if amount > 0 else 3)
+		"debuff_speed":
+			payload["slow_delta"] = abs(amount if amount > 0 else 3)
+		"force_element":
+			payload["element"] = str(entry.get("element", ""))
 		"weaken":
 			payload["atk_delta"] = -abs(amount if amount > 0 else 10)
 		"break_def":
@@ -1082,19 +1133,13 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 
 
 func _try_apply_skill_status_effect(effect_target: Dictionary, effect_type: String, entry: Dictionary) -> bool:
-	if status_manager == null:
+	var fake_user := {"id": "", "name": ""}
+	var record := _apply_single_skill_effect(fake_user, effect_target, effect_type, entry, {})
+	if record.is_empty():
 		return false
-	var supported = ["poison", "stun", "confuse", "weaken", "break_def", "weak", "seal_mp", "blind", "root", "slow"]
-	if not supported.has(effect_type):
-		return false
-	var turns := int(entry.get("turns", _default_turns_for_status(effect_type)))
-	if turns <= 0:
-		turns = _default_turns_for_status(effect_type)
-	var payload := _build_status_payload_from_skill_effect(effect_type, entry)
-	var ok := bool(status_manager.apply_effect(effect_target, effect_type, payload, turns))
-	if ok:
-		_log("%s 陷入「%s」，持續 %d 回合。" % [effect_target.get("name", "???"), effect_type, turns])
-	return ok
+	if String(record.get("desc", "")) != "":
+		_log(String(record.get("desc", "")))
+	return true
 
 func defend_action(actor: Dictionary) -> void:
 	actor["defending"] = true

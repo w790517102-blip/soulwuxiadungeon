@@ -164,6 +164,41 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 	_recalc_max_mp(target)
 
 
+func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictionary = {}) -> String:
+	var turns_left = int(effect_record.get("turns_left", 0))
+	var payload: Dictionary = effect_record.get("payload", {}) if typeof(effect_record.get("payload", {})) == TYPE_DICTIONARY else {}
+	var actor_name = String(actor.get("name", "???"))
+	match effect_id:
+		"poison":
+			var max_hp = int(actor.get("max_hp", actor.get("base_max_hp", actor.get("hp", 0))))
+			var tick = max(10, int(floor(float(max_hp) * 0.05)))
+			return "%s 中了「毒」，每回合約損失 %d 生命（剩 %d 回合）。" % [actor_name, tick, turns_left]
+		"stun":
+			return "%s 陷入「暈眩」，將無法行動（剩 %d 回合）。" % [actor_name, turns_left]
+		"confuse":
+			return "%s 神智混亂，單體行動可能誤擊敵我（剩 %d 回合）。" % [actor_name, turns_left]
+		"weaken":
+			return "%s 攻擊力下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("atk_delta", -10))), turns_left]
+		"break_def":
+			return "%s 防禦力下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("def_delta", -10))), turns_left]
+		"weak":
+			return "%s 最大生命下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("max_hp_delta", -30))), turns_left]
+		"seal_mp":
+			return "%s 最大內力下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("max_mp_delta", -15))), turns_left]
+		"blind":
+			return "%s 命中下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("accuracy_delta", -15))), turns_left]
+		"root":
+			return "%s 閃避下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("evasion_delta", -20))), turns_left]
+		"speed_buff":
+			return "%s 速度上升 %d（剩 %d 回合）。" % [actor_name, int(payload.get("speed_delta", 0)), turns_left]
+		"speed_debuff", "slow":
+			return "%s 速度下降 %d（剩 %d 回合）。" % [actor_name, int(payload.get("slow_delta", 0)), turns_left]
+		"force_element":
+			return "%s 屬性轉為「%s」（剩 %d 回合）。" % [actor_name, String(payload.get("element", "?")), turns_left]
+		_:
+			return "%s 附加了 %s（剩 %d 回合）。" % [actor_name, effect_id, turns_left]
+
+
 func _ensure_base_stats(target: Dictionary) -> void:
 	if not target.has("base_speed"):
 		target["base_speed"] = int(target.get("speed", 0))
