@@ -244,6 +244,14 @@ func _log_system(msg: String) -> void:
 	else:
 		_log(msg)
 
+func _log_narration(msg: String) -> void:
+	if (battle_finished or _ending):
+		return
+	if action_log_ui and action_log_ui.has_method("log_narration"):
+		action_log_ui.log_narration(msg)
+	else:
+		_log(msg)
+
 func log_system(msg: String) -> void:
 	_log_system(msg)
 
