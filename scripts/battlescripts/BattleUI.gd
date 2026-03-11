@@ -132,9 +132,9 @@ func _on_slot_hover_exited() -> void:
 func _position_hover_popup(mouse_pos: Vector2) -> void:
 	if status_hover_popup == null:
 		return
-	var viewport_rect := get_viewport_rect()
-	var popup_size := status_hover_popup.size
-	var pos := mouse_pos + Vector2(16, 16)
+	var viewport_rect = get_viewport_rect()
+	var popup_size = status_hover_popup.size
+	var pos = mouse_pos + Vector2(16, 16)
 	if pos.x + popup_size.x > viewport_rect.size.x:
 		pos.x = max(0.0, viewport_rect.size.x - popup_size.x)
 	if pos.y + popup_size.y > viewport_rect.size.y:
@@ -142,26 +142,26 @@ func _position_hover_popup(mouse_pos: Vector2) -> void:
 	status_hover_popup.global_position = pos
 
 func _build_status_hover_text(actor: Dictionary) -> String:
-	var name := str(actor.get("display_name", actor.get("name", "???")))
-	var hp := int(actor.get("hp", 0))
-	var max_hp := int(actor.get("max_hp", hp))
-	var mp := int(actor.get("mp", 0))
-	var max_mp := int(actor.get("max_mp", mp))
-	var atk := int(actor.get("atk", 0))
-	var def := int(actor.get("def", 0))
-	var speed := int(actor.get("speed", 0))
-	var lines := []
+	var name = str(actor.get("display_name", actor.get("name", "???")))
+	var hp = int(actor.get("hp", 0))
+	var max_hp = int(actor.get("max_hp", hp))
+	var mp = int(actor.get("mp", 0))
+	var max_mp = int(actor.get("max_mp", mp))
+	var atk = int(actor.get("atk", 0))
+	var def = int(actor.get("def", 0))
+	var speed = int(actor.get("speed", 0))
+	var lines = []
 	lines.append("[b]%s[/b]" % name)
 	lines.append("HP：%d / %d" % [hp, max_hp])
 	lines.append("MP：%d / %d" % [mp, max_mp])
 	lines.append("ATK：%d   DEF：%d   SPD：%d" % [atk, def, speed])
 	lines.append("狀態：")
-	var effects_text := _format_status_effects(actor)
+	var effects_text = _format_status_effects(actor)
 	lines.append(effects_text)
 	return "\n".join(lines)
 
 func _format_status_effects(actor: Dictionary) -> String:
-	var effects := actor.get("status_effects", {})
+	var effects = actor.get("status_effects", {})
 	if typeof(effects) != TYPE_DICTIONARY or effects.is_empty():
 		return "無"
 	var lines: Array = []
@@ -171,16 +171,16 @@ func _format_status_effects(actor: Dictionary) -> String:
 	return "\n".join(lines)
 
 func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
-	var turns := int(data.get("turns_left", 0))
+	var turns = int(data.get("turns_left", 0))
 	match effect_id:
 		"speed_buff":
-			var delta := int(data.get("payload", {}).get("speed_delta", 0))
+			var delta = int(data.get("payload", {}).get("speed_delta", 0))
 			return "速度提升 +%d（剩 %d 回合）" % [delta, turns]
 		"speed_debuff":
-			var delta2 := int(data.get("payload", {}).get("slow_delta", 0))
+			var delta2 = int(data.get("payload", {}).get("slow_delta", 0))
 			return "速度降低 -%d（剩 %d 回合）" % [delta2, turns]
 		"slow":
-			var slow_delta := int(data.get("payload", {}).get("slow_delta", 0))
+			var slow_delta = int(data.get("payload", {}).get("slow_delta", 0))
 			return "緩速 -%d（剩 %d 回合）" % [slow_delta, turns]
 		"poison":
 			return "中毒（剩 %d 回合）" % turns
@@ -189,29 +189,29 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 		"confuse":
 			return "混亂（剩 %d 回合）" % turns
 		"weaken":
-			var atk_delta := int(data.get("payload", {}).get("atk_delta", 0))
+			var atk_delta = int(data.get("payload", {}).get("atk_delta", 0))
 			return "無力：攻擊 %+d（剩 %d 回合）" % [atk_delta, turns]
 		"break_def":
-			var def_delta := int(data.get("payload", {}).get("def_delta", 0))
+			var def_delta = int(data.get("payload", {}).get("def_delta", 0))
 			return "破防：防禦 %+d（剩 %d 回合）" % [def_delta, turns]
 		"weak":
-			var hp_delta := int(data.get("payload", {}).get("max_hp_delta", 0))
+			var hp_delta = int(data.get("payload", {}).get("max_hp_delta", 0))
 			return "虛弱：生命上限 %+d（剩 %d 回合）" % [hp_delta, turns]
 		"seal_mp":
-			var mp_delta := int(data.get("payload", {}).get("max_mp_delta", 0))
+			var mp_delta = int(data.get("payload", {}).get("max_mp_delta", 0))
 			return "封穴：內力上限 %+d（剩 %d 回合）" % [mp_delta, turns]
 		"blind":
-			var acc_delta := int(data.get("payload", {}).get("accuracy_delta", 0))
+			var acc_delta = int(data.get("payload", {}).get("accuracy_delta", 0))
 			return "目盲：命中 %+d（剩 %d 回合）" % [acc_delta, turns]
 		"root":
-			var eva_delta := int(data.get("payload", {}).get("evasion_delta", 0))
+			var eva_delta = int(data.get("payload", {}).get("evasion_delta", 0))
 			return "定身：閃避 %+d（剩 %d 回合）" % [eva_delta, turns]
 		"warm_wine_buff":
-			var spd := int(data.get("payload", {}).get("speed_delta", 0))
-			var acc := int(data.get("payload", {}).get("accuracy_delta", 0))
+			var spd = int(data.get("payload", {}).get("speed_delta", 0))
+			var acc = int(data.get("payload", {}).get("accuracy_delta", 0))
 			return "暖身酒：速 %+d／命中 %+d（剩 %d 回合）" % [spd, acc, turns]
 		"force_element":
-			var element := str(data.get("payload", {}).get("element", ""))
+			var element = str(data.get("payload", {}).get("element", ""))
 			return "元素變化：%s（剩 %d 回合）" % [element, turns]
 		_:
 			return "%s（剩 %d 回合）" % [effect_id, turns]
@@ -776,7 +776,7 @@ func _on_ItemListPopup_item_selected(item) -> void:
 
 	# ⭐ 讀道具的 target_scope，預設還是 ally_single
 	var scope = String(item.get("target_scope", "ally_single"))
-	var use_scope := String(item.get("use_scope", "none"))
+	var use_scope = String(item.get("use_scope", "none"))
 	var item_name: String = str(item.get("name", "???"))
 	if not ["battle", "any"].has(use_scope):
 		_log_system("戰鬥中無法使用")

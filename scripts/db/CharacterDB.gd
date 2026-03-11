@@ -20,7 +20,7 @@ const DB := {
 }
 
 static func get_base_stats(actor_id: String) -> Dictionary:
-	var entry := DB.get(actor_id, {})
+	var entry = DB.get(actor_id, {})
 	if typeof(entry) != TYPE_DICTIONARY:
 		return {}
 	var stats = entry.get("base_stats", {})
@@ -29,13 +29,13 @@ static func get_base_stats(actor_id: String) -> Dictionary:
 	return (stats as Dictionary).duplicate(true)
 
 static func get_portrait_path(actor_id: String) -> String:
-	var entry := DB.get(actor_id, {})
+	var entry = DB.get(actor_id, {})
 	if typeof(entry) != TYPE_DICTIONARY:
 		return ""
 	return String((entry as Dictionary).get("portrait_path", ""))
 
 static func get_display_name(actor_id: String) -> String:
-	var entry := DB.get(actor_id, {})
+	var entry = DB.get(actor_id, {})
 	if typeof(entry) != TYPE_DICTIONARY:
 		return ""
 	return String((entry as Dictionary).get("display_name", ""))
@@ -47,7 +47,7 @@ static func ensure_actor_stats(actor_id: String, actor_dict: Dictionary) -> Dict
 	if actor_id == "":
 		return out
 
-	var base_stats := get_base_stats(actor_id)
+	var base_stats = get_base_stats(actor_id)
 	if base_stats.is_empty():
 		base_stats = {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5}
 
@@ -60,11 +60,11 @@ static func ensure_actor_stats(actor_id: String, actor_dict: Dictionary) -> Dict
 	if not out.has("battle_modifiers") or typeof(out.get("battle_modifiers", {})) != TYPE_DICTIONARY:
 		out["battle_modifiers"] = {}
 
-	var display_name := get_display_name(actor_id)
+	var display_name = get_display_name(actor_id)
 	if String(out.get("name", "")) == "" and display_name != "":
 		out["name"] = display_name
 
-	var portrait := get_portrait_path(actor_id)
+	var portrait = get_portrait_path(actor_id)
 	if String(out.get("portrait_path", "")) == "" and portrait != "":
 		out["portrait_path"] = portrait
 

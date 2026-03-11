@@ -23,7 +23,7 @@ func _is_item_usable_in_battle(item: Dictionary) -> bool:
 		return false
 	if str(item.get("use_action", "none")) != "consume":
 		return false
-	var scope := str(item.get("use_scope", "none"))
+	var scope = str(item.get("use_scope", "none"))
 	if not ["battle", "any"].has(scope):
 		return false
 	return item.has("effect")
@@ -49,7 +49,7 @@ func show_items(actor: Dictionary):
 			current_items.append(item)
 			item_list.add_item(item.get("name", "無名道具"))
 
-		if current_items.is_empty():
+	if current_items.is_empty():
 		description.text = "戰鬥中沒有可使用的道具。"
 	popup_centered()
 

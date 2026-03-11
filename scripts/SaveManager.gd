@@ -25,13 +25,13 @@ func _safe_count(value) -> int:
 
 
 func _main_quest_display(value) -> String:
-	var q := _as_dict(value)
+	var q = _as_dict(value)
 	if q.is_empty():
 		return "主線：—"
-	var qid := String(q.get("id", ""))
-	var stage := int(q.get("stage", 0))
-	var desc := String(q.get("description", "")).strip_edges()
-	var title := qid if qid != "" else "主線"
+	var qid = String(q.get("id", ""))
+	var stage = int(q.get("stage", 0))
+	var desc = String(q.get("description", "")).strip_edges()
+	var title = qid if qid != "" else "主線"
 	if desc != "":
 		return "主線：%s｜第%d步｜%s" % [title, stage, desc]
 	return "主線：%s｜第%d步" % [title, stage]
@@ -59,7 +59,7 @@ func _fallback_map_display_name(map_path: String, scene_path: String) -> String:
 	return path_for_name.get_file().get_basename()
 
 func _get_current_map_display_name(map_path: String, scene_path: String) -> String:
-	var fallback := _fallback_map_display_name(map_path, scene_path)
+	var fallback = _fallback_map_display_name(map_path, scene_path)
 	var game_root = get_node_or_null("/root/GameRoot")
 	if game_root:
 		var current_scene_node = game_root.get_node_or_null("CurrentScene")
@@ -77,15 +77,15 @@ func _get_current_map_display_name(map_path: String, scene_path: String) -> Stri
 
 func cache_world_thumbnail() -> void:
 	await RenderingServer.frame_post_draw
-	var img := get_viewport().get_texture().get_image()
+	var img = get_viewport().get_texture().get_image()
 	if img == null:
 		return
-	var src_w := img.get_width()
-	var src_h := img.get_height()
+	var src_w = img.get_width()
+	var src_h = img.get_height()
 	if src_w <= 0 or src_h <= 0:
 		return
-	var target_h := 140
-	var target_w := max(1, int(round(float(src_w) * float(target_h) / float(src_h))))
+	var target_h = 140
+	var target_w = max(1, int(round(float(src_w) * float(target_h) / float(src_h))))
 	img.resize(target_w, target_h, Image.INTERPOLATE_LANCZOS)
 	cached_world_thumb = img
 
@@ -104,7 +104,7 @@ func save_to_slot(slot_index: int) -> void:
 
 	# current_scene 多半是 GameRoot（保留當 fallback）
 	var current_scene = get_tree().current_scene
-	var scene_path := ""
+	var scene_path = ""
 	if current_scene:
 		var scene_file_path = current_scene.get("scene_file_path")
 		if typeof(scene_file_path) == TYPE_STRING and String(scene_file_path) != "":
@@ -113,7 +113,7 @@ func save_to_slot(slot_index: int) -> void:
 			scene_path = String(current_scene.call("get_scene_file_path"))
 
 	# ✅ 正解：用 GameRoot.current_map_path
-	var map_path := ""
+	var map_path = ""
 	var game_root = get_node_or_null("/root/GameRoot")
 	if game_root:
 		var map_val = game_root.get("current_map_path")
@@ -121,8 +121,8 @@ func save_to_slot(slot_index: int) -> void:
 			map_path = String(map_val)
 
 	print("[SaveManager] save slot=", slot_index, " flags_count=", _safe_count(GlobalState.flags), " triggered_flags_count=", _safe_count(GlobalState.triggered_flags))
-	var map_display_name := _get_current_map_display_name(map_path, scene_path)
-	var thumb_path := _thumb_path(slot_index)
+	var map_display_name = _get_current_map_display_name(map_path, scene_path)
+	var thumb_path = _thumb_path(slot_index)
 	if cached_world_thumb != null:
 		var err_thumb = cached_world_thumb.save_png(thumb_path)
 		if err_thumb != OK:
@@ -225,8 +225,8 @@ func load_from_slot(slot_index: int) -> void:
 		GlobalState.flags = {}
 		GlobalState.triggered_flags = {}
 
-	var loaded_flags := _as_dict(data.get("flags", {}))
-	var loaded_triggered := _as_dict(data.get("triggered_flags", loaded_flags))
+	var loaded_flags = _as_dict(data.get("flags", {}))
+	var loaded_triggered = _as_dict(data.get("triggered_flags", loaded_flags))
 	if loaded_flags.is_empty() and not loaded_triggered.is_empty():
 		loaded_flags = loaded_triggered.duplicate(true)
 	if loaded_triggered.is_empty() and not loaded_flags.is_empty():

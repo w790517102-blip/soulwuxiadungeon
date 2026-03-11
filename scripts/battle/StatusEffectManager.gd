@@ -21,26 +21,26 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 		target["status_effects"] = {}
 
 	var effects: Dictionary = target["status_effects"]
-	var has_existing := effects.has(effect_id)
+	var has_existing = effects.has(effect_id)
 	if has_existing and not refresh:
 		return false
 
-	var payload_copy := payload.duplicate(true)
-	var effect_payload := payload_copy.duplicate(true)
+	var payload_copy = payload.duplicate(true)
+	var effect_payload = payload_copy.duplicate(true)
 
 	match effect_id:
 		"speed_buff":
-			var delta := int(effect_payload.get("speed_delta", 0))
+			var delta = int(effect_payload.get("speed_delta", 0))
 			if delta <= 0:
 				return false
 			effect_payload = {"speed_delta": delta}
 		"speed_debuff":
-			var slow_delta := int(effect_payload.get("slow_delta", 0))
+			var slow_delta = int(effect_payload.get("slow_delta", 0))
 			if slow_delta <= 0:
 				return false
 			effect_payload = {"slow_delta": slow_delta}
 		"force_element":
-			var new_element := str(effect_payload.get("element", ""))
+			var new_element = str(effect_payload.get("element", ""))
 			if new_element == "":
 				return false
 			if has_existing:
@@ -113,10 +113,10 @@ func tick_end_of_turn(actors: Array) -> Array:
 
 		for effect_id in effects.keys():
 			if effect_id == "poison" and int(actor.get("hp", 0)) > 0:
-				var max_hp := int(actor.get("max_hp", actor.get("base_max_hp", 0)))
-				var tick_damage := max(10, int(floor(float(max_hp) * 0.05)))
-				var before_hp := int(actor.get("hp", 0))
-				var after_hp := max(0, before_hp - tick_damage)
+				var max_hp = int(actor.get("max_hp", actor.get("base_max_hp", 0)))
+				var tick_damage = max(10, int(floor(float(max_hp) * 0.05)))
+				var before_hp = int(actor.get("hp", 0))
+				var after_hp = max(0, before_hp - tick_damage)
 				actor["hp"] = after_hp
 				if after_hp <= 0:
 					actor["is_dead"] = true
@@ -127,7 +127,7 @@ func tick_end_of_turn(actors: Array) -> Array:
 				})
 
 			var effect_data: Dictionary = effects[effect_id]
-			var turns_left := int(effect_data.get("turns_left", 0)) - 1
+			var turns_left = int(effect_data.get("turns_left", 0)) - 1
 			effect_data["turns_left"] = turns_left
 			effects[effect_id] = effect_data
 			if turns_left <= 0:
@@ -183,10 +183,10 @@ func _ensure_base_stats(target: Dictionary) -> void:
 
 func _recalc_speed(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base := int(target.get("base_speed", target.get("speed", 0)))
+	var base = int(target.get("base_speed", target.get("speed", 0)))
 	var effects = target.get("status_effects", {})
-	var buff := 0
-	var debuff := 0
+	var buff = 0
+	var debuff = 0
 
 	if typeof(effects) == TYPE_DICTIONARY:
 		if effects.has("speed_buff"):
@@ -203,9 +203,9 @@ func _recalc_speed(target: Dictionary) -> void:
 
 func _recalc_accuracy(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base := int(target.get("base_accuracy", target.get("accuracy", 100)))
+	var base = int(target.get("base_accuracy", target.get("accuracy", 100)))
 	var effects = target.get("status_effects", {})
-	var delta := 0
+	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY:
 		if effects.has("warm_wine_buff"):
 			delta += int(effects["warm_wine_buff"].get("payload", {}).get("accuracy_delta", 0))
@@ -217,9 +217,9 @@ func _recalc_accuracy(target: Dictionary) -> void:
 
 func _recalc_evasion(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base := int(target.get("base_evasion", target.get("evasion", 0)))
+	var base = int(target.get("base_evasion", target.get("evasion", 0)))
 	var effects = target.get("status_effects", {})
-	var delta := 0
+	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("root"):
 		delta += int(effects["root"].get("payload", {}).get("evasion_delta", 0))
 	target["evasion"] = base + delta
@@ -228,9 +228,9 @@ func _recalc_evasion(target: Dictionary) -> void:
 
 func _recalc_atk(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base := int(target.get("base_atk", target.get("atk", 0)))
+	var base = int(target.get("base_atk", target.get("atk", 0)))
 	var effects = target.get("status_effects", {})
-	var delta := 0
+	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("weaken"):
 		delta += int(effects["weaken"].get("payload", {}).get("atk_delta", 0))
 	target["atk"] = max(0, base + delta)
@@ -239,9 +239,9 @@ func _recalc_atk(target: Dictionary) -> void:
 
 func _recalc_def(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base := int(target.get("base_def", target.get("def", 0)))
+	var base = int(target.get("base_def", target.get("def", 0)))
 	var effects = target.get("status_effects", {})
-	var delta := 0
+	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("break_def"):
 		delta += int(effects["break_def"].get("payload", {}).get("def_delta", 0))
 	target["def"] = max(0, base + delta)
@@ -250,12 +250,12 @@ func _recalc_def(target: Dictionary) -> void:
 
 func _recalc_max_hp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base := int(target.get("base_max_hp", target.get("max_hp", target.get("hp", 0))))
+	var base = int(target.get("base_max_hp", target.get("max_hp", target.get("hp", 0))))
 	var effects = target.get("status_effects", {})
-	var delta := 0
+	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("weak"):
 		delta += int(effects["weak"].get("payload", {}).get("max_hp_delta", 0))
-	var new_max := max(1, base + delta)
+	var new_max = max(1, base + delta)
 	target["max_hp"] = new_max
 	if int(target.get("hp", 0)) > new_max:
 		target["hp"] = new_max
@@ -264,12 +264,12 @@ func _recalc_max_hp(target: Dictionary) -> void:
 
 func _recalc_max_mp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base := int(target.get("base_max_mp", target.get("max_mp", target.get("mp", 0))))
+	var base = int(target.get("base_max_mp", target.get("max_mp", target.get("mp", 0))))
 	var effects = target.get("status_effects", {})
-	var delta := 0
+	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("seal_mp"):
 		delta += int(effects["seal_mp"].get("payload", {}).get("max_mp_delta", 0))
-	var new_max := max(0, base + delta)
+	var new_max = max(0, base + delta)
 	target["max_mp"] = new_max
 	if int(target.get("mp", 0)) > new_max:
 		target["mp"] = new_max

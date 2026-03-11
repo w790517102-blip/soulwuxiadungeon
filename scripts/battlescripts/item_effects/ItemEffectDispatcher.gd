@@ -176,7 +176,7 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 func _handle_heal_hp_all(controller, user: Dictionary, item: Dictionary, amount: int) -> bool:
 	var user_name: String = user.get("name", "???")
 	var item_name: String = item.get("name", "???")
-	var has_restore := false
+	var has_restore = false
 	for ally in controller.player_party:
 		if typeof(ally) != TYPE_DICTIONARY:
 			continue
@@ -201,7 +201,7 @@ func _handle_heal_hp_all(controller, user: Dictionary, item: Dictionary, amount:
 func _handle_mp_heal_all(controller, user: Dictionary, item: Dictionary, amount_mp: int) -> bool:
 	var user_name: String = user.get("name", "???")
 	var item_name: String = item.get("name", "???")
-	var has_restore := false
+	var has_restore = false
 	for ally in controller.player_party:
 		if typeof(ally) != TYPE_DICTIONARY:
 			continue
@@ -333,18 +333,18 @@ func _handle_escape_battle(controller, user: Dictionary, item: Dictionary) -> bo
 
 
 func _resolve_actor_stat(actor: Dictionary, stat_key: String) -> int:
-	var key := String(stat_key).to_lower()
+	var key = String(stat_key).to_lower()
 	return int(actor.get(key, 0))
 
 
 func _calc_scaled_amount(item: Dictionary, actor: Dictionary) -> int:
-	var base_amount := int(item.get("base_amount", item.get("amount", 0)))
-	var scale := float(item.get("scale", 1.0))
-	var stat_key := String(item.get("stat_key", ""))
-	var stat_value := _resolve_actor_stat(actor, stat_key)
-	var raw_amount := int(round(base_amount + stat_value * scale))
-	var min_amount := int(item.get("min_amount", raw_amount))
-	var max_amount := int(item.get("max_amount", raw_amount))
+	var base_amount = int(item.get("base_amount", item.get("amount", 0)))
+	var scale = float(item.get("scale", 1.0))
+	var stat_key = String(item.get("stat_key", ""))
+	var stat_value = _resolve_actor_stat(actor, stat_key)
+	var raw_amount = int(round(base_amount + stat_value * scale))
+	var min_amount = int(item.get("min_amount", raw_amount))
+	var max_amount = int(item.get("max_amount", raw_amount))
 	if max_amount < min_amount:
 		max_amount = min_amount
 	return clamp(raw_amount, min_amount, max_amount)
@@ -353,9 +353,9 @@ func _calc_scaled_amount(item: Dictionary, actor: Dictionary) -> int:
 func _handle_perm_stat(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
 	if target.is_empty():
 		return false
-	var actor_id := String(target.get("id", ""))
-	var stat_key := String(item.get("stat_key", "")).to_lower()
-	var amount := int(item.get("amount", 0))
+	var actor_id = String(target.get("id", ""))
+	var stat_key = String(item.get("stat_key", "")).to_lower()
+	var amount = int(item.get("amount", 0))
 	if actor_id == "" or stat_key == "" or amount == 0:
 		return false
 	if controller == null or controller.team_data_manager == null:
@@ -375,10 +375,10 @@ func _handle_perm_stat(controller, user: Dictionary, item: Dictionary, target: D
 func _handle_heal_by_stat(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
 	if target.is_empty():
 		return false
-	var amount := _calc_scaled_amount(item, target)
+	var amount = _calc_scaled_amount(item, target)
 	if amount <= 0:
 		return false
-	var temp_item := item.duplicate(true)
+	var temp_item = item.duplicate(true)
 	temp_item["amount"] = amount
 	return _handle_heal_hp(controller, user, temp_item, target)
 
@@ -386,10 +386,10 @@ func _handle_heal_by_stat(controller, user: Dictionary, item: Dictionary, target
 func _handle_mp_heal_by_stat(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
 	if target.is_empty():
 		return false
-	var amount := _calc_scaled_amount(item, target)
+	var amount = _calc_scaled_amount(item, target)
 	if amount <= 0:
 		return false
-	var temp_item := item.duplicate(true)
+	var temp_item = item.duplicate(true)
 	temp_item["amount"] = amount
 	return _handle_mp_heal(controller, user, temp_item, target)
 
@@ -399,9 +399,9 @@ func _handle_apply_battle_buff(controller, user: Dictionary, item: Dictionary, t
 		return false
 	if controller == null or controller.team_data_manager == null:
 		return false
-	var actor_id := String(target.get("id", ""))
-	var buff_key := String(item.get("buff_key", ""))
-	var buff_value := float(item.get("buff_value", 0.0))
+	var actor_id = String(target.get("id", ""))
+	var buff_key = String(item.get("buff_key", ""))
+	var buff_value = float(item.get("buff_value", 0.0))
 	if actor_id == "" or buff_key == "" or buff_value == 0.0:
 		return false
 	if not controller.team_data_manager.has_method("add_next_battle_modifier"):
@@ -440,7 +440,7 @@ func _handle_cure_status(controller, user: Dictionary, item: Dictionary, target:
 	if controller == null or controller.status_manager == null:
 		return false
 
-	var status_id := str(item.get("status_id", ""))
+	var status_id = str(item.get("status_id", ""))
 	if status_id == "":
 		controller._log("WARN: cure_status missing status_id: %s" % str(item.get("id", "")))
 		return false
@@ -448,9 +448,9 @@ func _handle_cure_status(controller, user: Dictionary, item: Dictionary, target:
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")
-	var status_name := _status_display_name(status_id)
+	var status_name = _status_display_name(status_id)
 
-	var had_effect := false
+	var had_effect = false
 	if controller.status_manager.has_method("has_effect"):
 		had_effect = bool(controller.status_manager.has_effect(target, status_id))
 
@@ -474,7 +474,7 @@ func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: D
 	var item_name: String = item.get("name", "???")
 	var status_manager = controller.status_manager
 
-	var has_slow := false
+	var has_slow = false
 	if status_manager.has_method("has_effect"):
 		has_slow = bool(status_manager.has_effect(target, "slow"))
 
@@ -483,7 +483,7 @@ func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: D
 		controller._log("%s 對 %s 使用了 %s，酒力驅寒，解除了「緩速」。" % [user_name, target_name, item_name])
 		return true
 
-	var turns := int(item.get("turns", 3))
+	var turns = int(item.get("turns", 3))
 	if turns <= 0:
 		turns = 3
 	var ok = status_manager.apply_effect(target, "warm_wine_buff", {
@@ -506,21 +506,21 @@ func _handle_walnut(controller, user: Dictionary, item: Dictionary, target: Dict
 	if target.is_empty():
 		target = user
 	var user_name: String = user.get("name", "???")
-	var stat_key := String(item.get("require_stat", "str")).to_lower()
-	var require_min := int(item.get("require_min", 31))
-	var stat_val := int(target.get(stat_key, 0))
-	var cracker_count := int(InventorySync.get_item_by_id("misc_walnut_cracker").get("count", 0))
-	var has_cracker := cracker_count > 0
+	var stat_key = String(item.get("require_stat", "str")).to_lower()
+	var require_min = int(item.get("require_min", 31))
+	var stat_val = int(target.get(stat_key, 0))
+	var cracker_count = int(InventorySync.get_item_by_id("misc_walnut_cracker").get("count", 0))
+	var has_cracker = cracker_count > 0
 	if stat_val < require_min and not has_cracker:
 		controller._log("%s 面紅耳赤的捏著胡桃，但即使雙手通紅，胡桃仍然無動於衷。" % [user_name])
 		return false
 
-	var hp_restore := int(item.get("hp_restore", 30))
-	var mp_restore := int(item.get("mp_restore", 10))
-	var before_hp := int(target.get("hp", 0))
-	var before_mp := int(target.get("mp", 0))
-	var max_hp := int(target.get("max_hp", before_hp))
-	var max_mp := int(target.get("max_mp", before_mp))
+	var hp_restore = int(item.get("hp_restore", 30))
+	var mp_restore = int(item.get("mp_restore", 10))
+	var before_hp = int(target.get("hp", 0))
+	var before_mp = int(target.get("mp", 0))
+	var max_hp = int(target.get("max_hp", before_hp))
+	var max_mp = int(target.get("max_mp", before_mp))
 	target["hp"] = min(before_hp + hp_restore, max_hp)
 	target["mp"] = min(before_mp + mp_restore, max_mp)
 	controller._log("%s 雙指一掐，胡桃殼應聲破裂，隨即將掌中那充滿香氣的果仁塞入口中，陶醉地咀嚼著。" % [user_name])
@@ -532,25 +532,25 @@ func _handle_zhuge_crossbow(controller, user: Dictionary, item: Dictionary, targ
 		return false
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
-	var power := int(item.get("power", 18))
-	var agi_total := int(user.get("agi", 0))
-	var hits_raw := clamp(int(floor(float(agi_total) / 20.0)) + 1, 1, 5)
-	var ammo_id := String(item.get("ammo_item_id", "ammo_arrow"))
-	var ammo_item := InventorySync.get_item_by_id(ammo_id)
-	var arrow_count := int(ammo_item.get("count", 0))
+	var power = int(item.get("power", 18))
+	var agi_total = int(user.get("agi", 0))
+	var hits_raw = clamp(int(floor(float(agi_total) / 20.0)) + 1, 1, 5)
+	var ammo_id = String(item.get("ammo_item_id", "ammo_arrow"))
+	var ammo_item = InventorySync.get_item_by_id(ammo_id)
+	var arrow_count = int(ammo_item.get("count", 0))
 	if arrow_count <= 0:
 		controller._log("箭矢已耗盡！")
 		return false
-	var hits := min(hits_raw, arrow_count)
+	var hits = min(hits_raw, arrow_count)
 	if arrow_count < hits_raw:
 		controller._log("箭矢不足，只射出 %d 發！" % hits)
 	InventorySync.consume_item(ammo_id, hits)
-	var total_damage := 0
+	var total_damage = 0
 	for _i in range(hits):
 		if int(target.get("hp", 0)) <= 0:
 			break
-		var before_hp := int(target.get("hp", 0))
-		var dealt := min(power, before_hp)
+		var before_hp = int(target.get("hp", 0))
+		var dealt = min(power, before_hp)
 		target["hp"] = max(0, before_hp - power)
 		total_damage += dealt
 	controller._log("%s 催動諸葛連弩，連射 %d 發！" % [user_name, hits])
