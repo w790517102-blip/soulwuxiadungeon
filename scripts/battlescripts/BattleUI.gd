@@ -609,15 +609,36 @@ func _ensure_slot_status_label(slot: Node) -> RichTextLabel:
 	var status_ui: VBoxContainer = slot.get_node_or_null("StatusUI") as VBoxContainer
 	if status_ui == null:
 		return null
-	var label: RichTextLabel = status_ui.get_node_or_null("StatusAbbrev") as RichTextLabel
+	var name_label: Label = status_ui.get_node_or_null("Name") as Label
+	if name_label == null:
+		return null
+
+	var name_row: HBoxContainer = status_ui.get_node_or_null("NameRow") as HBoxContainer
+	if name_row == null:
+		name_row = HBoxContainer.new()
+		name_row.name = "NameRow"
+		name_row.custom_minimum_size = Vector2(0, 30)
+		name_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var idx = name_label.get_index()
+		status_ui.remove_child(name_label)
+		status_ui.add_child(name_row)
+		status_ui.move_child(name_row, idx)
+		name_row.add_child(name_label)
+		name_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+
+	var label: RichTextLabel = name_row.get_node_or_null("StatusAbbrev") as RichTextLabel
 	if label == null:
 		label = RichTextLabel.new()
 		label.name = "StatusAbbrev"
-		label.fit_content = true
 		label.bbcode_enabled = true
+		label.fit_content = false
 		label.scroll_active = false
-		label.custom_minimum_size = Vector2(0, 18)
-		status_ui.add_child(label)
+		label.autowrap_mode = TextServer.AUTOWRAP_CHAR
+		label.custom_minimum_size = Vector2(120, 30)
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		label.clip_contents = true
+		name_row.add_child(label)
 	label.text = ""
 	return label
 
@@ -684,11 +705,11 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 
 	var parts: Array = []
 	if debuff_tokens.size() > 0:
-		parts.append("[color=#ff6b6b]%s[/color]" % " ".join(debuff_tokens))
+		parts.append("[color=#ff6b6b]%s[/color]" % "".join(debuff_tokens))
 	if buff_tokens.size() > 0:
-		parts.append("[color=#67e08a]%s[/color]" % " ".join(buff_tokens))
+		parts.append("[color=#67e08a]%s[/color]" % "".join(buff_tokens))
 	return {
-		"text": "    ".join(parts),
+		"text": " ".join(parts),
 		"blink": has_blink
 	}
 
