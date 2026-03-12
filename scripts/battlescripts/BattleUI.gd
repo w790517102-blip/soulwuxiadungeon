@@ -633,7 +633,7 @@ func _ensure_slot_status_label(slot: Node) -> RichTextLabel:
 		label.bbcode_enabled = true
 		label.fit_content = false
 		label.scroll_active = false
-		label.autowrap_mode = TextServer.AUTOWRAP_CHAR
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		label.custom_minimum_size = Vector2(120, 30)
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
