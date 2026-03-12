@@ -978,6 +978,30 @@ func _open_party_target_popup() -> void:
 		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
 	skill_target_popup.popup()
 
+
+func _status_name_zh(status_id: String) -> String:
+	match status_id:
+		"stun":
+			return "暈眩"
+		"poison":
+			return "中毒"
+		"confuse":
+			return "混亂"
+		"slow":
+			return "緩速"
+		_:
+			return status_id
+
+
+func _push_world_item_feedback(lines: Array) -> void:
+	if lines.is_empty():
+		return
+	for line in lines:
+		print("[WorldItem] %s" % String(line))
+	if item_desc:
+		var old_text = item_desc.text
+		item_desc.text = "【使用結果】\n%s\n\n%s" % ["\n".join(lines), old_text]
+
 func _apply_world_item(item_id: String, effect: String, amount: int, target, consume_item: bool = true) -> void:
 	if target == null:
 		return
@@ -986,6 +1010,7 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 	var target_hp = int(_get_actor_value(target, "hp", 0))
 	var target_mp = int(_get_actor_value(target, "mp", 0))
 	var item_def: Dictionary = InventorySync.get_item_by_id(item_id)
+	var feedback_lines: Array = []
 	if effect == "heal" or effect == "heal_hp":
 		var max_hp := _get_effective_max_hp(target, target_id)
 		_set_actor_value(target, "hp", min(target_hp + amount, max_hp))
@@ -1030,8 +1055,20 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 			return
 		var effects = _get_actor_value(target, "status_effects", {})
 		if typeof(effects) == TYPE_DICTIONARY:
+			var had_effect := effects.has(status_id)
 			effects.erase(status_id)
 			_set_actor_value(target, "status_effects", effects)
+			if had_effect:
+				match status_id:
+					"stun":
+						feedback_lines.append("瓶口一傾，清冽藥氣直衝眉心；方才的昏沉像霧一樣散了。")
+					"poison":
+						feedback_lines.append("藥末入口，苦意先到；腑中翻湧片刻，毒意竟慢慢退了下去。")
+					"confuse":
+						feedback_lines.append("丸化喉間，心口微暖；雜念自息，眼神也重新聚焦。")
+					_:
+						feedback_lines.append("藥力入經，紊亂氣息漸漸平復。")
+				feedback_lines.append("%s解除。" % _status_name_zh(status_id))
 	elif effect == "warm_wine":
 		if not _ensure_world_status_effects(target):
 			return
@@ -1041,6 +1078,8 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 		if effects.has("slow"):
 			effects.erase("slow")
 			_set_actor_value(target, "status_effects", effects)
+			feedback_lines.append("溫酒入胃，熱意走遍四肢；沉得像灌鉛的腳步忽然一鬆，身子輕了。")
+			feedback_lines.append("緩速解除。")
 		else:
 			var turns := 3
 			if not item_def.is_empty():
@@ -1057,11 +1096,14 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 			_set_actor_value(target, "base_accuracy", base_accuracy)
 			_set_actor_value(target, "accuracy", base_accuracy - 5)
 			_set_actor_value(target, "accuracy_mod", -5)
+			feedback_lines.append("他仰頭灌下暖身酒，血脈像被火點著，步伐跟著快了；可酒勁一上頭，眼前也微微發顫。")
+			feedback_lines.append("速度上升，命中下降（%d回合）。" % turns)
 	else:
 		print("[ItemUse] unsupported world effect:", effect)
 		return
 	if consume_item and should_consume:
 		InventorySync.consume_item(item_id, 1)
+	_push_world_item_feedback(feedback_lines)
 	_refresh_status_tab()
 	_refresh_item_tab()
 

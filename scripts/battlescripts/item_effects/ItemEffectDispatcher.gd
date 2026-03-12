@@ -434,6 +434,18 @@ func _status_display_name(status_id: String) -> String:
 			return status_id
 
 
+func _cure_status_narration(status_id: String) -> String:
+	match status_id:
+		"stun":
+			return "瓶口一傾，清冽藥氣直衝眉心；方才的昏沉像霧一樣散了。"
+		"poison":
+			return "藥末入口，苦意先到；腑中翻湧片刻，毒意竟慢慢退了下去。"
+		"confuse":
+			return "丸化喉間，心口微暖；雜念自息，眼神也重新聚焦。"
+		_:
+			return "藥力入經，紊亂氣息漸漸平復。"
+
+
 func _handle_cure_status(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
 	if target.is_empty():
 		return false
@@ -457,7 +469,10 @@ func _handle_cure_status(controller, user: Dictionary, item: Dictionary, target:
 	controller.status_manager.remove_effect(target, status_id)
 
 	if had_effect:
-		controller._log("%s 對 %s 使用了 %s，解除了「%s」。" % [user_name, target_name, item_name, status_name])
+		if controller.has_method("_log_narration"):
+			controller._log_narration(_cure_status_narration(status_id))
+		controller._log("%s 對 %s 使用了 %s。" % [user_name, target_name, item_name])
+		controller._log("%s解除。" % status_name)
 	else:
 		controller._log("%s 對 %s 使用了 %s，但對方並未處於「%s」。" % [user_name, target_name, item_name, status_name])
 	return true
@@ -480,7 +495,10 @@ func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: D
 
 	if has_slow:
 		status_manager.remove_effect(target, "slow")
-		controller._log("%s 對 %s 使用了 %s，酒力驅寒，解除了「緩速」。" % [user_name, target_name, item_name])
+		if controller.has_method("_log_narration"):
+			controller._log_narration("溫酒入胃，熱意走遍四肢；沉得像灌鉛的腳步忽然一鬆，身子輕了。")
+		controller._log("%s 對 %s 使用了 %s。" % [user_name, target_name, item_name])
+		controller._log("緩速解除。")
 		return true
 
 	var turns = int(item.get("turns", 3))
@@ -493,12 +511,14 @@ func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: D
 	if not ok:
 		return false
 
-	controller._log("%s 對 %s 使用了 %s，身法提升 10、命中修正 -5（%d 回合）。" % [
+	if controller.has_method("_log_narration"):
+		controller._log_narration("他仰頭灌下暖身酒，血脈像被火點著，步伐跟著快了；可酒勁一上頭，眼前也微微發顫。")
+	controller._log("%s 對 %s 使用了 %s。" % [
 		user_name,
 		target_name,
-		item_name,
-		turns
+		item_name
 	])
+	controller._log("速度上升，命中下降（%d回合）。" % turns)
 	return true
 
 

@@ -502,14 +502,15 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
 	var enemy_logs = await _play_attack_cinematic(enemy, target, skill, result)
-	var enemy_applied: Array = _apply_skill_effects(enemy, target, skill, [target])
-	_log_applied_statuses(enemy_applied)
 
 	if enemy_logs.size() > 0:
 		for line in enemy_logs:
 			_log(line)
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 			await action_log_ui.wait_for_all_logs()
+
+	var enemy_applied: Array = _apply_skill_effects(enemy, target, skill, [target])
+	_log_applied_statuses(enemy_applied)
 
 	check_battle_status()
 	if battle_finished:
@@ -814,9 +815,6 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			enemy["hp"] = entry["after_hp"]
 			_update_ui_for_actor(enemy)
 			alive_targets.append(enemy)
-		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, alive_targets)
-		_log_applied_statuses(aoe_applied)
-
 		# 💥 全體受擊動畫（同時播放）
 		if battle_ui:
 			if battle_ui.has_method("play_hit_fx_multi"):
@@ -896,6 +894,9 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				any_down = true
 				_log("%s 倒下，傷勢過重，已無力再戰。" % name_e)
 
+		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, alive_targets)
+		_log_applied_statuses(aoe_applied)
+
 		await get_tree().create_timer(0.2).timeout
 		await get_tree().process_frame
 		await get_tree().process_frame
@@ -943,14 +944,14 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	# 🎬 單體：照舊跑 cinematic（描述＋動畫）
 	var attack_logs = await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
 
-	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, [actual_target])
-	_log_applied_statuses(single_applied)
-
 	if attack_logs.size() > 0:
 		for line in attack_logs:
 			_log(line)
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 			await action_log_ui.wait_for_all_logs()
+
+	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, [actual_target])
+	_log_applied_statuses(single_applied)
 
 	if result_single.target_down:
 		actual_target["hp"] = 0
