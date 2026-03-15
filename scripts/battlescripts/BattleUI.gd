@@ -680,21 +680,46 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 	var buff_tokens: Array = []
 	var has_blink := false
 	var blink_visible := sin(float(Time.get_ticks_msec()) / 180.0) > 0.0
+	var has_blind_token := false
+	var has_root_token := false
 
 	for effect_id in effects.keys():
-		var turns_left := int(effects[effect_id].get("turns_left", 0))
+		var effect_data: Dictionary = effects[effect_id] if typeof(effects[effect_id]) == TYPE_DICTIONARY else {}
+		var turns_left := int(effect_data.get("turns_left", 0))
 		if DEBUFF_ABBREV.has(effect_id):
 			var dtoken := String(DEBUFF_ABBREV[effect_id])
 			if turns_left == 1:
 				has_blink = true
 				dtoken = dtoken if blink_visible else "·"
 			debuff_tokens.append(dtoken)
+			if effect_id == "blind":
+				has_blind_token = true
+			elif effect_id == "root":
+				has_root_token = true
 		elif BUFF_ABBREV.has(effect_id):
 			var btoken := String(BUFF_ABBREV[effect_id])
 			if turns_left == 1:
 				has_blink = true
 				btoken = btoken if blink_visible else "·"
 			buff_tokens.append(btoken)
+
+	var warm_wine: Dictionary = effects.get("warm_wine_buff", {}) if typeof(effects.get("warm_wine_buff", {})) == TYPE_DICTIONARY else {}
+	if not warm_wine.is_empty() and not has_blind_token:
+		var warm_payload: Dictionary = warm_wine.get("payload", {}) if typeof(warm_wine.get("payload", {})) == TYPE_DICTIONARY else {}
+		if int(warm_payload.get("accuracy_delta", 0)) < 0:
+			var blind_token := "盲"
+			if int(warm_wine.get("turns_left", 0)) == 1:
+				has_blink = true
+				blind_token = blind_token if blink_visible else "·"
+			debuff_tokens.append(blind_token)
+			has_blind_token = true
+
+	if int(actor.get("accuracy_mod", 0)) < 0 and not has_blind_token:
+		debuff_tokens.append("盲")
+		has_blind_token = true
+	if int(actor.get("evasion_mod", 0)) < 0 and not has_root_token:
+		debuff_tokens.append("困")
+		has_root_token = true
 
 	var battle_mods = actor.get("battle_modifiers", {})
 	if typeof(battle_mods) == TYPE_DICTIONARY:

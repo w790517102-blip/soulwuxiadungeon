@@ -4,11 +4,30 @@ class_name LogPanel
 var _queue: Array[String] = []      # 文字佇列，每項是一行（可以含 [color] / [b] 標籤）
 var _typing: bool = false
 var _chars_per_sec: float = 30.0
+var _waiting_for_continue: bool = false
+var _lines_since_checkpoint: int = 0
+var _continue_hint_label: Label
 
 func _ready() -> void:
 	# 我們自己處理標籤，不靠內建 BBCode parser
 	bbcode_enabled = false
 	clear()
+	set_process_unhandled_input(true)
+	_continue_hint_label = Label.new()
+	_continue_hint_label.name = "ContinueHint"
+	_continue_hint_label.text = "▶ 按空白鍵/Enter/滑鼠左鍵繼續"
+	_continue_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_continue_hint_label.anchor_left = 0.0
+	_continue_hint_label.anchor_right = 1.0
+	_continue_hint_label.anchor_top = 1.0
+	_continue_hint_label.anchor_bottom = 1.0
+	_continue_hint_label.offset_left = 8
+	_continue_hint_label.offset_right = -8
+	_continue_hint_label.offset_top = -24
+	_continue_hint_label.offset_bottom = -4
+	_continue_hint_label.modulate = Color(0.85, 0.9, 1.0, 0.9)
+	_continue_hint_label.visible = false
+	add_child(_continue_hint_label)
 
 # ========== 對外 API ==========
 
@@ -31,6 +50,33 @@ func wait_for_all_logs() -> void:
 		await get_tree().process_frame
 
 
+
+func wait_for_continue() -> void:
+	await wait_for_all_logs()
+	if _lines_since_checkpoint <= 0:
+		return
+	_waiting_for_continue = true
+	if _continue_hint_label:
+		_continue_hint_label.visible = true
+	while _waiting_for_continue:
+		await get_tree().process_frame
+	if _continue_hint_label:
+		_continue_hint_label.visible = false
+	_lines_since_checkpoint = 0
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _waiting_for_continue:
+		return
+	if event.is_action_pressed("ui_accept"):
+		_waiting_for_continue = false
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_waiting_for_continue = false
+		get_viewport().set_input_as_handled()
+
+
 # ========== 內部實作 ==========
 
 func _enqueue_line(text: String) -> void:
@@ -47,6 +93,7 @@ func _start_next() -> void:
 	var line: String = _queue.pop_front()
 	await _type_line_with_tags(line)
 	append_text("\n")
+	_lines_since_checkpoint += 1
 	# ✅ 每打一行，請 RichTextLabel 在下一幀把卷軸捲到底
 	call_deferred("_scroll_to_bottom")
 	_typing = false

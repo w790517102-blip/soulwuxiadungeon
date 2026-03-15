@@ -252,6 +252,18 @@ func _log_narration(msg: String) -> void:
 	else:
 		_log(msg)
 
+
+func _await_log_stage_continue() -> void:
+	if action_log_ui == null:
+		return
+	if battle_ui and battle_ui.has_node("ActionPanel"):
+		battle_ui.get_node("ActionPanel").hide()
+	if action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+	if action_log_ui.has_method("wait_for_continue"):
+		await action_log_ui.wait_for_continue()
+
+
 func log_system(msg: String) -> void:
 	_log_system(msg)
 
@@ -468,9 +480,8 @@ func _on_player_action_complete(actor: Dictionary) -> void:
 		print("⚠️ 回報角色與當前行動者不一致，當成忽略")
 		return
 
-	# ✅ 等逐字機全部跑完再結束玩家回合
-	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
-		await action_log_ui.wait_for_all_logs()
+	# ✅ 等戰報分段完成，玩家確認後再結束玩家回合
+	await _await_log_stage_continue()
 
 	safe_end_turn()
 
@@ -508,9 +519,12 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 			_log(line)
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 			await action_log_ui.wait_for_all_logs()
+		await _await_log_stage_continue()
 
 	var enemy_applied: Array = _apply_skill_effects(enemy, target, skill, [target])
 	_log_applied_statuses(enemy_applied)
+	if enemy_applied.size() > 0:
+		await _await_log_stage_continue()
 
 	check_battle_status()
 	if battle_finished:
@@ -630,6 +644,7 @@ func _maybe_end_turn() -> void:
 			return
 
 	var status_events: Array = status_manager.tick_end_of_turn(alive)
+	var has_end_turn_logs: bool = false
 	for event in status_events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
@@ -640,6 +655,7 @@ func _maybe_end_turn() -> void:
 				var remain = 0
 				if evt_actor.has("status_effects") and typeof(evt_actor["status_effects"]) == TYPE_DICTIONARY and evt_actor["status_effects"].has("poison"):
 					remain = int(evt_actor["status_effects"]["poison"].get("turns_left", 0))
+				has_end_turn_logs = true
 				_log("%s 中毒發作，損失 [color=#9cff66]%d[/color] 點生命！（剩 %d 回合）" % [String(evt_actor.get("name", "???")), dmg, remain])
 
 	for a in alive:
@@ -647,6 +663,9 @@ func _maybe_end_turn() -> void:
 
 	if battle_ui:
 		battle_ui.update_enemy_panel()
+
+	if has_end_turn_logs:
+		await _await_log_stage_continue()
 
 	for a in alive:
 		a["acted_this_turn"] = false
@@ -896,6 +915,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, alive_targets)
 		_log_applied_statuses(aoe_applied)
+		if aoe_applied.size() > 0:
+			await _await_log_stage_continue()
 
 		await get_tree().create_timer(0.2).timeout
 		await get_tree().process_frame
@@ -949,9 +970,12 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			_log(line)
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 			await action_log_ui.wait_for_all_logs()
+		await _await_log_stage_continue()
 
 	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, [actual_target])
 	_log_applied_statuses(single_applied)
+	if single_applied.size() > 0:
+		await _await_log_stage_continue()
 
 	if result_single.target_down:
 		actual_target["hp"] = 0
