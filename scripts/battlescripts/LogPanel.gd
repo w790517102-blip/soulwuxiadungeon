@@ -15,19 +15,20 @@ func _ready() -> void:
 	set_process_unhandled_input(true)
 	_continue_hint_label = Label.new()
 	_continue_hint_label.name = "ContinueHint"
-	_continue_hint_label.text = "▶ 按空白鍵/Enter/滑鼠左鍵繼續"
+	_continue_hint_label.text = "▶ 按空白鍵/確認鍵/滑鼠左鍵繼續"
 	_continue_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_continue_hint_label.anchor_left = 0.0
-	_continue_hint_label.anchor_right = 1.0
-	_continue_hint_label.anchor_top = 1.0
-	_continue_hint_label.anchor_bottom = 1.0
-	_continue_hint_label.offset_left = 8
-	_continue_hint_label.offset_right = -8
-	_continue_hint_label.offset_top = -24
-	_continue_hint_label.offset_bottom = -4
+	_continue_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_continue_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_continue_hint_label.size_flags_horizontal = Control.SIZE_FILL
 	_continue_hint_label.modulate = Color(0.85, 0.9, 1.0, 0.9)
 	_continue_hint_label.visible = false
-	add_child(_continue_hint_label)
+	var parent_node := get_parent()
+	if parent_node is Control:
+		(parent_node as Control).add_child(_continue_hint_label)
+		(parent_node as Control).move_child(_continue_hint_label, get_index() + 1)
+		_sync_continue_hint_layout()
+	else:
+		add_child(_continue_hint_label)
 
 # ========== 對外 API ==========
 
@@ -51,12 +52,19 @@ func wait_for_all_logs() -> void:
 
 
 
+func _exit_tree() -> void:
+	if _continue_hint_label and _continue_hint_label.get_parent() != self:
+		_continue_hint_label.queue_free()
+
+
+
 func wait_for_continue() -> void:
 	await wait_for_all_logs()
 	if _lines_since_checkpoint <= 0:
 		return
 	_waiting_for_continue = true
 	if _continue_hint_label:
+		_sync_continue_hint_layout()
 		_continue_hint_label.visible = true
 	while _waiting_for_continue:
 		await get_tree().process_frame
@@ -75,6 +83,32 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_waiting_for_continue = false
 		get_viewport().set_input_as_handled()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_sync_continue_hint_layout()
+
+
+func _sync_continue_hint_layout() -> void:
+	if _continue_hint_label == null:
+		return
+	var parent_node := get_parent()
+	if not (parent_node is Control):
+		return
+	var parent_control: Control = parent_node as Control
+	if _continue_hint_label.get_parent() != parent_control:
+		return
+
+	var hint_height := 24.0
+	_continue_hint_label.anchor_left = 0.0
+	_continue_hint_label.anchor_right = 0.0
+	_continue_hint_label.anchor_top = 0.0
+	_continue_hint_label.anchor_bottom = 0.0
+	_continue_hint_label.offset_left = position.x
+	_continue_hint_label.offset_right = position.x + size.x
+	_continue_hint_label.offset_top = position.y + size.y + 4.0
+	_continue_hint_label.offset_bottom = position.y + size.y + 4.0 + hint_height
 
 
 # ========== 內部實作 ==========
