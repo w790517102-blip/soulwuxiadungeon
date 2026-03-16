@@ -12,7 +12,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.1}],
-		"stat_scaling": {"str": 0.6, "agi": 0.3},
+		"stat_scaling": {"str": 0.6, "agi": 0.3, "int": 0.1},
 		"available": {"mode": "all"},
 	},
 	"skill_badaozhan": {
@@ -26,6 +26,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.2}],
+		"stat_scaling": {"str": 0.8, "agi": 0.2},
 		"available": {"mode": "all"},
 	},
 	"skill_mujian_saoye": {
@@ -39,6 +40,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 0.8}],
+		"stat_scaling": {"str": 0.6, "agi": 0.3, "int": 0.1},
 		"available": {"mode": "all"},
 	},
 	"skill_qiliaozhang": {
@@ -66,6 +68,7 @@ const SKILLS := {
 		"target_side": "enemy",
 		"require_free_hand": true,
 		"effects": [{"type": "damage", "power": 1.0}],
+		"stat_scaling": {"int": 0.4, "con": 0.2, "str": 0.1},
 		"available": {"mode": "include", "actor_ids": ["liuyu"]},
 	},
 	"skill_bisaoyanxia": {
@@ -79,6 +82,7 @@ const SKILLS := {
 		"target_scope": "enemy_all",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.1}],
+		"stat_scaling": {"int": 0.6, "luck": 0.1},
 		"available": {"mode": "all"},
 	},
 	"skill_luobichengshi": {
@@ -92,7 +96,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.3}],
-		"stat_scaling": {"int": 0.7, "agi": 0.2},
+		"stat_scaling": {"int": 0.8, "luck": 0.2},
 		"available": {"mode": "all"},
 	},
 	"skill_zhengxinquan": {
@@ -106,6 +110,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.3}],
+		"stat_scaling": {"str": 0.6, "con": 0.2, "agi": 0.2},
 		"available": {"mode": "all"},
 	},
 	"skill_buff_speed_test": {
@@ -171,6 +176,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.2}],
+		"stat_scaling": {"str": 0.8, "agi": 0.2},
 		"available": {"mode": "all"},
 	},
 	"skill_luanyinsuiqin": {
@@ -184,7 +190,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.1}],
-		"stat_scaling": {"int": 0.6, "luck": 0.4},
+		"stat_scaling": {"agi": 0.6, "int": 0.3, "luck": 0.1},
 		"available": {"mode": "all"},
 	},
 	"skill_huagu_mianzhang": {
@@ -201,6 +207,7 @@ const SKILLS := {
 			{"type": "damage", "power": 0.95},
 			{"type": "force_element", "element": "柔", "turns": 3}
 		],
+		"stat_scaling": {"int": 0.5, "con": 0.3, "str": 0.2},
 		"available": {"mode": "include", "actor_ids": ["lieshao", "honghuiyin"]},
 	},
 	"skill_huanbu_zhang": {
@@ -217,6 +224,7 @@ const SKILLS := {
 			{"type": "damage", "power": 0.90},
 			{"type": "debuff_speed", "amount": 5, "turns": 2}
 		],
+		"stat_scaling": {"int": 0.5, "con": 0.3, "str": 0.2},
 		"available": {"mode": "all"},
 	},
 	"skill_liumai_shenjian": {
@@ -233,6 +241,7 @@ const SKILLS := {
 			{"type": "damage", "power": 1.15},
 			{"type": "buff_speed", "amount": 6, "turns": 2, "target": "self"}
 		],
+		"stat_scaling": {"str": 0.6, "agi": 0.3, "int": 0.1},
 		"available": {"mode": "all"},
 	},
 	"skill_bagua_gunfa": {
@@ -249,6 +258,7 @@ const SKILLS := {
 			{"type": "damage", "power": 1.00},
 			{"type": "debuff_speed", "amount": 4, "turns": 2}
 		],
+		"stat_scaling": {"str": 0.7, "agi": 0.3},
 		"available": {"mode": "all"},
 	},
 	"skill_enemy_zhishui_yinzhang": {
@@ -275,6 +285,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.1}],
+		"stat_scaling": {"str": 0.6, "con": 0.2, "agi": 0.2},
 		"available": {"mode": "include", "actor_ids": ["enemy2"]},
 	},
 	"skill_enemy_sparring_palm": {
