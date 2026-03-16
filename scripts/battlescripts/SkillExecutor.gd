@@ -83,10 +83,15 @@ func execute(
 					result["log"] = [fail_line_weapon]
 					return result
 
+	var scaling_bonus = _calc_stat_scaling_bonus(user, skill_data)
+
 	# === 基礎傷害計算 ===
 	var base_attack: float = float(user.get("atk", 10))
+	var effective_attack: float = base_attack + float(scaling_bonus)
+	if effective_attack < 1.0:
+		effective_attack = 1.0
 	var multiplier: float = float(skill_data.get("power", 1.0))
-	var dmg: float = base_attack * multiplier
+	var dmg: float = effective_attack * multiplier
 
 	# === 內功 boost 傷害加成（C-run）===
 	var skill_weapon_type := String(skill_data.get("weapon_type", ""))
@@ -185,3 +190,19 @@ func execute(
 	result["log"] = log_lines
 
 	return result
+
+
+func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
+	var scaling = skill_data.get("stat_scaling", {})
+	if typeof(scaling) != TYPE_DICTIONARY:
+		return 0
+	var scaling_dict: Dictionary = scaling
+	if scaling_dict.is_empty():
+		return 0
+	var total: float = 0.0
+	for stat_key in ["str", "agi", "int", "con", "luck"]:
+		var coeff: float = float(scaling_dict.get(stat_key, 0.0))
+		if coeff == 0.0:
+			continue
+		total += float(int(user.get(stat_key, 0))) * coeff
+	return int(floor(total))

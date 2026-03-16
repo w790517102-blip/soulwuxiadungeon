@@ -12,6 +12,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.1}],
+		"stat_scaling": {"str": 0.6, "agi": 0.3},
 		"available": {"mode": "all"},
 	},
 	"skill_badaozhan": {
@@ -91,6 +92,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.3}],
+		"stat_scaling": {"int": 0.7, "agi": 0.2},
 		"available": {"mode": "all"},
 	},
 	"skill_zhengxinquan": {
@@ -182,6 +184,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.1}],
+		"stat_scaling": {"int": 0.6, "luck": 0.4},
 		"available": {"mode": "all"},
 	},
 	"skill_huagu_mianzhang": {

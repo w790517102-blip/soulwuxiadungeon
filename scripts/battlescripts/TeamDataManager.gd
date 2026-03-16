@@ -422,6 +422,10 @@ func _normalize_character(actor: Dictionary) -> void:
 		actor["int"] = int(actor.get("int", 5))
 		actor["con"] = int(actor.get("con", 5))
 		actor["luck"] = int(actor.get("luck", 5))
+		if not actor.has("job"):
+			actor["job"] = ""
+		if not actor.has("subclass"):
+			actor["subclass"] = ""
 		if not actor.has("battle_modifiers") or typeof(actor.get("battle_modifiers", {})) != TYPE_DICTIONARY:
 			actor["battle_modifiers"] = {}
 

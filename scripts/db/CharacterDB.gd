@@ -5,16 +5,29 @@ const DB := {
 	"liuyu": {
 		"display_name": "劉語塵",
 		"portrait_path": "res://assets/sprites/Liu_Yu/LiuYu_battle.png",
+		"job": "俠客",
+		"subclass": "劍修",
 		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
 	},
 	"shumian": {
 		"display_name": "書眠",
 		"portrait_path": "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png",
+		"job": "詩人",
+		"subclass": "符咒師",
+		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
+	},
+	"su_mien": {
+		"display_name": "書眠",
+		"portrait_path": "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png",
+		"job": "詩人",
+		"subclass": "符咒師",
 		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
 	},
 	"lieshao": {
 		"display_name": "列肖",
 		"portrait_path": "res://assets/sprites/NPC/LieFong/LieShao_battle.png",
+		"job": "樂師",
+		"subclass": "琴手",
 		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
 	},
 }
@@ -67,5 +80,13 @@ static func ensure_actor_stats(actor_id: String, actor_dict: Dictionary) -> Dict
 	var portrait = get_portrait_path(actor_id)
 	if String(out.get("portrait_path", "")) == "" and portrait != "":
 		out["portrait_path"] = portrait
+
+	var entry = DB.get(actor_id, {})
+	if typeof(entry) == TYPE_DICTIONARY:
+		var entry_dict: Dictionary = entry
+		if String(out.get("job", "")) == "":
+			out["job"] = String(entry_dict.get("job", ""))
+		if String(out.get("subclass", "")) == "":
+			out["subclass"] = String(entry_dict.get("subclass", ""))
 
 	return out

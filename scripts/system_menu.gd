@@ -881,6 +881,7 @@ func _setup_status_member_slots() -> void:
 			continue
 		_status_member_slots.append({
 			"name": member.get_node_or_null("Name") as Label,
+			"job_class": member.get_node_or_null("JobClass") as Label,
 			"portrait": member.get_node_or_null("Portrait") as TextureRect,
 			"stats": member.get_node_or_null("Stats") as Label,
 		})
@@ -906,6 +907,18 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var name_label := slot_data.get("name") as Label
 	if name_label:
 		name_label.text = actor_name
+	var job_class_label := slot_data.get("job_class") as Label
+	if job_class_label:
+		var job_text = str(_get_actor_value(actor, "job", ""))
+		var subclass_text = str(_get_actor_value(actor, "subclass", ""))
+		if job_text != "" and subclass_text != "":
+			job_class_label.text = "%s／%s" % [job_text, subclass_text]
+		elif job_text != "":
+			job_class_label.text = job_text
+		elif subclass_text != "":
+			job_class_label.text = subclass_text
+		else:
+			job_class_label.text = ""
 
 	var portrait := slot_data.get("portrait") as TextureRect
 	if portrait:
@@ -934,6 +947,9 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	var name_label := slot_data.get("name") as Label
 	if name_label:
 		name_label.text = "—"
+	var job_class_label := slot_data.get("job_class") as Label
+	if job_class_label:
+		job_class_label.text = ""
 	var portrait := slot_data.get("portrait") as TextureRect
 	if portrait:
 		portrait.texture = null

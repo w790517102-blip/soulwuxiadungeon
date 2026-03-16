@@ -273,6 +273,16 @@ func apply_battle_result(battle_result: Dictionary) -> void:
 	var exp_gain = int(battle_result.get("exp", 0))
 	if exp_gain > 0:
 		print("[BattleResult] exp pending:", exp_gain)
+		_apply_level_growth_placeholder(exp_gain)
+
+
+func _apply_level_growth_placeholder(exp_gain: int) -> void:
+	# v1 hook：先保留升級成長入口，後續可在這裡實作「基礎成長 + 職業輪盤」
+	if exp_gain <= 0:
+		return
+	if TeamData == null:
+		return
+	print("[LevelGrowthHook] exp=%d (placeholder only)" % exp_gain)
 
 func _make_item_list(source_inventory: Array) -> Array:
 	var items: Array = []
