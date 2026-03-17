@@ -896,6 +896,11 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var base_atk := int(_get_actor_value(actor, "atk", 0))
 	var base_def := int(_get_actor_value(actor, "def", 0))
 	var base_speed := int(_get_actor_value(actor, "speed", 0))
+	var actor_level := int(_get_actor_value(actor, "level", 1))
+	var actor_exp := int(_get_actor_value(actor, "exp", 0))
+	var next_exp := 0
+	if TeamData and TeamData.has_method("exp_required"):
+		next_exp = int(TeamData.exp_required(actor_level))
 	var equip_bonus: Dictionary = InventorySync.get_equipment_stat_bonus(actor_id)
 	var inner_bonus := _get_inner_force_bonus(actor)
 	var bonus_atk := int(equip_bonus.get("atk", 0)) + int(inner_bonus.get("atk", 0))
@@ -934,7 +939,8 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 			int(_get_actor_value(actor, "con", 5)),
 			int(_get_actor_value(actor, "luck", 5)),
 		]
-		stats_label.text = "氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)\n%s" % [
+		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)\n%s" % [
+			actor_level, actor_exp, next_exp,
 			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
 			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
 			base_atk, bonus_atk,

@@ -6,9 +6,11 @@ extends Node
 const InnerForceDBScript = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 const CharacterDBScript = preload("res://scripts/db/CharacterDB.gd")
+const JobDBScript = preload("res://scripts/db/JobDB.gd")
 var _inner_force_db: Node = InnerForceDBScript.new()
 var _skill_db: Node = SkillDBScript.new()
 var _character_db: Node = CharacterDBScript.new()
+var _job_db: Node = JobDBScript.new()
 
 # === 所有可用角色（包含未上場） ===
 var all_characters: Dictionary = {
@@ -288,8 +290,11 @@ func export_team_state() -> Dictionary:
 			"int": actor.get("int", 5),
 			"con": actor.get("con", 5),
 			"luck": actor.get("luck", 5),
+			"level": actor.get("level", 1),
+			"exp": actor.get("exp", 0),
+			"stat_cycle_index": actor.get("stat_cycle_index", 0),
 			"battle_modifiers": (actor.get("battle_modifiers", {}) as Dictionary).duplicate(true),
-		}
+			}
 	return out
 
 func import_team_state(data: Dictionary) -> void:
@@ -318,6 +323,9 @@ func import_team_state(data: Dictionary) -> void:
 			actor["int"] = patch.get("int", actor.get("int", 5))
 			actor["con"] = patch.get("con", actor.get("con", 5))
 			actor["luck"] = patch.get("luck", actor.get("luck", 5))
+			actor["level"] = patch.get("level", actor.get("level", 1))
+			actor["exp"] = patch.get("exp", actor.get("exp", 0))
+			actor["stat_cycle_index"] = patch.get("stat_cycle_index", actor.get("stat_cycle_index", 0))
 			if typeof(patch.get("battle_modifiers", null)) == TYPE_DICTIONARY:
 				actor["battle_modifiers"] = (patch.get("battle_modifiers", {}) as Dictionary).duplicate(true)
 			if typeof(patch.get("known_inner_force_ids", null)) == TYPE_ARRAY:
@@ -429,7 +437,90 @@ func _normalize_character(actor: Dictionary) -> void:
 		if not actor.has("battle_modifiers") or typeof(actor.get("battle_modifiers", {})) != TYPE_DICTIONARY:
 			actor["battle_modifiers"] = {}
 
+	actor["level"] = max(int(actor.get("level", 1)), 1)
+	actor["exp"] = max(int(actor.get("exp", 0)), 0)
+	actor["stat_cycle_index"] = max(int(actor.get("stat_cycle_index", 0)), 0)
+
 	_apply_inner_force_to_actor(actor)
+
+
+func exp_required(level: int) -> int:
+	var lv = max(level, 1)
+	return 50 + (lv - 1) * 25
+
+
+func add_exp_to_active_party(exp_gain: int) -> Array:
+	var level_events: Array = []
+	if exp_gain <= 0:
+		return level_events
+	for actor_id in current_team_ids:
+		if not all_characters.has(actor_id):
+			continue
+		var actor: Dictionary = all_characters[actor_id]
+		_normalize_character(actor)
+		level_events.append_array(_apply_exp_to_actor(actor, exp_gain))
+		all_characters[actor_id] = actor
+	return level_events
+
+
+func _apply_exp_to_actor(actor: Dictionary, exp_gain: int) -> Array:
+	var events: Array = []
+	actor["exp"] = int(actor.get("exp", 0)) + exp_gain
+	while int(actor.get("exp", 0)) >= exp_required(int(actor.get("level", 1))):
+		var req = exp_required(int(actor.get("level", 1)))
+		actor["exp"] = int(actor.get("exp", 0)) - req
+		events.append(_level_up_actor(actor))
+	return events
+
+
+func _level_up_actor(actor: Dictionary) -> Dictionary:
+	var job_name = String(actor.get("job", ""))
+	var job_def: Dictionary = {}
+	if _job_db != null and _job_db.has_method("get_job_def"):
+		job_def = _job_db.get_job_def(job_name)
+
+	var hp_gain = int(job_def.get("hp_per_level", 16))
+	var mp_gain = int(job_def.get("mp_per_level", 8))
+	var atk_gain = int(job_def.get("atk_per_level", 1))
+	var def_gain = int(job_def.get("def_per_level", 1))
+
+	actor["level"] = int(actor.get("level", 1)) + 1
+	actor["max_hp"] = int(actor.get("max_hp", actor.get("hp", 0))) + hp_gain
+	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + mp_gain
+	actor["atk"] = int(actor.get("atk", 0)) + atk_gain
+	actor["def"] = int(actor.get("def", 0)) + def_gain
+	actor["hp"] = min(int(actor.get("hp", 0)) + hp_gain, int(actor.get("max_hp", 0)))
+	actor["mp"] = min(int(actor.get("mp", 0)) + mp_gain, int(actor.get("max_mp", 0)))
+
+	var stat_cycle: Array = []
+	if typeof(job_def.get("stat_cycle", null)) == TYPE_ARRAY:
+		stat_cycle = (job_def.get("stat_cycle", []) as Array)
+	if stat_cycle.is_empty():
+		stat_cycle = ["str", "agi", "int", "con", "luck"]
+
+	var cycle_index = int(actor.get("stat_cycle_index", 0))
+	var stat_key = String(stat_cycle[cycle_index % stat_cycle.size()])
+	actor["stat_cycle_index"] = cycle_index + 1
+	actor[stat_key] = int(actor.get(stat_key, 0)) + 1
+
+	var stat_to_atk: Dictionary = {}
+	if typeof(job_def.get("stat_to_atk", null)) == TYPE_DICTIONARY:
+		stat_to_atk = job_def.get("stat_to_atk", {})
+	actor["atk"] = int(actor.get("atk", 0)) + int(stat_to_atk.get(stat_key, 0))
+
+	actor["hp"] = min(int(actor.get("hp", 0)), int(actor.get("max_hp", 0)))
+	actor["mp"] = min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
+
+	return {
+		"actor_id": String(actor.get("id", "")),
+		"name": String(actor.get("name", "")),
+		"level": int(actor.get("level", 1)),
+		"stat_key": stat_key,
+		"hp_gain": hp_gain,
+		"mp_gain": mp_gain,
+		"atk_gain": atk_gain,
+		"def_gain": def_gain,
+	}
 
 func _apply_inner_force_to_actor(actor: Dictionary) -> void:
 	var actor_id := String(actor.get("id", ""))
