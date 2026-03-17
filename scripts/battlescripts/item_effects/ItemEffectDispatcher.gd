@@ -364,7 +364,9 @@ func _handle_perm_stat(controller, user: Dictionary, item: Dictionary, target: D
 		return false
 	if not bool(controller.team_data_manager.add_perm_stat(actor_id, stat_key, amount)):
 		return false
-	target[stat_key] = int(target.get(stat_key, 0)) + amount
+	if controller.team_data_manager.has_method("get_character_by_id"):
+		var updated_actor: Dictionary = controller.team_data_manager.get_character_by_id(actor_id)
+		target[stat_key] = int(updated_actor.get(stat_key, target.get(stat_key, 0)))
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")

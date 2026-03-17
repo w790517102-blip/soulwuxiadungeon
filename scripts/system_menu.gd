@@ -1155,7 +1155,9 @@ func _apply_world_perm_stat(target, item_def: Dictionary) -> bool:
 		return false
 	if not bool(TeamData.add_perm_stat(actor_id, stat_key, amount)):
 		return false
-	_set_actor_value(target, stat_key, int(_get_actor_value(target, stat_key, 0)) + amount)
+	if TeamData.has_method("get_character_by_id"):
+		var updated_actor: Dictionary = TeamData.get_character_by_id(actor_id)
+		_set_actor_value(target, stat_key, int(updated_actor.get(stat_key, _get_actor_value(target, stat_key, 0))))
 	return true
 
 
