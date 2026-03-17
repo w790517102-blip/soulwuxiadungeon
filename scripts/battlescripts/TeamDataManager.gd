@@ -444,9 +444,8 @@ func _normalize_character(actor: Dictionary) -> void:
 	_apply_inner_force_to_actor(actor)
 
 
-func exp_required(level: int) -> int:
-	var lv = max(level, 1)
-	return 50 + (lv - 1) * 25
+func exp_required(_level: int) -> int:
+	return 50
 
 
 func add_exp_to_active_party(exp_gain: int) -> Array:

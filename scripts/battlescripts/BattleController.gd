@@ -396,8 +396,7 @@ func _build_battle_result(result: String) -> Dictionary:
 
 	if result != "victory":
 		return out
-	if bool(battle_context.get("no_rewards", false)):
-		return out
+	var no_rewards: bool = bool(battle_context.get("no_rewards", false))
 
 	var exp_total := 0
 	var gold_total := 0
@@ -407,7 +406,17 @@ func _build_battle_result(result: String) -> Dictionary:
 		if typeof(e) != TYPE_DICTIONARY:
 			continue
 
-		exp_total += int(e.get("exp", 0))
+		var exp_each := int(e.get("exp", 0))
+		if str(e.get("id", "")) == "tea_house_guest_guard":
+			exp_each = max(exp_each, 50)
+		elif exp_each <= 0:
+			exp_each = 25
+		# v1 測試模式：先保證每隻怪至少 25 EXP，方便兩場內升級驗收
+		exp_each = max(exp_each, 25)
+		exp_total += exp_each
+
+		if no_rewards:
+			continue
 
 		var gold_def = e.get("gold", {})
 		if typeof(gold_def) == TYPE_DICTIONARY:
