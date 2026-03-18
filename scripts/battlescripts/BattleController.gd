@@ -17,6 +17,7 @@ var last_round_regen: int = -1
 var battle_finished: bool = false
 var _ending: bool = false
 var _player_base_snapshot: Dictionary = {}
+var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
@@ -29,6 +30,14 @@ const INTRO_LINE_BY_KEY := {
 	"yuheng_outskirts": "荒道風緊，來者不善，劍拔弩張。",
 	"default": "四周氣氛驟沉，殺機一觸即發。"
 }
+
+const GAME_OVER_NARRATION_LINES := [
+	"你們已用盡全力對抗強敵，卻仍在這場惡戰中敗下陣來。",
+	"滿腔俠義與未竟心願，終究沒能走出這一戰的風塵，只得在此刻沉入歷史的餘燼之中。",
+	"從今往後，這片江湖不再有你們親自踏過的足跡，",
+	"可那些曾燃燒過的熱血、曾守住的情義、曾照亮彼此的微光，卻不會就此消失。",
+	"後來的人也許不再見到你們，卻仍會在傳聞與故事裡，記得你們曾經如此認真地活過、戰過。"
+]
 
 @onready var skill_resolver = $SkillResolver
 @onready var emotion_modulator = $EmotionModulator
@@ -99,6 +108,7 @@ func start_battle(context: Dictionary) -> void:
 	battle_context = context
 	player_party = ctx_players
 	enemy_party = ctx_enemies
+	_pending_ally_down_reactions.clear()
 	ruleset = context.get("ruleset", {})
 	regen_policy = context.get("regen_policy", {})
 	_snapshot_player_base_stats()
@@ -274,19 +284,21 @@ func _log(msg: String, allow_when_ending: bool = false) -> void:
 
 
 # ✅ 系統訊息專用（優先用 LogPanel.log_system）
-func _log_system(msg: String) -> void:
+func _log_system(msg: String, allow_when_ending: bool = false) -> void:
+	if (battle_finished or _ending) and not allow_when_ending:
+		return
 	if action_log_ui and action_log_ui.has_method("log_system"):
 		action_log_ui.log_system(msg)
 	else:
-		_log(msg)
+		_log(msg, allow_when_ending)
 
-func _log_narration(msg: String) -> void:
-	if (battle_finished or _ending):
+func _log_narration(msg: String, allow_when_ending: bool = false) -> void:
+	if (battle_finished or _ending) and not allow_when_ending:
 		return
 	if action_log_ui and action_log_ui.has_method("log_narration"):
 		action_log_ui.log_narration(msg)
 	else:
-		_log(msg)
+		_log(msg, allow_when_ending)
 
 
 func _await_log_stage_continue() -> void:
@@ -347,7 +359,10 @@ func _on_turn_started(actor: Dictionary) -> void:
 		print("⚰️ %s 已經倒下，略過他的回合。" % actor.get("name", "???"))
 		safe_end_turn()
 		return
-		
+
+	if actor in player_party:
+		await _maybe_play_pending_ally_down_reaction(actor)
+
 	# 🟥 敵方回合
 	if actor in enemy_party:
 		var name = String(actor.get("name", "???"))
@@ -590,6 +605,7 @@ func check_battle_status() -> void:
 	if battle_finished or _ending:
 		return
 	if player_party.all(func(p): return p["hp"] <= 0):
+		_pending_ally_down_reactions.clear()
 		_begin_end_battle("defeat")
 		return
 	if enemy_party.all(func(e): return e["hp"] <= 0):
@@ -641,6 +657,9 @@ func _begin_end_battle(result: String) -> void:
 	if result == "escape":
 		_log("你們撤出戰圈，暫時脫離了危險。", true)
 		_log("此戰視為撤退，無戰利品可得。", true)
+	elif result == "defeat":
+		_pending_ally_down_reactions.clear()
+		await _play_game_over_narration()
 	else:
 		_log("戰勢已定，眾人緩緩收勢。", true)
 		_log("風聲漸歇，殺氣散去。", true)
@@ -697,11 +716,18 @@ func _maybe_end_turn() -> void:
 			var evt_actor: Dictionary = event.get("actor", {})
 			var dmg = int(event.get("damage", 0))
 			if not evt_actor.is_empty() and dmg > 0:
+				if int(evt_actor.get("hp", 0)) <= 0:
+					_mark_actor_down(evt_actor)
 				var remain = 0
 				if evt_actor.has("status_effects") and typeof(evt_actor["status_effects"]) == TYPE_DICTIONARY and evt_actor["status_effects"].has("poison"):
 					remain = int(evt_actor["status_effects"]["poison"].get("turns_left", 0))
 				has_end_turn_logs = true
 				_log("%s 中毒發作，損失 [color=#9cff66]%d[/color] 點生命！（剩 %d 回合）" % [String(evt_actor.get("name", "???")), dmg, remain])
+				if int(evt_actor.get("hp", 0)) <= 0:
+					if evt_actor in enemy_party:
+						_log(_enemy_defeat_line(evt_actor))
+					else:
+						_log(_ally_down_self_line(evt_actor))
 
 	for a in alive:
 		_update_ui_for_actor(a)
@@ -711,6 +737,10 @@ func _maybe_end_turn() -> void:
 
 	if has_end_turn_logs:
 		await _await_log_stage_continue()
+
+	check_battle_status()
+	if battle_finished:
+		return
 
 	for a in alive:
 		a["acted_this_turn"] = false
@@ -951,12 +981,11 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 					dmg_str
 				])
 
-			# 倒地判定＋經典死亡台詞
-			if is_down:
-				enemy["hp"] = 0
-				enemy["is_dead"] = true
-				any_down = true
-				_log(_enemy_defeat_line(enemy))
+				# 倒地判定＋經典死亡台詞
+				if is_down:
+					_mark_actor_down(enemy)
+					any_down = true
+					_log(_enemy_defeat_line(enemy))
 
 		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, alive_targets)
 		_log_applied_statuses(aoe_applied)
@@ -1023,8 +1052,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		await _await_log_stage_continue()
 
 	if result_single.target_down:
-		actual_target["hp"] = 0
-		actual_target["is_dead"] = true
+		_mark_actor_down(actual_target)
 		if battle_ui:
 			battle_ui.update_enemy_panel()
 
@@ -1051,6 +1079,94 @@ func _enemy_defeat_line(enemy: Dictionary) -> String:
 		if line != "":
 			return line.replace("{name}", name_e)
 	return "%s 倒下，傷勢過重，已無力再戰。" % name_e
+
+func _ally_down_self_line(actor: Dictionary) -> String:
+	return "%s 傷重倒地，已無再戰之力！" % str(actor.get("name", "???"))
+
+func _mark_actor_down(actor: Dictionary) -> void:
+	if typeof(actor) != TYPE_DICTIONARY or actor.is_empty():
+		return
+	var already_down := bool(actor.get("is_dead", false))
+	actor["hp"] = 0
+	actor["is_dead"] = true
+	if already_down:
+		return
+	if actor in player_party:
+		if _all_players_defeated():
+			_pending_ally_down_reactions.clear()
+			return
+		_queue_ally_down_reaction(actor)
+
+func _queue_ally_down_reaction(downed_actor: Dictionary) -> void:
+	if typeof(downed_actor) != TYPE_DICTIONARY or downed_actor.is_empty():
+		return
+	var downed_id := str(downed_actor.get("id", ""))
+	if downed_id == "":
+		return
+	for pending in _pending_ally_down_reactions:
+		if typeof(pending) != TYPE_DICTIONARY:
+			continue
+		if str(pending.get("downed_id", "")) == downed_id:
+			return
+	_pending_ally_down_reactions.append({
+		"downed_id": downed_id,
+		"downed_name": str(downed_actor.get("name", "???")),
+	})
+
+func _maybe_play_pending_ally_down_reaction(actor: Dictionary) -> void:
+	if typeof(actor) != TYPE_DICTIONARY or actor.is_empty():
+		return
+	if actor not in player_party:
+		return
+	if int(actor.get("hp", 0)) <= 0:
+		return
+	if _pending_ally_down_reactions.is_empty():
+		return
+
+	var actor_id := str(actor.get("id", ""))
+	var pending_index := -1
+	var pending_event: Dictionary = {}
+	for i in range(_pending_ally_down_reactions.size()):
+		var candidate = _pending_ally_down_reactions[i]
+		if typeof(candidate) != TYPE_DICTIONARY:
+			continue
+		if str(candidate.get("downed_id", "")) == actor_id:
+			continue
+		pending_index = i
+		pending_event = candidate
+		break
+
+	if pending_index == -1:
+		return
+
+	_pending_ally_down_reactions.remove_at(pending_index)
+	var reaction_line := ""
+	if tone_map != null:
+		reaction_line = tone_map.get_tone_text(
+			"ally_down_reaction",
+			str(pending_event.get("downed_id", "")),
+			actor_id
+		)
+	if reaction_line == "":
+		reaction_line = "{observer_name} 眼見 {downed_name} 倒下，胸口驟然一沉，仍咬牙穩住了架勢。"
+	reaction_line = reaction_line \
+		.replace("{observer_name}", str(actor.get("name", "???"))) \
+		.replace("{downed_name}", str(pending_event.get("downed_name", "同伴")))
+	_log_narration(reaction_line)
+	await _await_log_stage_continue()
+
+func _all_players_defeated() -> bool:
+	for actor in player_party:
+		if typeof(actor) != TYPE_DICTIONARY:
+			continue
+		if int(actor.get("hp", 0)) > 0:
+			return false
+	return true
+
+func _play_game_over_narration() -> void:
+	for line in GAME_OVER_NARRATION_LINES:
+		_log_narration(line, true)
+	await _await_log_stage_continue()
 
 func _is_single_target_scope(scope: String) -> bool:
 	return ["single", "enemy_single", "ally_single", "all_single"].has(scope)
@@ -1658,8 +1774,11 @@ func _apply_bomb_damage_to_target(
 	_log("%s 受到 %s 點傷害。" % [tname, dmg_str])
 
 	if after_hp <= 0:
-		target["is_dead"] = true
-		_log(_enemy_defeat_line(target))
+		_mark_actor_down(target)
+		if target in enemy_party:
+			_log(_enemy_defeat_line(target))
+		else:
+			_log(_ally_down_self_line(target))
 
 	_update_ui_for_actor(target)
 
@@ -1767,8 +1886,7 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 		_log("%s 受到 %s 點傷害。" % [tname, dmg_str])
 
 		if int(result["after_hp"]) <= 0:
-			enemy["hp"] = 0
-			enemy["is_dead"] = true
+			_mark_actor_down(enemy)
 			_log(_enemy_defeat_line(enemy))
 
 

@@ -621,6 +621,32 @@ var status_suffer_tones := {
 	},
 	"default": {
 		"default": "異常感在體內擴散，行動明顯受阻。"
+	},
+	"ally_down_reaction": {
+		"liuyu": {
+			"default": [
+				"劉語塵眼角餘光掃見 {downed_name} 倒下，握劍的手指驟然收緊，胸口像被人重重捶了一記。",
+				"看見 {downed_name} 倒地，劉語塵神色明顯沉了一瞬，卻還是把那口翻湧的氣硬生生壓回胸中。"
+			]
+		},
+		"shumian": {
+			"default": [
+				"書眠瞥見 {downed_name} 倒下，筆尖微顫了一瞬，隨即把那點失措重新壓回寂靜裡。",
+				"見 {downed_name} 失了支撐倒下，書眠呼吸一滯，眼底那層靜水般的神色也微微晃動。"
+			]
+		},
+		"lieshao": {
+			"default": [
+				"列肖看見 {downed_name} 倒在地上，原本鬆散的神情終於收了起來，指節也無聲地扣緊。",
+				"瞧見 {downed_name} 倒下，列肖嘴角那點漫不經心的弧度也淡了，只剩壓得很低的一口氣。"
+			]
+		},
+		"default": {
+			"default": [
+				"{observer_name} 眼見 {downed_name} 倒下，心頭猛然一沉，卻仍強撐著不讓陣腳潰散。",
+				"{observer_name} 看見 {downed_name} 倒地，呼吸明顯亂了一拍，隨即又把心神硬生生拽回戰局。"
+			]
+		}
 	}
 }
 
@@ -825,9 +851,9 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 	# 4）其他（defend 等）：不吃 key，只看角色
 	else:
 		if cat_map.has(user_id):
-			return cat_map[user_id].get("default", "")
+			return _resolve_text_or_array(cat_map[user_id].get("default", ""))
 		if cat_map.has("default"):
-			return cat_map["default"].get("default", "")
+			return _resolve_text_or_array(cat_map["default"].get("default", ""))
 	return ""
 
 
