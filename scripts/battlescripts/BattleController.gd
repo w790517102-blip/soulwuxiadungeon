@@ -36,7 +36,7 @@ const INTRO_LINE_BY_KEY := {
 @onready var victory_handler = $VictoryHandler
 @onready var skill_executor = $SkillExecutor
 @onready var item_dispatcher: ItemEffectDispatcher = ItemEffectDispatcher.new()
-@onready var team_data_manager = get_node_or_null("/root/BattleScene/TeamDataManager")
+@onready var team_data_manager = get_node_or_null("/root/TeamData")
 @onready var turn_manager = $TurnManager
 @onready var enemy_ai = get_parent().get_node_or_null("EnemyAI") # 敵人 AI 掛載
 
@@ -167,8 +167,14 @@ func _sync_actor_weapon_types() -> void:
 			continue
 		var actor_id := str(p.get("id", ""))
 		var equipped := InventorySync.get_equipped(actor_id)
-		p["weapon_1"] = _weapon_type_from_item(str(equipped.get("weapon_1", "")))
-		p["weapon_2"] = _weapon_type_from_item(str(equipped.get("weapon_2", "")))
+		p["weapon_1"] = _resolve_equipped_weapon_type_with_fallback(
+			str(equipped.get("weapon_1", "")),
+			str(p.get("weapon_1", ""))
+		)
+		p["weapon_2"] = _resolve_equipped_weapon_type_with_fallback(
+			str(equipped.get("weapon_2", "")),
+			str(p.get("weapon_2", ""))
+		)
 
 func _weapon_type_from_item(item_id: String) -> String:
 	if item_id == "":
@@ -177,6 +183,12 @@ func _weapon_type_from_item(item_id: String) -> String:
 	if item_def.is_empty():
 		return ""
 	return str(item_def.get("weapon_type", ""))
+
+func _resolve_equipped_weapon_type_with_fallback(item_id: String, fallback_weapon_type: String) -> String:
+	var resolved_weapon_type := _weapon_type_from_item(item_id)
+	if resolved_weapon_type != "":
+		return resolved_weapon_type
+	return fallback_weapon_type
 
 func _run_battle_opening_sequence(context: Dictionary) -> void:
 	var intro_line := _resolve_battle_intro_line(context)

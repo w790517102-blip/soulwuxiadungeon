@@ -580,7 +580,7 @@ func _handle_zhuge_crossbow(controller, user: Dictionary, item: Dictionary, targ
 	if int(target.get("hp", 0)) <= 0:
 		target["is_dead"] = true
 		controller._log("%s 倒下了，已無力再戰。" % target_name)
-	return false
+	return true
 
 
 func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:

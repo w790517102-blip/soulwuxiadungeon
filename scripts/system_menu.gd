@@ -1195,8 +1195,14 @@ func _can_use_skill_now(skill: Dictionary, actor_id: String) -> bool:
 				var actor_copy: Dictionary = {}
 				if typeof(actor) == TYPE_DICTIONARY:
 					actor_copy = (actor as Dictionary).duplicate(true)
-				actor_copy["weapon_1"] = _resolve_equipped_weapon_type(String((equipped as Dictionary).get("weapon_1", "")))
-				actor_copy["weapon_2"] = _resolve_equipped_weapon_type(String((equipped as Dictionary).get("weapon_2", "")))
+				actor_copy["weapon_1"] = _resolve_equipped_weapon_type_with_fallback(
+					String((equipped as Dictionary).get("weapon_1", "")),
+					String(actor_copy.get("weapon_1", ""))
+				)
+				actor_copy["weapon_2"] = _resolve_equipped_weapon_type_with_fallback(
+					String((equipped as Dictionary).get("weapon_2", "")),
+					String(actor_copy.get("weapon_2", ""))
+				)
 				actor_for_check = actor_copy
 		return bool(_skill_data_db.is_weapon_compatible(skill, actor_for_check))
 
@@ -1210,6 +1216,12 @@ func _resolve_equipped_weapon_type(item_id: String) -> String:
 	if item_def.is_empty():
 		return ""
 	return String(item_def.get("weapon_type", ""))
+
+func _resolve_equipped_weapon_type_with_fallback(item_id: String, fallback_weapon_type: String) -> String:
+	var resolved_weapon_type := _resolve_equipped_weapon_type(item_id)
+	if resolved_weapon_type != "":
+		return resolved_weapon_type
+	return fallback_weapon_type
 
 func _on_equip_popup_selected(index: int) -> void:
 	if equip_popup == null:
