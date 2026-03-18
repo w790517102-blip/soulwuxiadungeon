@@ -108,6 +108,148 @@ var tone_map := {
 			]
 		}
 	},
+	"enemy_attack": {
+		"江湖人士": {
+			"default": [
+				"{name} 一聲低喝，運勁使出 {skill}，出手間自有幾分老到火候，直逼 {target}。",
+				"{name} 腳下一沉，使出 {skill}，招路沉穩老練，顯然是多年磨出的手上功夫。",
+				"{name} 不疾不徐地遞出 {skill}，看似平淡，實則勁路老辣，直取 {target}。"
+			]
+		},
+		"地痞": {
+			"default": [
+				"{name} 吊兒郎當地歪著身子，嘴裡罵罵咧咧，抬手就是一記 {skill} 朝 {target} 砸去。",
+				"{name} 啐了一聲，帶著幾分痞氣使出 {skill}，橫衝直撞地撲向 {target}。",
+				"{name} 那副不可一世的神情還掛在臉上，{skill} 夾雜著亂無章法的橫勁朝著 {target} 打了過去。"
+			]
+		},
+		"朝廷": {
+			"default": [
+				"{name} 冷眼掃過 {target}，隨即俐落使出 {skill}，舉手投足間不見半分遲疑。",
+				"{name} 神色不動，{skill} 已如令出法隨般直取 {target}，乾脆得近乎冷酷。",
+				"{name} 面無表情地逼近，一記 {skill} 乾淨利落地落向 {target}，毫無憐憫可言。"
+			]
+		},
+		"野獸": {
+			"default": [
+				"{name} 喉間低吼，使出的 {skill} 帶著一股兇蠻之氣，猛地朝 {target} 撲咬過去。",
+				"{name} 弓起脊背，使出 {skill}，帶著野性兇光直衝 {target}。",
+				"{name} 腳爪刨地，隨著 {skill} 暴起撲殺，直取 {target}。"
+			]
+		},
+		"飛禽": {
+			"default": [
+				"{name} 驟然振翅，使出的 {skill} 挾風自半空俯衝向 {target}。",
+				"{name} 翅影一掠，{skill} 伴著尖喙與利爪迎面襲向 {target}。",
+				"{name} 長鳴一聲，兜了半圈後使出 {skill}，猛然撲落。"
+			]
+		},
+		"爬蟲": {
+			"default": [
+				"{name} 貼地疾竄，使出的 {skill} 帶著陰冷氣息逼近 {target}。",
+				"{name} 身軀一弓，{skill} 已如毒牙般朝 {target} 閃電噬去。",
+				"{name} 尾身一甩，使出 {skill}，陰惻惻地纏向 {target}。"
+			]
+		},
+		"語魅": {
+			"default": [
+				"{name} 身影一晃，使出的 {skill} 像霧中伸出的惡念般襲向 {target}。",
+				"{name} 周身霧氣翻湧，{skill} 便像自陰影深處探出的惡意，直撲 {target}。",
+				"{name} 無聲無息地逼近，{skill} 如同從迷霧裡長出的獠牙般咬向 {target}。"
+			]
+		},
+		"鬼神": {
+			"default": [
+				"{name} 威壓驟沉，使出的 {skill} 逼得 {target} 幾乎喘不過氣來。",
+				"{name} 周身邪氣翻騰，{skill} 一出便壓得人心神震顫。",
+				"{name} 不過一抬手，{skill} 已裹著不祥之氣直逼 {target}。"
+			]
+		},
+		"機關": {
+			"default": [
+				"{name} 機括連響，使出的 {skill} 冰冷而精準地鎖向 {target}。",
+				"{name} 齒輪急轉，伴著金鐵摩擦聲，{skill} 朝 {target} 直直壓去。",
+				"{name} 構件一轉，{skill} 毫無遲疑地朝 {target} 發動。"
+			]
+		},
+		"default": {
+			"default": [
+				"{name} 運起 {skill}，殺勢直逼 {target}。",
+				"{name} 一招 {skill} 遞出，勁風當面壓向 {target}。"
+			]
+		}
+	},
+	"enemy_suffer": {
+		"江湖人士": {
+			"default": [
+				"{name} 身形一震，原本穩住的架勢也亂了一拍。",
+				"{name} 勉力接下這一擊，氣息卻已隱隱不穩。",
+				"{name} 被這一下逼得連退數步，胸中真氣一陣翻湧。"
+			]
+		},
+		"地痞": {
+			"default": [
+				"{name} 痛得齜牙咧嘴，原本的兇相也垮了半分。",
+				"{name} 挨了這一下，嘴裡罵聲更難聽，身形卻已站不穩。",
+				"{name} 被打得一個踉蹌，臉上的狠勁都快掛不住了。"
+			]
+		},
+		"朝廷": {
+			"default": [
+				"{name} 身形一晃，原本端整的步伐也被逼亂了。",
+				"{name} 官袍一抖，硬接下這一擊後氣勢明顯弱了三分。",
+				"{name} 明明還想穩住儀態，卻已被逼得後退半步。"
+			]
+		},
+		"野獸": {
+			"default": [
+				"{name} 吃痛低吼，兇性更盛，卻也露出幾分狼狽。",
+				"{name} 被這一下打得身子一偏，利爪胡亂刨地。",
+				"{name} 哀鳴一聲，原本凶猛的撲勢也被硬生生打斷。"
+			]
+		},
+		"飛禽": {
+			"default": [
+				"{name} 翅影一亂，在半空中搖晃了幾下。",
+				"{name} 吃了這一擊，羽翎紛飛，飛勢也跟著失衡。",
+				"{name} 原本俯衝的勢頭一滯，在空中勉強扇動幾下翅膀。"
+			]
+		},
+		"爬蟲": {
+			"default": [
+				"{name} 身軀一抽，陰冷的滑行軌跡也跟著亂了。",
+				"{name} 吃痛地蜷了一下，鱗片間泛起一陣顫動。",
+				"{name} 原本悄無聲息的逼近，被這一下打得亂了節奏。"
+			]
+		},
+		"語魅": {
+			"default": [
+				"{name} 形體一陣扭曲，霧影也跟著散亂了些。",
+				"{name} 周身那股詭譎氣息驟然一滯，像被打散了一角。",
+				"{name} 暗影翻卷，被逼得連原本凝聚的形態都模糊了。"
+			]
+		},
+		"鬼神": {
+			"default": [
+				"{name} 威壓一滯，那股壓得人胸口發緊的氣息也跟著鬆了一瞬。",
+				"{name} 周身邪意翻湧，像是被這一下硬生生撼動了根基。",
+				"{name} 那雙眸光微微一晃，四周的陰冷也淡了幾分。"
+			]
+		},
+		"機關": {
+			"default": [
+				"{name} 機身一震，齒輪間傳出一陣刺耳雜響。",
+				"{name} 挨了這一下，構件接縫處迸出幾點火花。",
+				"{name} 被擊得一陣卡頓，原本流暢的運作聲都亂了節拍。"
+			]
+		},
+		"default": {
+			"default": [
+				"{name} 身形一晃，氣息頓時亂了幾分。",
+				"{name} 被這一下逼得踉蹌失勢。"
+			]
+		}
+	},
 	"innerforce_applied": {
 		"清風": {
 			"default": "風姿清逸，氣息若幽蘭。",
@@ -329,14 +471,157 @@ var status_apply_tones := {
 }
 
 var status_suffer_tones := {
-	"stun": "眼前一黑，四肢像被釘在原地。",
-	"poison": "胸口微麻，毒性正沿著血脈悄悄擴散。",
-	"confuse": "耳畔嗡鳴不止，出手方向忽然失了準頭。",
-	"weak": "氣海一沉，連呼吸都變得虛浮乏力。",
-	"seal_mp": "經脈像被鎖住，真氣難再順勢運行。",
-	"root": "下盤被勁力纏住，步法轉挪大受牽制。",
-	"blind": "砂影掠過眼前，視野瞬間晃成一片。",
-	"default": "異常感在體內擴散，行動明顯受阻。"
+	"slow": {
+		"江湖人士": [
+			"{name} 腳下一滯，原本流暢的步法頓時沉了下來。",
+			"{name} 像是被無形重物拖住，身形再難靈動轉換。"
+		],
+		"地痞": [
+			"{name} 腳步一沉，連原本那股兇狠衝勁都慢了半拍。",
+			"{name} 像踩進爛泥裡似的，再怎麼發狠也快不起來。"
+		],
+		"野獸": [
+			"{name} 四肢像灌了鉛般沉重，撲勢頓時一滯。",
+			"{name} 原本兇猛的奔撲被拖慢，低吼聲裡都透著焦躁。"
+		],
+		"飛禽": [
+			"{name} 翅勢一沉，再難保持原本的俐落掠空。",
+			"{name} 像是被看不見的濕氣纏住，振翅也變得遲滯。"
+		],
+		"語魅": [
+			"{name} 霧影流轉的速度明顯慢了下來，像被什麼拖住了。",
+			"{name} 那股飄忽難測的身形忽然凝滯，暗影也不再靈巧。"
+		],
+		"default": "動作忽然一沉，像被無形阻力拖慢。"
+	},
+	"stun": {
+		"江湖人士": [
+			"{name} 氣脈一滯，眼神都渙散了一瞬。",
+			"{name} 身形搖晃兩下，像是連神識都被這一下打散了。"
+		],
+		"地痞": [
+			"{name} 眼前一黑，方才那點兇狠勁頭也瞬間斷了。",
+			"{name} 被震得腦中嗡然作響，整個人一時怔在原地。"
+		],
+		"朝廷": [
+			"{name} 腦中一震，連原本端整的架式都維持不住。",
+			"{name} 神色一陣恍惚，手中原本講究的章法頓時散亂。"
+		],
+		"野獸": [
+			"{name} 被震得一陣發懵，低吼都跟著斷了。",
+			"{name} 原本兇猛的目光一黯，身形也僵在原地。"
+		],
+		"語魅": [
+			"{name} 霧影微滯，像是連那股邪念都被打散了一瞬。",
+			"{name} 暗影顫了一下，整團氣息都像失去了依憑。"
+		],
+		"default": "眼前一黑，四肢像被釘在原地。"
+	},
+	"poison": {
+		"江湖人士": [
+			"{name} 臉色驟變，像有一股陰冷之氣順著經脈鑽了進去。",
+			"{name} 呼吸一亂，顯然毒性已悄悄滲入體內。"
+		],
+		"地痞": [
+			"{name} 臉皮一抽，罵聲還沒出口，毒意已先一步竄上來。",
+			"{name} 身子猛地一顫，顯然那股毒氣已經發作。"
+		],
+		"野獸": [
+			"{name} 發出一聲躁怒低吼，卻壓不住毒意侵骨的痛楚。",
+			"{name} 皮毛下的肌肉一陣抽動，毒性已然入體。"
+		],
+		"爬蟲": [
+			"{name} 原本陰冷的氣息忽然一滯，像連牠都受不住這毒性反噬。",
+			"{name} 身軀緊緊蜷縮了一下，毒意在體內悄然蔓延。"
+		],
+		"語魅": [
+			"{name} 周身霧色一陣渾濁，那股詭氣像被污濁之物侵蝕。",
+			"{name} 原本凝聚的暗影裡滲出一絲敗壞氣息，像是受了污染。"
+		],
+		"default": "胸口微麻，毒性正沿著血脈悄悄擴散。"
+	},
+	"confuse": {
+		"江湖人士": [
+			"{name} 目光一散，像是連眼前敵我都一時分不清了。",
+			"{name} 神思被攪得一團亂，連原本熟極而流的招路都失了方向。"
+		],
+		"地痞": [
+			"{name} 嘴裡罵著罵著，自己都像不知道該朝誰出手。",
+			"{name} 那股狠勁還在，眼神卻已經亂得沒了準頭。"
+		],
+		"朝廷": [
+			"{name} 原本講究章法的出手忽然一亂，像連誰是敵誰是友都辨不清了。",
+			"{name} 神色微變，原本井井有條的心神被攪成一片渾沌。"
+		],
+		"語魅": [
+			"{name} 那股詭譎意念彼此衝撞，連自身形體都顯得搖晃不定。",
+			"{name} 暗影流轉失序，像是連牠自己都被自己的惡念反噬。"
+		],
+		"default": "耳畔嗡鳴不止，出手方向忽然失了準頭。"
+	},
+	"seal_mp": {
+		"江湖人士": [
+			"{name} 胸口一滯，原本運轉順暢的內息像被硬生生卡住。",
+			"{name} 氣脈一閉，再想運功時已感到處處受阻。"
+		],
+		"朝廷": [
+			"{name} 呼吸忽然一窒，原本穩當的氣勁再難提聚。",
+			"{name} 那套看似井然的運息節奏，被這一下生生打亂。"
+		],
+		"語魅": [
+			"{name} 四周詭氣一滯，像是連那股凝聚形體的核心都被鎖住。",
+			"{name} 原本翻湧不休的邪氣忽然收縮，像被無形鎖鏈束住。"
+		],
+		"default": "經脈像被鎖住，真氣難再順勢運行。"
+	},
+	"weak": {
+		"江湖人士": [
+			"{name} 面色一白，像是連撐住身形的那口元氣都被抽走了。",
+			"{name} 氣血頓衰，原本勉力提著的精神也明顯萎了下去。"
+		],
+		"地痞": [
+			"{name} 剛才還兇神惡煞，這會兒卻像一下子被抽乾了力氣。",
+			"{name} 身子一軟，那股蠻橫氣勢明顯弱了下來。"
+		],
+		"野獸": [
+			"{name} 嗚咽一聲，四肢顫了顫，連兇性都像被磨去了幾分。",
+			"{name} 原本緊繃的筋骨忽然鬆垮下來，整個勢頭都弱了。"
+		],
+		"default": "氣海一沉，連呼吸都變得虛浮乏力。"
+	},
+	"blind": {
+		"江湖人士": [
+			"{name} 下意識偏頭避讓，視線卻已被擾得一片散亂。",
+			"{name} 眼前一花，再想鎖定對手時已失了準頭。"
+		],
+		"地痞": [
+			"{name} 連眨幾下眼，嘴裡罵得更兇，卻怎麼也看不真切。",
+			"{name} 被晃得眼冒金星，連人影都抓不穩。"
+		],
+		"飛禽": [
+			"{name} 眼前失了準頭，原本精準的俯衝也變得歪斜。",
+			"{name} 翅膀拍得再急，也難補回那一瞬失去的視準。"
+		],
+		"default": "砂影掠過眼前，視野瞬間晃成一片。"
+	},
+	"root": {
+		"江湖人士": [
+			"{name} 腳下像被什麼拖住，再難像先前那般靈巧挪移。",
+			"{name} 步法一滯，連閃身騰挪都慢了半拍。"
+		],
+		"地痞": [
+			"{name} 腳底像黏在地上似的，再想躲閃已慢了一步。",
+			"{name} 剛想閃躲，身子卻像被什麼絆住，狼狽得很。"
+		],
+		"野獸": [
+			"{name} 四肢發沉，原本敏捷的撲躍再也施展不開。",
+			"{name} 想躍開時卻慢了半拍，整個身形都顯得笨重。"
+		],
+		"default": "下盤被勁力纏住，步法轉挪大受牽制。"
+	},
+	"default": {
+		"default": "異常感在體內擴散，行動明顯受阻。"
+	}
 }
 
 # 🩸 被擊中時的反應語（區分我方 ally / 敵方 enemy）
@@ -446,7 +731,7 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 	if category == "status_apply":
 		return String(status_apply_tones.get(key, status_apply_tones.get("default", "")))
 	if category == "status_suffer":
-		return String(status_suffer_tones.get(key, status_suffer_tones.get("default", "")))
+		return _get_status_suffer_text(key)
 
 	if not tone_map.has(category):
 		return ""
@@ -525,8 +810,8 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 
 		return ""
 
-	# 3-1）敵方倒地敘事：依 archetype key
-	elif category == "enemy_defeat":
+	# 3-1）敵方攻擊／受擊／倒地敘事：依 archetype key
+	elif ["enemy_attack", "enemy_suffer", "enemy_defeat"].has(category):
 		var group = cat_map.get(key, null)
 		if group == null:
 			group = cat_map.get("default", null)
@@ -535,12 +820,7 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		var line_source = group.get("default", "")
 		if group.has(user_id):
 			line_source = group[user_id]
-		if typeof(line_source) == TYPE_ARRAY:
-			var arr: Array = line_source
-			if arr.is_empty():
-				return ""
-			return str(arr[randi() % arr.size()])
-		return str(line_source)
+		return _resolve_text_or_array(line_source)
 
 	# 4）其他（defend 等）：不吃 key，只看角色
 	else:
@@ -549,6 +829,47 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		if cat_map.has("default"):
 			return cat_map["default"].get("default", "")
 	return ""
+
+
+func _get_status_suffer_text(key: String) -> String:
+	var effect_id := key
+	var archetype := ""
+	if key.find("|") != -1:
+		var parts := key.split("|", false, 1)
+		effect_id = str(parts[0])
+		if parts.size() > 1:
+			archetype = str(parts[1])
+	if effect_id == "speed_debuff":
+		effect_id = "slow"
+
+	var effect_map = status_suffer_tones.get(effect_id, null)
+	if typeof(effect_map) != TYPE_DICTIONARY:
+		effect_map = status_suffer_tones.get("default", {})
+	if typeof(effect_map) != TYPE_DICTIONARY:
+		return ""
+
+	if archetype != "":
+		if effect_map.has(archetype):
+			return _resolve_text_or_array(effect_map[archetype])
+		if effect_map.has("江湖人士"):
+			return _resolve_text_or_array(effect_map["江湖人士"])
+
+	if effect_map.has("default"):
+		return _resolve_text_or_array(effect_map["default"])
+
+	var default_map = status_suffer_tones.get("default", {})
+	if typeof(default_map) == TYPE_DICTIONARY and default_map.has("default"):
+		return _resolve_text_or_array(default_map["default"])
+	return ""
+
+
+func _resolve_text_or_array(value) -> String:
+	if typeof(value) == TYPE_ARRAY:
+		var arr: Array = value
+		if arr.is_empty():
+			return ""
+		return str(arr[randi() % arr.size()])
+	return str(value)
 
 
 

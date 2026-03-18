@@ -1156,7 +1156,12 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 	var tone_suffer := ""
 	if tone_map != null:
 		tone_cast = tone_map.get_tone_text("status_apply", normalized_effect_id, str(user.get("id", "")))
-		tone_suffer = tone_map.get_tone_text("status_suffer", normalized_effect_id, str(effect_target.get("id", "")))
+		var suffer_key := normalized_effect_id
+		if bool(effect_target.get("is_enemy", false)):
+			suffer_key = "%s|%s" % [normalized_effect_id, _resolve_enemy_archetype(effect_target)]
+		tone_suffer = tone_map.get_tone_text("status_suffer", suffer_key, str(effect_target.get("id", "")))
+		if tone_suffer != "":
+			tone_suffer = tone_suffer.replace("{name}", str(effect_target.get("name", "???")))
 	return {
 		"effect_id": normalized_effect_id,
 		"turns": turns,

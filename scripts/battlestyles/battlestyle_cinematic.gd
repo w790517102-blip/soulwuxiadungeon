@@ -12,6 +12,20 @@ func describe_attack(
 	context := {}
 ) -> Array:
 	var lines: Array = []
+	var user_side := _detect_target_side(user)
+	var target_side := context.get("target_side", "")
+	if target_side == "":
+		target_side = _detect_target_side(target)
+
+	if user_side == "enemy":
+		var enemy_attack_line := _format_enemy_tone(
+			tone_map.get_tone_text("enemy_attack", _resolve_enemy_archetype(user), String(user.get("id", ""))),
+			user,
+			target,
+			skill_name
+		)
+		if enemy_attack_line != "":
+			lines.append(enemy_attack_line)
 
 	# === 內功氣息詞綴敘述（第一次運轉該內功時） ===
 	var prefix = context.get("inner_force_prefix", "")
@@ -49,14 +63,14 @@ func describe_attack(
 		]
 	}
 
-	if weapon_openers.has(weapon_type):
+	if user_side != "enemy" and weapon_openers.has(weapon_type):
 		var w_lines: Array = weapon_openers[weapon_type]
 		var template: String = w_lines[randi() % w_lines.size()]
 		if template.count("%s") == 2:
 			lines.append(template % [user.get("name", "???"), skill_name])
 		elif template.count("%s") == 3:
 			lines.append(template % [user.get("name", "???"), skill_name, target.get("name", "???")])
-	else:
+	elif user_side != "enemy":
 		var openers = [
 			"在電光石火之間，%s 凝神運氣，使出「%s」。",
 			"只見 %s 身形一閃，「%s」如雷霆萬鈞般擊向 %s。",
@@ -90,13 +104,9 @@ func describe_attack(
 	])
 
 	# === 擊倒 or 受擊反應 ===
-	var side = context.get("target_side", "")
-	if side == "":
-		side = _detect_target_side(target)  # "ally" or "enemy"
-
 	if context.get("target_down", false):
 		var down_line := ""
-		if side == "enemy":
+		if target_side == "enemy":
 			var archetype := String(target.get("archetype", "江湖人士")).strip_edges()
 			if archetype == "":
 				archetype = "江湖人士"
@@ -106,13 +116,24 @@ func describe_attack(
 		down_line = down_line.replace("{name}", String(target.get("name", "???")))
 		lines.append(down_line)
 	else:
+		if target_side == "enemy":
+			var suffer_line := _format_enemy_tone(
+				tone_map.get_tone_text("enemy_suffer", _resolve_enemy_archetype(target), String(target.get("id", ""))),
+				target,
+				user,
+				skill_name
+			)
+			if suffer_line != "":
+				lines.append(suffer_line)
+				return lines
+
 		var hit_kind := _calc_hit_kind(context)  # normal / weak / def_normal / def_weak
 
 		var hit_line := tone_map.get_tone_text(
 			"hit",
 			hit_kind,
 			String(target.get("id", "")),
-			side
+			target_side
 		)
 		if hit_line != "":
 			lines.append(hit_line)
@@ -128,6 +149,22 @@ func _detect_target_side(target: Dictionary) -> String:
 	if tid.begins_with("enemy"):
 		return "enemy"
 	return "ally"
+
+
+func _resolve_enemy_archetype(actor: Dictionary) -> String:
+	var archetype := String(actor.get("archetype", "江湖人士")).strip_edges()
+	if archetype == "":
+		return "江湖人士"
+	return archetype
+
+
+func _format_enemy_tone(template: String, actor: Dictionary, target: Dictionary, skill_name: String) -> String:
+	if template == "":
+		return ""
+	return template \
+		.replace("{name}", String(actor.get("name", "???"))) \
+		.replace("{target}", String(target.get("name", "???"))) \
+		.replace("{skill}", skill_name)
 
 
 # 依照防禦 / 剋制情況決定 hit_kind
