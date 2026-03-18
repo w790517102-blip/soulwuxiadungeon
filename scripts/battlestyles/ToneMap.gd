@@ -31,19 +31,81 @@ var tone_map := {
 	},
 	"enemy_defeat": {
 		"野獸": {
-			"default": "{name} 哀鳴一聲，踉蹌著倒地不起。"
+			"default": [
+				"{name} 哀鳴一聲，踉蹌著倒地不起。",
+				"{name} 吼聲驟止，四肢一軟，重重伏倒在地。",
+				"{name} 掙扎著後退兩步，終究力竭倒下。"
+			]
 		},
 		"爬蟲": {
-			"default": "{name} 身軀猛地蜷起，隨後癱軟在地。"
+			"default": [
+				"{name} 身軀猛地蜷起，隨後癱軟在地。",
+				"{name} 嘶鳴漸歇，長身一顫，慢慢伏貼在地面。",
+				"{name} 滑行軌跡驟斷，盤起的軀體再也舒展不開。"
+			]
 		},
 		"江湖人士": {
-			"default": "{name} 腳下失衡，踉蹌幾步後頹然倒地。"
+			"default": [
+				"{name} 只見他不再運功，也無力維持架勢，如燈枯油盡般倒臥在地。",
+				"{name} 他強撐著最後一口氣收住身勢，終究還是無力地倒了下去。",
+				"{name} 手中招式散了，胸中那口真氣也再提不起，只得頹然倒地。",
+				"{name} 不再逞強，也不再強運內息，只是靜靜地閉上雙眼，任身子倒下。",
+				"{name} 架勢一鬆，勉力支撐的身形終於垮了下來，像是坦然認下了這一敗。"
+			]
+		},
+		"地痞": {
+			"default": [
+				"{name} 猙獰著臉，啐出幾句髒話後腿一軟，當場撲倒在地。",
+				"{name} 嘴裡還不乾不淨地罵著，卻早已撐不住那副凶相，踉蹌倒下。",
+				"{name} 用盡最後力氣逞兇鬥狠，最終還是像灘爛泥般癱倒在地。",
+				"{name} 面色扭曲地咒罵兩聲，隨即氣力一散，再也爬不起來。"
+			]
+		},
+		"朝廷": {
+			"default": [
+				"{name} 被擊倒在地，官帽一歪，原本端正的威儀也隨之散了。",
+				"{name} 踉蹌著退了半步，髮束已亂，卻再無力維持那副官差的架子。",
+				"{name} 身形一晃，官袍下擺狼狽地掃過地面，威風頃刻盡失。",
+				"{name} 原本整整齊齊的髮束早已凌亂不堪，再也撐不起那身朝廷威勢。"
+			]
+		},
+		"飛禽": {
+			"default": [
+				"{name} 頓時如斷了線的風箏，在半空失序盤旋數圈後重重墜落。",
+				"{name} 再無半分振翅之力，翎羽凌亂，隨即應聲墜地。",
+				"{name} 翅影一亂，原本掠空的身姿驟然失衡，斜斜栽落下來。",
+				"{name} 在空中掙扎著拍動幾下翅膀，終究還是無力地摔落在地。"
+			]
+		},
+		"鬼神": {
+			"default": [
+				"{name} 收斂起原本瀰漫四周的不安氣息，四下驟然一靜，眾人這才回過神來。",
+				"{name} 周身那股令人窒息的威壓忽然潰散，像一場噩夢被硬生生掐斷。",
+				"{name} 纏繞四周的陰冷氣息一寸寸退去，場中終於重新有了活人的呼吸。",
+				"{name} 那股壓在心頭的邪異感忽然鬆開，四周重歸死一般的平靜。"
+			]
+		},
+		"語魅": {
+			"default": [
+				"{name} 身形一顫，籠罩四周的迷霧隨之潰散，只餘零碎暗影消沒於風中。",
+				"{name} 原本盤繞不去的詭譎氣息忽然失了依附，像退潮般迅速散去。",
+				"{name} 身影在扭曲中一寸寸淡去，最終只剩薄霧般的殘痕消散無蹤。",
+				"{name} 那股貼在耳畔低語般的不祥感驟然斷裂，暗影隨即退縮進虛空。",
+				"{name} 失了形體，像一抹被風吹散的殘夢，頃刻潰散於無聲之中。"
+			]
 		},
 		"機關": {
-			"default": "{name} 火花四濺，機括一陣亂響後徹底停擺。"
+			"default": [
+				"{name} 火花四濺，機括一陣亂響後徹底停擺。",
+				"{name} 齒輪卡死，伴隨刺耳摩擦聲沉重倒落。",
+				"{name} 動力驟失，殘餘機件抖動幾下後歸於死寂。"
+			]
 		},
 		"default": {
-			"default": "{name} 倒下，已無力再戰。"
+			"default": [
+				"{name} 倒下，已無力再戰。",
+				"{name} 氣息一滯，終究再也站不起來。"
+			]
 		}
 	},
 	"innerforce_applied": {
@@ -470,9 +532,15 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 			group = cat_map.get("default", null)
 		if group == null:
 			return ""
+		var line_source = group.get("default", "")
 		if group.has(user_id):
-			return group[user_id]
-		return group.get("default", "")
+			line_source = group[user_id]
+		if typeof(line_source) == TYPE_ARRAY:
+			var arr: Array = line_source
+			if arr.is_empty():
+				return ""
+			return str(arr[randi() % arr.size()])
+		return str(line_source)
 
 	# 4）其他（defend 等）：不吃 key，只看角色
 	else:

@@ -16,7 +16,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "default",
 		"skills": [],
-		"archetype": "江湖人士"
+		"archetype": "地痞"
 	},
 	"bamboo_bandit_archer": {
 		"display_name": "山賊弓手",
@@ -32,7 +32,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
-		"archetype": "江湖人士"
+		"archetype": "地痞"
 	},
 	"bamboo_wild_boar": {
 		"display_name": "野豬",
@@ -112,7 +112,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "default",
 		"skills": [],
-		"archetype": "江湖人士"
+		"archetype": "地痞"
 	},
 	"sewer_ooze_slime": {
 		"display_name": "污泥怪",
