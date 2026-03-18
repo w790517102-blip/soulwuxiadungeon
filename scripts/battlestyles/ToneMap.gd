@@ -14,7 +14,36 @@ class_name ToneMap
 var tone_map := {
 	"battle_intro": {
 		"default": {
-			"default": "戰鬥開始。"
+			"default": "四周氣氛驟沉，殺機一觸即發。"
+		},
+		"yuheng_bamboo_outskirts_random": {
+			"default": "霎時間風聲鶴唳，竹影間殺意驟起。"
+		},
+		"bamboo_grove_suburb": {
+			"default": "霎時間風聲鶴唳，竹影間殺意驟起。"
+		},
+		"yuheng_sewer_random": {
+			"default": "潺潺水聲裡，陰濕惡氣貼著牆根湧來。"
+		},
+		"sewer": {
+			"default": "潺潺水聲裡，陰濕惡氣貼著牆根湧來。"
+		}
+	},
+	"enemy_defeat": {
+		"野獸": {
+			"default": "{name} 哀鳴一聲，踉蹌著倒地不起。"
+		},
+		"爬蟲": {
+			"default": "{name} 身軀猛地蜷起，隨後癱軟在地。"
+		},
+		"江湖人士": {
+			"default": "{name} 腳下失衡，踉蹌幾步後頹然倒地。"
+		},
+		"機關": {
+			"default": "{name} 火花四濺，機括一陣亂響後徹底停擺。"
+		},
+		"default": {
+			"default": "{name} 倒下，已無力再戰。"
 		}
 	},
 	"innerforce_applied": {
@@ -433,6 +462,17 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 			return arr[randi() % arr.size()]
 
 		return ""
+
+	# 3-1）敵方倒地敘事：依 archetype key
+	elif category == "enemy_defeat":
+		var group = cat_map.get(key, null)
+		if group == null:
+			group = cat_map.get("default", null)
+		if group == null:
+			return ""
+		if group.has(user_id):
+			return group[user_id]
+		return group.get("default", "")
 
 	# 4）其他（defend 等）：不吃 key，只看角色
 	else:

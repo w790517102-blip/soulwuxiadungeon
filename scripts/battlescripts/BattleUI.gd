@@ -2,6 +2,7 @@ extends Control
 
 signal player_action_complete(actor: Dictionary)
 signal battle_result_confirmed(result: Dictionary)
+signal battle_opening_confirmed
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 var tone = ToneMap.new()
@@ -33,6 +34,13 @@ var waiting_for_action = false # legacy unused flag (kept for compatibility)
 var combat_controller: Node = null
 var current_turn_id = ""
 var current_target_focus: Dictionary = {}  # ⭐ 目前在 TargetSelect 中被選中的那個
+
+var _opening_overlay: ColorRect
+var _opening_intro_label: Label
+var _opening_hint_label: Label
+var _opening_start_label: Label
+var _battle_opening_locked := false
+
 
 # 用來暫存「還沒真正結算」的指令
 var pending_item: Dictionary = {}
@@ -112,10 +120,110 @@ func _ready() -> void:
 	_ensure_status_abbrev_labels()
 	set_process(true)
 	battle_result_overlay.hide()
+	_setup_opening_overlay()
 	_setup_hover_slots()
 	if status_hover_popup:
 		status_hover_popup.hide()
 		status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _setup_opening_overlay() -> void:
+	_opening_overlay = ColorRect.new()
+	_opening_overlay.name = "BattleOpeningOverlay"
+	_opening_overlay.visible = false
+	_opening_overlay.color = Color(0, 0, 0, 0.66)
+	_opening_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_opening_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_opening_overlay)
+
+	var intro := Label.new()
+	intro.name = "IntroLabel"
+	intro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_font_size_override("font_size", 32)
+	intro.add_theme_color_override("font_color", Color(1, 0.96, 0.82, 1))
+	intro.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	intro.add_theme_constant_override("outline_size", 5)
+	intro.offset_left = 120
+	intro.offset_top = 170
+	intro.offset_right = -120
+	intro.offset_bottom = -170
+	intro.anchor_right = 1.0
+	intro.anchor_bottom = 1.0
+	_opening_overlay.add_child(intro)
+	_opening_intro_label = intro
+
+	var hint := Label.new()
+	hint.name = "ConfirmHint"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint.text = "按確認鍵 / 滑鼠左鍵"
+	hint.add_theme_font_size_override("font_size", 22)
+	hint.add_theme_color_override("font_color", Color(0.7, 0.88, 1.0, 0.95))
+	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	hint.add_theme_constant_override("outline_size", 4)
+	hint.anchor_left = 0.0
+	hint.anchor_top = 1.0
+	hint.anchor_right = 1.0
+	hint.anchor_bottom = 1.0
+	hint.offset_top = -88
+	hint.offset_bottom = -52
+	_opening_overlay.add_child(hint)
+	_opening_hint_label = hint
+
+	var start := Label.new()
+	start.name = "BattleStartLabel"
+	start.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	start.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	start.text = "戰鬥開始"
+	start.add_theme_font_size_override("font_size", 64)
+	start.add_theme_color_override("font_color", Color(1, 0.95, 0.55, 1))
+	start.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	start.add_theme_constant_override("outline_size", 8)
+	start.set_anchors_preset(Control.PRESET_FULL_RECT)
+	start.visible = false
+	_opening_overlay.add_child(start)
+	_opening_start_label = start
+
+func play_battle_opening(intro_line: String) -> void:
+	if _opening_overlay == null:
+		return
+	_battle_opening_locked = true
+	action_panel.hide()
+	hide_all_popups()
+	on_action_selection = false
+	_opening_intro_label.text = intro_line
+	_opening_hint_label.visible = true
+	_opening_start_label.visible = false
+	_opening_overlay.modulate = Color(1, 1, 1, 1)
+	_opening_overlay.visible = true
+	await battle_opening_confirmed
+	_opening_hint_label.visible = false
+	_opening_intro_label.visible = false
+	_opening_start_label.visible = true
+	_opening_start_label.modulate = Color(1, 1, 1, 0.0)
+	_opening_start_label.scale = Vector2(0.88, 0.88)
+	var tween := create_tween()
+	tween.tween_property(_opening_start_label, "modulate:a", 1.0, 0.18)
+	tween.parallel().tween_property(_opening_start_label, "scale", Vector2(1.0, 1.0), 0.18)
+	tween.tween_interval(0.30)
+	tween.tween_property(_opening_start_label, "modulate:a", 0.0, 0.22)
+	await tween.finished
+	_opening_overlay.visible = false
+	_opening_intro_label.visible = true
+	_battle_opening_locked = false
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _battle_opening_locked:
+		return
+	var confirm_pressed := event.is_action_pressed("ui_accept")
+	if not confirm_pressed and event is InputEventMouseButton:
+		confirm_pressed = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	if not confirm_pressed:
+		return
+	if _opening_overlay != null and _opening_overlay.visible:
+		emit_signal("battle_opening_confirmed")
+		get_viewport().set_input_as_handled()
 
 func _setup_hover_slots() -> void:
 	for i in range(ally_slots.size()):
@@ -312,6 +420,8 @@ func _find_enemy_slot_index(target: Dictionary) -> int:
 
 ## 每回合開頭會重新刷新一次 UI
 func begin_turn(actor: Dictionary) -> void:
+	if _battle_opening_locked:
+		return
 	if combat_controller:
 		if bool(combat_controller.get("battle_finished")) or bool(combat_controller.get("_ending")):
 			_enter_battle_end_ui_cleanup()

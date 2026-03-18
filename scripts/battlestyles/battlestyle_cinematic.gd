@@ -90,15 +90,22 @@ func describe_attack(
 	])
 
 	# === 擊倒 or 受擊反應 ===
-	if context.get("target_down", false):
-		# 直接倒地就不要再有「穩住身形」這類台詞
-		lines.append("%s 傷重倒地，已無再戰之力！" % target.get("name", "???"))
-	else:
-		# 還活著 → 看要不要補受擊台詞
-		var side = context.get("target_side", "")
-		if side == "":
-			side = _detect_target_side(target)  # "ally" or "enemy"
+	var side = context.get("target_side", "")
+	if side == "":
+		side = _detect_target_side(target)  # "ally" or "enemy"
 
+	if context.get("target_down", false):
+		var down_line := ""
+		if side == "enemy":
+			var archetype := String(target.get("archetype", "江湖人士")).strip_edges()
+			if archetype == "":
+				archetype = "江湖人士"
+			down_line = tone_map.get_tone_text("enemy_defeat", archetype, String(target.get("id", "")))
+		if down_line == "":
+			down_line = "%s 傷重倒地，已無再戰之力！" % target.get("name", "???")
+		down_line = down_line.replace("{name}", String(target.get("name", "???")))
+		lines.append(down_line)
+	else:
 		var hit_kind := _calc_hit_kind(context)  # normal / weak / def_normal / def_weak
 
 		var hit_line := tone_map.get_tone_text(
@@ -115,8 +122,9 @@ func describe_attack(
 
 # 判斷「被打的那一個」是我方還是敵方
 func _detect_target_side(target: Dictionary) -> String:
+	if bool(target.get("is_enemy", false)):
+		return "enemy"
 	var tid := String(target.get("id", ""))
-	# 目前你的敵人都是 "enemy1", "enemy2"... 之後如果改命名規則，可以在這裡一起改
 	if tid.begins_with("enemy"):
 		return "enemy"
 	return "ally"

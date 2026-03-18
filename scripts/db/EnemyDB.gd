@@ -15,7 +15,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.4, "min": 2, "max": 5},
 		"drops": [],
 		"ai_profile": "default",
-		"skills": []
+		"skills": [],
+		"archetype": "江湖人士"
 	},
 	"bamboo_bandit_archer": {
 		"display_name": "山賊弓手",
@@ -30,7 +31,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.45, "min": 2, "max": 6},
 		"drops": [],
 		"ai_profile": "aggressive",
-		"skills": []
+		"skills": [],
+		"archetype": "江湖人士"
 	},
 	"bamboo_wild_boar": {
 		"display_name": "野豬",
@@ -45,7 +47,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.35, "min": 3, "max": 7},
 		"drops": [],
 		"ai_profile": "aggressive",
-		"skills": []
+		"skills": [],
+		"archetype": "野獸"
 	},
 	"bamboo_poison_snake": {
 		"display_name": "毒蛇",
@@ -60,7 +63,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.3, "min": 1, "max": 4},
 		"drops": [],
 		"ai_profile": "aggressive",
-		"skills": []
+		"skills": [],
+		"archetype": "爬蟲"
 	},
 	"bamboo_youmei": {
 		"display_name": "語魅",
@@ -75,7 +79,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.5, "min": 4, "max": 9},
 		"drops": [],
 		"ai_profile": "support",
-		"skills": []
+		"skills": [],
+		"archetype": "語魅"
 	},
 	"sewer_rat_swarm": {
 		"display_name": "鼠群",
@@ -90,7 +95,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.35, "min": 2, "max": 5},
 		"drops": [],
 		"ai_profile": "default",
-		"skills": []
+		"skills": [],
+		"archetype": "野獸"
 	},
 	"sewer_thug": {
 		"display_name": "下水道匪徒",
@@ -105,7 +111,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.45, "min": 3, "max": 8},
 		"drops": [],
 		"ai_profile": "default",
-		"skills": []
+		"skills": [],
+		"archetype": "江湖人士"
 	},
 	"sewer_ooze_slime": {
 		"display_name": "污泥怪",
@@ -120,7 +127,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.4, "min": 4, "max": 10},
 		"drops": [],
 		"ai_profile": "default",
-		"skills": []
+		"skills": [],
+		"archetype": "未知"
 	},
 	"sewer_drowned_wight": {
 		"display_name": "溺魂",
@@ -135,7 +143,8 @@ const ENEMY_DEFS := {
 		"gold": {"chance": 0.5, "min": 5, "max": 12},
 		"drops": [],
 		"ai_profile": "support",
-		"skills": []
+		"skills": [],
+		"archetype": "鬼神"
 	},
 	"tea_house_guest_guard": {
 		"display_name": "單步雷",
@@ -162,7 +171,8 @@ const ENEMY_DEFS := {
 			{"skill_id": "skill_enemy_blind_sand", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
 			{"skill_id": "skill_enemy_root_bind", "category": "debuff", "weight": 10, "cd_turns": 1, "mp_cost": 0, "target": "enemy_single"},
 			{"skill_id": "skill_enemy_sparring_palm", "category": "attack", "weight": 8, "cd_turns": 0, "mp_cost": 0, "target": "enemy_single"}
-		]
+		],
+		"archetype": "江湖人士"
 	}
 }
 
@@ -193,6 +203,8 @@ static func make_enemy(id: String) -> Dictionary:
 		enemy["skills_mode"] = "weighted"
 	if typeof(enemy.get("skills", [])) != TYPE_ARRAY:
 		enemy["skills"] = []
+	if not enemy.has("archetype"):
+		enemy["archetype"] = "江湖人士"
 	enemy["gold"] = _normalize_gold(enemy.get("gold", {"chance": 0.0, "min": 0, "max": 0}))
 	enemy["drops"] = _normalize_drops(enemy.get("drops", []))
 	return enemy

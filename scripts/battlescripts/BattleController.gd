@@ -21,6 +21,15 @@ var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
 
+const INTRO_LINE_BY_KEY := {
+	"yuheng_bamboo_outskirts_random": "霎時間風聲鶴唳，竹影間殺意驟起。",
+	"bamboo_grove_suburb": "霎時間風聲鶴唳，竹影間殺意驟起。",
+	"yuheng_sewer_random": "潺潺水聲裡，陰濕惡氣貼著牆根湧來。",
+	"sewer": "潺潺水聲裡，陰濕惡氣貼著牆根湧來。",
+	"yuheng_outskirts": "荒道風緊，來者不善，劍拔弩張。",
+	"default": "四周氣氛驟沉，殺機一觸即發。"
+}
+
 @onready var skill_resolver = $SkillResolver
 @onready var emotion_modulator = $EmotionModulator
 @onready var inventory_sync = $InventorySync
@@ -119,12 +128,11 @@ func start_battle(context: Dictionary) -> void:
 		battle_ui.set_teams(player_party, enemy_party)
 		battle_ui.apply_ruleset(ruleset)
 
-	_play_battle_intro(context)
-
 	battle_finished = false
 	last_round_logged = -1
 	last_round_regen = -1
 
+	await _run_battle_opening_sequence(context)
 	turn_manager.start_battle(player_party, enemy_party)
 
 func _apply_equipment_bonuses() -> void:
@@ -170,20 +178,36 @@ func _weapon_type_from_item(item_id: String) -> String:
 		return ""
 	return str(item_def.get("weapon_type", ""))
 
-func _play_battle_intro(context: Dictionary) -> void:
-	var tone_block = context.get("tone", {})
+func _run_battle_opening_sequence(context: Dictionary) -> void:
+	var intro_line := _resolve_battle_intro_line(context)
+	if intro_line == "":
+		intro_line = str(INTRO_LINE_BY_KEY.get("default", "四周氣氛驟沉，殺機一觸即發。"))
+	if battle_ui and battle_ui.has_method("play_battle_opening"):
+		await battle_ui.play_battle_opening(intro_line)
+	else:
+		_log(intro_line)
+		await _await_log_stage_continue()
+	_log_system("戰鬥開始")
+
+func _resolve_battle_intro_line(context: Dictionary) -> String:
+	var tone_block: Dictionary = context.get("tone", {})
 	var intro_key = str(tone_block.get("intro_key", ""))
 	var fallback_key = str(tone_block.get("fallback_intro_key", "default"))
-	var intro_line = ""
-
-	if tone_map != null:
-		if intro_key != "":
-			intro_line = tone_map.get_tone_text("battle_intro", intro_key, "default")
-		if intro_line == "" and fallback_key != "":
-			intro_line = tone_map.get_tone_text("battle_intro", fallback_key, "default")
-
-	if intro_line != "":
-		_log(intro_line)
+	var zone_id = str(context.get("zone_id", ""))
+	var map_id = str(context.get("map_id", ""))
+	var scene_name = str(context.get("scene_name", ""))
+	var candidates := [intro_key, zone_id, map_id, scene_name, fallback_key]
+	for key in candidates:
+		var key_str := str(key)
+		if key_str == "":
+			continue
+		if tone_map != null:
+			var tone_line := tone_map.get_tone_text("battle_intro", key_str, "default")
+			if tone_line != "":
+				return tone_line
+		if INTRO_LINE_BY_KEY.has(key_str):
+			return str(INTRO_LINE_BY_KEY[key_str])
+	return str(INTRO_LINE_BY_KEY.get("default", ""))
 
 func _actor_key(actor: Dictionary) -> String:
 	var id = str(actor.get("id", ""))
@@ -920,7 +944,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				enemy["hp"] = 0
 				enemy["is_dead"] = true
 				any_down = true
-				_log("%s 倒下，傷勢過重，已無力再戰。" % name_e)
+				_log(_enemy_defeat_line(enemy))
 
 		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, alive_targets)
 		_log_applied_statuses(aoe_applied)
@@ -1000,6 +1024,21 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 
 
+
+func _resolve_enemy_archetype(enemy: Dictionary) -> String:
+	var archetype := str(enemy.get("archetype", "")).strip_edges()
+	if archetype == "":
+		return "江湖人士"
+	return archetype
+
+func _enemy_defeat_line(enemy: Dictionary) -> String:
+	var name_e := str(enemy.get("name", "???"))
+	var archetype := _resolve_enemy_archetype(enemy)
+	if tone_map != null:
+		var line := tone_map.get_tone_text("enemy_defeat", archetype, str(enemy.get("id", "")))
+		if line != "":
+			return line.replace("{name}", name_e)
+	return "%s 倒下，傷勢過重，已無力再戰。" % name_e
 
 func _is_single_target_scope(scope: String) -> bool:
 	return ["single", "enemy_single", "ally_single", "all_single"].has(scope)
@@ -1603,7 +1642,7 @@ func _apply_bomb_damage_to_target(
 
 	if after_hp <= 0:
 		target["is_dead"] = true
-		_log("%s 倒下了，已無力再戰。" % tname)
+		_log(_enemy_defeat_line(target))
 
 	_update_ui_for_actor(target)
 
@@ -1713,7 +1752,7 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 		if int(result["after_hp"]) <= 0:
 			enemy["hp"] = 0
 			enemy["is_dead"] = true
-			_log("%s 倒下了，已無力再戰。" % tname)
+			_log(_enemy_defeat_line(enemy))
 
 
 
