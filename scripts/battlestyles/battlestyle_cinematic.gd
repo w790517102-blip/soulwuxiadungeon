@@ -2,6 +2,7 @@ extends Node
 class_name battlestyle_cinematic
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
+const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 var tone_map = ToneMap.new()
 
 func describe_attack(
@@ -107,9 +108,7 @@ func describe_attack(
 	if context.get("target_down", false):
 		var down_line := ""
 		if target_side == "enemy":
-			var archetype := String(target.get("archetype", "江湖人士")).strip_edges()
-			if archetype == "":
-				archetype = "江湖人士"
+			var archetype := _resolve_enemy_archetype(target)
 			down_line = tone_map.get_tone_text("enemy_defeat", archetype, String(target.get("id", "")))
 		if down_line == "":
 			down_line = "%s 傷重倒地，已無再戰之力！" % target.get("name", "???")
@@ -152,10 +151,7 @@ func _detect_target_side(target: Dictionary) -> String:
 
 
 func _resolve_enemy_archetype(actor: Dictionary) -> String:
-	var archetype := String(actor.get("archetype", "江湖人士")).strip_edges()
-	if archetype == "":
-		return "江湖人士"
-	return archetype
+	return EnemyDB.resolve_archetype(String(actor.get("archetype", actor.get("species", ""))))
 
 
 func _format_enemy_tone(template: String, actor: Dictionary, target: Dictionary, skill_name: String) -> String:

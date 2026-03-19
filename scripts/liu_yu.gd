@@ -188,25 +188,33 @@ func _trigger_random_battle() -> void:
 		push_warning("❗ 當前隊伍為空，無法啟動遭遇戰。")
 		return
 
+	var game_root = get_node_or_null("/root/GameRoot")
+	var current_map := ""
+	var scene_name := ""
+	if game_root:
+		var current_scene = game_root.get_node_or_null("CurrentScene")
+		if current_scene and current_scene.get_child_count() > 0:
+			var scene_root := current_scene.get_child(0)
+			current_map = String(scene_root.scene_file_path)
+			scene_name = String(scene_root.name)
+
 	var context = {
 		"player_party": player_party,
 		"enemy_party": _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS),
 		"ruleset": {"id": "default"},
 		"regen_policy": {"id": "round_end_mp_regen_default"},
 		"tone": {"intro_key": _resolve_zone_intro_key()},
-		"zone_id": current_zone_id
+		"battle_tag": current_zone_id,
+		"zone_id": current_zone_id,
+		"map_id": current_map,
+		"scene_name": scene_name
 	}
 
 	if context["enemy_party"].is_empty():
 		push_warning("❗ Encounter pool 產生空敵人，取消本次遭遇戰。")
 		return
 
-	var game_root = get_node_or_null("/root/GameRoot")
 	if game_root:
-		var current_scene = game_root.get_node_or_null("CurrentScene")
-		var current_map = ""
-		if current_scene and current_scene.get_child_count() > 0:
-			current_map = current_scene.get_child(0).scene_file_path
 		if current_map != "":
 			GlobalState.set_meta("return_map_path", current_map)
 		GlobalState.set_meta("return_player_pos", global_position)

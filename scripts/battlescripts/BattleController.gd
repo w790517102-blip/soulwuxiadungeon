@@ -2,6 +2,8 @@ extends Node
 
 const ToneMapScript = preload("res://scripts/battlestyles/ToneMap.gd")
 const ItemDB = preload("res://scripts/db/ItemDB.gd")
+const BattleIntroDB = preload("res://scripts/db/BattleIntroDB.gd")
+const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 const StatusEffectManagerScript = preload("res://scripts/battle/StatusEffectManager.gd")
 var tone_map = ToneMapScript.new()
 var status_manager = StatusEffectManagerScript.new()
@@ -21,15 +23,6 @@ var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
-
-const INTRO_LINE_BY_KEY := {
-	"yuheng_bamboo_outskirts_random": "霎時間風聲鶴唳，竹影間殺意驟起。",
-	"bamboo_grove_suburb": "霎時間風聲鶴唳，竹影間殺意驟起。",
-	"yuheng_sewer_random": "潺潺水聲裡，陰濕惡氣貼著牆根湧來。",
-	"sewer": "潺潺水聲裡，陰濕惡氣貼著牆根湧來。",
-	"yuheng_outskirts": "荒道風緊，來者不善，劍拔弩張。",
-	"default": "四周氣氛驟沉，殺機一觸即發。"
-}
 
 const GAME_OVER_NARRATION_LINES := [
 	"你們已用盡全力對抗強敵，卻仍在這場惡戰中敗下陣來。",
@@ -207,7 +200,7 @@ func _resolve_equipped_weapon_type_with_fallback(item_id: String, fallback_weapo
 func _run_battle_opening_sequence(context: Dictionary) -> void:
 	var intro_line := _resolve_battle_intro_line(context)
 	if intro_line == "":
-		intro_line = str(INTRO_LINE_BY_KEY.get("default", "四周氣氛驟沉，殺機一觸即發。"))
+		intro_line = "四周氣氛驟沉，殺機一觸即發。"
 	if battle_ui and battle_ui.has_method("play_battle_opening"):
 		await battle_ui.play_battle_opening(intro_line)
 	else:
@@ -216,24 +209,7 @@ func _run_battle_opening_sequence(context: Dictionary) -> void:
 	_log_system("戰鬥開始")
 
 func _resolve_battle_intro_line(context: Dictionary) -> String:
-	var tone_block: Dictionary = context.get("tone", {})
-	var intro_key = str(tone_block.get("intro_key", ""))
-	var fallback_key = str(tone_block.get("fallback_intro_key", "default"))
-	var zone_id = str(context.get("zone_id", ""))
-	var map_id = str(context.get("map_id", ""))
-	var scene_name = str(context.get("scene_name", ""))
-	var candidates := [intro_key, zone_id, map_id, scene_name, fallback_key]
-	for key in candidates:
-		var key_str := str(key)
-		if key_str == "":
-			continue
-		if tone_map != null:
-			var tone_line := tone_map.get_tone_text("battle_intro", key_str, "default")
-			if tone_line != "":
-				return tone_line
-		if INTRO_LINE_BY_KEY.has(key_str):
-			return str(INTRO_LINE_BY_KEY[key_str])
-	return str(INTRO_LINE_BY_KEY.get("default", ""))
+	return BattleIntroDB.resolve_intro(context, tone_map)
 
 func _actor_key(actor: Dictionary) -> String:
 	var id = str(actor.get("id", ""))
@@ -1083,10 +1059,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 
 func _resolve_enemy_archetype(enemy: Dictionary) -> String:
-	var archetype := str(enemy.get("archetype", "")).strip_edges()
-	if archetype == "":
-		return "江湖人士"
-	return archetype
+	return EnemyDB.resolve_archetype(str(enemy.get("archetype", enemy.get("species", ""))))
 
 func _enemy_defeat_line(enemy: Dictionary) -> String:
 	var name_e := str(enemy.get("name", "???"))

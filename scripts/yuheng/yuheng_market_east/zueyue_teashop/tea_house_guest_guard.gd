@@ -185,8 +185,12 @@ func _start_training_battle() -> void:
 		is_talking = false
 		return
 	var current_scene = game_root.get_node_or_null("CurrentScene")
+	var current_map := ""
+	var scene_name := ""
 	if current_scene and current_scene.get_child_count() > 0:
-		var current_map = String(current_scene.get_child(0).scene_file_path)
+		var scene_root := current_scene.get_child(0)
+		current_map = String(scene_root.scene_file_path)
+		scene_name = String(scene_root.name)
 		if current_map != "":
 			GlobalState.set_meta("return_map_path", current_map)
 	GlobalState.set_meta("return_player_pos", liuyu.global_position)
@@ -202,8 +206,11 @@ func _start_training_battle() -> void:
 		"enemy_party": [enemy],
 		"ruleset": {"id": "sparring"},
 		"regen_policy": {"id": "round_end_mp_regen_default"},
-		"tone": {"intro_key": "battle_intro_default"},
+		"tone": {"intro_key": "zueyue_teashop_training"},
+		"battle_tag": "zueyue_teashop_training",
 		"zone_id": "zueyue_teashop_training",
+		"map_id": current_map,
+		"scene_name": scene_name,
 		"no_rewards": true
 	}
 	GlobalState.set_meta("pending_battle_context", context)

@@ -40,6 +40,7 @@ var _opening_intro_label: Label
 var _opening_hint_label: Label
 var _opening_start_label: Label
 var _battle_opening_locked := false
+var _battle_opening_waiting_confirm := false
 
 
 # 用來暫存「還沒真正結算」的指令
@@ -189,15 +190,19 @@ func play_battle_opening(intro_line: String) -> void:
 	if _opening_overlay == null:
 		return
 	_battle_opening_locked = true
+	_battle_opening_waiting_confirm = true
+	_set_battle_input_locked(true)
 	action_panel.hide()
 	hide_all_popups()
 	on_action_selection = false
 	_opening_intro_label.text = intro_line
 	_opening_hint_label.visible = true
+	_opening_intro_label.visible = true
 	_opening_start_label.visible = false
 	_opening_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_overlay.visible = true
 	await battle_opening_confirmed
+	_battle_opening_waiting_confirm = false
 	_opening_hint_label.visible = false
 	_opening_intro_label.visible = false
 	_opening_start_label.visible = true
@@ -212,9 +217,10 @@ func play_battle_opening(intro_line: String) -> void:
 	_opening_overlay.visible = false
 	_opening_intro_label.visible = true
 	_battle_opening_locked = false
+	_set_battle_input_locked(false)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _battle_opening_locked:
+	if not _battle_opening_locked or not _battle_opening_waiting_confirm:
 		return
 	var confirm_pressed := event.is_action_pressed("ui_accept")
 	if not confirm_pressed and event is InputEventMouseButton:
@@ -222,8 +228,26 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not confirm_pressed:
 		return
 	if _opening_overlay != null and _opening_overlay.visible:
+		_battle_opening_waiting_confirm = false
 		emit_signal("battle_opening_confirmed")
 		get_viewport().set_input_as_handled()
+
+func _set_battle_input_locked(locked: bool) -> void:
+	if action_panel:
+		action_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+		_set_buttons_disabled(action_panel, locked)
+	if target_select_popup:
+		target_select_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+	if item_list_popup:
+		item_list_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+	if skill_list_popup:
+		skill_list_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+
+func _set_buttons_disabled(node: Node, disabled: bool) -> void:
+	if node is BaseButton:
+		node.disabled = disabled
+	for child in node.get_children():
+		_set_buttons_disabled(child, disabled)
 
 func _setup_hover_slots() -> void:
 	for i in range(ally_slots.size()):

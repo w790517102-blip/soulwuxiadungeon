@@ -1,6 +1,16 @@
 extends Node
 class_name EnemyDB
 
+
+const ARCHETYPE_ALIASES := {
+	"地痞": "江湖人士",
+	"山賊": "江湖人士",
+	"軍人": "朝廷",
+	"官兵": "朝廷",
+	"猛獸": "野獸",
+	"蛇蟲": "爬蟲"
+}
+
 const ENEMY_DEFS := {
 	"bamboo_bandit_scout": {
 		"display_name": "山賊探子",
@@ -180,7 +190,7 @@ static func get_def(id: String) -> Dictionary:
 	if not ENEMY_DEFS.has(id):
 		push_warning("Enemy def not found: %s" % id)
 		return {}
-	return ENEMY_DEFS[id].duplicate(true)
+	return _normalize_enemy_def(ENEMY_DEFS[id].duplicate(true))
 
 static func make_enemy(id: String) -> Dictionary:
 	var data: Dictionary = ENEMY_DEFS.get(id, {})
@@ -201,10 +211,7 @@ static func make_enemy(id: String) -> Dictionary:
 		enemy["ai_profile"] = "default"
 	if not enemy.has("skills_mode"):
 		enemy["skills_mode"] = "weighted"
-	if typeof(enemy.get("skills", [])) != TYPE_ARRAY:
-		enemy["skills"] = []
-	if not enemy.has("archetype"):
-		enemy["archetype"] = "江湖人士"
+	enemy = _normalize_enemy_def(enemy)
 	enemy["gold"] = _normalize_gold(enemy.get("gold", {"chance": 0.0, "min": 0, "max": 0}))
 	enemy["drops"] = _normalize_drops(enemy.get("drops", []))
 	return enemy
@@ -249,3 +256,21 @@ static func _normalize_drops(drops_data) -> Array:
 			"max": max_count
 		})
 	return normalized
+
+static func _normalize_enemy_def(enemy: Dictionary) -> Dictionary:
+	if typeof(enemy.get("skills", [])) != TYPE_ARRAY:
+		enemy["skills"] = []
+	var raw_archetype := String(enemy.get("archetype", enemy.get("species", ""))).strip_edges()
+	var normalized_archetype := resolve_archetype(raw_archetype)
+	if normalized_archetype == "":
+		normalized_archetype = "江湖人士"
+	enemy["archetype"] = normalized_archetype
+	if not enemy.has("species") or String(enemy.get("species", "")).strip_edges() == "":
+		enemy["species"] = normalized_archetype
+	return enemy
+
+static func resolve_archetype(raw_archetype: String) -> String:
+	var key := raw_archetype.strip_edges()
+	if key == "":
+		return "江湖人士"
+	return String(ARCHETYPE_ALIASES.get(key, key)).strip_edges()
