@@ -236,12 +236,25 @@ func _set_battle_input_locked(locked: bool) -> void:
 	if action_panel:
 		action_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
 		_set_buttons_disabled(action_panel, locked)
-	if target_select_popup:
-		target_select_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
-	if item_list_popup:
-		item_list_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
-	if skill_list_popup:
-		skill_list_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+	_set_popup_locked(target_select_popup, locked)
+	_set_popup_locked(item_list_popup, locked)
+	_set_popup_locked(skill_list_popup, locked)
+
+func _set_popup_locked(popup: Node, locked: bool) -> void:
+	if popup == null:
+		return
+	if locked and popup.has_method("hide"):
+		popup.hide()
+	for child in popup.get_children():
+		_set_popup_content_locked(child, locked)
+
+func _set_popup_content_locked(node: Node, locked: bool) -> void:
+	if node is BaseButton:
+		node.disabled = locked
+	elif node is ItemList:
+		node.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+	for child in node.get_children():
+		_set_popup_content_locked(child, locked)
 
 func _set_buttons_disabled(node: Node, disabled: bool) -> void:
 	if node is BaseButton:
