@@ -1,6 +1,11 @@
 extends Node
 class_name ToneMap
 
+const SPECIFIC_POOL_WEIGHT := 0.7
+const DEFAULT_POOL_WEIGHT := 0.3
+
+var _last_tone_pick_by_context: Dictionary = {}
+
 # tone_map[category][key][user_id or "default"]
 # category:
 #   - "innerforce_applied" : 出招時，內功氣息描述（依 prefix + 角色）
@@ -769,9 +774,11 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		if not cat_map.has(key):
 			return ""
 		var prefix_map = cat_map[key]
-		if prefix_map.has(user_id):
-			return prefix_map[user_id]
-		return prefix_map.get("default", "")
+		return _pick_weighted_text(
+			prefix_map.get(user_id, null),
+			prefix_map.get("default", ""),
+			"%s|%s|%s" % [category, key, user_id]
+		)
 
 	# 2）使用道具 / 遭受道具：看 effect（key）
 	elif category == "item_use" or category == "item_suffer":
@@ -784,9 +791,11 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		if effect_map == null:
 			return ""
 
-		if effect_map.has(user_id):
-			return effect_map[user_id]
-		return effect_map.get("default", "")
+		return _pick_weighted_text(
+			effect_map.get(user_id, null),
+			effect_map.get("default", ""),
+			"%s|%s|%s" % [category, key, user_id]
+		)
 
 	# 2-1）戰鬥開場白：看 intro key
 	elif category == "battle_intro":
@@ -797,9 +806,11 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 			intro_map = cat_map.get("default", null)
 		if intro_map == null:
 			return ""
-		if intro_map.has(user_id):
-			return intro_map[user_id]
-		return intro_map.get("default", "")
+		return _pick_weighted_text(
+			intro_map.get(user_id, null),
+			intro_map.get("default", ""),
+			"%s|%s|%s" % [category, key, user_id]
+		)
 
 	# 3）AOE 受擊：key = "skillId|state" 或 "state"
 	elif category == "aoe_suffer":
@@ -809,9 +820,11 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		# 3-1️⃣ 先嘗試專屬 key（例如 "skill_xianglong18|ke"）
 		var tone_group = cat_map.get(key, null)
 		if tone_group != null:
-			if tone_group.has(user_id):
-				return tone_group[user_id]
-			return tone_group.get("default", "")
+			return _pick_weighted_text(
+				tone_group.get(user_id, null),
+				tone_group.get("default", ""),
+				"%s|%s|%s" % [category, key, user_id]
+			)
 
 		# 3-2️⃣ 專屬沒有 → 退回共用 default，依 state 抽一句
 		var state_name := ""
@@ -827,12 +840,20 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 
 		var arr = default_group.get(state_name, [])
 		if typeof(arr) == TYPE_ARRAY and not arr.is_empty():
-			return arr[randi() % arr.size()]
+			return _pick_weighted_text(
+				[],
+				arr,
+				"%s|default|%s|%s" % [category, state_name, user_id]
+			)
 
 		# 再不行就用 normal 頂著
 		arr = default_group.get("normal", [])
 		if typeof(arr) == TYPE_ARRAY and not arr.is_empty():
-			return arr[randi() % arr.size()]
+			return _pick_weighted_text(
+				[],
+				arr,
+				"%s|default|normal|%s" % [category, user_id]
+			)
 
 		return ""
 
@@ -843,17 +864,25 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 			group = cat_map.get("default", null)
 		if group == null:
 			return ""
-		var line_source = group.get("default", "")
-		if group.has(user_id):
-			line_source = group[user_id]
-		return _resolve_text_or_array(line_source)
+		return _pick_weighted_text(
+			group.get(user_id, null),
+			group.get("default", ""),
+			"%s|%s|%s" % [category, key, user_id]
+		)
 
 	# 4）其他（defend 等）：不吃 key，只看角色
 	else:
+		var specific_value = null
 		if cat_map.has(user_id):
-			return _resolve_text_or_array(cat_map[user_id].get("default", ""))
+			specific_value = cat_map[user_id].get("default", "")
+		var default_value = ""
 		if cat_map.has("default"):
-			return _resolve_text_or_array(cat_map["default"].get("default", ""))
+			default_value = cat_map["default"].get("default", "")
+		return _pick_weighted_text(
+			specific_value,
+			default_value,
+			"%s|%s|%s|%s" % [category, key, user_id, side]
+		)
 	return ""
 
 
@@ -875,27 +904,105 @@ func _get_status_suffer_text(key: String) -> String:
 		return ""
 
 	if archetype != "":
+		var archetype_value = null
 		if effect_map.has(archetype):
-			return _resolve_text_or_array(effect_map[archetype])
-		if effect_map.has("江湖人士"):
-			return _resolve_text_or_array(effect_map["江湖人士"])
+			archetype_value = effect_map[archetype]
+		var default_value = effect_map.get("江湖人士", effect_map.get("default", []))
+		var archetype_line = _pick_weighted_text(
+			archetype_value,
+			default_value,
+			"status_suffer|%s|%s" % [effect_id, archetype]
+		)
+		if archetype_line != "":
+			return archetype_line
 
 	if effect_map.has("default"):
-		return _resolve_text_or_array(effect_map["default"])
+		return _pick_weighted_text([], effect_map["default"], "status_suffer|%s|default" % effect_id)
 
 	var default_map = status_suffer_tones.get("default", {})
 	if typeof(default_map) == TYPE_DICTIONARY and default_map.has("default"):
-		return _resolve_text_or_array(default_map["default"])
+		return _pick_weighted_text([], default_map["default"], "status_suffer|%s|fallback" % effect_id)
 	return ""
 
+func _pick_weighted_text(specific_value, default_value, history_key: String) -> String:
+	var specific_pool := _normalize_text_pool(specific_value)
+	var default_pool := _normalize_text_pool(default_value)
+	if specific_pool.is_empty() and default_pool.is_empty():
+		return ""
+
+	var last_line := str(_last_tone_pick_by_context.get(history_key, ""))
+	var unique_lines := {}
+	for line in specific_pool:
+		unique_lines[str(line)] = true
+	for line in default_pool:
+		unique_lines[str(line)] = true
+	if unique_lines.size() > 1 and last_line != "":
+		specific_pool = specific_pool.filter(func(line): return str(line) != last_line)
+		default_pool = default_pool.filter(func(line): return str(line) != last_line)
+
+	var weights: Dictionary = {}
+	var specific_weight := 0.0
+	var default_weight := 0.0
+	if not specific_pool.is_empty() and not default_pool.is_empty():
+		specific_weight = SPECIFIC_POOL_WEIGHT
+		default_weight = DEFAULT_POOL_WEIGHT
+	elif not specific_pool.is_empty():
+		specific_weight = 1.0
+	elif not default_pool.is_empty():
+		default_weight = 1.0
+
+	for line in specific_pool:
+		var key := str(line)
+		weights[key] = float(weights.get(key, 0.0)) + (specific_weight / float(specific_pool.size()))
+	for line in default_pool:
+		var key := str(line)
+		weights[key] = float(weights.get(key, 0.0)) + (default_weight / float(default_pool.size()))
+
+	if weights.is_empty():
+		var fallback_pool := _normalize_text_pool(specific_value)
+		if fallback_pool.is_empty():
+			fallback_pool = _normalize_text_pool(default_value)
+		if fallback_pool.is_empty():
+			return ""
+		var fallback_line := str(fallback_pool[0])
+		_last_tone_pick_by_context[history_key] = fallback_line
+		return fallback_line
+
+	var total_weight := 0.0
+	for value in weights.values():
+		total_weight += float(value)
+	if total_weight <= 0.0:
+		return ""
+
+	var roll := randf() * total_weight
+	var cumulative := 0.0
+	for key in weights.keys():
+		cumulative += float(weights[key])
+		if roll <= cumulative:
+			_last_tone_pick_by_context[history_key] = String(key)
+			return String(key)
+
+	var keys := weights.keys()
+	var last_key := String(keys[keys.size() - 1])
+	_last_tone_pick_by_context[history_key] = last_key
+	return last_key
+
+func _normalize_text_pool(value) -> Array:
+	var out: Array = []
+	if typeof(value) == TYPE_ARRAY:
+		for entry in value:
+			var text := str(entry).strip_edges()
+			if text == "":
+				continue
+			out.append(text)
+	elif value != null:
+		var single := str(value).strip_edges()
+		if single != "":
+			out.append(single)
+	return out
 
 func _resolve_text_or_array(value) -> String:
-	if typeof(value) == TYPE_ARRAY:
-		var arr: Array = value
-		if arr.is_empty():
-			return ""
-		return str(arr[randi() % arr.size()])
-	return str(value)
+	return _pick_weighted_text([], value, "legacy_resolve")
 
 
 
@@ -909,27 +1016,37 @@ func _get_hit_text(user_id: String, hit_kind: String, side: String) -> String:
 		return ""
 
 	var side_map = hit_reactions[branch]
-
-	var char_map = side_map.get(user_id, null)
-	if char_map == null:
-		char_map = side_map.get("default", null)
-	if char_map == null:
+	var specific_map = side_map.get(user_id, null)
+	var default_map = side_map.get("default", null)
+	if specific_map == null and default_map == null:
 		return ""
 
-	var group: Array = []
+	var specific_group: Array = []
+	if typeof(specific_map) == TYPE_DICTIONARY:
+		match hit_kind:
+			"weak":
+				specific_group = specific_map.get("weak", [])
+			"def_normal":
+				specific_group = specific_map.get("def_normal", [])
+			"def_weak":
+				specific_group = specific_map.get("def_weak", [])
+			_:
+				specific_group = specific_map.get("normal", [])
 
-	match hit_kind:
-		"weak":
-			group = char_map.get("weak", [])
-		"def_normal":
-			group = char_map.get("def_normal", [])
-		"def_weak":
-			group = char_map.get("def_weak", [])
-		_:
-			group = char_map.get("normal", [])
+	var default_group: Array = []
+	if typeof(default_map) == TYPE_DICTIONARY:
+		match hit_kind:
+			"weak":
+				default_group = default_map.get("weak", [])
+			"def_normal":
+				default_group = default_map.get("def_normal", [])
+			"def_weak":
+				default_group = default_map.get("def_weak", [])
+			_:
+				default_group = default_map.get("normal", [])
 
-	if group.is_empty():
-		return ""
-
-	var idx := randi() % group.size()
-	return group[idx]
+	return _pick_weighted_text(
+		specific_group,
+		default_group,
+		"hit|%s|%s|%s" % [branch, user_id, hit_kind]
+	)
