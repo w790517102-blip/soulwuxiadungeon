@@ -28,6 +28,7 @@ const SHOPS := {
 			{"item_id": "arm_cloth", "price": 35, "stock": -1},
 			{"item_id": "acc_bracer", "price": 25, "stock": -1},
 			{"item_id": "arm_straw_sandals", "price": 28, "stock": -1},
+			{"item_id": "arm_boss_running_shoes", "price": 1, "stock": 1, "restock_rule": "never"},
 			{"item_id": "arm_thin_leather", "price": 80, "stock": -1},
 			{"item_id": "tool_zhuge_crossbow", "price": 120, "stock": -1},
 			{"item_id": "ammo_arrow", "price": 1, "stock": -1},

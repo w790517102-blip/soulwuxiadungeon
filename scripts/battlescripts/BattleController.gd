@@ -157,6 +157,8 @@ func _apply_equipment_bonuses() -> void:
 		var bonus_atk := int(bonus.get("atk", 0)) + int(force_bonus.get("atk", 0))
 		var bonus_def := int(bonus.get("def", 0)) + int(force_bonus.get("def", 0))
 		var bonus_speed := int(bonus.get("speed", 0)) + int(force_bonus.get("speed", 0))
+		var bonus_accuracy := int(bonus.get("accuracy", 0)) + int(force_bonus.get("accuracy", 0))
+		var bonus_evasion := int(bonus.get("evasion", 0)) + int(force_bonus.get("evasion", 0))
 		var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(force_bonus.get("max_hp", 0))
 		var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(force_bonus.get("max_mp", 0))
 		var max_hp := int(p.get("max_hp", p.get("hp", 0))) + bonus_max_hp
@@ -164,6 +166,8 @@ func _apply_equipment_bonuses() -> void:
 		p["atk"] = int(p.get("atk", 0)) + bonus_atk
 		p["def"] = int(p.get("def", 0)) + bonus_def
 		p["speed"] = int(p.get("speed", 0)) + bonus_speed
+		p["accuracy"] = int(p.get("accuracy", 100)) + bonus_accuracy
+		p["evasion"] = int(p.get("evasion", 0)) + bonus_evasion
 		p["max_hp"] = max_hp
 		p["max_mp"] = max_mp
 		p["hp"] = min(int(p.get("hp", 0)), max_hp)
@@ -782,19 +786,23 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 		battle_ui.play_attack_motion(attacker)
 		await get_tree().create_timer(0.12).timeout
 
-		# FX：根據 skill / 武器決定動畫
-		var fx_id = _get_fx_id_for_skill(skill_data, attacker)
-		if fx_id != "":
-			battle_ui.play_hit_fx_on_target(target, fx_id)
+		var did_hit := bool(result.get("hit", true))
+		if did_hit:
+			# FX：根據 skill / 武器決定動畫
+			var fx_id = _get_fx_id_for_skill(skill_data, attacker)
+			if fx_id != "":
+				battle_ui.play_hit_fx_on_target(target, fx_id)
 
-		# ⭐ 判斷是否處於防禦狀態
-		var is_blocking = bool(target.get("defending", false))
-		if is_blocking:
-			battle_ui.play_guard_react(target)
+			# ⭐ 判斷是否處於防禦狀態
+			var is_blocking = bool(target.get("defending", false))
+			if is_blocking:
+				battle_ui.play_guard_react(target)
+			else:
+				battle_ui.play_damage_react(target)
+
+			await get_tree().create_timer(0.25).timeout
 		else:
-			battle_ui.play_damage_react(target)
-
-		await get_tree().create_timer(0.25).timeout
+			await get_tree().create_timer(0.12).timeout
 
 	# ❷ 在這一刻才更新血條 / MP（SkillExecutor 早就算完，但 UI 延後刷新）
 	_update_ui_for_actor(target)
@@ -896,6 +904,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		var any_down = false
 		var alive_targets: Array = []
+		var hit_targets: Array = []
 
 		# 🌊 全場級起手描述
 		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
@@ -909,18 +918,20 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			enemy["hp"] = entry["after_hp"]
 			_update_ui_for_actor(enemy)
 			alive_targets.append(enemy)
+			if bool(entry["result"].get("hit", true)):
+				hit_targets.append(enemy)
 		# 💥 全體受擊動畫（同時播放）
-		if battle_ui:
+		if battle_ui and not hit_targets.is_empty():
 			if battle_ui.has_method("play_hit_fx_multi"):
-				battle_ui.play_hit_fx_multi(alive_targets, "fx_hit_fist")
+				battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
 			elif battle_ui.has_method("play_hit_fx_on_target"):
-				for enemy in alive_targets:
+				for enemy in hit_targets:
 					battle_ui.play_hit_fx_on_target(enemy, "fx_hit_fist")
 
 			if battle_ui.has_method("play_damage_react_multi"):
-				battle_ui.play_damage_react_multi(alive_targets)
+				battle_ui.play_damage_react_multi(hit_targets)
 			elif battle_ui.has_method("play_damage_react"):
-				for enemy in alive_targets:
+				for enemy in hit_targets:
 					battle_ui.play_damage_react(enemy)
 
 		await get_tree().create_timer(0.15).timeout
@@ -932,6 +943,11 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 			var name_e: String = str(enemy.get("name", "???"))
 			var dmg_int: int = int(r.get("damage", 0))
+
+			if not bool(r.get("hit", true)):
+				for line in r.get("log", []):
+					_log(str(line))
+				continue
 
 			# ▶ 狀態旗標
 			var target_element: String = str(enemy.get("element", ""))
@@ -987,7 +1003,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 					any_down = true
 					_log(_enemy_defeat_line(enemy))
 
-		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, alive_targets)
+		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, hit_targets)
 		_log_applied_statuses(aoe_applied)
 		if aoe_applied.size() > 0:
 			await _await_log_stage_continue()
@@ -1046,7 +1062,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			await action_log_ui.wait_for_all_logs()
 		await _await_log_stage_continue()
 
-	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, [actual_target])
+	var single_target_pool: Array = [actual_target] if bool(result_single.get("hit", true)) else []
+	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, single_target_pool)
 	_log_applied_statuses(single_applied)
 	if single_applied.size() > 0:
 		await _await_log_stage_continue()
@@ -1232,6 +1249,8 @@ func _apply_skill_effects(user: Dictionary, primary_target: Dictionary, skill_da
 		var side := str(skill_data.get("target_side", "enemy"))
 		if str(entry.get("target", "")) == "self":
 			targets = [user]
+		elif side == "enemy" and target_pool.is_empty():
+			targets = []
 		elif scope == "enemy_all" and side == "enemy":
 			targets = target_pool
 		else:

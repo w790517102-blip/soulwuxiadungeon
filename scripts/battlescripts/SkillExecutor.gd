@@ -27,7 +27,11 @@ func execute(
 		"damage": 0,
 		"crit": false,
 		"skill_name": "",
-		"target_down": false
+		"target_down": false,
+		"hit": true,
+		"dodged": false,
+		"hit_chance": 100,
+		"hit_roll": 0.0
 	}
 
 	# === 詞綴組合：有符合 boost_weapon 才套 prefix ===
@@ -108,6 +112,19 @@ func execute(
 			result["boost_pct"] = boost_pct
 
 	var context: Dictionary = {}
+
+	# --- 命中 / 閃避 ---
+	var hit_context := _roll_hit(user, target)
+	result["hit"] = bool(hit_context.get("hit", true))
+	result["dodged"] = not bool(hit_context.get("hit", true))
+	result["hit_chance"] = int(hit_context.get("chance", 100))
+	result["hit_roll"] = float(hit_context.get("roll", 0.0))
+
+	if not bool(hit_context.get("hit", true)):
+		result["damage"] = 0
+		result["target_down"] = false
+		result["log"] = _build_dodge_log(user, target, skill_name)
+		return result
 
 	# --- 屬性剋制 ---
 	var user_element: String = String(user.get("element", ""))
@@ -206,3 +223,25 @@ func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
 			continue
 		total += float(int(user.get(stat_key, 0))) * coeff
 	return int(floor(total))
+
+
+func _roll_hit(user: Dictionary, target: Dictionary) -> Dictionary:
+	var accuracy := int(user.get("accuracy", 100))
+	var evasion := int(target.get("evasion", 0))
+	var chance := clampi(accuracy - evasion, 5, 100)
+	var roll := randf() * 100.0
+	return {
+		"hit": roll < float(chance),
+		"chance": chance,
+		"roll": roll,
+	}
+
+
+func _build_dodge_log(user: Dictionary, target: Dictionary, skill_name: String) -> Array:
+	var user_name := String(user.get("name", "???"))
+	var target_name := String(target.get("name", "???"))
+	var lines: Array = []
+	lines.append("%s 使出「%s」，攻勢直取 %s！" % [user_name, skill_name, target_name])
+	lines.append("%s 身形一晃，避開了這一擊！" % target_name)
+	lines.append("這一招沒有命中。")
+	return lines
