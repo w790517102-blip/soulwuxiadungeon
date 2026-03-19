@@ -141,16 +141,18 @@ func _setup_opening_overlay() -> void:
 	intro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	intro.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro.add_theme_font_size_override("font_size", 32)
+	intro.add_theme_font_size_override("font_size", 24)
 	intro.add_theme_color_override("font_color", Color(1, 0.96, 0.82, 1))
 	intro.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	intro.add_theme_constant_override("outline_size", 5)
-	intro.offset_left = 120
-	intro.offset_top = 170
-	intro.offset_right = -120
-	intro.offset_bottom = -170
-	intro.anchor_right = 1.0
-	intro.anchor_bottom = 1.0
+	intro.anchor_left = 0.5
+	intro.anchor_top = 0.5
+	intro.anchor_right = 0.5
+	intro.anchor_bottom = 0.5
+	intro.offset_left = -420
+	intro.offset_top = -110
+	intro.offset_right = 420
+	intro.offset_bottom = 110
 	_opening_overlay.add_child(intro)
 	_opening_intro_label = intro
 
