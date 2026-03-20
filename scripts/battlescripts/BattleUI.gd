@@ -149,10 +149,10 @@ func _setup_opening_overlay() -> void:
 	intro.anchor_top = 0.5
 	intro.anchor_right = 0.5
 	intro.anchor_bottom = 0.5
-	intro.offset_left = -420
-	intro.offset_top = -110
-	intro.offset_right = 420
-	intro.offset_bottom = 110
+	intro.offset_left = 180
+	intro.offset_top = 190
+	intro.offset_right = 1020
+	intro.offset_bottom = 410
 	_opening_overlay.add_child(intro)
 	_opening_intro_label = intro
 
@@ -183,7 +183,14 @@ func _setup_opening_overlay() -> void:
 	start.add_theme_color_override("font_color", Color(1, 0.95, 0.55, 1))
 	start.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	start.add_theme_constant_override("outline_size", 8)
-	start.set_anchors_preset(Control.PRESET_FULL_RECT)
+	start.anchor_left = 0.5
+	start.anchor_top = 0.5
+	start.anchor_right = 0.5
+	start.anchor_bottom = 0.5
+	start.offset_left = 180
+	start.offset_top = 190
+	start.offset_right = 1020
+	start.offset_bottom = 410
 	start.visible = false
 	_opening_overlay.add_child(start)
 	_opening_start_label = start
