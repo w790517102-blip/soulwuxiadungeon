@@ -955,7 +955,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				state_key = "crit"
 
 			# ▶ 額外敘事：完全交給 ToneMap
-			if tone_map != null:
+			if tone_map != null and not is_down:
 				# 第二個 key：把「技能 + 狀態」打包，讓你在 ToneMap 裡自由配招式台詞
 				var skill_key = str(skill_data.get("id", display_skill_name))
 				var tone_key  = "%s|%s" % [skill_key, state_key]
