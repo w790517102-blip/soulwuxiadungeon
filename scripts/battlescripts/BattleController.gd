@@ -844,6 +844,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				]
 
 		var actor_name: String = str(actor.get("name", "???"))
+		var aoe_skill_data: Dictionary = skill_data.duplicate(true)
+		aoe_skill_data["_suppress_attack_opener"] = true
 
 		# 先把每個敵人的結果算好（不直接改本體）
 		var aoe_results: Array = []  # [ { "enemy": enemy_dict, "result": result_dict, "after_hp": int }, ... ]
@@ -855,9 +857,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				continue
 
 			var enemy_copy: Dictionary = enemy.duplicate(true)
-			var before_hp: int = int(enemy.get("hp", 0))
-			var r: Dictionary = skill_executor.execute(actor, enemy_copy, skill_data, inner_force)
-			var after_hp: int = max(before_hp - int(r.get("damage", 0)), 0)
+			var r: Dictionary = skill_executor.execute(actor, enemy_copy, aoe_skill_data, inner_force)
+			var after_hp: int = int(enemy_copy.get("hp", enemy.get("hp", 0)))
 			aoe_results.append({
 				"enemy": enemy,
 				"result": r,
@@ -868,15 +869,6 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		if battle_ui and battle_ui.has_method("play_attack_motion"):
 			battle_ui.play_attack_motion(actor)
 			await get_tree().create_timer(0.35).timeout
-
-		# 屬性剋制表只在這邊用
-		var ke_system = {
-			"快": "遲",
-			"遲": "柔",
-			"柔": "剛",
-			"剛": "快"
-		}
-		var user_element: String = str(actor.get("element", ""))
 
 		var any_down = false
 		var alive_targets: Array = []
@@ -912,72 +904,15 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		await get_tree().create_timer(0.15).timeout
 
-		# 💥 每隻各自敘事＋傷害數字
+		# 💥 每隻各自敘事＋傷害數字（比照單體流程）
 		for entry in aoe_results:
 			var enemy: Dictionary = entry["enemy"]
-			var r: Dictionary     = entry["result"]
-
-			var name_e: String = str(enemy.get("name", "???"))
-			var dmg_int: int = int(r.get("damage", 0))
-
-			if not bool(r.get("hit", true)):
-				for line in r.get("log", []):
-					_log(str(line))
-				continue
-
-			# ▶ 狀態旗標
-			var target_element: String = str(enemy.get("element", ""))
-			var is_crit: bool  = bool(r.get("crit", false))
-			var after_hp_now: int = int(enemy.get("hp", 0))
-			var is_down: bool  = after_hp_now <= 0
-
-			# 簡單算一下「有沒有剋到」：快>遲>柔>剛>快
-			var has_ke_advantage = false
-			match user_element:
-				"快":
-					has_ke_advantage = (target_element == "遲")
-				"遲":
-					has_ke_advantage = (target_element == "柔")
-				"柔":
-					has_ke_advantage = (target_element == "剛")
-				"剛":
-					has_ke_advantage = (target_element == "快")
-				_:
-					has_ke_advantage = false
-
-			# ▶ 交給 ToneMap 的「狀態 key」
-			var state_key = "normal"
-			if is_down:
-				state_key = "down"
-			elif has_ke_advantage:
-				state_key = "ke"
-			elif is_crit:
-				state_key = "crit"
-
-			# ▶ 額外敘事：完全交給 ToneMap
-			if tone_map != null and not is_down:
-				# 第二個 key：把「技能 + 狀態」打包，讓你在 ToneMap 裡自由配招式台詞
-				var skill_key = str(skill_data.get("id", display_skill_name))
-				var tone_key  = "%s|%s" % [skill_key, state_key]
-				var target_id = str(enemy.get("id", ""))
-
-				var extra_line = tone_map.get_tone_text("aoe_suffer", tone_key, target_id)
-				if extra_line != "":
-					_log(extra_line)
-
-			# 🔢 數字戰報
-			if dmg_int > 0:
-				var dmg_str = "[color=#ffd447]%d[/color]" % dmg_int
-				_log("%s 受到 %s 點傷害。" % [
-					name_e,
-					dmg_str
-				])
-
-				# 倒地判定＋經典死亡台詞
-				if is_down:
-					_mark_actor_down(enemy)
-					any_down = true
-					_log(_enemy_defeat_line(enemy))
+			var r: Dictionary = entry["result"]
+			for line in r.get("log", []):
+				_log(str(line))
+			if bool(r.get("target_down", false)):
+				_mark_actor_down(enemy)
+				any_down = true
 
 		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, hit_targets)
 		_log_applied_statuses(aoe_applied)

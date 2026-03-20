@@ -112,6 +112,7 @@ func execute(
 			result["boost_pct"] = boost_pct
 
 	var context: Dictionary = {}
+	var suppress_attack_opener := bool(skill_data.get("_suppress_attack_opener", false))
 
 	# --- 命中 / 閃避 ---
 	var hit_context := _roll_hit(user, target)
@@ -123,7 +124,7 @@ func execute(
 	if not bool(hit_context.get("hit", true)):
 		result["damage"] = 0
 		result["target_down"] = false
-		result["log"] = _build_dodge_log(user, target, skill_name)
+		result["log"] = _build_dodge_log(user, target, skill_name, suppress_attack_opener)
 		return result
 
 	# --- 屬性剋制 ---
@@ -183,6 +184,7 @@ func execute(
 
 	# === 補充給 battle style 用的 context ===
 	context["weapon_type"] = skill_data.get("weapon_type", user.get("weapon_1", "拳"))
+	context["suppress_attack_opener"] = suppress_attack_opener
 
 	# 🧩 這裡改成「記錄＆比較 prefix」的版本
 	var prefix_for_tone: String = String(inner_force.get("prefix", ""))
@@ -237,11 +239,12 @@ func _roll_hit(user: Dictionary, target: Dictionary) -> Dictionary:
 	}
 
 
-func _build_dodge_log(user: Dictionary, target: Dictionary, skill_name: String) -> Array:
+func _build_dodge_log(user: Dictionary, target: Dictionary, skill_name: String, suppress_attack_opener: bool = false) -> Array:
 	var user_name := String(user.get("name", "???"))
 	var target_name := String(target.get("name", "???"))
 	var lines: Array = []
-	lines.append("%s 使出「%s」，攻勢直取 %s！" % [user_name, skill_name, target_name])
+	if not suppress_attack_opener:
+		lines.append("%s 使出「%s」，攻勢直取 %s！" % [user_name, skill_name, target_name])
 	lines.append("%s 身形一晃，避開了這一擊！" % target_name)
 	lines.append("這一招沒有命中。")
 	return lines

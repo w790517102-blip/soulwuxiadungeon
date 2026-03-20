@@ -15,10 +15,11 @@ func describe_attack(
 	var lines: Array = []
 	var user_side := _detect_target_side(user)
 	var target_side := context.get("target_side", "")
+	var suppress_attack_opener := bool(context.get("suppress_attack_opener", false))
 	if target_side == "":
 		target_side = _detect_target_side(target)
 
-	if user_side == "enemy":
+	if not suppress_attack_opener and user_side == "enemy":
 		var enemy_attack_line := _format_enemy_tone(
 			tone_map.get_tone_text("enemy_attack", _resolve_enemy_archetype(user), String(user.get("id", ""))),
 			user,
@@ -30,7 +31,7 @@ func describe_attack(
 
 	# === 內功氣息詞綴敘述（第一次運轉該內功時） ===
 	var prefix = context.get("inner_force_prefix", "")
-	if context.get("first_time_using_inner_force", false) and prefix != "":
+	if not suppress_attack_opener and context.get("first_time_using_inner_force", false) and prefix != "":
 		var tone_line: String = tone_map.get_tone_text("innerforce_applied", prefix, user.get("id", ""))
 		if tone_line != "":
 			lines.append(tone_line)
@@ -64,14 +65,14 @@ func describe_attack(
 		]
 	}
 
-	if user_side != "enemy" and weapon_openers.has(weapon_type):
+	if not suppress_attack_opener and user_side != "enemy" and weapon_openers.has(weapon_type):
 		var w_lines: Array = weapon_openers[weapon_type]
 		var template: String = w_lines[randi() % w_lines.size()]
 		if template.count("%s") == 2:
 			lines.append(template % [user.get("name", "???"), skill_name])
 		elif template.count("%s") == 3:
 			lines.append(template % [user.get("name", "???"), skill_name, target.get("name", "???")])
-	elif user_side != "enemy":
+	elif not suppress_attack_opener and user_side != "enemy":
 		var openers = [
 			"在電光石火之間，%s 凝神運氣，使出「%s」。",
 			"只見 %s 身形一閃，「%s」如雷霆萬鈞般擊向 %s。",
