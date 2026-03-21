@@ -1021,8 +1021,14 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 func _resolve_enemy_archetype(enemy: Dictionary) -> String:
 	return EnemyDB.resolve_archetype(str(enemy.get("archetype", enemy.get("species", ""))))
 
-func _enemy_defeat_line(enemy: Dictionary) -> String:
+func _enemy_defeat_line(enemy: Dictionary, attacker: Dictionary = {}) -> String:
 	var name_e := str(enemy.get("name", "???"))
+	if tone_map != null and typeof(attacker) == TYPE_DICTIONARY and not attacker.is_empty():
+		var attacker_id := str(attacker.get("id", ""))
+		if attacker_id != "" and attacker in player_party:
+			var ally_line := tone_map.get_tone_text("ally_enemy_defeat", "", attacker_id)
+			if ally_line != "":
+				return ally_line.replace("{name}", name_e)
 	var archetype := _resolve_enemy_archetype(enemy)
 	if tone_map != null:
 		var line := tone_map.get_tone_text("enemy_defeat", archetype, str(enemy.get("id", "")))
@@ -1031,7 +1037,12 @@ func _enemy_defeat_line(enemy: Dictionary) -> String:
 	return "%s 倒下，傷勢過重，已無力再戰。" % name_e
 
 func _ally_down_self_line(actor: Dictionary) -> String:
-	return "%s 傷重倒地，已無再戰之力！" % str(actor.get("name", "???"))
+	var actor_name := str(actor.get("name", "???"))
+	if tone_map != null:
+		var line := tone_map.get_tone_text("ally_down_self", "", str(actor.get("id", "")))
+		if line != "":
+			return line.replace("{name}", actor_name)
+	return "%s 傷重倒地，已無再戰之力！" % actor_name
 
 func _mark_actor_down(actor: Dictionary) -> void:
 	if typeof(actor) != TYPE_DICTIONARY or actor.is_empty():
@@ -1098,7 +1109,7 @@ func _maybe_play_pending_ally_down_reaction(actor: Dictionary) -> void:
 			actor_id
 		)
 	if reaction_line == "":
-		reaction_line = "{observer_name} 眼見 {downed_name} 倒下，胸口驟然一沉，仍咬牙穩住了架勢。"
+		reaction_line = "眼見同伴倒下，場中的氣息也在那一瞬間亂了一拍。"
 	reaction_line = reaction_line \
 		.replace("{observer_name}", str(actor.get("name", "???"))) \
 		.replace("{downed_name}", str(pending_event.get("downed_name", "同伴")))
@@ -1720,7 +1731,7 @@ func _apply_bomb_damage_to_target(
 	if after_hp <= 0:
 		_mark_actor_down(target)
 		if target in enemy_party:
-			_log(_enemy_defeat_line(target))
+			_log(_enemy_defeat_line(target, user))
 		else:
 			_log(_ally_down_self_line(target))
 
@@ -1831,7 +1842,7 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 
 		if int(result["after_hp"]) <= 0:
 			_mark_actor_down(enemy)
-			_log(_enemy_defeat_line(enemy))
+			_log(_enemy_defeat_line(enemy, user))
 
 
 

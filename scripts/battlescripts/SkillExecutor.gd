@@ -245,6 +245,9 @@ func _build_dodge_log(user: Dictionary, target: Dictionary, skill_name: String, 
 	var lines: Array = []
 	if not suppress_attack_opener:
 		lines.append("%s 使出「%s」，攻勢直取 %s！" % [user_name, skill_name, target_name])
-	lines.append("%s 身形一晃，避開了這一擊！" % target_name)
+	var dodge_line := tone.get_tone_text("ally_dodge", "", String(target.get("id", "")))
+	if dodge_line == "":
+		dodge_line = "%s 身形一晃，避開了這一擊！" % target_name
+	lines.append(dodge_line.replace("{name}", target_name))
 	lines.append("這一招沒有命中。")
 	return lines

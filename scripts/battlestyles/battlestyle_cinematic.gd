@@ -68,8 +68,13 @@ func describe_attack(
 	if context.get("target_down", false):
 		var down_line := ""
 		if target_side == "enemy":
-			var archetype := _resolve_enemy_archetype(target)
-			down_line = tone_map.get_tone_text("enemy_defeat", archetype, String(target.get("id", "")))
+			if user_side != "enemy":
+				down_line = tone_map.get_tone_text("ally_enemy_defeat", "", String(user.get("id", "")))
+			if down_line == "":
+				var archetype := _resolve_enemy_archetype(target)
+				down_line = tone_map.get_tone_text("enemy_defeat", archetype, String(target.get("id", "")))
+		else:
+			down_line = tone_map.get_tone_text("ally_down_self", "", String(target.get("id", "")))
 		if down_line == "":
 			down_line = "%s 傷重倒地，已無再戰之力！" % target.get("name", "???")
 		down_line = down_line.replace("{name}", String(target.get("name", "???")))
