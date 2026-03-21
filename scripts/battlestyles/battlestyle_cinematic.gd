@@ -38,52 +38,11 @@ func describe_attack(
 
 	# === 武器類型開場敘述 ===
 	var weapon_type = context.get("weapon_type", "")
-	var weapon_openers = {
-		"劍": [
-			"%s 長劍一指，寒光劃破長空，展開「%s」攻勢。",
-			"劍氣縱橫，%s 使出「%s」，劍招凌厲逼人！"
-		],
-		"刀": [
-			"%s 揚刀而起，「%s」氣勢如破竹，直劈向 %s。",
-			"刀光斬落，%s 使出「%s」，勢不可擋！"
-		],
-		"拳": [
-			"%s 雙拳如風，「%s」一式轟出，空氣震動！",
-			"%s 喊聲一震，一拳「%s」破空而來！"
-		],
-		"掌": [
-			"%s 吐氣開聲，掌勢如山，「%s」撼得地動山搖！",
-			"%s 身形一旋，掌影連綿，「%s」驟然拍至 %s！"
-		],
-		"筆": [
-			"%s 揮筆如劍，「%s」筆鋒直指敵首，墨氣如劍氣般爆發！",
-			"濃墨淋漓，%s 使出「%s」，筆落驚風雨！"
-		],
-		"琴": [
-			"%s 撫琴一震，旋律間藏殺機，「%s」震得 %s 氣血翻湧。",
-			"音律飄渺，%s 撥弦化刃，「%s」凝聚殺意一曲！"
-		]
-	}
-
-	if not suppress_attack_opener and user_side != "enemy" and weapon_openers.has(weapon_type):
-		var w_lines: Array = weapon_openers[weapon_type]
-		var template: String = w_lines[randi() % w_lines.size()]
-		if template.count("%s") == 2:
-			lines.append(template % [user.get("name", "???"), skill_name])
-		elif template.count("%s") == 3:
-			lines.append(template % [user.get("name", "???"), skill_name, target.get("name", "???")])
-	elif not suppress_attack_opener and user_side != "enemy":
-		var openers = [
-			"在電光石火之間，%s 凝神運氣，使出「%s」。",
-			"只見 %s 身形一閃，「%s」如雷霆萬鈞般擊向 %s。",
-			"%s 一聲低喝，真氣貫通掌心，使出「%s」！",
-			"%s 提氣縱身而上，赫然揮出「%s」！"
-		]
-		var opener: String = openers[randi() % openers.size()]
-		if opener.count("%s") == 2:
-			lines.append(opener % [user.get("name", "???"), skill_name])
-		elif opener.count("%s") == 3:
-			lines.append(opener % [user.get("name", "???"), skill_name, target.get("name", "???")])
+	if not suppress_attack_opener and user_side != "enemy":
+		var opener_template := tone_map.get_ally_attack_text(String(weapon_type), String(user.get("id", "")))
+		var opener_line := _format_attack_tone(opener_template, user, target, skill_name)
+		if opener_line != "":
+			lines.append(opener_line)
 
 	# === 元素剋制加乘敘述 ===
 	if context.get("element_advantage", false):
@@ -156,6 +115,10 @@ func _resolve_enemy_archetype(actor: Dictionary) -> String:
 
 
 func _format_enemy_tone(template: String, actor: Dictionary, target: Dictionary, skill_name: String) -> String:
+	return _format_attack_tone(template, actor, target, skill_name)
+
+
+func _format_attack_tone(template: String, actor: Dictionary, target: Dictionary, skill_name: String) -> String:
 	if template == "":
 		return ""
 	return template \

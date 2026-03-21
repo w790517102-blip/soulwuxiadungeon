@@ -13,6 +13,8 @@ var _last_tone_pick_by_context: Dictionary = {}
 #   - "defend"             : 防禦姿態描述（依角色）
 #   - "item_use"           : 使用道具時的描述（依效果類型 effect + 角色，施放者視角）
 #   - "item_suffer"        : 遭受道具效果時的描述（依效果類型 effect + 角色，中招者視角）
+#   - "ally_attack"       : 我方單體出手敘事（依武器類型＋角色）
+#   - "ally_attack_aoe"   : 我方 AOE 出手敘事（依武器類型＋角色，會回退到 ally_attack）
 #   - "aoe_suffer"         : AOE 技能多目標受擊敘事（依「技能＋狀態」＋ 角色）
 #   - ⚠️ "hit" 另外獨立放在 hit_reactions 裡，由 get_tone_text 特別處理
 
@@ -35,6 +37,121 @@ var tone_map := {
 		},
 		"zueyue_teashop_training": {
 			"default": "茶香未散，席間卻已暗自騰起試招的鋒芒。"
+		}
+	},
+	"ally_attack": {
+		"劍": {
+			"default": [
+				"{name} 長劍一指，寒光劃破長空，展開「{skill}」攻勢。",
+				"劍氣縱橫，{name} 使出「{skill}」，劍招凌厲逼人！"
+			]
+		},
+		"刀": {
+			"default": [
+				"{name} 揚刀而起，「{skill}」氣勢如破竹，直劈向 {target}。",
+				"刀光斬落，{name} 使出「{skill}」，勢不可擋！"
+			]
+		},
+		"槍": {
+			"default": [
+				"{name} 長槍一震，使出「{skill}」，槍尖寒芒直逼 {target}。",
+				"槍勢如龍，{name} 挺槍使出「{skill}」，勁道筆直貫向 {target}。"
+			]
+		},
+		"棍": {
+			"default": [
+				"{name} 掄棍而上，使出「{skill}」，棍影挾風壓向 {target}。",
+				"棍勢沉雄，{name} 一招「{skill}」掃出，逼得 {target} 不得不硬接。"
+			]
+		},
+		"拳": {
+			"default": [
+				"{name} 雙拳如風，「{skill}」一式轟出，空氣震動！",
+				"{name} 喊聲一震，一拳「{skill}」破空而來！"
+			]
+		},
+		"掌": {
+			"default": [
+				"{name} 吐氣開聲，掌勢如山，「{skill}」撼得地動山搖！",
+				"{name} 身形一旋，掌影連綿，「{skill}」驟然拍至 {target}！"
+			]
+		},
+		"筆": {
+			"default": [
+				"{name} 揮筆如劍，「{skill}」筆鋒直指敵首，墨氣如劍氣般爆發！",
+				"濃墨淋漓，{name} 使出「{skill}」，筆落驚風雨！"
+			]
+		},
+		"琴": {
+			"default": [
+				"{name} 撫琴一震，旋律間藏殺機，「{skill}」震得 {target} 氣血翻湧。",
+				"音律飄渺，{name} 撥弦化刃，「{skill}」凝聚殺意一曲！"
+			]
+		},
+		"default": {
+			"default": [
+				"在電光石火之間，{name} 凝神運氣，使出「{skill}」。",
+				"只見 {name} 身形一閃，「{skill}」如雷霆萬鈞般擊向 {target}。",
+				"{name} 一聲低喝，真氣貫通掌心，使出「{skill}」！",
+				"{name} 提氣縱身而上，赫然揮出「{skill}」！"
+			]
+		}
+	},
+	"ally_attack_aoe": {
+		"劍": {
+			"default": [
+				"{name} 劍光一展，寒芒如圈般朝四周蕩開。",
+				"{name} 一劍橫掃而出，劍勢如風，逼得眾敵同時後撤。"
+			]
+		},
+		"刀": {
+			"default": [
+				"{name} 刀勢大開大闔，一記橫斬便將面前敵人盡數捲入。",
+				"{name} 刀光如浪翻起，霸道勁勢朝四周席捲而去。"
+			]
+		},
+		"槍": {
+			"default": [
+				"{name} 槍勢一抖，寒星點點連成一片，逼向前方眾敵。",
+				"{name} 長槍橫攔再掃，槍風如龍尾甩出，震開周遭敵影。"
+			]
+		},
+		"棍": {
+			"default": [
+				"{name} 棍影翻飛，勁道一圈圈盪開，逼得眾敵難以近身。",
+				"{name} 一棍掄圓，呼嘯勁風朝四面八方掃了出去。"
+			]
+		},
+		"筆": {
+			"default": [
+				"{name} 筆鋒一轉，墨意如煙霞鋪展，將眾敵盡數卷入其中。",
+				"{name} 筆走游龍，揮灑出的勁意如墨浪般朝四周漫開。"
+			]
+		},
+		"琴": {
+			"default": [
+				"{name} 琴音驟起，層層音浪朝四周推盪而出，震得眾敵心神齊顫。",
+				"{name} 指下一拂，音勁如漣漪般擴散開來，同時籠住眾敵。"
+			]
+		},
+		"拳": {
+			"default": [
+				"{name} 拳勁震開，剛猛力道如波般朝四周擴散。",
+				"{name} 一拳轟出，餘勢未絕，竟將周遭敵影一併震退。"
+			]
+		},
+		"掌": {
+			"default": [
+				"{name} 掌風層層推出，如浪疊岸，將眾敵同時捲入其中。",
+				"{name} 一掌落下，氣浪翻湧，勁勢朝四面八方盪開。",
+				"{name} 使出「{skill}」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。"
+			]
+		},
+		"default": {
+			"default": [
+				"{name} 勁勢驟然擴散，眾敵同時被捲入這一波攻勢之中。",
+				"{name} 那一擊不再只取一人，而是如潮般朝整片敵陣壓了過去。"
+			]
 		}
 	},
 	"enemy_defeat": {
@@ -868,7 +985,11 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 
 		return ""
 
-	# 3-1）敵方攻擊／受擊／倒地敘事：依 archetype key
+	# 3-1）我方攻擊敘事：依武器類型 key
+	elif ["ally_attack", "ally_attack_aoe"].has(category):
+		return _get_weapon_family_tone(category, key, user_id, true)
+
+	# 3-2）敵方攻擊／受擊／倒地敘事：依 archetype key
 	elif ["enemy_attack", "enemy_suffer", "enemy_defeat"].has(category):
 		var group = cat_map.get(key, null)
 		if group == null:
@@ -895,6 +1016,46 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 			"%s|%s|%s|%s" % [category, key, user_id, side]
 		)
 	return ""
+
+
+func get_ally_attack_text(weapon_type: String, user_id: String, is_aoe: bool = false) -> String:
+	var normalized_weapon := weapon_type.strip_edges()
+	if normalized_weapon == "":
+		normalized_weapon = "default"
+
+	if is_aoe:
+		var aoe_line := _get_weapon_family_tone("ally_attack_aoe", normalized_weapon, user_id, false)
+		if aoe_line != "":
+			return aoe_line
+
+	var single_line := _get_weapon_family_tone("ally_attack", normalized_weapon, user_id, false)
+	if single_line != "":
+		return single_line
+
+	if is_aoe:
+		var aoe_default := _get_weapon_family_tone("ally_attack_aoe", "default", user_id, true)
+		if aoe_default != "":
+			return aoe_default
+
+	return _get_weapon_family_tone("ally_attack", "default", user_id, true)
+
+
+func _get_weapon_family_tone(category: String, weapon_type: String, user_id: String, allow_default_fallback: bool) -> String:
+	if not tone_map.has(category):
+		return ""
+	var cat_map = tone_map[category]
+	var key := weapon_type if weapon_type != "" else "default"
+	var group = cat_map.get(key, null)
+	if group == null and allow_default_fallback:
+		group = cat_map.get("default", null)
+		key = "default"
+	if group == null:
+		return ""
+	return _pick_weighted_text(
+		group.get(user_id, null),
+		group.get("default", ""),
+		"%s|%s|%s" % [category, key, user_id]
+	)
 
 
 func _get_status_suffer_text(key: String) -> String:

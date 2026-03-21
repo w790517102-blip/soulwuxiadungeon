@@ -788,6 +788,35 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 
 
 # ✅ 改版：可以接受指定 target，給玩家選目標用
+func _resolve_attack_weapon_type(actor: Dictionary, skill_data: Dictionary) -> String:
+	var weapon_type := String(skill_data.get("weapon_type", "")).strip_edges()
+	if weapon_type != "":
+		return weapon_type
+	for key in ["weapon_1", "weapon_2"]:
+		var equipped := String(actor.get(key, "")).strip_edges()
+		if equipped != "":
+			return equipped
+	return "default"
+
+
+func _build_ally_aoe_opener(actor: Dictionary, skill_name: String, skill_data: Dictionary) -> String:
+	if tone_map == null:
+		return "%s 使出「%s」，勁勢驟然擴散，眾敵同時被捲入這一波攻勢之中。" % [
+			str(actor.get("name", "???")),
+			skill_name
+		]
+	var weapon_type := _resolve_attack_weapon_type(actor, skill_data)
+	var template := tone_map.get_ally_attack_text(weapon_type, str(actor.get("id", "")), true)
+	if template == "":
+		return "%s 使出「%s」，勁勢驟然擴散，眾敵同時被捲入這一波攻勢之中。" % [
+			str(actor.get("name", "???")),
+			skill_name
+		]
+	return template \
+		.replace("{name}", str(actor.get("name", "???"))) \
+		.replace("{skill}", skill_name)
+
+
 func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionary = {}) -> void:
 	var effect: String = str(skill_data.get("effect", ""))
 	if effect == "" and skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
@@ -843,7 +872,6 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 					display_skill_name
 				]
 
-		var actor_name: String = str(actor.get("name", "???"))
 		var aoe_skill_data: Dictionary = skill_data.duplicate(true)
 		aoe_skill_data["_suppress_attack_opener"] = true
 
@@ -874,11 +902,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		var alive_targets: Array = []
 		var hit_targets: Array = []
 
-		# 🌊 全場級起手描述
-		_log("%s 使出「%s」，掌風層層拍出，氣浪如驟雨般席捲整個敵陣。" % [
-			actor_name,
-			display_skill_name
-		])
+		# 🌊 全場級起手描述（依武器類型選 AOE 敘事）
+		_log(_build_ally_aoe_opener(actor, display_skill_name, skill_data))
 
 		# 先同步寫回傷害結果
 		for entry in aoe_results:
