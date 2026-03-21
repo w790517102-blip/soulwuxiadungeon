@@ -1175,6 +1175,8 @@ func _apply_skill_effects(user: Dictionary, primary_target: Dictionary, skill_da
 		for t in targets:
 			if typeof(t) != TYPE_DICTIONARY or t.is_empty():
 				continue
+			if int(t.get("hp", 0)) <= 0:
+				continue
 			var record := _apply_single_skill_effect(user, t, effect_type, entry, skill_data)
 			if record.is_empty():
 				continue
