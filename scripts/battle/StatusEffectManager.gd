@@ -3,27 +3,56 @@ class_name StatusEffectManager
 
 const DEFAULT_SLOW_DELTA := 10
 
+
+func _canonicalize_effect_id(effect_id: String) -> String:
+	match effect_id:
+		"speed_debuff", "debuff_speed":
+			return "slow"
+		_:
+			return effect_id
+
+
+func _effect_ids_for_lookup(effect_id: String) -> Array[String]:
+	var canonical := _canonicalize_effect_id(effect_id)
+	if canonical == "slow":
+		return ["slow", "speed_debuff"]
+	return [canonical]
+
+
 func has_effect(target: Dictionary, effect_id: String) -> bool:
 	if target.is_empty() or effect_id == "":
 		return false
 	if not target.has("status_effects") or typeof(target["status_effects"]) != TYPE_DICTIONARY:
 		return false
-	return (target["status_effects"] as Dictionary).has(effect_id)
+	var effects: Dictionary = target["status_effects"]
+	for lookup_id in _effect_ids_for_lookup(effect_id):
+		if effects.has(lookup_id):
+			return true
+	return false
 
 
 func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, turns: int, refresh := true) -> bool:
 	if target.is_empty() or turns <= 0:
 		return false
 
+	effect_id = _canonicalize_effect_id(effect_id)
 	_ensure_base_stats(target)
 
 	if not target.has("status_effects") or typeof(target["status_effects"]) != TYPE_DICTIONARY:
 		target["status_effects"] = {}
 
 	var effects: Dictionary = target["status_effects"]
-	var has_existing = effects.has(effect_id)
+	var has_existing = false
+	for lookup_id in _effect_ids_for_lookup(effect_id):
+		if effects.has(lookup_id):
+			has_existing = true
+			break
 	if has_existing and not refresh:
 		return false
+	if has_existing and effect_id == "slow":
+		remove_effect(target, effect_id)
+		effects = target.get("status_effects", {})
+		target["status_effects"] = effects
 
 	var payload_copy = payload.duplicate(true)
 	var effect_payload = payload_copy.duplicate(true)
@@ -34,11 +63,6 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 			if delta <= 0:
 				return false
 			effect_payload = {"speed_delta": delta}
-		"speed_debuff":
-			var slow_delta = int(effect_payload.get("slow_delta", 0))
-			if slow_delta <= 0:
-				return false
-			effect_payload = {"slow_delta": slow_delta}
 		"force_element":
 			var new_element = str(effect_payload.get("element", ""))
 			if new_element == "":
@@ -146,14 +170,17 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 		return
 
 	var effects: Dictionary = target["status_effects"]
-	if not effects.has(effect_id):
+	var removed := false
+	for lookup_id in _effect_ids_for_lookup(effect_id):
+		if not effects.has(lookup_id):
+			continue
+		var effect_data: Dictionary = effects[lookup_id]
+		if lookup_id == "force_element" and effect_data.has("prev_element"):
+			target["element"] = effect_data.get("prev_element", target.get("element", ""))
+		effects.erase(lookup_id)
+		removed = true
+	if not removed:
 		return
-
-	var effect_data: Dictionary = effects[effect_id]
-	if effect_id == "force_element" and effect_data.has("prev_element"):
-		target["element"] = effect_data.get("prev_element", target.get("element", ""))
-
-	effects.erase(effect_id)
 
 	_recalc_speed(target)
 	_recalc_accuracy(target)
@@ -165,6 +192,7 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 
 
 func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictionary = {}) -> String:
+	effect_id = _canonicalize_effect_id(effect_id)
 	var turns_left = int(effect_record.get("turns_left", 0))
 	var payload: Dictionary = effect_record.get("payload", {}) if typeof(effect_record.get("payload", {})) == TYPE_DICTIONARY else {}
 	var actor_name = String(actor.get("name", "???"))
@@ -191,7 +219,7 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			return "%s 閃避下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("evasion_delta", -20))), turns_left]
 		"speed_buff":
 			return "%s 速度上升 %d（剩 %d 回合）。" % [actor_name, int(payload.get("speed_delta", 0)), turns_left]
-		"speed_debuff", "slow":
+		"slow":
 			return "%s 速度下降 %d（剩 %d 回合）。" % [actor_name, int(payload.get("slow_delta", 0)), turns_left]
 		"force_element":
 			return "%s 屬性轉為「%s」（剩 %d 回合）。" % [actor_name, String(payload.get("element", "?")), turns_left]

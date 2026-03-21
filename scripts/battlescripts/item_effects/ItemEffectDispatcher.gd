@@ -279,7 +279,7 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 		return false
 
 	var before_spd = int(target.get("speed", 0))
-	var ok = controller.status_manager.apply_effect(target, "speed_debuff", {"slow_delta": amount_speed}, turns)
+	var ok = controller.status_manager.apply_effect(target, "slow", {"slow_delta": amount_speed}, turns)
 	if not ok:
 		return false
 	var after_spd = int(target.get("speed", before_spd))
@@ -303,7 +303,7 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 
 	if reduced > 0:
 		var amount_str = "[color=#ffcc66]%d[/color]" % reduced
-		var line3 = "%s 對 %s 使用了 %s，%s 的速度降低了 %s 點。" % [
+		var line3 = "%s 對 %s 使用了 %s，%s 的速度下降了 %s 點。" % [
 				user_name,
 				target_name,
 				item_name,

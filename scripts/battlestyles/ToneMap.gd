@@ -905,7 +905,7 @@ func _get_status_suffer_text(key: String) -> String:
 		effect_id = str(parts[0])
 		if parts.size() > 1:
 			archetype = str(parts[1])
-	if effect_id == "speed_debuff":
+	if effect_id == "speed_debuff" or effect_id == "debuff_speed":
 		effect_id = "slow"
 
 	var effect_map = status_suffer_tones.get(effect_id, null)

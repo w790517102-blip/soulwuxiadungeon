@@ -797,7 +797,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "force_element"]
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element"]
 	var mp_cost = int(skill_data.get("mp_cost", 0))
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
@@ -1126,6 +1126,14 @@ func _resolve_confuse_target(actor: Dictionary, target: Dictionary, scope: Strin
 	return randomized
 
 
+func _canonicalize_status_effect_id(effect_id: String) -> String:
+	match effect_id:
+		"debuff_speed", "speed_debuff":
+			return "slow"
+		_:
+			return effect_id
+
+
 func _log_applied_statuses(applied_statuses: Array) -> void:
 	for row in applied_statuses:
 		if typeof(row) != TYPE_DICTIONARY:
@@ -1180,14 +1188,13 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 	if turns <= 0:
 		turns = _default_turns_for_status(effect_type)
 	var payload := _build_status_payload_from_skill_effect(effect_type, entry)
-	var normalized_effect_id := effect_type
-	match effect_type:
+	var normalized_effect_id := _canonicalize_status_effect_id(effect_type)
+	match normalized_effect_id:
 		"buff_speed":
 			normalized_effect_id = "speed_buff"
 			if int(payload.get("speed_delta", 0)) <= 0:
 				payload["speed_delta"] = int(entry.get("amount", 0))
-		"debuff_speed":
-			normalized_effect_id = "speed_debuff"
+		"slow":
 			if int(payload.get("slow_delta", 0)) <= 0:
 				payload["slow_delta"] = int(entry.get("amount", 0))
 		"force_element":
@@ -1238,7 +1245,7 @@ func _default_turns_for_status(effect_type: String) -> int:
 			return 2
 		"stun":
 			return 1
-		"buff_speed", "debuff_speed", "force_element":
+		"buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element":
 			return 2
 		_:
 			return 3
@@ -1250,7 +1257,7 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 	match effect_type:
 		"buff_speed":
 			payload["speed_delta"] = abs(amount if amount > 0 else 3)
-		"debuff_speed":
+		"debuff_speed", "speed_debuff", "slow":
 			payload["slow_delta"] = abs(amount if amount > 0 else 3)
 		"force_element":
 			payload["element"] = str(entry.get("element", ""))
@@ -1266,8 +1273,6 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 			payload["accuracy_delta"] = -abs(amount if amount > 0 else 15)
 		"root":
 			payload["evasion_delta"] = -abs(amount if amount > 0 else 20)
-		"slow":
-			payload["slow_delta"] = abs(amount if amount > 0 else 10)
 		_:
 			pass
 	return payload
@@ -1305,8 +1310,10 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	if effect == "" and not effects.is_empty() and typeof(effects[0]) == TYPE_DICTIONARY:
 		effect = str((effects[0] as Dictionary).get("type", "heal_hp"))
 
+	effect = _canonicalize_status_effect_id(effect)
+
 	# 狀態類支援：速度增減、屬性強制
-	if effect == "buff_speed" or effect == "debuff_speed" or effect == "force_element":
+	if effect == "buff_speed" or effect == "slow" or effect == "force_element":
 		var ok = await _execute_support_status_action(user, skill_data, target)
 		if not ok:
 			_log("WARN: support status failed: %s" % effect)
@@ -1349,9 +1356,10 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 				effect = t
 				base_amount = int((entry as Dictionary).get("amount", base_amount))
 				break
-			if t == "buff_speed" or t == "debuff_speed" or t == "force_element":
+			var normalized_t := _canonicalize_status_effect_id(t)
+			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element":
 				var patched = skill_data.duplicate(true)
-				patched["effect"] = t
+				patched["effect"] = normalized_t
 				patched["amount"] = int((entry as Dictionary).get("amount", skill_data.get("amount", 0)))
 				patched["turns"] = int((entry as Dictionary).get("turns", skill_data.get("turns", 3)))
 				if t == "force_element":
@@ -1573,23 +1581,20 @@ func _execute_support_mp_heal(user: Dictionary, skill_data: Dictionary, target: 
 
 
 func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> bool:
-	var effect: String = str(skill_data.get("effect", ""))
+	var effect: String = _canonicalize_status_effect_id(str(skill_data.get("effect", "")))
 	var skill_name: String = str(skill_data.get("name", "???"))
 	var turns = int(skill_data.get("turns", 3))
 	if turns <= 0:
 		_log("WARN: support status missing turns: %s" % skill_name)
 		return false
 
-	if target.is_empty() and (effect == "debuff_speed" or effect == "force_element"):
+	if target.is_empty() and (effect == "slow" or effect == "force_element"):
 		_log("WARN: support status %s missing target: %s" % [effect, skill_name])
 		return false
 
 	var actual_target: Dictionary = target
 	if actual_target.is_empty():
 		actual_target = user
-
-	var user_name: String = user.get("name", "???")
-	var target_name: String = actual_target.get("name", "???")
 
 	if battle_ui and battle_ui.has_method("play_attack_motion"):
 		battle_ui.play_attack_motion(user)
@@ -1601,56 +1606,32 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 			battle_ui.play_damage_react(actual_target)
 		await get_tree().create_timer(0.2).timeout
 
-	match effect:
-		"buff_speed":
-			var amt = int(skill_data.get("amount", skill_data.get("power", 0)))
-			if amt <= 0:
-				_log("WARN: support buff_speed missing amount: %s" % skill_name)
-				return false
-			var ok = status_manager.apply_effect(actual_target, "speed_buff", {"speed_delta": amt}, turns)
-			if not ok:
-				return false
-			_log("%s 對 %s 施展「%s」，速度提升 %d，持續 %d 回合。" % [
-				user_name,
-				target_name,
-				skill_name,
-				amt,
-				turns
-			])
-		"debuff_speed":
-			var slow_amt = int(skill_data.get("amount", skill_data.get("power", 0)))
-			if slow_amt <= 0:
-				_log("WARN: support debuff_speed missing amount: %s" % skill_name)
-				return false
-			var ok2 = status_manager.apply_effect(actual_target, "speed_debuff", {"slow_delta": slow_amt}, turns)
-			if not ok2:
-				return false
-			_log("%s 對 %s 施展「%s」，速度降低 %d，持續 %d 回合。" % [
-				user_name,
-				target_name,
-				skill_name,
-				slow_amt,
-				turns
-			])
-		"force_element":
-			var new_ele = str(skill_data.get("element", skill_data.get("target_element", "")))
-			if new_ele == "":
-				_log("WARN: support force_element missing element: %s" % skill_name)
-				return false
-			var ok3 = status_manager.apply_effect(actual_target, "force_element", {"element": new_ele}, turns)
-			if not ok3:
-				return false
-			_log("%s 對 %s 施展「%s」，屬性轉為「%s」，持續 %d 回合。" % [
-				user_name,
-				target_name,
-				skill_name,
-				new_ele,
-				turns
-			])
-		_:
-			_log("WARN: unsupported support status effect: %s" % effect)
+	var amount := int(skill_data.get("amount", skill_data.get("power", 0)))
+	if effect != "force_element" and amount <= 0:
+		_log("WARN: support status missing amount: %s" % skill_name)
+		return false
+
+	var effect_entry: Dictionary = {
+		"type": effect,
+		"amount": amount,
+		"turns": turns,
+	}
+	if effect == "force_element":
+		effect_entry["element"] = str(skill_data.get("element", skill_data.get("target_element", "")))
+		if str(effect_entry.get("element", "")) == "":
+			_log("WARN: support force_element missing element: %s" % skill_name)
 			return false
 
+	_log("%s 對 %s 施展「%s」。" % [
+		str(user.get("name", "???")),
+		str(actual_target.get("name", "???")),
+		skill_name
+	])
+
+	var record := _apply_single_skill_effect(user, actual_target, effect, effect_entry, skill_data)
+	if record.is_empty():
+		return false
+	_log_applied_statuses([record])
 	_update_ui_for_actor(actual_target)
 	return true
 

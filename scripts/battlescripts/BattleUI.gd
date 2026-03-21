@@ -355,12 +355,9 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 		"speed_buff":
 			var delta = int(data.get("payload", {}).get("speed_delta", 0))
 			return "速度提升 +%d（剩 %d 回合）" % [delta, turns]
-		"speed_debuff":
-			var delta2 = int(data.get("payload", {}).get("slow_delta", 0))
-			return "速度降低 -%d（剩 %d 回合）" % [delta2, turns]
-		"slow":
+		"speed_debuff", "slow":
 			var slow_delta = int(data.get("payload", {}).get("slow_delta", 0))
-			return "緩速 -%d（剩 %d 回合）" % [slow_delta, turns]
+			return "速度下降 -%d（剩 %d 回合）" % [slow_delta, turns]
 		"poison":
 			return "中毒（剩 %d 回合）" % turns
 		"stun":

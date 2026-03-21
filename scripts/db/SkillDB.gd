@@ -136,7 +136,7 @@ const SKILLS := {
 		"mp_cost": 5,
 		"target_scope": "single",
 		"target_side": "enemy",
-		"effects": [{"type": "debuff_speed", "amount": 3, "turns": 3}],
+		"effects": [{"type": "slow", "amount": 3, "turns": 3}],
 		"available": {"mode": "all"},
 	},
 	"skill_force_element_test": {
@@ -222,7 +222,7 @@ const SKILLS := {
 		"target_side": "enemy",
 		"effects": [
 			{"type": "damage", "power": 0.90},
-			{"type": "debuff_speed", "amount": 5, "turns": 2}
+			{"type": "slow", "amount": 5, "turns": 2}
 		],
 		"stat_scaling": {"int": 0.5, "con": 0.3, "str": 0.2},
 		"available": {"mode": "all"},
@@ -256,7 +256,7 @@ const SKILLS := {
 		"target_side": "enemy",
 		"effects": [
 			{"type": "damage", "power": 1.00},
-			{"type": "debuff_speed", "amount": 4, "turns": 2}
+			{"type": "slow", "amount": 4, "turns": 2}
 		],
 		"stat_scaling": {"str": 0.7, "agi": 0.3},
 		"available": {"mode": "all"},
@@ -617,8 +617,8 @@ func _legacy_effect_to_effects(skill: Dictionary) -> Array:
 			return [{"type": "heal_hp", "amount": int(skill.get("heal_amount", 0))}]
 		"buff_speed":
 			return [{"type": "buff_speed", "amount": int(skill.get("amount", 0)), "turns": int(skill.get("turns", 0))}]
-		"debuff_speed":
-			return [{"type": "debuff_speed", "amount": int(skill.get("amount", 0)), "turns": int(skill.get("turns", 0))}]
+		"debuff_speed", "speed_debuff", "slow":
+			return [{"type": "slow", "amount": int(skill.get("amount", 0)), "turns": int(skill.get("turns", 0))}]
 		"force_element":
 			return [{"type": "force_element", "element": String(skill.get("element", "")), "turns": int(skill.get("turns", 0))}]
 		_:
