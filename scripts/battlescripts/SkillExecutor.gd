@@ -228,14 +228,22 @@ func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
 
 
 func _roll_hit(user: Dictionary, target: Dictionary) -> Dictionary:
-	var accuracy := int(user.get("accuracy", 100))
-	var evasion := int(target.get("evasion", 0))
-	var chance := clampi(accuracy - evasion, 5, 100)
+	var attacker_agi := float(int(user.get("agi", 0)))
+	var attacker_luck := float(int(user.get("luck", 0)))
+	var defender_agi := float(int(target.get("agi", 0)))
+	var defender_luck := float(int(target.get("luck", 0)))
+	var accuracy_mod := float(int(user.get("accuracy", 100)) - 100)
+	var evasion_mod := float(int(target.get("evasion", 0)))
+	var hit_score := attacker_agi * 0.7 + attacker_luck * 0.3 + accuracy_mod
+	var evade_score := defender_agi * 0.7 + defender_luck * 0.3 + evasion_mod
+	var chance := clampi(int(round(75.0 + (hit_score - evade_score))), 5, 95)
 	var roll := randf() * 100.0
 	return {
-		"hit": roll < float(chance),
+		"hit": roll <= float(chance),
 		"chance": chance,
 		"roll": roll,
+		"hit_score": hit_score,
+		"evade_score": evade_score,
 	}
 
 

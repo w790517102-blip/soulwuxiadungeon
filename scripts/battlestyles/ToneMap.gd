@@ -1132,6 +1132,12 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		var default_value = ""
 		if cat_map.has("default"):
 			default_value = cat_map["default"].get("default", "")
+		if ["ally_dodge", "ally_enemy_defeat", "ally_down_self", "ally_down_reaction"].has(category):
+			return _pick_specific_then_default_text(
+				specific_value,
+				default_value,
+				"%s|%s|%s|%s" % [category, key, user_id, side]
+			)
 		return _pick_weighted_text(
 			specific_value,
 			default_value,
@@ -1217,6 +1223,13 @@ func _get_status_suffer_text(key: String) -> String:
 	if typeof(default_map) == TYPE_DICTIONARY and default_map.has("default"):
 		return _pick_weighted_text([], default_map["default"], "status_suffer|%s|fallback" % effect_id)
 	return ""
+
+func _pick_specific_then_default_text(specific_value, default_value, history_key: String) -> String:
+	var specific_pool := _normalize_text_pool(specific_value)
+	if not specific_pool.is_empty():
+		return _pick_weighted_text(specific_pool, [], "%s|specific" % history_key)
+	return _pick_weighted_text([], default_value, "%s|default" % history_key)
+
 
 func _pick_weighted_text(specific_value, default_value, history_key: String) -> String:
 	var specific_pool := _normalize_text_pool(specific_value)
