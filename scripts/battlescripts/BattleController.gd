@@ -1134,9 +1134,18 @@ func _canonicalize_status_effect_id(effect_id: String) -> String:
 			return effect_id
 
 
+func _should_log_status_record(row: Dictionary) -> bool:
+	var target = row.get("target", {})
+	if typeof(target) != TYPE_DICTIONARY or target.is_empty():
+		return true
+	return int(target.get("hp", 0)) > 0
+
+
 func _log_applied_statuses(applied_statuses: Array) -> void:
 	for row in applied_statuses:
 		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		if not _should_log_status_record(row):
 			continue
 		var tone_cast := String(row.get("tone_cast", ""))
 		if tone_cast != "":
