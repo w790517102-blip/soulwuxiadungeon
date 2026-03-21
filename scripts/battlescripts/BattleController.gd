@@ -1025,8 +1025,8 @@ func _enemy_defeat_line(enemy: Dictionary, attacker: Dictionary = {}) -> String:
 	var name_e := str(enemy.get("name", "???"))
 	if tone_map != null and typeof(attacker) == TYPE_DICTIONARY and not attacker.is_empty():
 		var attacker_id := str(attacker.get("id", ""))
-		if attacker_id != "" and attacker in player_party:
-			var ally_line := tone_map.get_tone_text("ally_enemy_defeat", "", attacker_id)
+		if attacker_id != "" and not bool(attacker.get("is_enemy", false)):
+			var ally_line := tone_map.get_character_tone_text("ally_enemy_defeat", attacker_id)
 			if ally_line != "":
 				return ally_line.replace("{name}", name_e)
 	var archetype := _resolve_enemy_archetype(enemy)
@@ -1039,7 +1039,7 @@ func _enemy_defeat_line(enemy: Dictionary, attacker: Dictionary = {}) -> String:
 func _ally_down_self_line(actor: Dictionary) -> String:
 	var actor_name := str(actor.get("name", "???"))
 	if tone_map != null:
-		var line := tone_map.get_tone_text("ally_down_self", "", str(actor.get("id", "")))
+		var line := tone_map.get_character_tone_text("ally_down_self", str(actor.get("id", "")))
 		if line != "":
 			return line.replace("{name}", actor_name)
 	return "%s 傷重倒地，已無再戰之力！" % actor_name
@@ -1103,11 +1103,7 @@ func _maybe_play_pending_ally_down_reaction(actor: Dictionary) -> void:
 	_pending_ally_down_reactions.remove_at(pending_index)
 	var reaction_line := ""
 	if tone_map != null:
-		reaction_line = tone_map.get_tone_text(
-			"ally_down_reaction",
-			str(pending_event.get("downed_id", "")),
-			actor_id
-		)
+		reaction_line = tone_map.get_character_tone_text("ally_down_reaction", actor_id)
 	if reaction_line == "":
 		reaction_line = "眼見同伴倒下，場中的氣息也在那一瞬間亂了一拍。"
 	reaction_line = reaction_line \

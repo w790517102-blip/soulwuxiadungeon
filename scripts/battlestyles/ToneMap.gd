@@ -1133,17 +1133,30 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 		if cat_map.has("default"):
 			default_value = cat_map["default"].get("default", "")
 		if ["ally_dodge", "ally_enemy_defeat", "ally_down_self", "ally_down_reaction"].has(category):
-			return _pick_specific_then_default_text(
-				specific_value,
-				default_value,
-				"%s|%s|%s|%s" % [category, key, user_id, side]
-			)
+			return get_character_tone_text(category, user_id)
 		return _pick_weighted_text(
 			specific_value,
 			default_value,
 			"%s|%s|%s|%s" % [category, key, user_id, side]
 		)
 	return ""
+
+
+func get_character_tone_text(category: String, actor_id: String) -> String:
+	if not tone_map.has(category):
+		return ""
+	var cat_map = tone_map[category]
+	var specific_value = null
+	if actor_id != "" and cat_map.has(actor_id):
+		specific_value = cat_map[actor_id].get("default", "")
+	var default_value = ""
+	if cat_map.has("default"):
+		default_value = cat_map["default"].get("default", "")
+	return _pick_specific_then_default_text(
+		specific_value,
+		default_value,
+		"%s|%s" % [category, actor_id]
+	)
 
 
 func get_ally_attack_text(weapon_type: String, user_id: String, is_aoe: bool = false) -> String:
