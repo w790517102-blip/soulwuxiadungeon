@@ -1144,19 +1144,48 @@ func get_tone_text(category: String, key: String, user_id: String, side: String 
 
 func get_character_tone_text(category: String, actor_id: String) -> String:
 	if not tone_map.has(category):
+		print("[ToneMap][character] category=%s raw_actor_id=%s resolved_actor_id=%s specific=false fallback=false result=missing_category" % [category, actor_id, actor_id])
 		return ""
 	var cat_map = tone_map[category]
+	var resolved_actor_id := _canonicalize_character_tone_actor_id(actor_id)
 	var specific_value = null
-	if actor_id != "" and cat_map.has(actor_id):
-		specific_value = cat_map[actor_id].get("default", "")
+	var found_specific := false
+	if resolved_actor_id != "" and cat_map.has(resolved_actor_id):
+		specific_value = cat_map[resolved_actor_id].get("default", "")
+		found_specific = not _normalize_text_pool(specific_value).is_empty()
 	var default_value = ""
 	if cat_map.has("default"):
 		default_value = cat_map["default"].get("default", "")
+	var used_fallback := not found_specific and not _normalize_text_pool(default_value).is_empty()
+	print("[ToneMap][character] category=%s raw_actor_id=%s resolved_actor_id=%s specific=%s fallback=%s" % [
+		category,
+		actor_id,
+		resolved_actor_id,
+		str(found_specific),
+		str(used_fallback)
+	])
 	return _pick_specific_then_default_text(
 		specific_value,
 		default_value,
-		"%s|%s" % [category, actor_id]
+		"%s|%s" % [category, resolved_actor_id]
 	)
+
+
+func _canonicalize_character_tone_actor_id(actor_id: String) -> String:
+	var normalized := actor_id.strip_edges().to_lower()
+	var alias_map := {
+		"liu_yu": "liuyu",
+		"liuyu": "liuyu",
+		"su_mien": "shumian",
+		"shu_mian": "shumian",
+		"shumian": "shumian",
+		"lie_shao": "lieshao",
+		"liexiao": "lieshao",
+		"lieshao": "lieshao",
+	}
+	if alias_map.has(normalized):
+		return String(alias_map[normalized])
+	return normalized
 
 
 func get_ally_attack_text(weapon_type: String, user_id: String, is_aoe: bool = false) -> String:
