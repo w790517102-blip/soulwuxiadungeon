@@ -75,6 +75,9 @@ func execute(
 				result["log"] = [fail_line_free]
 				return result
 			# 有空手就 OK，不再檢查 w1 / w2
+		elif weapon_required == "" or weapon_required == "通用":
+			# 🔹 通用技能：不綁武器
+			pass
 		else:
 			# 🔹 其他武器型技能：需要有對應武器
 			if weapon_required != "":

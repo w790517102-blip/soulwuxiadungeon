@@ -80,9 +80,12 @@ func show_skills(
 				can_use = has_free_hand
 			else:
 				can_use = true
+		elif weapon_type == "" or weapon_type == "通用":
+			# 🔹 通用技能：不綁武器，直接可用
+			can_use = true
 		else:
 			# 🔹 其他武器型技能：照舊，需要有對應武器
-			can_use = (weapon_type == "" or weapon_type in equipped_weapons)
+			can_use = weapon_type in equipped_weapons
 
 		# （未來可以在這裡加更多條件，例如內功狀態、debuff 禁技等等）
 
