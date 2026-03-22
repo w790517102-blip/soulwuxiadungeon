@@ -187,6 +187,15 @@ metadata/_tab_index = 0
 layout_mode = 2
 current_tab = 0
 
+[node name="通用" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 8
+
+[node name="SkillList" type="ItemList" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs/通用"]
+custom_minimum_size = Vector2(20, 200)
+layout_mode = 2
+
 [node name="刀" type="VBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術/WeaponTabs"]
 custom_minimum_size = Vector2(20, 200)
 layout_mode = 2
