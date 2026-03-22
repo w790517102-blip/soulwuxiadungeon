@@ -827,7 +827,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element"]
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root"]
 	var mp_cost = int(skill_data.get("mp_cost", 0))
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
@@ -1357,7 +1357,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	effect = _canonicalize_status_effect_id(effect)
 
 	# 狀態類支援：速度增減、屬性強制
-	if effect == "buff_speed" or effect == "slow" or effect == "force_element":
+	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root":
 		var ok = await _execute_support_status_action(user, skill_data, target)
 		if not ok:
 			_log("WARN: support status failed: %s" % effect)
@@ -1401,7 +1401,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 				base_amount = int((entry as Dictionary).get("amount", base_amount))
 				break
 			var normalized_t := _canonicalize_status_effect_id(t)
-			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element":
+			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root":
 				var patched = skill_data.duplicate(true)
 				patched["effect"] = normalized_t
 				patched["amount"] = int((entry as Dictionary).get("amount", skill_data.get("amount", 0)))
@@ -1632,7 +1632,7 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 		_log("WARN: support status missing turns: %s" % skill_name)
 		return false
 
-	if target.is_empty() and (effect == "slow" or effect == "force_element"):
+	if target.is_empty() and (effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root"):
 		_log("WARN: support status %s missing target: %s" % [effect, skill_name])
 		return false
 

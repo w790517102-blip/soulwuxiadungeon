@@ -37,6 +37,8 @@ func apply(controller, user: Dictionary, item: Dictionary, target: Dictionary) -
 			return _handle_cure_status(controller, user, item, target)
 		"warm_wine":
 			return _handle_warm_wine(controller, user, item, target)
+		"blind", "root":
+			return _handle_apply_status_item(controller, user, item, target)
 		"escape_battle":
 			return _handle_escape_battle(controller, user, item)
 		_:
@@ -432,6 +434,10 @@ func _status_display_name(status_id: String) -> String:
 			return "緩速"
 		"confuse":
 			return "混亂"
+		"blind":
+			return "目盲"
+		"root":
+			return "定身"
 		_:
 			return status_id
 
@@ -521,6 +527,43 @@ func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: D
 		item_name
 	])
 	controller._log("速度上升，命中下降（%d回合）。" % turns)
+	return true
+
+
+func _handle_apply_status_item(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
+	if target.is_empty():
+		return false
+	if controller == null or controller.status_manager == null:
+		return false
+
+	var effect_id := String(item.get("effect", ""))
+	var amount := int(item.get("amount", 0))
+	var turns := int(item.get("turns", 0))
+	if effect_id == "" or amount <= 0 or turns <= 0:
+		controller._log("WARN: status item missing fields: %s" % str(item.get("id", "")))
+		return false
+
+	var payload := {}
+	match effect_id:
+		"blind":
+			payload["accuracy_delta"] = -abs(amount)
+		"root":
+			payload["evasion_delta"] = -abs(amount)
+		_:
+			return false
+
+	var ok := controller.status_manager.apply_effect(target, effect_id, payload, turns)
+	if not ok:
+		return false
+
+	var user_name: String = user.get("name", "???")
+	var target_name: String = target.get("name", "???")
+	var item_name: String = item.get("name", "???")
+	controller._log("%s 對 %s 使用了 %s。" % [user_name, target_name, item_name])
+	var effect_record: Dictionary = target.get("status_effects", {}).get(effect_id, {}) if typeof(target.get("status_effects", {})) == TYPE_DICTIONARY else {}
+	var desc := controller.status_manager.describe_effect(effect_id, target, effect_record)
+	if desc != "":
+		controller._log(desc)
 	return true
 
 

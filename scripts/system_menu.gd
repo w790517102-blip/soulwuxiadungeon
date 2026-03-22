@@ -908,6 +908,10 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var bonus_max_hp := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
 	var bonus_max_mp := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
 	var bonus_speed := int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0))
+	var base_accuracy := int(_get_actor_value(actor, "accuracy", 100))
+	var base_evasion := int(_get_actor_value(actor, "evasion", 0))
+	var bonus_accuracy := int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
+	var bonus_evasion := int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))
 
 	var name_label := slot_data.get("name") as Label
 	if name_label:
@@ -939,13 +943,15 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 			int(_get_actor_value(actor, "con", 5)),
 			int(_get_actor_value(actor, "luck", 5)),
 		]
-		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)\n%s" % [
+		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)  命中：%d (+%d)\n閃避：%d (+%d)\n%s" % [
 			actor_level, actor_exp, next_exp,
 			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
 			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
 			base_atk, bonus_atk,
 			base_def, bonus_def,
 			base_speed, bonus_speed,
+			base_accuracy, bonus_accuracy,
+			base_evasion, bonus_evasion,
 			stat_str,
 		]
 
