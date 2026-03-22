@@ -561,7 +561,8 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 			await action_log_ui.wait_for_all_logs()
 		await _await_log_stage_continue()
 
-	var enemy_applied: Array = _apply_skill_effects(enemy, target, skill, [target])
+	var enemy_target_pool: Array = [target] if bool(result.get("hit", true)) else []
+	var enemy_applied: Array = _apply_skill_effects(enemy, target, skill, enemy_target_pool)
 	_log_applied_statuses(enemy_applied)
 	if enemy_applied.size() > 0:
 		await _await_log_stage_continue()
