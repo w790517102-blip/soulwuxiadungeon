@@ -77,6 +77,7 @@ const BUFF_ABBREV := {
 	"speed_buff": "速",
 	"warm_wine_buff": "攻",
 	"force_element": "功",
+	"focus": "命",
 }
 
 
@@ -379,6 +380,9 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 		"blind":
 			var acc_delta = int(data.get("payload", {}).get("accuracy_delta", 0))
 			return "目盲：命中 %+d（剩 %d 回合）" % [acc_delta, turns]
+		"focus":
+			var focus_acc = int(data.get("payload", {}).get("accuracy_delta", 0))
+			return "凝神：命中 %+d（剩 %d 回合）" % [focus_acc, turns]
 		"root":
 			var eva_delta = int(data.get("payload", {}).get("evasion_delta", 0))
 			return "定身：閃避 %+d（剩 %d 回合）" % [eva_delta, turns]
@@ -835,6 +839,7 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 	var blink_visible := sin(float(Time.get_ticks_msec()) / 180.0) > 0.0
 	var has_blind_token := false
 	var has_root_token := false
+	var has_focus_token := false
 
 	for effect_id in effects.keys():
 		var effect_data: Dictionary = effects[effect_id] if typeof(effects[effect_id]) == TYPE_DICTIONARY else {}
@@ -849,12 +854,16 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 				has_blind_token = true
 			elif effect_id == "root":
 				has_root_token = true
+			elif effect_id == "focus":
+				has_focus_token = true
 		elif BUFF_ABBREV.has(effect_id):
 			var btoken := String(BUFF_ABBREV[effect_id])
 			if turns_left == 1:
 				has_blink = true
 				btoken = btoken if blink_visible else "·"
 			buff_tokens.append(btoken)
+			if effect_id == "focus":
+				has_focus_token = true
 
 	var warm_wine: Dictionary = effects.get("warm_wine_buff", {}) if typeof(effects.get("warm_wine_buff", {})) == TYPE_DICTIONARY else {}
 	if not warm_wine.is_empty() and not has_blind_token:
@@ -867,6 +876,9 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 			debuff_tokens.append(blind_token)
 			has_blind_token = true
 
+	if int(actor.get("accuracy_mod", 0)) > 0 and not has_focus_token:
+		buff_tokens.append("命")
+		has_focus_token = true
 	if int(actor.get("accuracy_mod", 0)) < 0 and not has_blind_token:
 		debuff_tokens.append("盲")
 		has_blind_token = true

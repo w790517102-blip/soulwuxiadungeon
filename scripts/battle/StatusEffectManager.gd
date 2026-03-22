@@ -103,6 +103,9 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 		"blind":
 			if int(effect_payload.get("accuracy_delta", 0)) == 0:
 				effect_payload["accuracy_delta"] = -15
+		"focus":
+			if int(effect_payload.get("accuracy_delta", 0)) <= 0:
+				effect_payload["accuracy_delta"] = 15
 		"root":
 			if int(effect_payload.get("evasion_delta", 0)) == 0:
 				effect_payload["evasion_delta"] = -20
@@ -215,6 +218,8 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			return "%s 最大內力下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("max_mp_delta", -15))), turns_left]
 		"blind":
 			return "%s 命中下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("accuracy_delta", -15))), turns_left]
+		"focus":
+			return "%s 命中上升 %d（剩 %d 回合）。" % [actor_name, int(payload.get("accuracy_delta", 15)), turns_left]
 		"root":
 			return "%s 閃避下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("evasion_delta", -20))), turns_left]
 		"speed_buff":
@@ -274,6 +279,8 @@ func _recalc_accuracy(target: Dictionary) -> void:
 			delta += int(effects["warm_wine_buff"].get("payload", {}).get("accuracy_delta", 0))
 		if effects.has("blind"):
 			delta += int(effects["blind"].get("payload", {}).get("accuracy_delta", 0))
+		if effects.has("focus"):
+			delta += int(effects["focus"].get("payload", {}).get("accuracy_delta", 0))
 	target["accuracy"] = base + delta
 	target["accuracy_mod"] = delta
 

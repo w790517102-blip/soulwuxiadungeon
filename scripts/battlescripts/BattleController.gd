@@ -827,7 +827,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root"]
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus"]
 	var mp_cost = int(skill_data.get("mp_cost", 0))
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
@@ -1287,6 +1287,8 @@ func _default_turns_for_status(effect_type: String) -> int:
 			return 2
 		"root":
 			return 2
+		"focus":
+			return 3
 		"stun":
 			return 1
 		"buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element":
@@ -1315,6 +1317,8 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 			payload["max_mp_delta"] = -abs(amount if amount > 0 else 15)
 		"blind":
 			payload["accuracy_delta"] = -abs(amount if amount > 0 else 15)
+		"focus":
+			payload["accuracy_delta"] = abs(amount if amount > 0 else 15)
 		"root":
 			payload["evasion_delta"] = -abs(amount if amount > 0 else 20)
 		_:
@@ -1357,7 +1361,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	effect = _canonicalize_status_effect_id(effect)
 
 	# 狀態類支援：速度增減、屬性強制
-	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root":
+	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root" or effect == "focus":
 		var ok = await _execute_support_status_action(user, skill_data, target)
 		if not ok:
 			_log("WARN: support status failed: %s" % effect)
@@ -1401,7 +1405,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 				base_amount = int((entry as Dictionary).get("amount", base_amount))
 				break
 			var normalized_t := _canonicalize_status_effect_id(t)
-			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root":
+			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root" or normalized_t == "focus":
 				var patched = skill_data.duplicate(true)
 				patched["effect"] = normalized_t
 				patched["amount"] = int((entry as Dictionary).get("amount", skill_data.get("amount", 0)))

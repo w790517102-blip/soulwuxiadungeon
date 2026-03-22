@@ -97,9 +97,9 @@ var all_characters: Dictionary = {
 # === 目前出戰隊伍（用角色 ID 陣列） ===
 var current_team_ids: Array = ["liuyu", "shumian", "lieshao"]
 var known_skill_ids_by_actor: Dictionary = {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18"],
-	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_debuff_speed_test", "skill_force_element_test", "skill_mobishuxin"],
-	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
+	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin"],
+	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus"],
 }
 
 func _ready() -> void:

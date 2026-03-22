@@ -37,7 +37,7 @@ func apply(controller, user: Dictionary, item: Dictionary, target: Dictionary) -
 			return _handle_cure_status(controller, user, item, target)
 		"warm_wine":
 			return _handle_warm_wine(controller, user, item, target)
-		"blind", "root":
+		"blind", "root", "focus":
 			return _handle_apply_status_item(controller, user, item, target)
 		"escape_battle":
 			return _handle_escape_battle(controller, user, item)
@@ -438,6 +438,8 @@ func _status_display_name(status_id: String) -> String:
 			return "目盲"
 		"root":
 			return "定身"
+		"focus":
+			return "凝神"
 		_:
 			return status_id
 
@@ -549,6 +551,8 @@ func _handle_apply_status_item(controller, user: Dictionary, item: Dictionary, t
 			payload["accuracy_delta"] = -abs(amount)
 		"root":
 			payload["evasion_delta"] = -abs(amount)
+		"focus":
+			payload["accuracy_delta"] = abs(amount)
 		_:
 			return false
 

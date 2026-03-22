@@ -13,6 +13,7 @@ const ITEM_DEFS := {
 	"med_warm_wine": {"name": "暖身酒", "desc": "溫身散寒。若有緩速則解除，否則速度+10、命中-5（3回合）。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "warm_wine", "target_scope": "ally_single", "turns": 3},
 	"med_smoke_sand": {"name": "迷煙砂", "desc": "朝敵面揚出細砂，使命中下降15（3回合）。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "blind", "amount": 15, "turns": 3, "target_scope": "enemy_single"},
 	"med_binding_resin": {"name": "纏步膠", "desc": "黏住敵人下盤，使閃避下降20（2回合）。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "root", "amount": 20, "turns": 2, "target_scope": "enemy_single"},
+	"med_focus_powder": {"name": "凝神散", "desc": "穩定心神，使命中上升10（3回合）。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "focus", "amount": 10, "turns": 3, "target_scope": "ally_single"},
 	"med_heartguard_small": {"name": "小護心丹", "desc": "前期保命丹藥。", "type": "consumable", "use_scope": "none", "use_action": "none"},
 
 	"food_walnut": {"name": "胡桃", "desc": "來自西域美味且營養的堅果，然而堅硬的外表使得在食用之前必須先付出一番心力。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "walnut", "target_scope": "ally_single", "require_stat": "str", "require_min": 31, "hp_restore": 30, "mp_restore": 10},
@@ -218,6 +219,7 @@ const BASE_PRICES := {
 	"med_warm_wine": 25,
 	"med_smoke_sand": 20,
 	"med_binding_resin": 24,
+	"med_focus_powder": 22,
 	"med_heartguard_small": 45,
 	"food_walnut": 6,
 	"misc_walnut_cracker": 40,
