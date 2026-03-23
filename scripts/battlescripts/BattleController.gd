@@ -1817,7 +1817,8 @@ func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
 func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:
 	if applied_records.is_empty():
 		return ""
-	var scope: String = str(skill_data.get("target_scope", "single"))
+	var first_target: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
+	var scope: String = _resolve_positive_buff_effective_scope(user, skill_data, first_target)
 	var narration_map = skill_data.get("buff_narration", {})
 	var template := _resolve_positive_buff_override_template(scope, narration_map)
 	if template == "":
@@ -1828,7 +1829,6 @@ func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, ap
 	if template == "":
 		template = str(POSITIVE_BUFF_SCOPE_TEMPLATES.get(scope, POSITIVE_BUFF_SCOPE_TEMPLATES.get("ally_single", "")))
 
-	var first_target: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
 	return template \
 		.replace("{user}", str(user.get("name", "???"))) \
 		.replace("{name}", str(user.get("name", "???"))) \
@@ -1845,6 +1845,28 @@ func _resolve_positive_buff_override_template(scope: String, narration_map) -> S
 			return str((narration_map as Dictionary).get("ally_all", ""))
 		_:
 			return str((narration_map as Dictionary).get("ally_single", ""))
+
+
+func _resolve_positive_buff_effective_scope(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> String:
+	var raw_scope := str(skill_data.get("target_scope", "single"))
+	var side := str(skill_data.get("target_side", "ally"))
+	if raw_scope == "self":
+		return "self"
+	if raw_scope == "ally_all":
+		return "ally_all"
+	if side == "ally" and _is_same_actor(user, target):
+		return "self"
+	return "ally_single"
+
+
+func _is_same_actor(left: Dictionary, right: Dictionary) -> bool:
+	if left.is_empty() or right.is_empty():
+		return false
+	var left_id := str(left.get("id", ""))
+	var right_id := str(right.get("id", ""))
+	if left_id != "" and right_id != "":
+		return left_id == right_id
+	return str(left.get("name", "")) == str(right.get("name", "")) and str(left.get("name", "")) != ""
 
 
 func _resolve_positive_buff_style_theme_template(skill_data: Dictionary, scope: String) -> String:
