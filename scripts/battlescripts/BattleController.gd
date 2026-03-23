@@ -1373,12 +1373,14 @@ func _default_turns_for_status(effect_type: String) -> int:
 func _build_status_payload_from_skill_effect(effect_type: String, entry: Dictionary) -> Dictionary:
 	var payload := {}
 	var amount := int(entry.get("amount", 0))
+	var turns := int(entry.get("turns", _default_turns_for_status(effect_type)))
 	match effect_type:
 		"buff_speed":
 			payload["speed_delta"] = abs(amount if amount > 0 else 3)
 		"stat_buff":
 			payload["stat_key"] = str(entry.get("stat_key", entry.get("stat", ""))).strip_edges().to_lower()
 			payload["stat_delta"] = abs(amount if amount > 0 else 10)
+			payload["turns"] = turns
 		"evasion_boost":
 			payload["evasion_delta"] = abs(amount if amount > 0 else 10)
 		"debuff_speed", "speed_debuff", "slow":
@@ -1761,6 +1763,11 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 		"amount": amount,
 		"turns": turns,
 	}
+	if effect == "stat_buff":
+		effect_entry["stat_key"] = str(skill_data.get("stat_key", effect_entry_source.get("stat_key", effect_entry_source.get("stat", "")))).strip_edges().to_lower()
+		if str(effect_entry.get("stat_key", "")) == "":
+			_log("WARN: support stat_buff missing stat_key: %s" % skill_name)
+			return false
 	if effect == "force_element":
 		effect_entry["element"] = str(skill_data.get("element", effect_entry_source.get("element", skill_data.get("target_element", ""))))
 		if str(effect_entry.get("element", "")) == "":
