@@ -189,6 +189,7 @@ const SKILLS := {
 		"target_scope": "self",
 		"target_side": "self",
 		"positive_buff": true,
+		"buff_theme": "focus",
 		"buff_narration": {
 			"self": "提氣凝神之後，目力與心念像被收束成一線，眼前事物也跟著清明起來。"
 		},
@@ -206,6 +207,7 @@ const SKILLS := {
 		"target_scope": "ally_all",
 		"target_side": "ally",
 		"positive_buff": true,
+		"buff_theme": "mobility",
 		"buff_narration": {
 			"ally_all": "墨意一轉，如風般輕輕拂過眾人身側，原本沉重的步伐也隨之輕了起來。"
 		},
@@ -223,6 +225,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "ally",
 		"positive_buff": true,
+		"buff_theme": "focus",
 		"buff_narration": {
 			"ally_single": "弦音一落，清勁便順勢覆上 {target} 周身，令其心神與目力都收束得更穩。"
 		},

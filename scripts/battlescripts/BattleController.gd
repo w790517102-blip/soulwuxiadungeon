@@ -38,21 +38,45 @@ const POSITIVE_BUFF_SCOPE_TEMPLATES := {
 	"ally_all": "{name} 將氣勢徐徐鋪展開來，那股溫潤勁意轉眼便籠住全隊，眾人的呼吸與步調也隨之安定了下來。",
 }
 
-const POSITIVE_BUFF_STYLE_TEMPLATES := {
+const POSITIVE_BUFF_THEME_TEMPLATES := {
+	"focus": {
+		"self": "{name} 斂神提氣，將散開的視線與意念一寸寸收束回身，心頭頓時清明，眼前也跟著銳亮起來。",
+		"ally_single": "{name} 運起一縷穩定心神的勁意送向 {target}，令其雜念漸斂，目光與氣息都更見凝定。",
+		"ally_all": "{name} 徐徐鋪開那股凝神之意，隊中眾人的呼吸與目光都跟著沉靜下來，像連心神也被一併理順。",
+	},
+	"mobility": {
+		"self": "{name} 導引氣機繞身一轉，原本略顯滯重的步息頓時一鬆，連身形都輕快了幾分。",
+		"ally_single": "{name} 將一縷輕靈勁意送向 {target} 周身，令其腳下轉折更見輕捷，身法也靈動起來。",
+		"ally_all": "{name} 將那股輕靈氣意徐徐送開，隊中眾人的步伐與身形都隨之鬆快，轉動之間更添幾分游移餘地。",
+	},
+}
+
+const POSITIVE_BUFF_STYLE_THEME_TEMPLATES := {
 	"通用": {
-		"self": "{name} 提氣凝神，將目力與心念慢慢收束回一點，眼前景象也跟著變得分外清明。",
-		"ally_single": "{name} 運勁一引，將那股沉穩氣機覆上 {target} 周身，令其雜念漸斂，出手也更見穩定。",
-		"ally_all": "{name} 調勻氣息，將一股沉穩勁意徐徐送開，隊中眾人的心神也像被同時收束了一遍。"
+		"focus": {
+			"self": "{name} 提氣凝神，將目力與心念慢慢收束回一點，眼前景象也跟著變得分外清明。",
+			"ally_single": "{name} 運勁一引，將那股沉穩氣機覆上 {target} 周身，令其雜念漸斂，出手也更見穩定。",
+			"ally_all": "{name} 調勻氣息，將一股沉穩勁意徐徐送開，隊中眾人的心神也像被同時收束了一遍。",
+		},
+		"mobility": {
+			"self": "{name} 提氣走勁，將周身原本微滯的氣機一一鬆開，連身形轉動都變得更輕快了。",
+			"ally_single": "{name} 運勁一送，那股輕靈氣機便覆上 {target} 周身，令其步法與轉身都多了幾分俐落。",
+			"ally_all": "{name} 將一股輕靈勁意徐徐送開，隊中眾人的步調與身形都跟著鬆快起來。",
+		},
 	},
 	"筆": {
-		"self": "{name} 提筆未落，墨意已先在胸中流轉一圈，原本散開的氣機被帶得越發輕靈分明。",
-		"ally_single": "{name} 筆意輕引，墨氣便沿勢覆上 {target} 周身，使其呼吸與身法都多了幾分從容游移。",
-		"ally_all": "{name} 墨意一轉，如風般輕拂過眾人身側，原本略顯沉重的步伐也隨之鬆快起來。",
+		"mobility": {
+			"self": "{name} 提筆未落，墨意已先在胸中流轉一圈，原本散開的氣機被帶得越發輕靈分明。",
+			"ally_single": "{name} 筆意輕引，墨氣便沿勢覆上 {target} 周身，使其呼吸與身法都多了幾分從容游移。",
+			"ally_all": "{name} 墨意一轉，如風般輕拂過眾人身側，原本略顯沉重的步伐也隨之鬆快起來。",
+		},
 	},
 	"琴": {
-		"self": "{name} 指下弦音輕顫，清勁順勢回攏自身經脈，胸中雜念一散，心神也跟著沉定起來。",
-		"ally_single": "{name} 弦音一落，清勁便順勢覆上 {target} 周身，令其心神與目力都收束得更穩。",
-		"ally_all": "{name} 一縷弦音徐徐散開，清勁如水漫過隊列，眾人的呼吸與神色也隨之平穩了幾分。",
+		"focus": {
+			"self": "{name} 指下弦音輕顫，清勁順勢回攏自身經脈，胸中雜念一散，心神也跟著沉定起來。",
+			"ally_single": "{name} 弦音一落，清勁便順勢覆上 {target} 周身，令其心神與目力都收束得更穩。",
+			"ally_all": "{name} 一縷弦音徐徐散開，清勁如水漫過隊列，眾人的呼吸與神色也隨之平穩了幾分。",
+		},
 	},
 }
 
@@ -1797,7 +1821,9 @@ func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, ap
 	var narration_map = skill_data.get("buff_narration", {})
 	var template := _resolve_positive_buff_override_template(scope, narration_map)
 	if template == "":
-		template = _resolve_positive_buff_style_template(skill_data, scope)
+		template = _resolve_positive_buff_style_theme_template(skill_data, scope)
+	if template == "":
+		template = _resolve_positive_buff_theme_template(skill_data, scope)
 
 	if template == "":
 		template = str(POSITIVE_BUFF_SCOPE_TEMPLATES.get(scope, POSITIVE_BUFF_SCOPE_TEMPLATES.get("ally_single", "")))
@@ -1821,11 +1847,17 @@ func _resolve_positive_buff_override_template(scope: String, narration_map) -> S
 			return str((narration_map as Dictionary).get("ally_single", ""))
 
 
-func _resolve_positive_buff_style_template(skill_data: Dictionary, scope: String) -> String:
+func _resolve_positive_buff_style_theme_template(skill_data: Dictionary, scope: String) -> String:
 	var style_key := _resolve_positive_buff_style_key(skill_data)
-	var style_templates = POSITIVE_BUFF_STYLE_TEMPLATES.get(style_key, {})
-	if typeof(style_templates) == TYPE_DICTIONARY and (style_templates as Dictionary).has(scope):
-		return str((style_templates as Dictionary).get(scope, ""))
+	var theme_key := _resolve_positive_buff_theme_key(skill_data)
+	if theme_key == "":
+		return ""
+	var style_templates = POSITIVE_BUFF_STYLE_THEME_TEMPLATES.get(style_key, {})
+	if typeof(style_templates) != TYPE_DICTIONARY:
+		return ""
+	var theme_templates = (style_templates as Dictionary).get(theme_key, {})
+	if typeof(theme_templates) == TYPE_DICTIONARY and (theme_templates as Dictionary).has(scope):
+		return str((theme_templates as Dictionary).get(scope, ""))
 	return ""
 
 
@@ -1833,11 +1865,25 @@ func _resolve_positive_buff_style_key(skill_data: Dictionary) -> String:
 	var weapon_type := str(skill_data.get("weapon_type", "")).strip_edges()
 	if weapon_type == "":
 		return "通用"
-	if POSITIVE_BUFF_STYLE_TEMPLATES.has(weapon_type):
+	if POSITIVE_BUFF_STYLE_THEME_TEMPLATES.has(weapon_type):
 		return weapon_type
 	if weapon_type == "通用":
 		return "通用"
 	return ""
+
+
+func _resolve_positive_buff_theme_template(skill_data: Dictionary, scope: String) -> String:
+	var theme_key := _resolve_positive_buff_theme_key(skill_data)
+	if theme_key == "":
+		return ""
+	var theme_templates = POSITIVE_BUFF_THEME_TEMPLATES.get(theme_key, {})
+	if typeof(theme_templates) == TYPE_DICTIONARY and (theme_templates as Dictionary).has(scope):
+		return str((theme_templates as Dictionary).get(scope, ""))
+	return ""
+
+
+func _resolve_positive_buff_theme_key(skill_data: Dictionary) -> String:
+	return str(skill_data.get("buff_theme", "")).strip_edges()
 
 
 func _build_positive_buff_system_line(user: Dictionary, applied_records: Array) -> String:
