@@ -32,6 +32,30 @@ const GAME_OVER_NARRATION_LINES := [
 	"後來的人也許不再見到你們，卻仍會在傳聞與故事裡，記得你們曾經如此認真地活過、戰過。"
 ]
 
+const POSITIVE_BUFF_SCOPE_TEMPLATES := {
+	"self": "{name} 默運勁息，將浮動心神與散開氣機一寸寸收束回身，整個人也跟著清明穩定下來。",
+	"ally_single": "{name} 運起一縷和緩勁氣送向 {target}，替他把紛亂氣息慢慢理順，心神與架式都穩了幾分。",
+	"ally_all": "{name} 將氣勢徐徐鋪展開來，那股溫潤勁意轉眼便籠住全隊，眾人的呼吸與步調也隨之安定了下來。",
+}
+
+const POSITIVE_BUFF_STYLE_TEMPLATES := {
+	"通用": {
+		"self": "{name} 提氣凝神，將目力與心念慢慢收束回一點，眼前景象也跟著變得分外清明。",
+		"ally_single": "{name} 運勁一引，將那股沉穩氣機覆上 {target} 周身，令其雜念漸斂，出手也更見穩定。",
+		"ally_all": "{name} 調勻氣息，將一股沉穩勁意徐徐送開，隊中眾人的心神也像被同時收束了一遍。"
+	},
+	"筆": {
+		"self": "{name} 提筆未落，墨意已先在胸中流轉一圈，原本散開的氣機被帶得越發輕靈分明。",
+		"ally_single": "{name} 筆意輕引，墨氣便沿勢覆上 {target} 周身，使其呼吸與身法都多了幾分從容游移。",
+		"ally_all": "{name} 墨意一轉，如風般輕拂過眾人身側，原本略顯沉重的步伐也隨之鬆快起來。",
+	},
+	"琴": {
+		"self": "{name} 指下弦音輕顫，清勁順勢回攏自身經脈，胸中雜念一散，心神也跟著沉定起來。",
+		"ally_single": "{name} 弦音一落，清勁便順勢覆上 {target} 周身，令其心神與目力都收束得更穩。",
+		"ally_all": "{name} 一縷弦音徐徐散開，清勁如水漫過隊列，眾人的呼吸與神色也隨之平穩了幾分。",
+	},
+}
+
 @onready var skill_resolver = $SkillResolver
 @onready var emotion_modulator = $EmotionModulator
 @onready var inventory_sync = $InventorySync
@@ -1771,31 +1795,49 @@ func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, ap
 		return ""
 	var scope: String = str(skill_data.get("target_scope", "single"))
 	var narration_map = skill_data.get("buff_narration", {})
-	var template := ""
-	if typeof(narration_map) == TYPE_DICTIONARY:
-		if scope == "self":
-			template = str((narration_map as Dictionary).get("self", ""))
-		elif scope == "ally_all":
-			template = str((narration_map as Dictionary).get("ally_all", ""))
-		else:
-			template = str((narration_map as Dictionary).get("ally_single", ""))
+	var template := _resolve_positive_buff_override_template(scope, narration_map)
+	if template == "":
+		template = _resolve_positive_buff_style_template(skill_data, scope)
 
 	if template == "":
-		var skill_name := str(skill_data.get("name", "???"))
-		if scope == "self":
-			template = "%s 默運「%s」，將浮動的心神與氣機慢慢收束起來。" % [str(user.get("name", "???")), skill_name]
-		elif scope == "ally_all":
-			template = "%s 展開「%s」，一股溫潤勁氣隨勢籠住全隊，眾人的身心都跟著穩了下來。" % [str(user.get("name", "???")), skill_name]
-		else:
-			var target_data: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
-			var target_name := str(target_data.get("name", "???"))
-			template = "%s 施展「%s」，勁氣穩穩覆上 %s 周身，使其氣息與心神都更沉定。" % [str(user.get("name", "???")), skill_name, target_name]
+		template = str(POSITIVE_BUFF_SCOPE_TEMPLATES.get(scope, POSITIVE_BUFF_SCOPE_TEMPLATES.get("ally_single", "")))
 
 	var first_target: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
 	return template \
 		.replace("{user}", str(user.get("name", "???"))) \
 		.replace("{name}", str(user.get("name", "???"))) \
 		.replace("{target}", str(first_target.get("name", "???")))
+
+
+func _resolve_positive_buff_override_template(scope: String, narration_map) -> String:
+	if typeof(narration_map) != TYPE_DICTIONARY:
+		return ""
+	match scope:
+		"self":
+			return str((narration_map as Dictionary).get("self", ""))
+		"ally_all":
+			return str((narration_map as Dictionary).get("ally_all", ""))
+		_:
+			return str((narration_map as Dictionary).get("ally_single", ""))
+
+
+func _resolve_positive_buff_style_template(skill_data: Dictionary, scope: String) -> String:
+	var style_key := _resolve_positive_buff_style_key(skill_data)
+	var style_templates = POSITIVE_BUFF_STYLE_TEMPLATES.get(style_key, {})
+	if typeof(style_templates) == TYPE_DICTIONARY and (style_templates as Dictionary).has(scope):
+		return str((style_templates as Dictionary).get(scope, ""))
+	return ""
+
+
+func _resolve_positive_buff_style_key(skill_data: Dictionary) -> String:
+	var weapon_type := str(skill_data.get("weapon_type", "")).strip_edges()
+	if weapon_type == "":
+		return "通用"
+	if POSITIVE_BUFF_STYLE_TEMPLATES.has(weapon_type):
+		return weapon_type
+	if weapon_type == "通用":
+		return "通用"
+	return ""
 
 
 func _build_positive_buff_system_line(user: Dictionary, applied_records: Array) -> String:
