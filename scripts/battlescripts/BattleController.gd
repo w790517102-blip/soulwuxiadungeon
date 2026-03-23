@@ -49,6 +49,11 @@ const POSITIVE_BUFF_THEME_TEMPLATES := {
 		"ally_single": "{name} 將一縷輕靈勁意送向 {target} 周身，令其腳下轉折更見輕捷，身法也靈動起來。",
 		"ally_all": "{name} 將那股輕靈氣意徐徐送開，隊中眾人的步伐與身形都隨之鬆快，轉動之間更添幾分游移餘地。",
 	},
+	"fortune": {
+		"self": "{name} 書意一轉，像有一縷清潤福氣沿著經脈輕輕落下，心頭與氣運都跟著順了幾分。",
+		"ally_single": "{name} 將一縷柔和福意覆向 {target} 周身，令其心緒安穩之餘，連那股說不清的運勢也悄悄偏向了幾分。",
+		"ally_all": "{name} 徐徐展開那股柔和福意，隊中眾人的氣息與運勢都像被輕輕扶正了一點。",
+	},
 }
 
 const POSITIVE_BUFF_STYLE_THEME_TEMPLATES := {
@@ -69,6 +74,11 @@ const POSITIVE_BUFF_STYLE_THEME_TEMPLATES := {
 			"self": "{name} 提筆未落，墨意已先在胸中流轉一圈，原本散開的氣機被帶得越發輕靈分明。",
 			"ally_single": "{name} 筆意輕引，墨氣便沿勢覆上 {target} 周身，使其呼吸與身法都多了幾分從容游移。",
 			"ally_all": "{name} 墨意一轉，如風般輕拂過眾人身側，原本略顯沉重的步伐也隨之鬆快起來。",
+		},
+		"fortune": {
+			"self": "{name} 筆尖未動，紙墨間那股靜氣便先落回自身，像有一線福意沿著心神慢慢安了下來。",
+			"ally_single": "{name} 以筆意輕輕一引，福意便如薄墨般覆上 {target} 周身，令其心神更明，氣運也順了幾分。",
+			"ally_all": "{name} 墨意徐展，如薄霧般輕攏眾人身側，那股不張揚的福氣也隨之悄悄落進隊列之中。",
 		},
 	},
 	"琴": {
@@ -1340,6 +1350,8 @@ func _default_turns_for_status(effect_type: String) -> int:
 			return 3
 		"evasion_boost":
 			return 3
+		"stat_buff":
+			return 3
 		"stun":
 			return 1
 		"buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element":
@@ -1354,6 +1366,9 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 	match effect_type:
 		"buff_speed":
 			payload["speed_delta"] = abs(amount if amount > 0 else 3)
+		"stat_buff":
+			payload["stat_key"] = str(entry.get("stat_key", entry.get("stat", ""))).strip_edges().to_lower()
+			payload["stat_delta"] = abs(amount if amount > 0 else 10)
 		"evasion_boost":
 			payload["evasion_delta"] = abs(amount if amount > 0 else 10)
 		"debuff_speed", "speed_debuff", "slow":
@@ -1414,7 +1429,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	effect = _canonicalize_status_effect_id(effect)
 
 	# 狀態類支援：速度增減、屬性強制
-	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root" or effect == "focus" or effect == "evasion_boost":
+	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root" or effect == "focus" or effect == "evasion_boost" or effect == "stat_buff":
 		var ok = await _execute_support_status_action(user, skill_data, target)
 		if not ok:
 			_log("WARN: support status failed: %s" % effect)
@@ -1458,11 +1473,12 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 				base_amount = int((entry as Dictionary).get("amount", base_amount))
 				break
 			var normalized_t := _canonicalize_status_effect_id(t)
-			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root" or normalized_t == "focus" or normalized_t == "evasion_boost":
+			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root" or normalized_t == "focus" or normalized_t == "evasion_boost" or normalized_t == "stat_buff":
 				var patched = skill_data.duplicate(true)
 				patched["effect"] = normalized_t
 				patched["amount"] = int((entry as Dictionary).get("amount", skill_data.get("amount", 0)))
 				patched["turns"] = int((entry as Dictionary).get("turns", skill_data.get("turns", 3)))
+				patched["stat_key"] = str((entry as Dictionary).get("stat_key", (entry as Dictionary).get("stat", skill_data.get("stat_key", ""))))
 				if t == "force_element":
 					patched["element"] = str((entry as Dictionary).get("element", skill_data.get("element", "")))
 				var ok2 = await _execute_support_status_action(user, patched, target)
@@ -1811,7 +1827,7 @@ func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
 		return false
 	if bool(skill_data.get("positive_buff", false)):
 		return true
-	return effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost"]
+	return effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "stat_buff"]
 
 
 func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:
@@ -1924,6 +1940,21 @@ func _build_positive_buff_system_line(user: Dictionary, applied_records: Array) 
 		"speed_buff":
 			label = "速度"
 			amount = int(payload.get("speed_delta", 0))
+		"stat_buff_int":
+			label = "智慧"
+			amount = int(payload.get("stat_delta", 0))
+		"stat_buff_luck":
+			label = "幸運"
+			amount = int(payload.get("stat_delta", 0))
+		"stat_buff_str":
+			label = "力量"
+			amount = int(payload.get("stat_delta", 0))
+		"stat_buff_agi":
+			label = "敏捷"
+			amount = int(payload.get("stat_delta", 0))
+		"stat_buff_con":
+			label = "體能"
+			amount = int(payload.get("stat_delta", 0))
 		"evasion_boost":
 			label = "閃避"
 			amount = int(payload.get("evasion_delta", 10))

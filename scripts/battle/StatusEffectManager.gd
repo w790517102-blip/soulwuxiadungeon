@@ -36,6 +36,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 		return false
 
 	effect_id = _canonicalize_effect_id(effect_id)
+	effect_id = _resolve_stat_buff_effect_id(effect_id, payload)
 	_ensure_base_stats(target)
 
 	if not target.has("status_effects") or typeof(target["status_effects"]) != TYPE_DICTIONARY:
@@ -56,6 +57,15 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 
 	var payload_copy = payload.duplicate(true)
 	var effect_payload = payload_copy.duplicate(true)
+	if effect_id.begins_with("stat_buff_"):
+		var stat_key = _stat_key_from_effect_id(effect_id)
+		var delta = int(effect_payload.get("stat_delta", 0))
+		if stat_key == "" or delta <= 0:
+			return false
+		effect_payload = {
+			"stat_key": stat_key,
+			"stat_delta": delta,
+		}
 
 	match effect_id:
 		"speed_buff":
@@ -125,6 +135,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 	_recalc_evasion(target)
 	_recalc_atk(target)
 	_recalc_def(target)
+	_recalc_primary_stats(target)
 	_recalc_max_hp(target)
 	_recalc_max_mp(target)
 	return true
@@ -193,6 +204,7 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 	_recalc_evasion(target)
 	_recalc_atk(target)
 	_recalc_def(target)
+	_recalc_primary_stats(target)
 	_recalc_max_hp(target)
 	_recalc_max_mp(target)
 
@@ -202,6 +214,14 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 	var turns_left = int(effect_record.get("turns_left", 0))
 	var payload: Dictionary = effect_record.get("payload", {}) if typeof(effect_record.get("payload", {})) == TYPE_DICTIONARY else {}
 	var actor_name = String(actor.get("name", "???"))
+	if effect_id.begins_with("stat_buff_"):
+		var stat_key = _stat_key_from_effect_id(effect_id)
+		return "%s %s上升 %d（剩 %d 回合）。" % [
+			actor_name,
+			_stat_display_name(stat_key),
+			int(payload.get("stat_delta", 0)),
+			turns_left
+		]
 	match effect_id:
 		"poison":
 			var max_hp = int(actor.get("max_hp", actor.get("base_max_hp", actor.get("hp", 0))))
@@ -252,6 +272,16 @@ func _ensure_base_stats(target: Dictionary) -> void:
 		target["base_max_hp"] = int(target.get("max_hp", target.get("hp", 0)))
 	if not target.has("base_max_mp"):
 		target["base_max_mp"] = int(target.get("max_mp", target.get("mp", 0)))
+	if not target.has("base_str"):
+		target["base_str"] = int(target.get("str", 0))
+	if not target.has("base_agi"):
+		target["base_agi"] = int(target.get("agi", 0))
+	if not target.has("base_int"):
+		target["base_int"] = int(target.get("int", 0))
+	if not target.has("base_con"):
+		target["base_con"] = int(target.get("con", 0))
+	if not target.has("base_luck"):
+		target["base_luck"] = int(target.get("luck", 0))
 
 
 func _recalc_speed(target: Dictionary) -> void:
@@ -326,6 +356,25 @@ func _recalc_def(target: Dictionary) -> void:
 	target["def_mod"] = delta
 
 
+func _recalc_primary_stats(target: Dictionary) -> void:
+	for stat_key in ["str", "agi", "int", "con", "luck"]:
+		_recalc_primary_stat(target, stat_key)
+
+
+func _recalc_primary_stat(target: Dictionary, stat_key: String) -> void:
+	_ensure_base_stats(target)
+	var base_key := "base_%s" % stat_key
+	var mod_key := "%s_mod" % stat_key
+	var effect_id := "stat_buff_%s" % stat_key
+	var base = int(target.get(base_key, target.get(stat_key, 0)))
+	var effects = target.get("status_effects", {})
+	var delta = 0
+	if typeof(effects) == TYPE_DICTIONARY and effects.has(effect_id):
+		delta += int(effects[effect_id].get("payload", {}).get("stat_delta", 0))
+	target[stat_key] = max(0, base + delta)
+	target[mod_key] = delta
+
+
 func _recalc_max_hp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
 	var base = int(target.get("base_max_hp", target.get("max_hp", target.get("hp", 0))))
@@ -352,3 +401,34 @@ func _recalc_max_mp(target: Dictionary) -> void:
 	if int(target.get("mp", 0)) > new_max:
 		target["mp"] = new_max
 	target["max_mp_mod"] = delta
+
+
+func _resolve_stat_buff_effect_id(effect_id: String, payload: Dictionary) -> String:
+	if effect_id != "stat_buff":
+		return effect_id
+	var stat_key := str(payload.get("stat_key", payload.get("stat", ""))).strip_edges().to_lower()
+	if stat_key == "":
+		return effect_id
+	return "stat_buff_%s" % stat_key
+
+
+func _stat_key_from_effect_id(effect_id: String) -> String:
+	if effect_id.begins_with("stat_buff_"):
+		return effect_id.trim_prefix("stat_buff_")
+	return ""
+
+
+func _stat_display_name(stat_key: String) -> String:
+	match stat_key:
+		"str":
+			return "力量"
+		"agi":
+			return "敏捷"
+		"int":
+			return "智慧"
+		"con":
+			return "體能"
+		"luck":
+			return "幸運"
+		_:
+			return stat_key

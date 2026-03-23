@@ -78,6 +78,11 @@ const BUFF_ABBREV := {
 	"warm_wine_buff": "攻",
 	"focus": "命",
 	"evasion_boost": "閃",
+	"stat_buff_str": "力",
+	"stat_buff_agi": "敏",
+	"stat_buff_int": "智",
+	"stat_buff_con": "體",
+	"stat_buff_luck": "幸",
 }
 
 
@@ -330,11 +335,18 @@ func _build_status_hover_text(actor: Dictionary) -> String:
 	var atk = int(actor.get("atk", 0))
 	var def = int(actor.get("def", 0))
 	var speed = int(actor.get("speed", 0))
+	var stat_str = int(actor.get("str", 0))
+	var stat_agi = int(actor.get("agi", 0))
+	var stat_int = int(actor.get("int", 0))
+	var stat_con = int(actor.get("con", 0))
+	var stat_luck = int(actor.get("luck", 0))
 	var lines = []
 	lines.append("[b]%s[/b]" % name)
 	lines.append("HP：%d / %d" % [hp, max_hp])
 	lines.append("MP：%d / %d" % [mp, max_mp])
 	lines.append("ATK：%d   DEF：%d   SPD：%d" % [atk, def, speed])
+	lines.append("STR：%d   AGI：%d   INT：%d" % [stat_str, stat_agi, stat_int])
+	lines.append("CON：%d   LUCK：%d" % [stat_con, stat_luck])
 	lines.append("狀態：")
 	var effects_text = _format_status_effects(actor)
 	lines.append(effects_text)
@@ -383,6 +395,16 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 		"focus":
 			var focus_acc = int(data.get("payload", {}).get("accuracy_delta", 0))
 			return "凝神：命中 %+d（剩 %d 回合）" % [focus_acc, turns]
+		"stat_buff_str":
+			return "強身：力量 +%d（剩 %d 回合）" % [int(data.get("payload", {}).get("stat_delta", 0)), turns]
+		"stat_buff_agi":
+			return "敏捷：敏捷 +%d（剩 %d 回合）" % [int(data.get("payload", {}).get("stat_delta", 0)), turns]
+		"stat_buff_int":
+			return "啟慧：智慧 +%d（剩 %d 回合）" % [int(data.get("payload", {}).get("stat_delta", 0)), turns]
+		"stat_buff_con":
+			return "健體：體能 +%d（剩 %d 回合）" % [int(data.get("payload", {}).get("stat_delta", 0)), turns]
+		"stat_buff_luck":
+			return "聚福：幸運 +%d（剩 %d 回合）" % [int(data.get("payload", {}).get("stat_delta", 0)), turns]
 		"evasion_boost":
 			var eva_boost = int(data.get("payload", {}).get("evasion_delta", 0))
 			return "輕身：閃避 %+d（剩 %d 回合）" % [eva_boost, turns]
