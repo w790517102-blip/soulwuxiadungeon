@@ -1811,7 +1811,7 @@ func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
 		return false
 	if bool(skill_data.get("positive_buff", false)):
 		return true
-	return effect_id in ["focus", "speed_buff", "evasion_boost"]
+	return effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost"]
 
 
 func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:

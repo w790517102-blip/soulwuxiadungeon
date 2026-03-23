@@ -123,6 +123,8 @@ const SKILLS := {
 		"mp_cost": 5,
 		"target_scope": "single",
 		"target_side": "ally",
+		"positive_buff": true,
+		"buff_theme": "mobility",
 		"effects": [{"type": "buff_speed", "amount": 3, "turns": 3}],
 		"available": {"mode": "all"},
 	},
