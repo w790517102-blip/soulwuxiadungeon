@@ -1225,6 +1225,16 @@ func _canonicalize_status_effect_id(effect_id: String) -> String:
 			return effect_id
 
 
+func _resolve_applied_status_effect_id(effect_id: String, payload: Dictionary) -> String:
+	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
+	if normalized_effect_id != "stat_buff":
+		return normalized_effect_id
+	var stat_key := str(payload.get("stat_key", payload.get("stat", ""))).strip_edges().to_lower()
+	if stat_key == "":
+		return normalized_effect_id
+	return "stat_buff_%s" % stat_key
+
+
 func _should_log_status_record(row: Dictionary) -> bool:
 	var target = row.get("target", {})
 	if typeof(target) != TYPE_DICTIONARY or target.is_empty():
@@ -1290,7 +1300,7 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 	if turns <= 0:
 		turns = _default_turns_for_status(effect_type)
 	var payload := _build_status_payload_from_skill_effect(effect_type, entry)
-	var normalized_effect_id := _canonicalize_status_effect_id(effect_type)
+	var normalized_effect_id := _resolve_applied_status_effect_id(effect_type, payload)
 	match normalized_effect_id:
 		"buff_speed":
 			normalized_effect_id = "speed_buff"
