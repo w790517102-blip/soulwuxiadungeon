@@ -78,6 +78,7 @@ const BUFF_ABBREV := {
 	"warm_wine_buff": "攻",
 	"force_element": "功",
 	"focus": "命",
+	"evasion_boost": "閃",
 }
 
 
@@ -383,6 +384,9 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 		"focus":
 			var focus_acc = int(data.get("payload", {}).get("accuracy_delta", 0))
 			return "凝神：命中 %+d（剩 %d 回合）" % [focus_acc, turns]
+		"evasion_boost":
+			var eva_boost = int(data.get("payload", {}).get("evasion_delta", 0))
+			return "輕身：閃避 %+d（剩 %d 回合）" % [eva_boost, turns]
 		"root":
 			var eva_delta = int(data.get("payload", {}).get("evasion_delta", 0))
 			return "定身：閃避 %+d（剩 %d 回合）" % [eva_delta, turns]
@@ -840,6 +844,7 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 	var has_blind_token := false
 	var has_root_token := false
 	var has_focus_token := false
+	var has_evasion_token := false
 
 	for effect_id in effects.keys():
 		var effect_data: Dictionary = effects[effect_id] if typeof(effects[effect_id]) == TYPE_DICTIONARY else {}
@@ -864,6 +869,8 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 			buff_tokens.append(btoken)
 			if effect_id == "focus":
 				has_focus_token = true
+			elif effect_id == "evasion_boost":
+				has_evasion_token = true
 
 	var warm_wine: Dictionary = effects.get("warm_wine_buff", {}) if typeof(effects.get("warm_wine_buff", {})) == TYPE_DICTIONARY else {}
 	if not warm_wine.is_empty() and not has_blind_token:
@@ -885,6 +892,9 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 	if int(actor.get("evasion_mod", 0)) < 0 and not has_root_token:
 		debuff_tokens.append("困")
 		has_root_token = true
+	if int(actor.get("evasion_mod", 0)) > 0 and not has_evasion_token:
+		buff_tokens.append("閃")
+		has_evasion_token = true
 
 	var battle_mods = actor.get("battle_modifiers", {})
 	if typeof(battle_mods) == TYPE_DICTIONARY:

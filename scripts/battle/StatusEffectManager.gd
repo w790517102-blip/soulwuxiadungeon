@@ -106,6 +106,9 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 		"focus":
 			if int(effect_payload.get("accuracy_delta", 0)) <= 0:
 				effect_payload["accuracy_delta"] = 15
+		"evasion_boost":
+			if int(effect_payload.get("evasion_delta", 0)) <= 0:
+				effect_payload["evasion_delta"] = 10
 		"root":
 			if int(effect_payload.get("evasion_delta", 0)) == 0:
 				effect_payload["evasion_delta"] = -20
@@ -220,6 +223,8 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			return "%s 命中下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("accuracy_delta", -15))), turns_left]
 		"focus":
 			return "%s 命中上升 %d（剩 %d 回合）。" % [actor_name, int(payload.get("accuracy_delta", 15)), turns_left]
+		"evasion_boost":
+			return "%s 閃避上升 %d（剩 %d 回合）。" % [actor_name, int(payload.get("evasion_delta", 10)), turns_left]
 		"root":
 			return "%s 閃避下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("evasion_delta", -20))), turns_left]
 		"speed_buff":
@@ -290,8 +295,11 @@ func _recalc_evasion(target: Dictionary) -> void:
 	var base = int(target.get("base_evasion", target.get("evasion", 0)))
 	var effects = target.get("status_effects", {})
 	var delta = 0
-	if typeof(effects) == TYPE_DICTIONARY and effects.has("root"):
-		delta += int(effects["root"].get("payload", {}).get("evasion_delta", 0))
+	if typeof(effects) == TYPE_DICTIONARY:
+		if effects.has("evasion_boost"):
+			delta += int(effects["evasion_boost"].get("payload", {}).get("evasion_delta", 0))
+		if effects.has("root"):
+			delta += int(effects["root"].get("payload", {}).get("evasion_delta", 0))
 	target["evasion"] = base + delta
 	target["evasion_mod"] = delta
 

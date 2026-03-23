@@ -827,7 +827,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus"]
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost"]
 	var mp_cost = int(skill_data.get("mp_cost", 0))
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
@@ -1260,7 +1260,8 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 		desc = String(status_manager.describe_effect(normalized_effect_id, effect_target, effect_record))
 	var tone_cast := ""
 	var tone_suffer := ""
-	if tone_map != null:
+	var suppress_status_narration := bool(skill_data.get("_suppress_status_narration", false))
+	if tone_map != null and not suppress_status_narration:
 		tone_cast = tone_map.get_tone_text("status_apply", normalized_effect_id, str(user.get("id", "")))
 		var suffer_key := normalized_effect_id
 		if bool(effect_target.get("is_enemy", false)):
@@ -1289,6 +1290,8 @@ func _default_turns_for_status(effect_type: String) -> int:
 			return 2
 		"focus":
 			return 3
+		"evasion_boost":
+			return 3
 		"stun":
 			return 1
 		"buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element":
@@ -1303,6 +1306,8 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 	match effect_type:
 		"buff_speed":
 			payload["speed_delta"] = abs(amount if amount > 0 else 3)
+		"evasion_boost":
+			payload["evasion_delta"] = abs(amount if amount > 0 else 10)
 		"debuff_speed", "speed_debuff", "slow":
 			payload["slow_delta"] = abs(amount if amount > 0 else 3)
 		"force_element":
@@ -1361,7 +1366,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	effect = _canonicalize_status_effect_id(effect)
 
 	# 狀態類支援：速度增減、屬性強制
-	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root" or effect == "focus":
+	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root" or effect == "focus" or effect == "evasion_boost":
 		var ok = await _execute_support_status_action(user, skill_data, target)
 		if not ok:
 			_log("WARN: support status failed: %s" % effect)
@@ -1405,7 +1410,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 				base_amount = int((entry as Dictionary).get("amount", base_amount))
 				break
 			var normalized_t := _canonicalize_status_effect_id(t)
-			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root" or normalized_t == "focus":
+			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root" or normalized_t == "focus" or normalized_t == "evasion_boost":
 				var patched = skill_data.duplicate(true)
 				patched["effect"] = normalized_t
 				patched["amount"] = int((entry as Dictionary).get("amount", skill_data.get("amount", 0)))
@@ -1631,30 +1636,48 @@ func _execute_support_mp_heal(user: Dictionary, skill_data: Dictionary, target: 
 func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> bool:
 	var effect: String = _canonicalize_status_effect_id(str(skill_data.get("effect", "")))
 	var skill_name: String = str(skill_data.get("name", "???"))
-	var turns = int(skill_data.get("turns", 3))
-	if turns <= 0:
-		_log("WARN: support status missing turns: %s" % skill_name)
-		return false
+	var scope: String = str(skill_data.get("target_scope", "single"))
+	var side: String = str(skill_data.get("target_side", "ally"))
+	var effect_entry_source: Dictionary = {}
+	if skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
+		for entry in skill_data.get("effects", []):
+			if typeof(entry) != TYPE_DICTIONARY:
+				continue
+			if _canonicalize_status_effect_id(str((entry as Dictionary).get("type", ""))) == effect:
+				effect_entry_source = (entry as Dictionary)
+				break
 
-	if target.is_empty() and (effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root"):
+	var turns = int(skill_data.get("turns", effect_entry_source.get("turns", _default_turns_for_status(effect))))
+	if turns <= 0:
+		turns = _default_turns_for_status(effect)
+
+	if target.is_empty() and scope != "ally_all" and side != "self" and (effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root"):
 		_log("WARN: support status %s missing target: %s" % [effect, skill_name])
 		return false
 
-	var actual_target: Dictionary = target
-	if actual_target.is_empty():
-		actual_target = user
+	var targets: Array = _resolve_support_status_targets(user, skill_data, target)
+	if targets.is_empty():
+		_log("WARN: support status %s missing valid targets: %s" % [effect, skill_name])
+		return false
+
+	var positive_buff := _is_positive_buff_skill(skill_data, effect)
 
 	if battle_ui and battle_ui.has_method("play_attack_motion"):
 		battle_ui.play_attack_motion(user)
 		if battle_ui.has_method("play_hit_fx_on_target"):
 			var fx_id = _get_fx_id_for_skill(skill_data, user)
 			if fx_id != "":
-				battle_ui.play_hit_fx_on_target(actual_target, fx_id)
-		if battle_ui.has_method("play_damage_react"):
-			battle_ui.play_damage_react(actual_target)
+				for effect_target in targets:
+					battle_ui.play_hit_fx_on_target(effect_target, fx_id)
+		if positive_buff and battle_ui.has_method("play_heal_react"):
+			for effect_target in targets:
+				battle_ui.play_heal_react(effect_target)
+		elif battle_ui.has_method("play_damage_react"):
+			for effect_target in targets:
+				battle_ui.play_damage_react(effect_target)
 		await get_tree().create_timer(0.2).timeout
 
-	var amount := int(skill_data.get("amount", skill_data.get("power", 0)))
+	var amount := int(skill_data.get("amount", effect_entry_source.get("amount", skill_data.get("power", 0))))
 	if effect != "force_element" and amount <= 0:
 		_log("WARN: support status missing amount: %s" % skill_name)
 		return false
@@ -1665,23 +1688,145 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 		"turns": turns,
 	}
 	if effect == "force_element":
-		effect_entry["element"] = str(skill_data.get("element", skill_data.get("target_element", "")))
+		effect_entry["element"] = str(skill_data.get("element", effect_entry_source.get("element", skill_data.get("target_element", ""))))
 		if str(effect_entry.get("element", "")) == "":
 			_log("WARN: support force_element missing element: %s" % skill_name)
 			return false
 
-	_log("%s 對 %s 施展「%s」。" % [
-		str(user.get("name", "???")),
-		str(actual_target.get("name", "???")),
-		skill_name
-	])
+	var patched_skill_data := skill_data.duplicate(true)
+	if positive_buff:
+		patched_skill_data["_suppress_status_narration"] = true
 
-	var record := _apply_single_skill_effect(user, actual_target, effect, effect_entry, skill_data)
-	if record.is_empty():
+	var applied_records: Array = []
+	for effect_target in targets:
+		var record := _apply_single_skill_effect(user, effect_target, effect, effect_entry, patched_skill_data)
+		if record.is_empty():
+			continue
+		applied_records.append(record)
+		_update_ui_for_actor(effect_target)
+
+	if applied_records.is_empty():
 		return false
-	_log_applied_statuses([record])
-	_update_ui_for_actor(actual_target)
+
+	if positive_buff:
+		var positive_line := _build_positive_buff_narration(user, skill_data, applied_records)
+		if positive_line != "":
+			_log_narration(positive_line)
+		var system_line := _build_positive_buff_system_line(user, applied_records)
+		if system_line != "":
+			_log(system_line)
+	else:
+		var actual_target: Dictionary = targets[0]
+		_log("%s 對 %s 施展「%s」。" % [
+			str(user.get("name", "???")),
+			str(actual_target.get("name", "???")),
+			skill_name
+		])
+		_log_applied_statuses(applied_records)
+
+	_update_ui_for_actor(user)
 	return true
+
+
+func _resolve_support_status_targets(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> Array:
+	var targets: Array = []
+	var scope: String = str(skill_data.get("target_scope", "single"))
+	var side: String = str(skill_data.get("target_side", "ally"))
+
+	if side == "self" or scope == "self":
+		targets.append(user)
+		return targets
+
+	if scope == "ally_all" and side == "ally":
+		for ally in player_party:
+			if typeof(ally) == TYPE_DICTIONARY and int(ally.get("hp", 0)) > 0:
+				targets.append(ally)
+		return targets
+
+	if scope == "enemy_all" and side == "enemy":
+		for enemy in enemy_party:
+			if typeof(enemy) == TYPE_DICTIONARY and int(enemy.get("hp", 0)) > 0:
+				targets.append(enemy)
+		return targets
+
+	var actual_target: Dictionary = target
+	if actual_target.is_empty() and side == "ally":
+		actual_target = user
+	if not actual_target.is_empty():
+		targets.append(actual_target)
+	return targets
+
+
+func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
+	var side: String = str(skill_data.get("target_side", ""))
+	if side != "ally" and side != "self":
+		return false
+	if bool(skill_data.get("positive_buff", false)):
+		return true
+	return effect_id in ["focus", "speed_buff", "evasion_boost"]
+
+
+func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:
+	if applied_records.is_empty():
+		return ""
+	var scope: String = str(skill_data.get("target_scope", "single"))
+	var narration_map = skill_data.get("buff_narration", {})
+	var template := ""
+	if typeof(narration_map) == TYPE_DICTIONARY:
+		if scope == "self":
+			template = str((narration_map as Dictionary).get("self", ""))
+		elif scope == "ally_all":
+			template = str((narration_map as Dictionary).get("ally_all", ""))
+		else:
+			template = str((narration_map as Dictionary).get("ally_single", ""))
+
+	if template == "":
+		var skill_name := str(skill_data.get("name", "???"))
+		if scope == "self":
+			template = "%s 默運「%s」，將浮動的心神與氣機慢慢收束起來。" % [str(user.get("name", "???")), skill_name]
+		elif scope == "ally_all":
+			template = "%s 展開「%s」，一股溫潤勁氣隨勢籠住全隊，眾人的身心都跟著穩了下來。" % [str(user.get("name", "???")), skill_name]
+		else:
+			var target_data: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
+			var target_name := str(target_data.get("name", "???"))
+			template = "%s 施展「%s」，勁氣穩穩覆上 %s 周身，使其氣息與心神都更沉定。" % [str(user.get("name", "???")), skill_name, target_name]
+
+	var first_target: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
+	return template \
+		.replace("{user}", str(user.get("name", "???"))) \
+		.replace("{name}", str(user.get("name", "???"))) \
+		.replace("{target}", str(first_target.get("name", "???")))
+
+
+func _build_positive_buff_system_line(user: Dictionary, applied_records: Array) -> String:
+	if applied_records.is_empty():
+		return ""
+	var record: Dictionary = applied_records[0]
+	var effect_id := str(record.get("effect_id", ""))
+	var payload: Dictionary = record.get("payload", {}) if typeof(record.get("payload", {})) == TYPE_DICTIONARY else {}
+	var turns := int(record.get("turns", 0))
+	var label := ""
+	var amount := 0
+	match effect_id:
+		"focus":
+			label = "命中"
+			amount = int(payload.get("accuracy_delta", 15))
+		"speed_buff":
+			label = "速度"
+			amount = int(payload.get("speed_delta", 0))
+		"evasion_boost":
+			label = "閃避"
+			amount = int(payload.get("evasion_delta", 10))
+		_:
+			return String(record.get("desc", ""))
+
+	if applied_records.size() > 1:
+		return "全體%s上升 %d 點，持續 %d 回合。" % [label, amount, turns]
+
+	var target: Dictionary = record.get("target", {}) if typeof(record.get("target", {})) == TYPE_DICTIONARY else {}
+	if str(target.get("id", "")) == str(user.get("id", "")):
+		return "%s上升 %d 點，持續 %d 回合。" % [label, amount, turns]
+	return "%s %s上升 %d 點，持續 %d 回合。" % [str(target.get("name", "???")), label, amount, turns]
 
 # 固定傷害炸彈：扣固定數值，不吃防禦／剋制
 func _apply_bomb_damage_to_target(

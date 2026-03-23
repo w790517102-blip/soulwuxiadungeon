@@ -181,15 +181,53 @@ const SKILLS := {
 	"skill_hawkeye_focus": {
 		"id": "skill_hawkeye_focus",
 		"name": "鷹眼訣",
-		"category": "單體增益",
-		"description": "凝神鎖定氣機，使命中暫時上升。",
+		"category": "自身增益",
+		"description": "提氣凝神，將目力與心念收束於一點，使自身洞察更銳。",
 		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 6,
+		"target_scope": "self",
+		"target_side": "self",
+		"positive_buff": true,
+		"buff_narration": {
+			"self": "提氣凝神之後，目力與心念像被收束成一線，眼前事物也跟著清明起來。"
+		},
+		"effects": [{"type": "focus", "amount": 15, "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_inkveil_swiftroute": {
+		"id": "skill_inkveil_swiftroute",
+		"name": "墨影輕身",
+		"category": "全體增益",
+		"description": "墨意輕揚，帶得全隊身法更靈，閃避暫時上升。",
+		"weapon_type": "筆",
+		"menu_usable": false,
+		"mp_cost": 8,
+		"target_scope": "ally_all",
+		"target_side": "ally",
+		"positive_buff": true,
+		"buff_narration": {
+			"ally_all": "墨意一轉，如風般輕輕拂過眾人身側，原本沉重的步伐也隨之輕了起來。"
+		},
+		"effects": [{"type": "evasion_boost", "amount": 10, "turns": 3}],
+		"available": {"mode": "include", "actor_ids": ["shumian"]},
+	},
+	"skill_qin_resonant_focus": {
+		"id": "skill_qin_resonant_focus",
+		"name": "定弦凝神",
+		"category": "單體增益",
+		"description": "弦音穩心，替隊友收束雜念，使命中暫時上升。",
+		"weapon_type": "琴",
 		"menu_usable": false,
 		"mp_cost": 6,
 		"target_scope": "single",
 		"target_side": "ally",
+		"positive_buff": true,
+		"buff_narration": {
+			"ally_single": "弦音一落，清勁便順勢覆上 {target} 周身，令其心神與目力都收束得更穩。"
+		},
 		"effects": [{"type": "focus", "amount": 15, "turns": 3}],
-		"available": {"mode": "all"},
+		"available": {"mode": "include", "actor_ids": ["lieshao"]},
 	},
 	"skill_mobishuxin": {
 		"id": "skill_mobishuxin",
@@ -474,6 +512,8 @@ const LEGACY_NAME_TO_ID := {
 	"潑墨迷眼": "skill_smoky_ink_blind",
 	"牽絲縛影": "skill_binding_shadow",
 	"鷹眼訣": "skill_hawkeye_focus",
+	"墨影輕身": "skill_inkveil_swiftroute",
+	"定弦凝神": "skill_qin_resonant_focus",
 	"墨筆舒心": "skill_mobishuxin",
 	"烈刀破勢": "skill_liedaoposhi",
 	"亂音碎琴": "skill_luanyinsuiqin",
@@ -497,8 +537,8 @@ const LEGACY_NAME_TO_ID := {
 
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
 	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
-	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin"],
-	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus"],
+	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
+	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus"],
 	"enemy1": ["skill_enemy_zhishui_yinzhang"],
 	"enemy2": ["skill_enemy_panshi_gangquan"],
 }
