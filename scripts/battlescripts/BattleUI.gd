@@ -76,7 +76,6 @@ const DEBUFF_ABBREV := {
 const BUFF_ABBREV := {
 	"speed_buff": "速",
 	"warm_wine_buff": "攻",
-	"force_element": "功",
 	"focus": "命",
 	"evasion_boost": "閃",
 }
