@@ -37,6 +37,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 
 	effect_id = _canonicalize_effect_id(effect_id)
 	effect_id = _resolve_stat_buff_effect_id(effect_id, payload)
+	effect_id = _resolve_stat_debuff_effect_id(effect_id, payload)
 	_ensure_base_stats(target)
 
 	if not target.has("status_effects") or typeof(target["status_effects"]) != TYPE_DICTIONARY:
@@ -57,17 +58,25 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 
 	var payload_copy = payload.duplicate(true)
 	var effect_payload = payload_copy.duplicate(true)
-	if effect_id.begins_with("stat_buff_"):
+	if effect_id.begins_with("stat_buff_") or effect_id.begins_with("stat_debuff_"):
 		var stat_key = _stat_key_from_effect_id(effect_id)
 		var delta = int(effect_payload.get("stat_delta", 0))
-		if stat_key == "" or delta <= 0:
+		if stat_key == "":
 			return false
+		if effect_id.begins_with("stat_buff_"):
+			if delta <= 0:
+				return false
+			delta = abs(delta)
+		else:
+			if delta == 0:
+				return false
+			delta = -abs(delta)
 		effect_payload = {
 			"stat_key": stat_key,
 			"stat_delta": delta,
 		}
-	var is_stat_buff_effect := effect_id.begins_with("stat_buff_")
-	if not is_stat_buff_effect:
+	var is_stat_effect := effect_id.begins_with("stat_buff_") or effect_id.begins_with("stat_debuff_")
+	if not is_stat_effect:
 		match effect_id:
 			"speed_buff":
 				var delta = int(effect_payload.get("speed_delta", 0))
@@ -223,6 +232,14 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			int(payload.get("stat_delta", 0)),
 			turns_left
 		]
+	if effect_id.begins_with("stat_debuff_"):
+		var stat_key = _stat_key_from_effect_id(effect_id)
+		return "%s %s下降 %d（剩 %d 回合）。" % [
+			actor_name,
+			_stat_display_name(stat_key),
+			abs(int(payload.get("stat_delta", 0))),
+			turns_left
+		]
 	match effect_id:
 		"poison":
 			var max_hp = int(actor.get("max_hp", actor.get("base_max_hp", actor.get("hp", 0))))
@@ -366,12 +383,16 @@ func _recalc_primary_stat(target: Dictionary, stat_key: String) -> void:
 	_ensure_base_stats(target)
 	var base_key := "base_%s" % stat_key
 	var mod_key := "%s_mod" % stat_key
-	var effect_id := "stat_buff_%s" % stat_key
+	var buff_effect_id := "stat_buff_%s" % stat_key
+	var debuff_effect_id := "stat_debuff_%s" % stat_key
 	var base = int(target.get(base_key, target.get(stat_key, 0)))
 	var effects = target.get("status_effects", {})
 	var delta = 0
-	if typeof(effects) == TYPE_DICTIONARY and effects.has(effect_id):
-		delta += int(effects[effect_id].get("payload", {}).get("stat_delta", 0))
+	if typeof(effects) == TYPE_DICTIONARY:
+		if effects.has(buff_effect_id):
+			delta += int(effects[buff_effect_id].get("payload", {}).get("stat_delta", 0))
+		if effects.has(debuff_effect_id):
+			delta += int(effects[debuff_effect_id].get("payload", {}).get("stat_delta", 0))
 	target[stat_key] = max(0, base + delta)
 	target[mod_key] = delta
 
@@ -413,9 +434,20 @@ func _resolve_stat_buff_effect_id(effect_id: String, payload: Dictionary) -> Str
 	return "stat_buff_%s" % stat_key
 
 
+func _resolve_stat_debuff_effect_id(effect_id: String, payload: Dictionary) -> String:
+	if effect_id != "stat_debuff":
+		return effect_id
+	var stat_key := str(payload.get("stat_key", payload.get("stat", ""))).strip_edges().to_lower()
+	if stat_key == "":
+		return effect_id
+	return "stat_debuff_%s" % stat_key
+
+
 func _stat_key_from_effect_id(effect_id: String) -> String:
 	if effect_id.begins_with("stat_buff_"):
 		return effect_id.trim_prefix("stat_buff_")
+	if effect_id.begins_with("stat_debuff_"):
+		return effect_id.trim_prefix("stat_debuff_")
 	return ""
 
 

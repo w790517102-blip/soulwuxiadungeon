@@ -71,6 +71,11 @@ const DEBUFF_ABBREV := {
 	"seal_mp": "損",
 	"blind": "盲",
 	"root": "困",
+	"stat_debuff_str": "力",
+	"stat_debuff_agi": "敏",
+	"stat_debuff_int": "智",
+	"stat_debuff_con": "體",
+	"stat_debuff_luck": "幸",
 }
 
 const BUFF_ABBREV := {
@@ -405,6 +410,16 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 			return "健體：體能 +%d（剩 %d 回合）" % [int(data.get("payload", {}).get("stat_delta", 0)), turns]
 		"stat_buff_luck":
 			return "聚福：幸運 +%d（剩 %d 回合）" % [int(data.get("payload", {}).get("stat_delta", 0)), turns]
+		"stat_debuff_str":
+			return "壓勁：力量 -%d（剩 %d 回合）" % [abs(int(data.get("payload", {}).get("stat_delta", 0))), turns]
+		"stat_debuff_agi":
+			return "亂弦：敏捷 -%d（剩 %d 回合）" % [abs(int(data.get("payload", {}).get("stat_delta", 0))), turns]
+		"stat_debuff_int":
+			return "惑思：智慧 -%d（剩 %d 回合）" % [abs(int(data.get("payload", {}).get("stat_delta", 0))), turns]
+		"stat_debuff_con":
+			return "奪息：體能 -%d（剩 %d 回合）" % [abs(int(data.get("payload", {}).get("stat_delta", 0))), turns]
+		"stat_debuff_luck":
+			return "厄運：幸運 -%d（剩 %d 回合）" % [abs(int(data.get("payload", {}).get("stat_delta", 0))), turns]
 		"evasion_boost":
 			var eva_boost = int(data.get("payload", {}).get("evasion_delta", 0))
 			return "輕身：閃避 %+d（剩 %d 回合）" % [eva_boost, turns]

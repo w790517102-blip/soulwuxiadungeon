@@ -264,6 +264,19 @@ const SKILLS := {
 		"effects": [{"type": "focus", "amount": 15, "turns": 3}],
 		"available": {"mode": "include", "actor_ids": ["lieshao"]},
 	},
+	"skill_luanxian_banying": {
+		"id": "skill_luanxian_banying",
+		"name": "亂弦絆影",
+		"category": "單體減益",
+		"description": "弦音亂拍牽制身法，令敵方步調失序、敏捷暫時下降。",
+		"weapon_type": "琴",
+		"menu_usable": false,
+		"mp_cost": 8,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "stat_debuff", "stat": "agi", "amount": 10, "turns": 3}],
+		"available": {"mode": "include", "actor_ids": ["lieshao"]},
+	},
 	"skill_mobishuxin": {
 		"id": "skill_mobishuxin",
 		"name": "墨筆舒心",
@@ -551,6 +564,7 @@ const LEGACY_NAME_TO_ID := {
 	"鷹眼訣": "skill_hawkeye_focus",
 	"墨影輕身": "skill_inkveil_swiftroute",
 	"定弦凝神": "skill_qin_resonant_focus",
+	"亂弦絆影": "skill_luanxian_banying",
 	"墨筆舒心": "skill_mobishuxin",
 	"烈刀破勢": "skill_liedaoposhi",
 	"亂音碎琴": "skill_luanyinsuiqin",
@@ -575,7 +589,7 @@ const LEGACY_NAME_TO_ID := {
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
 	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
 	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
-	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus"],
+	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus", "skill_luanxian_banying"],
 	"enemy1": ["skill_enemy_zhishui_yinzhang"],
 	"enemy2": ["skill_enemy_panshi_gangquan"],
 }

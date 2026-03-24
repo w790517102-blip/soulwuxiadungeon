@@ -1227,12 +1227,12 @@ func _canonicalize_status_effect_id(effect_id: String) -> String:
 
 func _resolve_applied_status_effect_id(effect_id: String, payload: Dictionary) -> String:
 	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
-	if normalized_effect_id != "stat_buff":
+	if normalized_effect_id != "stat_buff" and normalized_effect_id != "stat_debuff":
 		return normalized_effect_id
 	var stat_key := str(payload.get("stat_key", payload.get("stat", ""))).strip_edges().to_lower()
 	if stat_key == "":
 		return normalized_effect_id
-	return "stat_buff_%s" % stat_key
+	return "%s_%s" % [normalized_effect_id, stat_key]
 
 
 func _is_support_status_effect(effect_id: String) -> bool:
@@ -1246,6 +1246,7 @@ func _is_support_status_effect(effect_id: String) -> bool:
 		"focus",
 		"evasion_boost",
 		"stat_buff",
+		"stat_debuff",
 	]
 
 
@@ -1376,6 +1377,8 @@ func _default_turns_for_status(effect_type: String) -> int:
 			return 3
 		"stat_buff":
 			return 3
+		"stat_debuff":
+			return 3
 		"stun":
 			return 1
 		"buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element":
@@ -1394,6 +1397,10 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 		"stat_buff":
 			payload["stat_key"] = str(entry.get("stat_key", entry.get("stat", ""))).strip_edges().to_lower()
 			payload["stat_delta"] = abs(amount if amount > 0 else 10)
+			payload["turns"] = turns
+		"stat_debuff":
+			payload["stat_key"] = str(entry.get("stat_key", entry.get("stat", ""))).strip_edges().to_lower()
+			payload["stat_delta"] = -abs(amount if amount > 0 else 10)
 			payload["turns"] = turns
 		"evasion_boost":
 			payload["evasion_delta"] = abs(amount if amount > 0 else 10)
@@ -1780,10 +1787,10 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 		"amount": amount,
 		"turns": turns,
 	}
-	if effect == "stat_buff":
+	if effect == "stat_buff" or effect == "stat_debuff":
 		effect_entry["stat_key"] = str(skill_data.get("stat_key", effect_entry_source.get("stat_key", effect_entry_source.get("stat", "")))).strip_edges().to_lower()
 		if str(effect_entry.get("stat_key", "")) == "":
-			_log("WARN: support stat_buff missing stat_key: %s" % skill_name)
+			_log("WARN: support %s missing stat_key: %s" % [effect, skill_name])
 			return false
 	if effect == "force_element":
 		effect_entry["element"] = str(skill_data.get("element", effect_entry_source.get("element", skill_data.get("target_element", ""))))
