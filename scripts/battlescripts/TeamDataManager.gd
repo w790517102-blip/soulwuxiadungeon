@@ -31,7 +31,7 @@ var all_characters: Dictionary = {
 		"defense_value": 0,
 		"portrait_path": "res://assets/sprites/Liu_Yu/LiuYu_battle.png",
 		"inner_force_id": "qingfeng_jue",
-		"known_inner_force_ids": ["qingfeng_jue", "wuji_zhenjing"],
+		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing"],
 		"inner_force_used_prefixes": [],
 		"str": 5,
 		"agi": 5,
@@ -551,7 +551,7 @@ func _resolve_known_force_ids_from_legacy(actor_id: String, legacy_forces: Array
 func _default_known_force_ids(actor_id: String) -> Array:
 	match actor_id:
 		"liuyu":
-			return ["qingfeng_jue", "wuji_zhenjing"]
+			return ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing"]
 		"lieshao":
 			return ["chi_yang_zhenjing", "po_jun_zhenjing"]
 		"shumian":

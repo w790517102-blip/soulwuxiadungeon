@@ -171,6 +171,7 @@ func start_battle(context: Dictionary) -> void:
 			continue
 		p["max_hp"] = int(p.get("max_hp", p.get("hp", 0)))
 		p["max_mp"] = int(p.get("max_mp", p.get("mp", 0)))
+		_apply_inner_force_runtime_bonus_for_actor(p)
 
 	for i in range(enemy_party.size()):
 		var e = enemy_party[i]
@@ -359,6 +360,82 @@ func can_use_items() -> bool:
 func can_switch_inner_force() -> bool:
 	return _is_rule_allowed("allow_inner_force_switch", true)
 
+
+func _compute_inner_force_runtime_bonus(actor: Dictionary, force: Dictionary) -> Dictionary:
+	if actor.is_empty() or force.is_empty():
+		return {}
+	var bonus := {
+		"agi": 0,
+		"accuracy": 0,
+		"def": 0,
+		"max_mp": 0,
+	}
+	bonus["agi"] = int(force.get("agi_flat_bonus", 0))
+	bonus["accuracy"] = int(force.get("accuracy_flat_bonus", 0))
+	bonus["def"] = int(force.get("def_flat_bonus", 0))
+	var con_ratio := float(force.get("def_from_con_ratio", 0.0))
+	if con_ratio != 0.0:
+		bonus["def"] += int(floor(float(int(actor.get("con", 0))) * con_ratio))
+	bonus["max_mp"] = int(force.get("max_mp_flat_bonus", 0))
+	var int_ratio := float(force.get("max_mp_from_int_ratio", 0.0))
+	if int_ratio != 0.0:
+		bonus["max_mp"] += int(floor(float(int(actor.get("int", 0))) * int_ratio))
+	return bonus
+
+
+func _remove_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
+	if actor.is_empty():
+		return
+	var prev = actor.get("_inner_force_runtime_bonus", {})
+	if typeof(prev) != TYPE_DICTIONARY:
+		return
+	var prev_bonus: Dictionary = prev
+	actor["agi"] = int(actor.get("agi", 0)) - int(prev_bonus.get("agi", 0))
+	actor["accuracy"] = int(actor.get("accuracy", 100)) - int(prev_bonus.get("accuracy", 0))
+	actor["def"] = int(actor.get("def", 0)) - int(prev_bonus.get("def", 0))
+	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) - int(prev_bonus.get("max_mp", 0))
+	actor["max_mp"] = max(0, int(actor.get("max_mp", 0)))
+	if int(actor.get("mp", 0)) > int(actor.get("max_mp", 0)):
+		actor["mp"] = int(actor.get("max_mp", 0))
+	actor.erase("_inner_force_runtime_bonus")
+
+
+func _apply_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
+	if actor.is_empty():
+		return
+	_remove_inner_force_runtime_bonus_for_actor(actor)
+	var force: Dictionary = actor.get("inner_force", {}) if typeof(actor.get("inner_force", {})) == TYPE_DICTIONARY else {}
+	var bonus := _compute_inner_force_runtime_bonus(actor, force)
+	if bonus.is_empty():
+		return
+	actor["agi"] = int(actor.get("agi", 0)) + int(bonus.get("agi", 0))
+	actor["accuracy"] = int(actor.get("accuracy", 100)) + int(bonus.get("accuracy", 0))
+	actor["def"] = int(actor.get("def", 0)) + int(bonus.get("def", 0))
+	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + int(bonus.get("max_mp", 0))
+	actor["max_mp"] = max(0, int(actor.get("max_mp", 0)))
+	actor["mp"] = min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
+	actor["_inner_force_runtime_bonus"] = bonus
+
+
+func _resolve_skill_mp_cost(actor: Dictionary, skill_data: Dictionary) -> int:
+	var base_mp_cost := int(skill_data.get("mp_cost", 0))
+	if base_mp_cost <= 0:
+		return 0
+	var inner_force: Dictionary = actor.get("inner_force", {}) if typeof(actor.get("inner_force", {})) == TYPE_DICTIONARY else {}
+	if inner_force.is_empty():
+		return base_mp_cost
+	var multiplier := float(inner_force.get("skill_mp_cost_multiplier", 1.0))
+	var skill_weapon_type := String(skill_data.get("weapon_type", ""))
+	var by_weapon = inner_force.get("skill_mp_cost_multiplier_by_weapon", {})
+	if skill_weapon_type != "" and typeof(by_weapon) == TYPE_DICTIONARY:
+		var map: Dictionary = by_weapon
+		if map.has(skill_weapon_type):
+			multiplier *= float(map.get(skill_weapon_type, 1.0))
+	var adjusted := int(floor(float(base_mp_cost) * max(0.0, multiplier)))
+	if adjusted <= 0:
+		return 1
+	return adjusted
+
 func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 	if not _is_rule_allowed("allow_inner_force_switch", true):
 		_log_system("本場規則禁止切換內功。")
@@ -373,6 +450,7 @@ func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 		actor["inner_force_id"] = force_id
 	if force.has("element"):
 		actor["element"] = force["element"]
+	_apply_inner_force_runtime_bonus_for_actor(actor)
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
 			continue
@@ -383,6 +461,7 @@ func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 			p["inner_force_id"] = force_id
 		if force.has("element"):
 			p["element"] = force["element"]
+		_apply_inner_force_runtime_bonus_for_actor(p)
 		break
 	if actor_id != "" and force_id != "" and team_data_manager != null and team_data_manager.has_method("set_inner_force"):
 		team_data_manager.set_inner_force(actor_id, force_id)
@@ -904,8 +983,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost"]
-	var mp_cost = int(skill_data.get("mp_cost", 0))
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost", "stat_buff", "stat_debuff"]
+	var mp_cost = _resolve_skill_mp_cost(actor, skill_data)
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
 

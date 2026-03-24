@@ -138,6 +138,16 @@ func execute(
 		context["element_advantage"] = true
 	else:
 		context["element_advantage"] = false
+	var target_inner_force: Dictionary = target.get("inner_force", {}) if typeof(target.get("inner_force", {})) == TYPE_DICTIONARY else {}
+	if user_element == "快" and not target_inner_force.is_empty():
+		var reduction_base := float(target_inner_force.get("damage_reduction_vs_fast_base", 0.0))
+		var reduction_from_str := float(target_inner_force.get("damage_reduction_vs_fast_from_str", 0.0))
+		var reduction_cap := float(target_inner_force.get("damage_reduction_vs_fast_cap", 0.8))
+		var target_str := float(int(target.get("str", 0)))
+		var reduction := clampf(reduction_base + target_str * reduction_from_str, 0.0, max(0.0, reduction_cap))
+		if reduction > 0.0:
+			dmg *= (1.0 - reduction)
+			context["inner_force_fast_resist"] = reduction
 
 	# --- 書籍戰鬥修飾（筆系技能） ---
 	if skill_weapon_type == "筆":
