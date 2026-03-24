@@ -1235,6 +1235,20 @@ func _resolve_applied_status_effect_id(effect_id: String, payload: Dictionary) -
 	return "stat_buff_%s" % stat_key
 
 
+func _is_support_status_effect(effect_id: String) -> bool:
+	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
+	return normalized_effect_id in [
+		"buff_speed",
+		"slow",
+		"force_element",
+		"blind",
+		"root",
+		"focus",
+		"evasion_boost",
+		"stat_buff",
+	]
+
+
 func _should_log_status_record(row: Dictionary) -> bool:
 	var target = row.get("target", {})
 	if typeof(target) != TYPE_DICTIONARY or target.is_empty():
@@ -1441,7 +1455,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	effect = _canonicalize_status_effect_id(effect)
 
 	# 狀態類支援：速度增減、屬性強制
-	if effect == "buff_speed" or effect == "slow" or effect == "force_element" or effect == "blind" or effect == "root" or effect == "focus" or effect == "evasion_boost" or effect == "stat_buff":
+	if _is_support_status_effect(effect):
 		var ok = await _execute_support_status_action(user, skill_data, target)
 		if not ok:
 			_log("WARN: support status failed: %s" % effect)
@@ -1485,7 +1499,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 				base_amount = int((entry as Dictionary).get("amount", base_amount))
 				break
 			var normalized_t := _canonicalize_status_effect_id(t)
-			if normalized_t == "buff_speed" or normalized_t == "slow" or normalized_t == "force_element" or normalized_t == "blind" or normalized_t == "root" or normalized_t == "focus" or normalized_t == "evasion_boost" or normalized_t == "stat_buff":
+			if _is_support_status_effect(normalized_t):
 				var patched = skill_data.duplicate(true)
 				patched["effect"] = normalized_t
 				patched["amount"] = int((entry as Dictionary).get("amount", skill_data.get("amount", 0)))
@@ -1714,6 +1728,9 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 	var skill_name: String = str(skill_data.get("name", "???"))
 	var scope: String = str(skill_data.get("target_scope", "single"))
 	var side: String = str(skill_data.get("target_side", "ally"))
+	if not _is_support_status_effect(effect):
+		_log("WARN: support status unsupported effect: %s (%s)" % [effect, skill_name])
+		return false
 	var effect_entry_source: Dictionary = {}
 	if skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
 		for entry in skill_data.get("effects", []):
