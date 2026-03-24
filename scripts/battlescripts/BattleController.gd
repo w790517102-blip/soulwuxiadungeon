@@ -364,9 +364,28 @@ func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 		_log_system("本場規則禁止切換內功。")
 		return false
 
+	if actor.is_empty() or force.is_empty():
+		return false
+	var actor_id := str(actor.get("id", ""))
+	var force_id := str(force.get("id", ""))
 	actor["inner_force"] = force
+	if force_id != "":
+		actor["inner_force_id"] = force_id
 	if force.has("element"):
 		actor["element"] = force["element"]
+	for p in player_party:
+		if typeof(p) != TYPE_DICTIONARY:
+			continue
+		if str(p.get("id", "")) != actor_id:
+			continue
+		p["inner_force"] = force
+		if force_id != "":
+			p["inner_force_id"] = force_id
+		if force.has("element"):
+			p["element"] = force["element"]
+		break
+	if actor_id != "" and force_id != "" and team_data_manager != null and team_data_manager.has_method("set_inner_force"):
+		team_data_manager.set_inner_force(actor_id, force_id)
 
 	if battle_ui:
 		battle_ui.update_ally_panel()

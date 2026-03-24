@@ -1096,6 +1096,12 @@ func _on_InnerForcePopup_force_selected(force: Dictionary):
 		if not ok:
 			inner_force_popup.hide()
 			return
+	if not current_actor.is_empty():
+		current_actor["inner_force"] = force
+		if force.has("id"):
+			current_actor["inner_force_id"] = str(force.get("id", ""))
+		if force.has("element"):
+			current_actor["element"] = force["element"]
 
 	# 下面是原本的敘事文字
 	var base = "你切換了內功為「%s・%s」（強化：%s）。" % [
