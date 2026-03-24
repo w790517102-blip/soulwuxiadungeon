@@ -66,64 +66,65 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 			"stat_key": stat_key,
 			"stat_delta": delta,
 		}
-
-	match effect_id:
-		"speed_buff":
-			var delta = int(effect_payload.get("speed_delta", 0))
-			if delta <= 0:
+	var is_stat_buff_effect := effect_id.begins_with("stat_buff_")
+	if not is_stat_buff_effect:
+		match effect_id:
+			"speed_buff":
+				var delta = int(effect_payload.get("speed_delta", 0))
+				if delta <= 0:
+					return false
+				effect_payload = {"speed_delta": delta}
+			"force_element":
+				var new_element = str(effect_payload.get("element", ""))
+				if new_element == "":
+					return false
+				if has_existing:
+					remove_effect(target, effect_id)
+					effects = target.get("status_effects", {})
+					target["status_effects"] = effects
+				effects[effect_id] = {
+					"payload": {"element": new_element},
+					"prev_element": target.get("element", ""),
+					"turns_left": turns,
+				}
+				target["element"] = new_element
+				return true
+			"poison", "stun", "confuse":
+				pass
+			"slow":
+				if int(effect_payload.get("slow_delta", 0)) <= 0:
+					effect_payload["slow_delta"] = DEFAULT_SLOW_DELTA
+			"warm_wine_buff":
+				if int(effect_payload.get("speed_delta", 0)) == 0:
+					effect_payload["speed_delta"] = 10
+				if int(effect_payload.get("accuracy_delta", 0)) == 0:
+					effect_payload["accuracy_delta"] = -5
+			"weaken":
+				if int(effect_payload.get("atk_delta", 0)) == 0:
+					effect_payload["atk_delta"] = -10
+			"break_def":
+				if int(effect_payload.get("def_delta", 0)) == 0:
+					effect_payload["def_delta"] = -10
+			"weak":
+				if int(effect_payload.get("max_hp_delta", 0)) == 0:
+					effect_payload["max_hp_delta"] = -30
+			"seal_mp":
+				if int(effect_payload.get("max_mp_delta", 0)) == 0:
+					effect_payload["max_mp_delta"] = -15
+			"blind":
+				if int(effect_payload.get("accuracy_delta", 0)) == 0:
+					effect_payload["accuracy_delta"] = -15
+			"focus":
+				if int(effect_payload.get("accuracy_delta", 0)) <= 0:
+					effect_payload["accuracy_delta"] = 15
+			"evasion_boost":
+				if int(effect_payload.get("evasion_delta", 0)) <= 0:
+					effect_payload["evasion_delta"] = 10
+			"root":
+				if int(effect_payload.get("evasion_delta", 0)) == 0:
+					effect_payload["evasion_delta"] = -20
+			_:
 				return false
-			effect_payload = {"speed_delta": delta}
-		"force_element":
-			var new_element = str(effect_payload.get("element", ""))
-			if new_element == "":
-				return false
-			if has_existing:
-				remove_effect(target, effect_id)
-				effects = target.get("status_effects", {})
-				target["status_effects"] = effects
-			effects[effect_id] = {
-				"payload": {"element": new_element},
-				"prev_element": target.get("element", ""),
-				"turns_left": turns,
-			}
-			target["element"] = new_element
-			return true
-		"poison", "stun", "confuse":
-			pass
-		"slow":
-			if int(effect_payload.get("slow_delta", 0)) <= 0:
-				effect_payload["slow_delta"] = DEFAULT_SLOW_DELTA
-		"warm_wine_buff":
-			if int(effect_payload.get("speed_delta", 0)) == 0:
-				effect_payload["speed_delta"] = 10
-			if int(effect_payload.get("accuracy_delta", 0)) == 0:
-				effect_payload["accuracy_delta"] = -5
-		"weaken":
-			if int(effect_payload.get("atk_delta", 0)) == 0:
-				effect_payload["atk_delta"] = -10
-		"break_def":
-			if int(effect_payload.get("def_delta", 0)) == 0:
-				effect_payload["def_delta"] = -10
-		"weak":
-			if int(effect_payload.get("max_hp_delta", 0)) == 0:
-				effect_payload["max_hp_delta"] = -30
-		"seal_mp":
-			if int(effect_payload.get("max_mp_delta", 0)) == 0:
-				effect_payload["max_mp_delta"] = -15
-		"blind":
-			if int(effect_payload.get("accuracy_delta", 0)) == 0:
-				effect_payload["accuracy_delta"] = -15
-		"focus":
-			if int(effect_payload.get("accuracy_delta", 0)) <= 0:
-				effect_payload["accuracy_delta"] = 15
-		"evasion_boost":
-			if int(effect_payload.get("evasion_delta", 0)) <= 0:
-				effect_payload["evasion_delta"] = 10
-		"root":
-			if int(effect_payload.get("evasion_delta", 0)) == 0:
-				effect_payload["evasion_delta"] = -20
-		_:
-			return false
 
 	effects[effect_id] = {
 		"payload": effect_payload,
