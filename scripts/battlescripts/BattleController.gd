@@ -436,6 +436,18 @@ func _resolve_skill_mp_cost(actor: Dictionary, skill_data: Dictionary) -> int:
 		return 1
 	return adjusted
 
+func _resolve_strike_count(skill_data: Dictionary) -> int:
+	if skill_data.is_empty():
+		return 1
+	var strike_count := int(skill_data.get("strike_count", 0))
+	if strike_count <= 0:
+		strike_count = int(skill_data.get("attack_count", 0))
+	if strike_count <= 0:
+		strike_count = int(skill_data.get("hit_count", 0))
+	if strike_count <= 0:
+		strike_count = int(skill_data.get("hits", 0))
+	return maxi(strike_count, 1)
+
 func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 	if not _is_rule_allowed("allow_inner_force_switch", true):
 		_log_system("本場規則禁止切換內功。")
@@ -1143,7 +1155,35 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				damage_skill_data["power"] = float(entry.get("power", skill_data.get("power", 1.0)))
 				break
 
-	var result_single = skill_executor.execute(actor, actual_target, damage_skill_data, inner_force_single)
+	var strike_count := _resolve_strike_count(skill_data)
+	var result_single: Dictionary = {}
+	var combined_logs: Array = []
+	var total_damage := 0
+	var any_hit := false
+	for i in range(strike_count):
+		if int(actual_target.get("hp", 0)) <= 0:
+			break
+		var strike_skill_data := damage_skill_data.duplicate(true)
+		if i > 0:
+			strike_skill_data["_suppress_attack_opener"] = true
+		var strike_result := skill_executor.execute(actor, actual_target, strike_skill_data, inner_force_single)
+		if i == 0:
+			result_single = strike_result
+		total_damage += int(strike_result.get("damage", 0))
+		any_hit = any_hit or bool(strike_result.get("hit", true))
+		var strike_logs: Array = strike_result.get("log", [])
+		if strike_count > 1:
+			combined_logs.append("—— 第 %d 段 ——" % [i + 1])
+		for line in strike_logs:
+			combined_logs.append(line)
+		if bool(strike_result.get("target_down", false)):
+			result_single["target_down"] = true
+			break
+	if result_single.is_empty():
+		result_single = {"log": [], "hit": false, "target_down": false, "damage": 0}
+	result_single["log"] = combined_logs
+	result_single["damage"] = total_damage
+	result_single["hit"] = any_hit
 
 	# 🎬 單體：照舊跑 cinematic（描述＋動畫）
 	var attack_logs = await _play_attack_cinematic(actor, actual_target, skill_data, result_single)

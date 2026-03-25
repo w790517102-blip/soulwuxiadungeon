@@ -5,6 +5,7 @@ signal battle_result_confirmed(result: Dictionary)
 signal battle_opening_confirmed
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
+const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 var tone = ToneMap.new()
 
 @onready var ally_panel = $AllyPanel
@@ -1103,22 +1104,22 @@ func _on_InnerForcePopup_force_selected(force: Dictionary):
 		if force.has("element"):
 			current_actor["element"] = force["element"]
 
-	# 下面是原本的敘事文字
-	var base = "你切換了內功為「%s・%s」（強化：%s）。" % [
-		force.get("prefix", "？"),
-		force.get("type", "？"),
-		force.get("boost_weapon", "？")
-	]
-	var extra = tone.get_tone_text(
-		"innerforce_switch",
-		force.get("prefix", ""),
-		current_actor.get("id", "")
-	)
+	var actor_name := str(current_actor.get("name", "俠士"))
+	var prefix := str(force.get("prefix", "？"))
+	var ftype := str(force.get("type", "？"))
+	var boost_weapon := str(force.get("boost_weapon", "？"))
+	_log_system("%s 切換內功為「%s・%s」（強化：%s）。" % [actor_name, prefix, ftype, boost_weapon])
 
-	_log_system(base)
-
-	if extra != "":
-		_log_narration(extra)
+	var switch_template := tone.get_tone_text("innerforce_switch", prefix, current_actor.get("id", ""))
+	if switch_template == "":
+		switch_template = "{name} 調勻內息，氣機運轉一變，整個人的攻守節奏也隨之調整。"
+	_log_narration(switch_template.replace("{name}", actor_name))
+	var effect_line := InnerForceDB.get_effect_description_line(force, current_actor)
+	if effect_line != "":
+		_log_system(effect_line)
+	var summary_line := InnerForceDB.get_effect_summary_line(force, current_actor)
+	if summary_line != "":
+		_log_system(summary_line)
 
 	_log_system("腳色行動結束。")
 

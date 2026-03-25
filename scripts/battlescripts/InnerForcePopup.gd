@@ -13,6 +13,7 @@ signal selection_cancelled()
 
 # ✅ 載入 ToneMap
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
+const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 var tone = ToneMap.new()
 
 var current_actor  : Dictionary = {}
@@ -94,13 +95,20 @@ func _update_description_for_index(index: int) -> void:
 	var extra_info = ""
 	if boost_weapon != "":
 		extra_info = "\n\n（此心法可強化：%s 系招式）" % boost_weapon
+	var effect_line := InnerForceDB.get_effect_description_line(force, current_actor)
+	var summary_line := InnerForceDB.get_effect_summary_line(force, current_actor)
+	var effect_block := ""
+	if effect_line != "":
+		effect_block += "\n\n" + effect_line
+	if summary_line != "":
+		effect_block += "\n" + summary_line
 
 	# ToneMap 額外敘事（可選）
 	var extra_tone = tone.get_tone_text("innerforce", prefix, current_actor.get("id", ""))
 	if extra_tone != "":
 		extra_tone = "\n\n" + extra_tone
 
-	description.text = "%s\n\n%s%s%s" % [header, main_desc, extra_info, extra_tone]
+	description.text = "%s\n\n%s%s%s%s" % [header, main_desc, effect_block, extra_info, extra_tone]
 
 
 func _on_confirm_pressed() -> void:

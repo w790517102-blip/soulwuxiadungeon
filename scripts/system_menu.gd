@@ -1,5 +1,6 @@
 # 掛在 system_menu.tscn 的 Panel 根節點上的腳本
 extends Panel
+const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 
 @onready var tabs: TabContainer = $VBoxContainer
 @onready var item_list: ItemList = $VBoxContainer/道具/ItemList
@@ -598,6 +599,14 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 	lines.append("[b]%s[/b]" % prefix)
 	if desc != "":
 		lines.append(desc)
+	var actor = _get_actor_by_id(_selected_inner_force_actor_id)
+	var actor_data: Dictionary = actor if typeof(actor) == TYPE_DICTIONARY else {}
+	var effect_line := InnerForceDB.get_effect_description_line(force, actor_data)
+	if effect_line != "":
+		lines.append(effect_line)
+	var summary_line := InnerForceDB.get_effect_summary_line(force, actor_data)
+	if summary_line != "":
+		lines.append(summary_line)
 	if element != "":
 		lines.append("屬性：%s" % element)
 	if not stat_bonus.is_empty():
