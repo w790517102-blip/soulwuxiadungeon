@@ -23,6 +23,14 @@ var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
+const MARTIAL_PAIRING_BONUSES := [
+	{
+		"inner_force_id": "liuchen_jue",
+		"skill_id": "skill_lianjuejian",
+		"effects": {"strike_count_delta": 1},
+		"log": "{name} 運轉流塵訣，連訣劍勢再起一重，追擊如塵隨風！",
+	}
+]
 
 const GAME_OVER_NARRATION_LINES := [
 	"你們已用盡全力對抗強敵，卻仍在這場惡戰中敗下陣來。",
@@ -436,7 +444,29 @@ func _resolve_skill_mp_cost(actor: Dictionary, skill_data: Dictionary) -> int:
 		return 1
 	return adjusted
 
-func _resolve_strike_count(skill_data: Dictionary) -> int:
+func _resolve_pairing_bonus(actor: Dictionary, skill_data: Dictionary) -> Dictionary:
+	if actor.is_empty() or skill_data.is_empty():
+		return {}
+	var inner_force_id := String(actor.get("inner_force_id", ""))
+	if inner_force_id == "":
+		var inner_force_data = actor.get("inner_force", {})
+		if typeof(inner_force_data) == TYPE_DICTIONARY:
+			inner_force_id = String(inner_force_data.get("id", ""))
+	var skill_id := String(skill_data.get("id", ""))
+	if inner_force_id == "" or skill_id == "":
+		return {}
+	for entry in MARTIAL_PAIRING_BONUSES:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var rule: Dictionary = entry
+		if String(rule.get("inner_force_id", "")) != inner_force_id:
+			continue
+		if String(rule.get("skill_id", "")) != skill_id:
+			continue
+		return rule
+	return {}
+
+func _resolve_strike_count(actor: Dictionary, skill_data: Dictionary) -> int:
 	if skill_data.is_empty():
 		return 1
 	var strike_count := int(skill_data.get("strike_count", 0))
@@ -446,6 +476,11 @@ func _resolve_strike_count(skill_data: Dictionary) -> int:
 		strike_count = int(skill_data.get("hit_count", 0))
 	if strike_count <= 0:
 		strike_count = int(skill_data.get("hits", 0))
+	var pairing_bonus := _resolve_pairing_bonus(actor, skill_data)
+	if not pairing_bonus.is_empty():
+		var effects = pairing_bonus.get("effects", {})
+		if typeof(effects) == TYPE_DICTIONARY:
+			strike_count += int((effects as Dictionary).get("strike_count_delta", 0))
 	return maxi(strike_count, 1)
 
 func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
@@ -1155,11 +1190,16 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				damage_skill_data["power"] = float(entry.get("power", skill_data.get("power", 1.0)))
 				break
 
-	var strike_count := _resolve_strike_count(skill_data)
+	var pairing_bonus := _resolve_pairing_bonus(actor, skill_data)
+	var strike_count := _resolve_strike_count(actor, skill_data)
 	var result_single: Dictionary = {}
 	var combined_logs: Array = []
 	var total_damage := 0
 	var any_hit := false
+	if not pairing_bonus.is_empty():
+		var combo_log := String(pairing_bonus.get("log", ""))
+		if combo_log != "":
+			combined_logs.append(combo_log.replace("{name}", String(actor.get("name", "俠士"))))
 	for i in range(strike_count):
 		if int(actual_target.get("hp", 0)) <= 0:
 			break
