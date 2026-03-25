@@ -31,7 +31,7 @@ var all_characters: Dictionary = {
 		"defense_value": 0,
 		"portrait_path": "res://assets/sprites/Liu_Yu/LiuYu_battle.png",
 		"inner_force_id": "qingfeng_jue",
-		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing"],
+		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue"],
 		"inner_force_used_prefixes": [],
 		"str": 5,
 		"agi": 5,

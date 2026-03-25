@@ -4,10 +4,14 @@ static func _compute_runtime_effects(force: Dictionary, actor: Dictionary = {}) 
 	if force.is_empty():
 		return {}
 	var result := {
+		"str": int(force.get("str_flat_bonus", 0)),
 		"agi": int(force.get("agi_flat_bonus", 0)),
 		"accuracy": int(force.get("accuracy_flat_bonus", 0)),
 		"def": int(force.get("def_flat_bonus", 0)),
 		"max_mp": int(force.get("max_mp_flat_bonus", 0)),
+		"weapon_accuracy_flat_bonus": int(force.get("weapon_accuracy_flat_bonus", 0)),
+		"weapon_damage_pct_bonus": float(force.get("boost_damage_pct", 0.0)),
+		"boost_weapon": String(force.get("boost_weapon", "")),
 		"skill_mp_mul": float(force.get("skill_mp_cost_multiplier", 1.0)),
 		"skill_mp_mul_by_weapon": force.get("skill_mp_cost_multiplier_by_weapon", {}),
 		"fast_resist": 0.0,
@@ -32,6 +36,9 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 		return ""
 	var effects := _compute_runtime_effects(force, actor)
 	var parts: Array[String] = []
+	var str_bonus := int(effects.get("str", 0))
+	if str_bonus != 0:
+		parts.append("力量 %+d" % str_bonus)
 	var agi_bonus := int(effects.get("agi", 0))
 	if agi_bonus != 0:
 		parts.append("敏捷 %+d" % agi_bonus)
@@ -44,6 +51,13 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 	var max_mp_bonus := int(effects.get("max_mp", 0))
 	if max_mp_bonus != 0:
 		parts.append("最大 MP %+d" % max_mp_bonus)
+	var boost_weapon := String(effects.get("boost_weapon", ""))
+	var weapon_acc_bonus := int(effects.get("weapon_accuracy_flat_bonus", 0))
+	if boost_weapon != "" and weapon_acc_bonus != 0:
+		parts.append("%s系招式命中 %+d" % [boost_weapon, weapon_acc_bonus])
+	var weapon_damage_pct := float(effects.get("weapon_damage_pct_bonus", 0.0))
+	if boost_weapon != "" and weapon_damage_pct > 0.0:
+		parts.append("%s系招式傷害 +%d%%" % [boost_weapon, int(round(weapon_damage_pct * 100.0))])
 	var by_weapon = effects.get("skill_mp_mul_by_weapon", {})
 	if typeof(by_weapon) == TYPE_DICTIONARY:
 		var map: Dictionary = by_weapon
@@ -67,6 +81,8 @@ static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -
 		return ""
 	var effects := _compute_runtime_effects(force, actor)
 	var tokens: Array[String] = []
+	if int(effects.get("str", 0)) != 0:
+		tokens.append("力量上升")
 	if int(effects.get("agi", 0)) != 0:
 		tokens.append("敏捷上升")
 	if int(effects.get("accuracy", 0)) != 0:
@@ -75,6 +91,11 @@ static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -
 		tokens.append("防禦上升")
 	if int(effects.get("max_mp", 0)) != 0:
 		tokens.append("最大 MP 提升")
+	var boost_weapon := String(effects.get("boost_weapon", ""))
+	if boost_weapon != "" and int(effects.get("weapon_accuracy_flat_bonus", 0)) != 0:
+		tokens.append("%s系命中上升" % boost_weapon)
+	if boost_weapon != "" and float(effects.get("weapon_damage_pct_bonus", 0.0)) > 0.0:
+		tokens.append("%s系傷害上升" % boost_weapon)
 	var by_weapon = effects.get("skill_mp_mul_by_weapon", {})
 	if typeof(by_weapon) == TYPE_DICTIONARY:
 		var map: Dictionary = by_weapon
@@ -108,8 +129,21 @@ const INNER_FORCES := {
 		"element": "快",
 		"agi_flat_bonus": 6,
 		"accuracy_flat_bonus": 10,
+		"weapon_accuracy_flat_bonus": 10,
+		"boost_damage_pct": 0.10,
 		"description": "流塵訣，劍勢講究快、準、穩，氣如細塵隨風入隙，先手壓制最見神髓。",
 		"available": ["liuyu"],
+	},
+	"fuchao_jue": {
+		"id": "fuchao_jue",
+		"prefix": "伏潮",
+		"type": "訣",
+		"boost_weapon": "刀",
+		"element": "遲",
+		"str_flat_bonus": 6,
+		"boost_damage_pct": 0.12,
+		"description": "伏潮訣，真氣沉厚如潛潮伏岩，平時不顯，出刀時一波壓一波，專破對手氣勢。",
+		"available": ["liuyu", "lieshao"],
 	},
 	"wuji_zhenjing": {
 		"id": "wuji_zhenjing",

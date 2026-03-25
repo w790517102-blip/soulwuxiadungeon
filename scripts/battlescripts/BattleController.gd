@@ -29,6 +29,14 @@ const MARTIAL_PAIRING_BONUSES := [
 		"skill_id": "skill_lianjuejian",
 		"effects": {"strike_count_delta": 1},
 		"log": "{name} 運轉流塵訣，連訣劍勢再起一重，追擊如塵隨風！",
+	},
+	{
+		"inner_force_id": "fuchao_jue",
+		"skill_id": "skill_badaozhan",
+		"effects": {
+			"on_hit_status": {"effect_id": "break_def", "amount": 10, "turns": 2}
+		},
+		"log": "{name} 刀勢忽沉，伏潮勁意先壓後斬，招路更見沉狠。",
 	}
 ]
 
@@ -373,11 +381,13 @@ func _compute_inner_force_runtime_bonus(actor: Dictionary, force: Dictionary) ->
 	if actor.is_empty() or force.is_empty():
 		return {}
 	var bonus := {
+		"str": 0,
 		"agi": 0,
 		"accuracy": 0,
 		"def": 0,
 		"max_mp": 0,
 	}
+	bonus["str"] = int(force.get("str_flat_bonus", 0))
 	bonus["agi"] = int(force.get("agi_flat_bonus", 0))
 	bonus["accuracy"] = int(force.get("accuracy_flat_bonus", 0))
 	bonus["def"] = int(force.get("def_flat_bonus", 0))
@@ -398,6 +408,7 @@ func _remove_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 	if typeof(prev) != TYPE_DICTIONARY:
 		return
 	var prev_bonus: Dictionary = prev
+	actor["str"] = int(actor.get("str", 0)) - int(prev_bonus.get("str", 0))
 	actor["agi"] = int(actor.get("agi", 0)) - int(prev_bonus.get("agi", 0))
 	actor["accuracy"] = int(actor.get("accuracy", 100)) - int(prev_bonus.get("accuracy", 0))
 	actor["def"] = int(actor.get("def", 0)) - int(prev_bonus.get("def", 0))
@@ -417,6 +428,7 @@ func _apply_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 	if bonus.is_empty():
 		return
 	actor["agi"] = int(actor.get("agi", 0)) + int(bonus.get("agi", 0))
+	actor["str"] = int(actor.get("str", 0)) + int(bonus.get("str", 0))
 	actor["accuracy"] = int(actor.get("accuracy", 100)) + int(bonus.get("accuracy", 0))
 	actor["def"] = int(actor.get("def", 0)) + int(bonus.get("def", 0))
 	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + int(bonus.get("max_mp", 0))
@@ -482,6 +494,62 @@ func _resolve_strike_count(actor: Dictionary, skill_data: Dictionary) -> int:
 		if typeof(effects) == TYPE_DICTIONARY:
 			strike_count += int((effects as Dictionary).get("strike_count_delta", 0))
 	return maxi(strike_count, 1)
+
+func _target_has_status_before_action(target: Dictionary, effect_id: String) -> bool:
+	if target.is_empty() or effect_id == "" or status_manager == null:
+		return false
+	if not status_manager.has_method("has_effect"):
+		return false
+	return bool(status_manager.has_effect(target, effect_id))
+
+func _try_apply_fuchao_blade_stun(user: Dictionary, target: Dictionary, skill_data: Dictionary, had_break_before_action: bool) -> bool:
+	if not had_break_before_action:
+		return false
+	if target.is_empty() or int(target.get("hp", 0)) <= 0:
+		return false
+	var inner_force_data = user.get("inner_force", {})
+	if typeof(inner_force_data) != TYPE_DICTIONARY:
+		return false
+	if String((inner_force_data as Dictionary).get("id", "")) != "fuchao_jue":
+		return false
+	var weapon_type := String(skill_data.get("weapon_type", ""))
+	if weapon_type != "刀":
+		return false
+	var int_stat := float(int(user.get("int", 0)))
+	var luck_stat := float(int(user.get("luck", 0)))
+	var stun_chance := clampf(0.18 + int_stat * 0.015 + luck_stat * 0.02, 0.18, 0.75)
+	if randf() > stun_chance:
+		return false
+	var record := _apply_single_skill_effect(user, target, "stun", {"turns": 1}, {"_suppress_status_narration": true})
+	if record.is_empty():
+		return false
+	var target_name := String(target.get("name", "???"))
+	_log("%s 早已破防，伏潮刀勁再壓一重，當場陷入暈眩！" % target_name)
+	return true
+
+func _apply_pairing_post_hit_effects(user: Dictionary, skill_data: Dictionary, target: Dictionary, pairing_bonus: Dictionary) -> void:
+	if pairing_bonus.is_empty():
+		return
+	var effects = pairing_bonus.get("effects", {})
+	if typeof(effects) != TYPE_DICTIONARY:
+		return
+	var effect_map: Dictionary = effects
+	if effect_map.has("on_hit_status"):
+		var status_data = effect_map.get("on_hit_status", {})
+		if typeof(status_data) == TYPE_DICTIONARY:
+			var status_map: Dictionary = status_data
+			var effect_id := String(status_map.get("effect_id", ""))
+			if effect_id != "":
+				var entry := {
+					"type": effect_id,
+					"amount": int(status_map.get("amount", 0)),
+					"turns": int(status_map.get("turns", _default_turns_for_status(effect_id))),
+				}
+				var record := _apply_single_skill_effect(user, target, effect_id, entry, {"_suppress_status_narration": false})
+				if not record.is_empty():
+					var desc := String(record.get("desc", ""))
+					if desc != "":
+						_log(desc)
 
 func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 	if not _is_rule_allowed("allow_inner_force_switch", true):
@@ -1174,6 +1242,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		actual_target = enemy_party[0]
 	else:
 		actual_target = target
+	var target_had_break_before_action := _target_has_status_before_action(actual_target, "break_def")
 
 	var inner_force_single = actor.get("inner_force", {})
 	var effects: Array = []
@@ -1238,6 +1307,9 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var single_target_pool: Array = [actual_target] if bool(result_single.get("hit", true)) else []
 	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, single_target_pool)
 	_log_applied_statuses(single_applied)
+	if bool(result_single.get("hit", true)) and not actual_target.is_empty() and int(actual_target.get("hp", 0)) > 0:
+		_apply_pairing_post_hit_effects(actor, skill_data, actual_target, pairing_bonus)
+		_try_apply_fuchao_blade_stun(actor, actual_target, skill_data, target_had_break_before_action)
 	if single_applied.size() > 0:
 		await _await_log_stage_continue()
 

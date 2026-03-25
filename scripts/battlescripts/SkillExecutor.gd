@@ -118,7 +118,12 @@ func execute(
 	var suppress_attack_opener := bool(skill_data.get("_suppress_attack_opener", false))
 
 	# --- 命中 / 閃避 ---
-	var hit_context := _roll_hit(user, target)
+	var weapon_accuracy_bonus := 0.0
+	if skill_weapon_type != "" and not inner_force.is_empty():
+		var boost_weapon_for_accuracy := String(inner_force.get("boost_weapon", ""))
+		if boost_weapon_for_accuracy != "" and boost_weapon_for_accuracy == skill_weapon_type:
+			weapon_accuracy_bonus = float(inner_force.get("weapon_accuracy_flat_bonus", 0))
+	var hit_context := _roll_hit(user, target, weapon_accuracy_bonus)
 	result["hit"] = bool(hit_context.get("hit", true))
 	result["dodged"] = not bool(hit_context.get("hit", true))
 	result["hit_chance"] = int(hit_context.get("chance", 100))
@@ -240,14 +245,14 @@ func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
 	return int(floor(total))
 
 
-func _roll_hit(user: Dictionary, target: Dictionary) -> Dictionary:
+func _roll_hit(user: Dictionary, target: Dictionary, extra_accuracy: float = 0.0) -> Dictionary:
 	var attacker_agi := float(int(user.get("agi", 0)))
 	var attacker_luck := float(int(user.get("luck", 0)))
 	var defender_agi := float(int(target.get("agi", 0)))
 	var defender_luck := float(int(target.get("luck", 0)))
 	var accuracy_mod := float(int(user.get("accuracy", 100)) - 100)
 	var evasion_mod := float(int(target.get("evasion", 0)))
-	var hit_score := attacker_agi * 0.7 + attacker_luck * 0.3 + accuracy_mod
+	var hit_score := attacker_agi * 0.7 + attacker_luck * 0.3 + accuracy_mod + extra_accuracy
 	var evade_score := defender_agi * 0.7 + defender_luck * 0.3 + evasion_mod
 	var chance := clampi(int(round(75.0 + (hit_score - evade_score))), 5, 95)
 	var roll := randf() * 100.0
