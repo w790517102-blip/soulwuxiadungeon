@@ -520,11 +520,17 @@ func _try_apply_fuchao_blade_stun(user: Dictionary, target: Dictionary, skill_da
 	var stun_chance := clampf(0.18 + int_stat * 0.015 + luck_stat * 0.02, 0.18, 0.75)
 	if randf() > stun_chance:
 		return false
-	var record := _apply_single_skill_effect(user, target, "stun", {"turns": 1}, {"_suppress_status_narration": true})
+	var record := _apply_single_skill_effect(user, target, "stun", {"turns": 1}, {"_suppress_status_narration": false})
 	if record.is_empty():
 		return false
 	var target_name := String(target.get("name", "???"))
 	_log("%s 早已破防，伏潮刀勁再壓一重，當場陷入暈眩！" % target_name)
+	var desc := String(record.get("desc", ""))
+	if desc != "":
+		_log(desc)
+	_update_ui_for_actor(target)
+	if battle_ui:
+		battle_ui.update_enemy_panel()
 	return true
 
 func _apply_pairing_post_hit_effects(user: Dictionary, skill_data: Dictionary, target: Dictionary, pairing_bonus: Dictionary) -> void:
