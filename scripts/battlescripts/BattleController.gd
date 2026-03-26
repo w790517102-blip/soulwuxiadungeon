@@ -644,8 +644,6 @@ func _try_consume_stun(actor: Dictionary) -> bool:
 		return false
 	var actor_name := String(actor.get("name", "???"))
 	_log_system("%s 暈眩了，無法行動！" % actor_name)
-	if status_manager.has_method("remove_effect"):
-		status_manager.remove_effect(actor, "stun")
 	return true
 
 
@@ -855,6 +853,14 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 func safe_end_turn() -> void:
 	if battle_finished or _ending:
 		return
+	if turn_manager and status_manager and status_manager.has_method("tick_after_owner_action"):
+		var current_actor = turn_manager.get_current_actor()
+		if typeof(current_actor) == TYPE_DICTIONARY and not current_actor.is_empty():
+			status_manager.tick_after_owner_action(current_actor)
+			_update_ui_for_actor(current_actor)
+			if battle_ui:
+				battle_ui.update_enemy_panel()
+				battle_ui.update_ally_panel()
 	if turn_manager:
 		turn_manager.end_turn()
 

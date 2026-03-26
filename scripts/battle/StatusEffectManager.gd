@@ -2,6 +2,8 @@ extends Node
 class_name StatusEffectManager
 
 const DEFAULT_SLOW_DELTA := 10
+const DECREMENT_TIMING_END_OF_ROUND := "end_of_round"
+const DECREMENT_TIMING_AFTER_OWNER_ACTION := "after_owner_action"
 
 
 func _canonicalize_effect_id(effect_id: String) -> String:
@@ -17,6 +19,14 @@ func _effect_ids_for_lookup(effect_id: String) -> Array[String]:
 	if canonical == "slow":
 		return ["slow", "speed_debuff"]
 	return [canonical]
+
+func get_decrement_timing(effect_id: String) -> String:
+	var canonical := _canonicalize_effect_id(effect_id)
+	match canonical:
+		"stun", "slow":
+			return DECREMENT_TIMING_AFTER_OWNER_ACTION
+		_:
+			return DECREMENT_TIMING_END_OF_ROUND
 
 
 func has_effect(target: Dictionary, effect_id: String) -> bool:
@@ -95,6 +105,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 					"payload": {"element": new_element},
 					"prev_element": target.get("element", ""),
 					"turns_left": turns,
+					"decrement_timing": get_decrement_timing(effect_id),
 				}
 				target["element"] = new_element
 				return true
@@ -138,6 +149,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 	effects[effect_id] = {
 		"payload": effect_payload,
 		"turns_left": turns,
+		"decrement_timing": get_decrement_timing(effect_id),
 	}
 
 	_recalc_speed(target)
@@ -178,6 +190,9 @@ func tick_end_of_turn(actors: Array) -> Array:
 				})
 
 			var effect_data: Dictionary = effects[effect_id]
+			var timing := String(effect_data.get("decrement_timing", get_decrement_timing(effect_id)))
+			if timing != DECREMENT_TIMING_END_OF_ROUND:
+				continue
 			var turns_left = int(effect_data.get("turns_left", 0)) - 1
 			effect_data["turns_left"] = turns_left
 			effects[effect_id] = effect_data
@@ -188,6 +203,26 @@ func tick_end_of_turn(actors: Array) -> Array:
 			remove_effect(actor, eid)
 
 	return events
+
+func tick_after_owner_action(actor: Dictionary) -> void:
+	if actor.is_empty():
+		return
+	if not actor.has("status_effects") or typeof(actor["status_effects"]) != TYPE_DICTIONARY:
+		return
+	var effects: Dictionary = actor["status_effects"]
+	var to_remove: Array = []
+	for effect_id in effects.keys():
+		var effect_data: Dictionary = effects[effect_id]
+		var timing := String(effect_data.get("decrement_timing", get_decrement_timing(effect_id)))
+		if timing != DECREMENT_TIMING_AFTER_OWNER_ACTION:
+			continue
+		var turns_left = int(effect_data.get("turns_left", 0)) - 1
+		effect_data["turns_left"] = turns_left
+		effects[effect_id] = effect_data
+		if turns_left <= 0:
+			to_remove.append(effect_id)
+	for eid in to_remove:
+		remove_effect(actor, String(eid))
 
 
 func remove_effect(target: Dictionary, effect_id: String) -> void:
