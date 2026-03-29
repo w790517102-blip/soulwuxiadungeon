@@ -26,8 +26,23 @@ const SKILLS := {
 		"mp_cost": 0,
 		"target_scope": "single",
 		"target_side": "enemy",
-		"effects": [{"type": "damage", "power": 1.2}],
+		"crit_rate_bonus": 0.10,
+		"effects": [{"type": "damage", "power": 1.0}],
 		"stat_scaling": {"str": 0.8, "agi": 0.2},
+		"available": {"mode": "all"},
+	},
+	"skill_duanshuizhan": {
+		"id": "skill_duanshuizhan",
+		"name": "斷水斬",
+		"category": "單體攻擊",
+		"description": "刀勢沉落如截流斷水，一斬直斷對手節奏。",
+		"weapon_type": "刀",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 1.2}],
+		"stat_scaling": {"str": 0.85, "agi": 0.15},
 		"available": {"mode": "all"},
 	},
 	"skill_mujian_saoye": {
@@ -549,6 +564,7 @@ const SKILLS := {
 const LEGACY_NAME_TO_ID := {
 	"連訣劍": "skill_lianjuejian",
 	"霸刀斬": "skill_badaozhan",
+	"斷水斬": "skill_duanshuizhan",
 	"木劍掃葉": "skill_mujian_saoye",
 	"氣療掌": "skill_qiliaozhang",
 	"翔龍十八掌": "skill_xianglong18",
@@ -588,7 +604,7 @@ const LEGACY_NAME_TO_ID := {
 }
 
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
 	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus", "skill_luanxian_banying"],
 	"enemy1": ["skill_enemy_zhishui_yinzhang"],

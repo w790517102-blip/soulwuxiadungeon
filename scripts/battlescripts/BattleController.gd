@@ -32,7 +32,7 @@ const MARTIAL_PAIRING_BONUSES := [
 	},
 	{
 		"inner_force_id": "fuchao_jue",
-		"skill_id": "skill_badaozhan",
+		"skill_id": "skill_duanshuizhan",
 		"effects": {
 			"on_hit_status": {"effect_id": "break_def", "amount": 10, "turns": 2}
 		},

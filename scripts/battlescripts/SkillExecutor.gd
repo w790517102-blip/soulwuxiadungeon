@@ -168,7 +168,9 @@ func execute(
 				dmg *= max(0.0, 1.0 - resist)
 
 	# --- 暴擊 ---
-	if randf() < 0.1:
+	var crit_rate := 0.1 + float(skill_data.get("crit_rate_bonus", 0.0))
+	crit_rate = clampf(crit_rate, 0.0, 0.95)
+	if randf() < crit_rate:
 		dmg *= 1.5
 		context["crit"] = true
 		result["crit"] = true
