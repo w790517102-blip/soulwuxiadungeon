@@ -90,6 +90,8 @@ func show_skills(
 		# （未來可以在這裡加更多條件，例如內功狀態、debuff 禁技等等）
 
 		skill_list.add_item(skill_name)
+		if skill_provider and skill_provider.has_method("get_skill_color"):
+			skill_list.set_item_custom_fg_color(i, skill_provider.get_skill_color(skill, inner_force))
 		if can_use:
 			valid_skill_indices.append(i)
 		else:
