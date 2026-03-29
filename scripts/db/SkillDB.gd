@@ -35,7 +35,7 @@ const SKILLS := {
 		"id": "skill_duanshuizhan",
 		"name": "斷水斬",
 		"category": "單體攻擊",
-		"description": "刀勢沉落如截流斷水，一斬直斷對手節奏。",
+		"description": "刀勢沉落如截流斷水，一斬而下，直取敵方中門。",
 		"weapon_type": "刀",
 		"menu_usable": false,
 		"mp_cost": 0,
