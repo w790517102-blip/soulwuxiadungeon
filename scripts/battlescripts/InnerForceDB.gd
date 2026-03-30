@@ -156,9 +156,7 @@ const INNER_FORCES := {
 		"element": "遲",
 		"str_flat_bonus": 6,
 		"boost_damage_pct": 0.12,
-		"description": "伏潮訣，真氣沉厚如潛潮伏岩，平時不顯，出刀時一波壓一波，專破對手氣勢。\n【效果】力量 +6；刀系招式傷害 +12%；若對已破防敵人施展刀招，命中後有機會追加暈眩。",
-		"extra_effect_desc": "若對已破防敵人施展刀招，命中後有機會追加暈眩",
-		"extra_effect_summary": "破防刀招可追擊暈眩",
+		"description": "伏潮訣，真氣沉厚如潛潮伏岩，平時不顯，出刀時一波壓一波，專破對手氣勢。",
 		"available": ["liuyu", "lieshao"],
 	},
 	"wuji_zhenjing": {
