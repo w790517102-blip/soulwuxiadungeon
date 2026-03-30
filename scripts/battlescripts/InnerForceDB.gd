@@ -200,6 +200,15 @@ const INNER_FORCES := {
 		"description": "靈風訣，輕身如燕，出拳若風行林梢。氣機不著痕跡，卻能在掠過之處留下一記暗勁。",
 		"available": "all",
 	},
+	"shipo_xinfa": {
+		"id": "shipo_xinfa",
+		"prefix": "石破",
+		"type": "心法",
+		"boost_weapon": "拳",
+		"element": "剛",
+		"description": "石破心法，講究捨物存真，氣勁沉於骨血之中。外物越少，拳意越純，方可觸及天驚之境。",
+		"available": ["liuyu"],
+	},
 }
 
 func get_force(force_id: String) -> Dictionary:

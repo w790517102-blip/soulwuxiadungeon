@@ -129,6 +129,28 @@ const SKILLS := {
 		"stat_scaling": {"str": 0.6, "con": 0.2, "agi": 0.2},
 		"available": {"mode": "all"},
 	},
+	"skill_tianjingquan": {
+		"id": "skill_tianjingquan",
+		"name": "天驚拳",
+		"category": "單體攻擊",
+		"description": "拳勢驟起如雷，連續轟擊單一目標。",
+		"weapon_type": "拳",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"require_free_hand": true,
+		"strike_count_min": 2,
+		"strike_count_max": 4,
+		"effects": [{"type": "damage", "power": 0.5}],
+		"stat_scaling": {"str": 0.6, "con": 0.2, "agi": 0.2},
+		"legendary_chain": {
+			"inner_force_id": "shipo_xinfa",
+			"exclusive_name": "石破天驚拳",
+			"ultimate_name": "真．石破天驚拳"
+		},
+		"available": {"mode": "include", "actor_ids": ["liuyu"]},
+	},
 	"skill_buff_speed_test": {
 		"id": "skill_buff_speed_test",
 		"name": "提氣輕身",
@@ -571,6 +593,7 @@ const LEGACY_NAME_TO_ID := {
 	"筆掃煙霞": "skill_bisaoyanxia",
 	"落筆成詩": "skill_luobichengshi",
 	"正心拳": "skill_zhengxinquan",
+	"天驚拳": "skill_tianjingquan",
 	"提氣輕身": "skill_buff_speed_test",
 	"啟慧符": "skill_qihui_talisman",
 	"聚福符": "skill_jufu_talisman",
@@ -604,7 +627,7 @@ const LEGACY_NAME_TO_ID := {
 }
 
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_tianjingquan", "skill_hawkeye_focus"],
 	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus", "skill_luanxian_banying"],
 	"enemy1": ["skill_enemy_zhishui_yinzhang"],

@@ -481,6 +481,18 @@ func _resolve_pairing_bonus(actor: Dictionary, skill_data: Dictionary) -> Dictio
 func _resolve_strike_count(actor: Dictionary, skill_data: Dictionary) -> int:
 	if skill_data.is_empty():
 		return 1
+	var strike_min := int(skill_data.get("strike_count_min", 0))
+	var strike_max := int(skill_data.get("strike_count_max", 0))
+	if strike_min > 0 or strike_max > 0:
+		if strike_min <= 0:
+			strike_min = strike_max
+		if strike_max <= 0:
+			strike_max = strike_min
+		if strike_max < strike_min:
+			var t = strike_min
+			strike_min = strike_max
+			strike_max = t
+		return maxi(randi_range(strike_min, strike_max), 1)
 	var strike_count := int(skill_data.get("strike_count", 0))
 	if strike_count <= 0:
 		strike_count = int(skill_data.get("attack_count", 0))
@@ -1100,6 +1112,139 @@ func _build_ally_aoe_opener(actor: Dictionary, skill_name: String, skill_data: D
 		.replace("{name}", str(actor.get("name", "???"))) \
 		.replace("{skill}", skill_name)
 
+func _pick_random_alive_enemy() -> Dictionary:
+	var alive_enemies: Array = []
+	for enemy in enemy_party:
+		if typeof(enemy) != TYPE_DICTIONARY:
+			continue
+		if int(enemy.get("hp", 0)) <= 0:
+			continue
+		alive_enemies.append(enemy)
+	if alive_enemies.is_empty():
+		return {}
+	return alive_enemies[randi() % alive_enemies.size()]
+
+func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, inner_force: Dictionary) -> void:
+	var strike_total := _resolve_strike_count(actor, skill_data)
+	var any_down := false
+	var any_hit := false
+	var hit_targets: Array = []
+	var combined_logs: Array = []
+
+	if battle_ui and battle_ui.has_method("play_attack_motion"):
+		battle_ui.play_attack_motion(actor)
+		await get_tree().create_timer(0.35).timeout
+
+	for i in range(strike_total):
+		var pick := _pick_random_alive_enemy()
+		if pick.is_empty():
+			break
+		var strike_skill_data := skill_data.duplicate(true)
+		if i > 0:
+			strike_skill_data["_suppress_attack_opener"] = true
+		var strike_result := skill_executor.execute(actor, pick, strike_skill_data, inner_force)
+		combined_logs.append("—— 震勁流轉・第 %d 段 ——" % [i + 1])
+		for line in strike_result.get("log", []):
+			combined_logs.append(line)
+		if bool(strike_result.get("hit", true)):
+			any_hit = true
+			if not hit_targets.has(pick):
+				hit_targets.append(pick)
+		if bool(strike_result.get("target_down", false)):
+			_mark_actor_down(pick)
+			any_down = true
+
+	if battle_ui and not hit_targets.is_empty():
+		if battle_ui.has_method("play_hit_fx_multi"):
+			battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
+		if battle_ui.has_method("play_damage_react_multi"):
+			battle_ui.play_damage_react_multi(hit_targets)
+	await get_tree().create_timer(0.15).timeout
+
+	for line in combined_logs:
+		_log(str(line))
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+	if not combined_logs.is_empty():
+		await _await_log_stage_continue()
+
+	var apply_targets: Array = hit_targets if any_hit else []
+	var applied := _apply_skill_effects(actor, {}, skill_data, apply_targets)
+	_log_applied_statuses(applied)
+	if applied.size() > 0:
+		await _await_log_stage_continue()
+
+	if any_down and battle_ui:
+		battle_ui.update_enemy_panel()
+	check_battle_status()
+	if battle_finished:
+		return
+	actor["acted_this_turn"] = true
+	_maybe_end_turn()
+
+func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, inner_force: Dictionary) -> void:
+	var any_down := false
+	var any_hit := false
+	var hit_targets: Array = []
+	var combined_logs: Array = []
+
+	if battle_ui and battle_ui.has_method("play_attack_motion"):
+		battle_ui.play_attack_motion(actor)
+		await get_tree().create_timer(0.35).timeout
+
+	for enemy in enemy_party:
+		if typeof(enemy) != TYPE_DICTIONARY:
+			continue
+		if int(enemy.get("hp", 0)) <= 0:
+			continue
+		var strike_total := _resolve_strike_count(actor, skill_data)
+		for i in range(strike_total):
+			if int(enemy.get("hp", 0)) <= 0:
+				break
+			var strike_skill_data := skill_data.duplicate(true)
+			if i > 0:
+				strike_skill_data["_suppress_attack_opener"] = true
+			var strike_result := skill_executor.execute(actor, enemy, strike_skill_data, inner_force)
+			combined_logs.append("—— %s・第 %d 段 ——" % [String(enemy.get("name", "敵人")), i + 1])
+			for line in strike_result.get("log", []):
+				combined_logs.append(line)
+			if bool(strike_result.get("hit", true)):
+				any_hit = true
+				if not hit_targets.has(enemy):
+					hit_targets.append(enemy)
+			if bool(strike_result.get("target_down", false)):
+				_mark_actor_down(enemy)
+				any_down = true
+				break
+
+	if battle_ui and not hit_targets.is_empty():
+		if battle_ui.has_method("play_hit_fx_multi"):
+			battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
+		if battle_ui.has_method("play_damage_react_multi"):
+			battle_ui.play_damage_react_multi(hit_targets)
+	await get_tree().create_timer(0.15).timeout
+
+	for line in combined_logs:
+		_log(str(line))
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+	if not combined_logs.is_empty():
+		await _await_log_stage_continue()
+
+	var apply_targets: Array = hit_targets if any_hit else []
+	var applied := _apply_skill_effects(actor, {}, skill_data, apply_targets)
+	_log_applied_statuses(applied)
+	if applied.size() > 0:
+		await _await_log_stage_continue()
+
+	if any_down and battle_ui:
+		battle_ui.update_enemy_panel()
+	check_battle_status()
+	if battle_finished:
+		return
+	actor["acted_this_turn"] = true
+	_maybe_end_turn()
+
 
 func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionary = {}) -> void:
 	var effect: String = str(skill_data.get("effect", ""))
@@ -1138,6 +1283,14 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	# =========================
 	# 1️⃣ AOE：全體敵方（例：翔龍十八掌）
 	# =========================
+	if scope == "enemy_all_shared_random_hits" and side == "enemy":
+		await _execute_shared_random_hits_aoe(actor, skill_data, actor.get("inner_force", {}))
+		return
+
+	if scope == "enemy_all_per_target_random_hits" and side == "enemy":
+		await _execute_per_target_random_hits_aoe(actor, skill_data, actor.get("inner_force", {}))
+		return
+
 	if scope == "enemy_all" and side == "enemy":
 		if enemy_party.is_empty():
 			push_warning("❗ execute_action：敵方隊伍為空，AOE 無目標。")

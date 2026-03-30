@@ -32,9 +32,10 @@ func show_skills(
 	skills: Array,
 	current_inner_force: Dictionary,
 	skill_provider_ref: Node,
-	equipped_weapon_list: Array
+	equipped_weapon_list: Array,
+	actor: Dictionary = {}
 ) -> void:
-	available_skills = skills
+	available_skills = []
 	inner_force = current_inner_force
 	skill_provider = skill_provider_ref
 	equipped_weapons.clear()
@@ -64,7 +65,11 @@ func show_skills(
 	var has_free_hand = real_weapon_count < 2  # ✅ 至少有一隻手是空的，才算有空手
 
 	for i in range(skills.size()):
-		var skill: Dictionary = skills[i]
+		var source_skill: Dictionary = skills[i]
+		var skill: Dictionary = source_skill
+		if skill_provider and skill_provider.has_method("resolve_runtime_skill"):
+			skill = skill_provider.resolve_runtime_skill(source_skill, inner_force, actor)
+		available_skills.append(skill)
 		var weapon_type: String = skill.get("weapon_type", "")
 		var category: String    = skill.get("category", "外功")  # 預設外功
 		var require_free_hand: bool = skill.get("require_free_hand", false)

@@ -989,7 +989,7 @@ func _on_btn_skill_pressed() -> void:
 
 	var skills = character_skill_db.get_skills(current_actor["id"])
 	var inner_force = current_actor.get("inner_force", {})
-	skill_list_popup.show_skills(skills, inner_force, character_skill_db, weapons)
+	skill_list_popup.show_skills(skills, inner_force, character_skill_db, weapons, current_actor)
 
 # ⭐ 根據技能的 effect / target_scope / target_side 來決定候選目標
 func _start_target_select_for_skill(user: Dictionary, skill_data: Dictionary) -> void:
@@ -1011,7 +1011,7 @@ func _start_target_select_for_skill(user: Dictionary, skill_data: Dictionary) ->
 			side = "enemy"
 
 	# 🌀 群體技（例如 ally_all / enemy_all）→ 不需要選目標，直接結算
-	if scope == "ally_all" or scope == "enemy_all":
+	if scope == "ally_all" or scope == "enemy_all" or scope == "enemy_all_shared_random_hits" or scope == "enemy_all_per_target_random_hits":
 		var dummy_target: Dictionary = {}
 		if side == "ally":
 			# 全體補血：給自己當代表就好，真正目標會在 BattleController 裡用 player_party 算
