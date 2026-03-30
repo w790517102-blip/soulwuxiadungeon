@@ -11,7 +11,7 @@ enum SkillCouplingTier {
 }
 
 const SKILL_COLOR_NORMAL := Color(1.0, 1.0, 1.0)
-const SKILL_COLOR_WEAPON_BOOST := Color(1.00, 0.62, 0.20) # 橘
+const SKILL_COLOR_WEAPON_BOOST := Color(0.35, 0.78, 1.00) # 青藍
 const SKILL_COLOR_EXCLUSIVE := Color(1.00, 0.62, 0.20) # 橘（專屬）
 const SKILL_COLOR_ULTIMATE := Color(1.00, 0.22, 0.22) # 紅（奧義）
 
