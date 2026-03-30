@@ -267,6 +267,8 @@ func _weapon_type_from_item(item_id: String) -> String:
 	return str(item_def.get("weapon_type", ""))
 
 func _resolve_equipped_weapon_type_with_fallback(item_id: String, fallback_weapon_type: String) -> String:
+	if item_id == "":
+		return ""
 	var resolved_weapon_type := _weapon_type_from_item(item_id)
 	if resolved_weapon_type != "":
 		return resolved_weapon_type

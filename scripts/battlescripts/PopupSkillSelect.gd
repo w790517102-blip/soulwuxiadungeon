@@ -73,7 +73,6 @@ func show_skills(
 		var skill: Dictionary = source_skill
 		if skill_provider and skill_provider.has_method("resolve_runtime_skill"):
 			skill = skill_provider.resolve_runtime_skill(source_skill, inner_force, actor)
-		available_skills.append(skill)
 		var weapon_type: String = skill.get("weapon_type", "")
 		var category: String    = skill.get("category", "外功")  # 預設外功
 		var require_free_hand: bool = skill.get("require_free_hand", false)
@@ -96,15 +95,16 @@ func show_skills(
 			# 🔹 其他武器型技能：照舊，需要有對應武器
 			can_use = weapon_type in equipped_weapons
 
-		# （未來可以在這裡加更多條件，例如內功狀態、debuff 禁技等等）
+		# 沒有對應武器就不顯示（拳掌/通用除外）
+		if not can_use:
+			continue
 
+		available_skills.append(skill)
 		skill_list.add_item(skill_name)
+		var ui_index := skill_list.get_item_count() - 1
 		if skill_provider and skill_provider.has_method("get_skill_color"):
-			skill_list.set_item_custom_fg_color(i, skill_provider.get_skill_color(skill, inner_force))
-		if can_use:
-			valid_skill_indices.append(i)
-		else:
-			skill_list.set_item_disabled(i, true)
+			skill_list.set_item_custom_fg_color(ui_index, skill_provider.get_skill_color(skill, inner_force))
+		valid_skill_indices.append(ui_index)
 
 	popup_centered()
 
