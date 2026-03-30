@@ -1092,7 +1092,7 @@ func _apply_world_item(item_id: String, effect: String, amount: int, target, con
 			return
 		var effects = _get_actor_value(target, "status_effects", {})
 		if typeof(effects) == TYPE_DICTIONARY:
-			var had_effect := effects.has(status_id)
+			var had_effect = effects.has(status_id)
 			effects.erase(status_id)
 			_set_actor_value(target, "status_effects", effects)
 			if had_effect:

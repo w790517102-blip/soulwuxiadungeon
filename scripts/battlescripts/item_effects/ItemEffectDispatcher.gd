@@ -556,7 +556,7 @@ func _handle_apply_status_item(controller, user: Dictionary, item: Dictionary, t
 		_:
 			return false
 
-	var ok := controller.status_manager.apply_effect(target, effect_id, payload, turns)
+	var ok = controller.status_manager.apply_effect(target, effect_id, payload, turns)
 	if not ok:
 		return false
 
@@ -565,7 +565,7 @@ func _handle_apply_status_item(controller, user: Dictionary, item: Dictionary, t
 	var item_name: String = item.get("name", "???")
 	controller._log("%s 對 %s 使用了 %s。" % [user_name, target_name, item_name])
 	var effect_record: Dictionary = target.get("status_effects", {}).get(effect_id, {}) if typeof(target.get("status_effects", {})) == TYPE_DICTIONARY else {}
-	var desc := controller.status_manager.describe_effect(effect_id, target, effect_record)
+	var desc = controller.status_manager.describe_effect(effect_id, target, effect_record)
 	if desc != "":
 		controller._log(desc)
 	return true

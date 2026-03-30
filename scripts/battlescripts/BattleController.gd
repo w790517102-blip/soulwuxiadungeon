@@ -1131,7 +1131,7 @@ func _pick_random_alive_enemy() -> Dictionary:
 	return alive_enemies[randi() % alive_enemies.size()]
 
 func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, inner_force: Dictionary) -> void:
-	var strike_total := _resolve_strike_count(actor, skill_data)
+	var strike_total = _resolve_strike_count(actor, skill_data)
 	var any_down := false
 	var any_hit := false
 	var hit_targets: Array = []
@@ -1148,7 +1148,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 		var strike_skill_data := skill_data.duplicate(true)
 		if i > 0:
 			strike_skill_data["_suppress_attack_opener"] = true
-		var strike_result := skill_executor.execute(actor, pick, strike_skill_data, inner_force)
+		var strike_result = skill_executor.execute(actor, pick, strike_skill_data, inner_force)
 		combined_logs.append("—— 震勁流轉・第 %d 段 ——" % [i + 1])
 		for line in strike_result.get("log", []):
 			combined_logs.append(line)
@@ -1203,14 +1203,14 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 			continue
 		if int(enemy.get("hp", 0)) <= 0:
 			continue
-		var strike_total := _resolve_strike_count(actor, skill_data)
+		var strike_total = _resolve_strike_count(actor, skill_data)
 		for i in range(strike_total):
 			if int(enemy.get("hp", 0)) <= 0:
 				break
 			var strike_skill_data := skill_data.duplicate(true)
 			if i > 0:
 				strike_skill_data["_suppress_attack_opener"] = true
-			var strike_result := skill_executor.execute(actor, enemy, strike_skill_data, inner_force)
+			var strike_result = skill_executor.execute(actor, enemy, strike_skill_data, inner_force)
 			combined_logs.append("—— %s・第 %d 段 ——" % [String(enemy.get("name", "敵人")), i + 1])
 			for line in strike_result.get("log", []):
 				combined_logs.append(line)
@@ -1431,7 +1431,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				break
 
 	var pairing_bonus := _resolve_pairing_bonus(actor, skill_data)
-	var strike_count := _resolve_strike_count(actor, skill_data)
+	var strike_count = _resolve_strike_count(actor, skill_data)
 	var result_single: Dictionary = {}
 	var combined_logs: Array = []
 	var total_damage := 0
@@ -1446,7 +1446,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		var strike_skill_data := damage_skill_data.duplicate(true)
 		if i > 0:
 			strike_skill_data["_suppress_attack_opener"] = true
-		var strike_result := skill_executor.execute(actor, actual_target, strike_skill_data, inner_force_single)
+		var strike_result = skill_executor.execute(actor, actual_target, strike_skill_data, inner_force_single)
 		if i == 0:
 			result_single = strike_result
 		total_damage += int(strike_result.get("damage", 0))

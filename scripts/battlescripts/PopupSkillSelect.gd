@@ -101,7 +101,7 @@ func show_skills(
 
 		available_skills.append(skill)
 		skill_list.add_item(skill_name)
-		var ui_index := skill_list.get_item_count() - 1
+		var ui_index = skill_list.get_item_count() - 1
 		if skill_provider and skill_provider.has_method("get_skill_color"):
 			skill_list.set_item_custom_fg_color(ui_index, skill_provider.get_skill_color(skill, inner_force))
 		valid_skill_indices.append(ui_index)

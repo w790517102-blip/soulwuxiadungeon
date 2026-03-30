@@ -190,9 +190,9 @@ func _conditions_met(enemy: Dictionary, raw_conditions, alive_players: Array, st
 	if typeof(raw_conditions) != TYPE_DICTIONARY:
 		return true
 	var conditions: Dictionary = raw_conditions
-	var hp := float(enemy.get("hp", 1))
-	var max_hp := max(1.0, float(enemy.get("max_hp", hp)))
-	var hp_pct := hp / max_hp
+	var hp = float(enemy.get("hp", 1))
+	var max_hp = max(1.0, float(enemy.get("max_hp", hp)))
+	var hp_pct = hp / max_hp
 	if conditions.has("self_hp_pct_lte") and hp_pct > float(conditions.get("self_hp_pct_lte", 1.0)):
 		return false
 	if conditions.has("self_hp_pct_gte") and hp_pct < float(conditions.get("self_hp_pct_gte", 0.0)):

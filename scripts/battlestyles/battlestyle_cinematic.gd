@@ -10,12 +10,12 @@ func describe_attack(
 	target: Dictionary,
 	skill_name: String,
 	damage: int,
-	context := {}
+	context = {}
 ) -> Array:
 	var lines: Array = []
-	var user_side := _detect_target_side(user)
-	var target_side := context.get("target_side", "")
-	var suppress_attack_opener := bool(context.get("suppress_attack_opener", false))
+	var user_side = _detect_target_side(user)
+	var target_side = context.get("target_side", "")
+	var suppress_attack_opener = bool(context.get("suppress_attack_opener", false))
 	if target_side == "":
 		target_side = _detect_target_side(target)
 
