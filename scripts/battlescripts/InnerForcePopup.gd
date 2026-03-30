@@ -98,10 +98,12 @@ func _update_description_for_index(index: int) -> void:
 	var effect_line := InnerForceDB.get_effect_description_line(force, current_actor)
 	var summary_line := InnerForceDB.get_effect_summary_line(force, current_actor)
 	var effect_block := ""
-	if effect_line != "":
-		effect_block += "\n\n" + effect_line
-	if summary_line != "":
-		effect_block += "\n" + summary_line
+	var desc_has_effect_section := main_desc.find("【效果】") != -1
+	if not desc_has_effect_section:
+		if effect_line != "":
+			effect_block += "\n\n" + effect_line
+		if summary_line != "":
+			effect_block += "\n" + summary_line
 
 	# ToneMap 額外敘事（可選）
 	var extra_tone = tone.get_tone_text("innerforce", prefix, current_actor.get("id", ""))
