@@ -382,12 +382,14 @@ func _compute_inner_force_runtime_bonus(actor: Dictionary, force: Dictionary) ->
 		return {}
 	var bonus := {
 		"str": 0,
+		"con": 0,
 		"agi": 0,
 		"accuracy": 0,
 		"def": 0,
 		"max_mp": 0,
 	}
 	bonus["str"] = int(force.get("str_flat_bonus", 0))
+	bonus["con"] = int(force.get("con_flat_bonus", 0))
 	bonus["agi"] = int(force.get("agi_flat_bonus", 0))
 	bonus["accuracy"] = int(force.get("accuracy_flat_bonus", 0))
 	bonus["def"] = int(force.get("def_flat_bonus", 0))
@@ -409,6 +411,7 @@ func _remove_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 		return
 	var prev_bonus: Dictionary = prev
 	actor["str"] = int(actor.get("str", 0)) - int(prev_bonus.get("str", 0))
+	actor["con"] = int(actor.get("con", 0)) - int(prev_bonus.get("con", 0))
 	actor["agi"] = int(actor.get("agi", 0)) - int(prev_bonus.get("agi", 0))
 	actor["accuracy"] = int(actor.get("accuracy", 100)) - int(prev_bonus.get("accuracy", 0))
 	actor["def"] = int(actor.get("def", 0)) - int(prev_bonus.get("def", 0))
@@ -429,6 +432,7 @@ func _apply_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 		return
 	actor["agi"] = int(actor.get("agi", 0)) + int(bonus.get("agi", 0))
 	actor["str"] = int(actor.get("str", 0)) + int(bonus.get("str", 0))
+	actor["con"] = int(actor.get("con", 0)) + int(bonus.get("con", 0))
 	actor["accuracy"] = int(actor.get("accuracy", 100)) + int(bonus.get("accuracy", 0))
 	actor["def"] = int(actor.get("def", 0)) + int(bonus.get("def", 0))
 	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + int(bonus.get("max_mp", 0))

@@ -62,7 +62,11 @@ func show_skills(
 		if w != "拳" and w != "掌":
 			real_weapon_count += 1
 
-	var has_free_hand = real_weapon_count < 2  # ✅ 至少有一隻手是空的，才算有空手
+	var has_free_hand = real_weapon_count < 2  # fallback（舊規則）
+	if not actor.is_empty():
+		var aw1 := String(actor.get("weapon_1", ""))
+		var aw2 := String(actor.get("weapon_2", ""))
+		has_free_hand = (aw1 == "" or aw2 == "")  # ✅ 至少一個武器槽是空的
 
 	for i in range(skills.size()):
 		var source_skill: Dictionary = skills[i]

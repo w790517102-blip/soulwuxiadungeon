@@ -5,6 +5,7 @@ static func _compute_runtime_effects(force: Dictionary, actor: Dictionary = {}) 
 		return {}
 	var result := {
 		"str": int(force.get("str_flat_bonus", 0)),
+		"con": int(force.get("con_flat_bonus", 0)),
 		"agi": int(force.get("agi_flat_bonus", 0)),
 		"accuracy": int(force.get("accuracy_flat_bonus", 0)),
 		"def": int(force.get("def_flat_bonus", 0)),
@@ -39,6 +40,9 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 	var str_bonus := int(effects.get("str", 0))
 	if str_bonus != 0:
 		parts.append("力量 %+d" % str_bonus)
+	var con_bonus := int(effects.get("con", 0))
+	if con_bonus != 0:
+		parts.append("體能 %+d" % con_bonus)
 	var agi_bonus := int(effects.get("agi", 0))
 	if agi_bonus != 0:
 		parts.append("敏捷 %+d" % agi_bonus)
@@ -72,6 +76,9 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 	var fast_resist := float(effects.get("fast_resist", 0.0))
 	if fast_resist > 0.0:
 		parts.append("受到快屬性傷害降低 %d%%" % int(round(fast_resist * 100.0)))
+	var extra_desc := String(force.get("extra_effect_desc", ""))
+	if extra_desc != "":
+		parts.append(extra_desc)
 	if parts.is_empty():
 		return "【效果】目前無可量化數值加成"
 	return "【效果】%s" % "、".join(parts)
@@ -83,6 +90,8 @@ static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -
 	var tokens: Array[String] = []
 	if int(effects.get("str", 0)) != 0:
 		tokens.append("力量上升")
+	if int(effects.get("con", 0)) != 0:
+		tokens.append("體能上升")
 	if int(effects.get("agi", 0)) != 0:
 		tokens.append("敏捷上升")
 	if int(effects.get("accuracy", 0)) != 0:
@@ -107,6 +116,9 @@ static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -
 				tokens.append("%s系消耗上升" % String(weapon_type))
 	if float(effects.get("fast_resist", 0.0)) > 0.0:
 		tokens.append("對快屬性減傷")
+	var extra_summary := String(force.get("extra_effect_summary", ""))
+	if extra_summary != "":
+		tokens.append(extra_summary)
 	if tokens.is_empty():
 		return ""
 	return "%s。" % "、".join(tokens)
@@ -144,7 +156,9 @@ const INNER_FORCES := {
 		"element": "遲",
 		"str_flat_bonus": 6,
 		"boost_damage_pct": 0.12,
-		"description": "伏潮訣，真氣沉厚如潛潮伏岩，平時不顯，出刀時一波壓一波，專破對手氣勢。",
+		"description": "伏潮訣，真氣沉厚如潛潮伏岩，平時不顯，出刀時一波壓一波，專破對手氣勢。\n【效果】力量 +6；刀系招式傷害 +12%；若對已破防敵人施展刀招，命中後有機會追加暈眩。",
+		"extra_effect_desc": "若對已破防敵人施展刀招，命中後有機會追加暈眩",
+		"extra_effect_summary": "破防刀招可追擊暈眩",
 		"available": ["liuyu", "lieshao"],
 	},
 	"wuji_zhenjing": {
@@ -206,7 +220,15 @@ const INNER_FORCES := {
 		"type": "心法",
 		"boost_weapon": "拳",
 		"element": "剛",
-		"description": "石破心法，講究捨物存真，氣勁沉於骨血之中。外物越少，拳意越純，方可觸及天驚之境。",
+		"str_flat_bonus": 8,
+		"con_flat_bonus": 8,
+		"fist_damage_pct_if_free_hand": 0.10,
+		"fist_accuracy_flat_if_both_hands_free": 10,
+		"crit_rate_bonus_if_naked": 0.10,
+		"damage_reduction_pct_if_naked": 0.10,
+		"description": "石破心法，講究捨物存真，氣勁沉於骨血之中。外物越少，拳意越純，方可觸及天驚之境。\n【效果】力量 +8、體能 +8；至少空一手時拳系傷害 +10%；雙手皆空時拳系命中 +10；全身無裝備時暴擊率 +10% 並減少所受傷害 10%。",
+		"extra_effect_desc": "至少空一手時拳系傷害 +10%、雙手皆空時拳系命中 +10、全身無裝備時暴擊率 +10% 並減少所受傷害 10%",
+		"extra_effect_summary": "空手拳勢增幅，裸裝暴擊與減傷",
 		"available": ["liuyu"],
 	},
 }

@@ -48,6 +48,8 @@ func execute(
 
 	var w1: String = String(user.get("weapon_1", ""))
 	var w2: String = String(user.get("weapon_2", ""))
+	var has_empty_weapon_slot := (w1 == "" or w2 == "")
+	var both_weapon_slots_empty := (w1 == "" and w2 == "")
 
 	# 🖐️ 實際「佔手」的實體武器數（拳、掌不算佔手）
 	var real_weapon_count = 0
@@ -56,7 +58,7 @@ func execute(
 	if w2 != "" and w2 != "拳" and w2 != "掌":
 		real_weapon_count += 1
 
-	var has_free_hand = real_weapon_count < 2
+	var has_free_hand = has_empty_weapon_slot
 
 	# === 邏輯分類判斷：武學才檢查武器（不要用 UI 分類欄位） ===
 	var kind: String = String(skill_data.get("kind", "武學"))
@@ -100,6 +102,13 @@ func execute(
 	var multiplier: float = float(skill_data.get("power", 1.0))
 	var dmg: float = effective_attack * multiplier
 
+	# === 石破心法：空手拳勢增幅 ===
+	var inner_force_id := String(inner_force.get("id", ""))
+	var is_fist_skill := String(skill_data.get("weapon_type", "")) == "拳"
+	if inner_force_id == "shipo_xinfa" and is_fist_skill:
+		if has_empty_weapon_slot:
+			dmg *= (1.0 + float(inner_force.get("fist_damage_pct_if_free_hand", 0.0)))
+
 	# === 內功 boost 傷害加成（C-run）===
 	var skill_weapon_type := String(skill_data.get("weapon_type", ""))
 	if skill_weapon_type != "" and not inner_force.is_empty():
@@ -123,6 +132,8 @@ func execute(
 		var boost_weapon_for_accuracy := String(inner_force.get("boost_weapon", ""))
 		if boost_weapon_for_accuracy != "" and boost_weapon_for_accuracy == skill_weapon_type:
 			weapon_accuracy_bonus = float(inner_force.get("weapon_accuracy_flat_bonus", 0))
+	if inner_force_id == "shipo_xinfa" and is_fist_skill and both_weapon_slots_empty:
+		weapon_accuracy_bonus += float(inner_force.get("fist_accuracy_flat_if_both_hands_free", 0.0))
 	var hit_context := _roll_hit(user, target, weapon_accuracy_bonus)
 	result["hit"] = bool(hit_context.get("hit", true))
 	result["dodged"] = not bool(hit_context.get("hit", true))
@@ -169,6 +180,8 @@ func execute(
 
 	# --- 暴擊 ---
 	var crit_rate := 0.1 + float(skill_data.get("crit_rate_bonus", 0.0))
+	if inner_force_id == "shipo_xinfa" and _is_actor_fully_unequipped(user):
+		crit_rate += float(inner_force.get("crit_rate_bonus_if_naked", 0.0))
 	crit_rate = clampf(crit_rate, 0.0, 0.95)
 	if randf() < crit_rate:
 		dmg *= 1.5
@@ -188,6 +201,11 @@ func execute(
 	dmg -= defense
 	if dmg < 1.0:
 		dmg = 1.0
+	if String(target_inner_force.get("id", "")) == "shipo_xinfa" and _is_actor_fully_unequipped(target):
+		var reduction := clampf(float(target_inner_force.get("damage_reduction_pct_if_naked", 0.0)), 0.0, 0.95)
+		dmg *= (1.0 - reduction)
+		if dmg < 1.0:
+			dmg = 1.0
 
 	var dmg_int: int = int(dmg)
 	var target_hp: int = int(target.get("hp", 0)) - dmg_int
@@ -245,6 +263,21 @@ func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
 			continue
 		total += float(int(user.get(stat_key, 0))) * coeff
 	return int(floor(total))
+
+func _is_actor_fully_unequipped(actor: Dictionary) -> bool:
+	if actor.is_empty():
+		return false
+	var actor_id := String(actor.get("id", ""))
+	if actor_id == "":
+		return false
+	if typeof(InventorySync) == TYPE_NIL or not InventorySync.has_method("get_equipped"):
+		return false
+	var equip_slots := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2"]
+	var equipped: Dictionary = InventorySync.get_equipped(actor_id)
+	for slot in equip_slots:
+		if String(equipped.get(slot, "")) != "":
+			return false
+	return true
 
 
 func _roll_hit(user: Dictionary, target: Dictionary, extra_accuracy: float = 0.0) -> Dictionary:
