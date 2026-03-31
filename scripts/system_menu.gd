@@ -72,6 +72,8 @@ func _ready():
 
 	# ✅ 這邊開啟輸入處理
 	set_process_unhandled_input(true)
+	if skill_detail:
+		skill_detail.bbcode_enabled = true
 
 	if item_list:
 		item_list.item_selected.connect(_on_item_selected)
@@ -330,28 +332,88 @@ func _update_skill_detail(skill: Dictionary) -> void:
 	var name = str(skill.get("name", "???"))
 	var desc = str(skill.get("description", skill.get("desc", "")))
 	var weapon_type = str(skill.get("weapon_type", ""))
-	var power = skill.get("power", null)
 	var target_scope = str(skill.get("target_scope", ""))
 	var target_side = str(skill.get("target_side", ""))
 	var require_free_hand = bool(skill.get("require_free_hand", false))
-	var lines = []
+	var actor = _get_actor_by_id(_get_active_character_id())
+	var actor_dict: Dictionary = actor if typeof(actor) == TYPE_DICTIONARY else {}
+	var current_inner_force: Dictionary = actor_dict.get("inner_force", {}) if typeof(actor_dict.get("inner_force", {})) == TYPE_DICTIONARY else {}
+	var lines: Array = []
 	lines.append("[b]%s[/b]" % name)
-	if desc != "":
-		lines.append(desc)
-	if power != null:
-		lines.append("威力：%s" % str(power))
-	if weapon_type != "":
-		lines.append("武器類型：%s" % weapon_type)
-	if require_free_hand:
-		lines.append("需求：至少一手空")
-	if target_scope != "":
-		lines.append("目標範圍：%s" % target_scope)
-	if target_side != "":
-		lines.append("目標陣營：%s" % target_side)
+	lines.append("")
+	lines.append("[b]【描述】[/b]")
+	lines.append(desc if desc != "" else "（未填寫）")
+	lines.append("")
+	lines.append("[b]【效果】[/b]")
+	lines.append_array(_build_skill_effect_lines(skill, weapon_type, target_scope, target_side, require_free_hand))
+	var linkage_lines := _build_skill_linkage_lines(skill, actor_dict, current_inner_force)
+	if not linkage_lines.is_empty():
+		lines.append("")
+		lines.append("[b]【內功聯動】[/b]")
+		lines.append_array(linkage_lines)
 	skill_detail.text = "\n".join(lines)
 	if use_skill_button:
 		var menu_usable = bool(skill.get("menu_usable", false))
 		use_skill_button.disabled = (not menu_usable) or (not _can_use_skill_now(skill, _get_active_character_id()))
+
+func _build_skill_effect_lines(skill: Dictionary, weapon_type: String, target_scope: String, target_side: String, require_free_hand: bool) -> Array:
+	var out: Array = []
+	var effects = skill.get("effects", [])
+	if typeof(effects) == TYPE_ARRAY:
+		for entry_any in effects:
+			if typeof(entry_any) != TYPE_DICTIONARY:
+				continue
+			var entry: Dictionary = entry_any
+			var effect_type := String(entry.get("type", ""))
+			if effect_type == "":
+				continue
+			match effect_type:
+				"damage":
+					out.append("• 傷害：%.1fx ATK" % float(entry.get("power", skill.get("power", 1.0))))
+				"heal_hp":
+					out.append("• 回復生命：%d" % int(entry.get("amount", 0)))
+				"mp_heal":
+					out.append("• 回復內力：%d" % int(entry.get("amount", 0)))
+				_:
+					var amount := int(entry.get("amount", 0))
+					var turns := int(entry.get("turns", 0))
+					if turns > 0:
+						out.append("• %s：%+d（%d 回合）" % [effect_type, amount, turns])
+					elif amount != 0:
+						out.append("• %s：%+d" % [effect_type, amount])
+					else:
+						out.append("• %s" % effect_type)
+	if weapon_type != "":
+		out.append("• 武器類型：%s" % weapon_type)
+	if require_free_hand:
+		out.append("• 需求：至少一手空")
+	if target_scope != "":
+		out.append("• 目標範圍：%s" % target_scope)
+	if target_side != "":
+		out.append("• 目標陣營：%s" % target_side)
+	if out.is_empty():
+		out.append("（無明確效果欄位）")
+	return out
+
+func _build_skill_linkage_lines(skill: Dictionary, actor: Dictionary, inner_force: Dictionary) -> Array:
+	if _skill_data_db == null or not _skill_data_db.has_method("get_inner_force_linkage_entries"):
+		return []
+	var entries_raw = _skill_data_db.get_inner_force_linkage_entries(skill, actor, inner_force)
+	if typeof(entries_raw) != TYPE_ARRAY:
+		return []
+	var out: Array = []
+	for row_any in entries_raw:
+		if typeof(row_any) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = row_any
+		var kind := String(row.get("kind", "聯動"))
+		var text := String(row.get("text_long", ""))
+		var met := bool(row.get("met", false))
+		if text == "":
+			continue
+		var color = "#88ffb0" if met else "#9aa0aa"
+		out.append("[color=%s]• %s：%s[/color]" % [color, kind, text])
+	return out
 
 func _on_use_skill_pressed() -> void:
 	if _selected_skill.is_empty():

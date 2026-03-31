@@ -3,6 +3,7 @@
 # - 拳、掌：預設不吃武器限制，可以視為徒手武學
 # - 若技能有 require_free_hand = true，則至少要空出一隻手才可用
 extends PopupPanel
+const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 
 signal skill_selected(skill_data: Dictionary)
 signal selection_cancelled()
@@ -19,9 +20,12 @@ var selected_index = -1
 var inner_force = {}
 var equipped_weapons: Array = []
 var character_skill_db: Node = null
+var current_actor: Dictionary = {}
+var _skill_data_db: Node = SkillDBScript.new()
 
 func _ready():
 	confirm_button.disabled = true
+	description_label.bbcode_enabled = true
 	hide()
 	skill_list.item_selected.connect(_on_SkillList_item_selected)
 	confirm_button.pressed.connect(_on_Confirm_pressed)
@@ -37,6 +41,7 @@ func show_skills(
 ) -> void:
 	available_skills = []
 	inner_force = current_inner_force
+	current_actor = actor
 	skill_provider = skill_provider_ref
 	equipped_weapons.clear()
 	selected_index = -1
@@ -113,12 +118,14 @@ func _on_SkillList_item_selected(index: int) -> void:
 	var skill: Dictionary = available_skills[index]
 	var can_use: bool = not skill_list.is_item_disabled(index)
 
-	description_label.text = "【%s】\n類型：%s\n分類：%s\n說明：%s" % [
-		skill.get("name", "???"),
-		skill.get("weapon_type", "-"),
-		skill.get("category", "外功"),
-		skill.get("desc", "（未填說明）")
-	]
+	var lines: Array = []
+	lines.append("[b]【%s】[/b]" % String(skill.get("name", "???")))
+	lines.append("類型：%s｜分類：%s" % [String(skill.get("weapon_type", "-")), String(skill.get("category", "外功"))])
+	lines.append("說明：%s" % String(skill.get("desc", "（未填說明）")))
+	lines.append("效果：%s" % _build_short_effect_summary(skill))
+	for link_line in _build_short_linkage_lines(skill):
+		lines.append(link_line)
+	description_label.text = "\n".join(lines)
 
 	confirm_button.disabled = not can_use
 
@@ -130,3 +137,44 @@ func _on_Confirm_pressed() -> void:
 func _on_Cancel_pressed() -> void:
 	emit_signal("selection_cancelled")
 	hide()
+
+func _build_short_effect_summary(skill: Dictionary) -> String:
+	var effects = skill.get("effects", [])
+	if typeof(effects) != TYPE_ARRAY or (effects as Array).is_empty():
+		return "（無）"
+	var tokens: Array[String] = []
+	for entry_any in effects:
+		if typeof(entry_any) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = entry_any
+		var effect_type := String(entry.get("type", ""))
+		match effect_type:
+			"damage":
+				tokens.append("傷害 %.1fx" % float(entry.get("power", skill.get("power", 1.0))))
+			"heal_hp":
+				tokens.append("回復HP %d" % int(entry.get("amount", 0)))
+			_:
+				tokens.append(effect_type)
+	if tokens.is_empty():
+		return "（無）"
+	return "、".join(tokens)
+
+func _build_short_linkage_lines(skill: Dictionary) -> Array:
+	if _skill_data_db == null or not _skill_data_db.has_method("get_inner_force_linkage_entries"):
+		return []
+	var entries_raw = _skill_data_db.get_inner_force_linkage_entries(skill, current_actor, inner_force)
+	if typeof(entries_raw) != TYPE_ARRAY:
+		return []
+	var lines: Array = []
+	for row_any in entries_raw:
+		if typeof(row_any) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = row_any
+		var short_text := String(row.get("text_short", ""))
+		if short_text == "":
+			continue
+		var kind := String(row.get("kind", "聯動"))
+		var met := bool(row.get("met", false))
+		var color = "#87ffb3" if met else "#9aa0aa"
+		lines.append("[color=%s]【%s】%s[/color]" % [color, kind, short_text])
+	return lines

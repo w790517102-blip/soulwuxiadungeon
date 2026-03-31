@@ -184,6 +184,11 @@ func execute(
 	var luck_bonus = floor(float(luck_stat) / 5.0) * 0.01
 	var crit_rate = base_crit + luck_bonus + float(skill_data.get("crit_rate_bonus", 0.0))
 	crit_rate += float(user.get("crit_rate_bonus", 0.0))
+	if inner_force_id == "tiancan_jue" and skill_weapon_type == "劍":
+		var max_hp = max(1, int(user.get("max_hp", user.get("hp", 1))))
+		var cur_hp = int(user.get("hp", 0))
+		if float(cur_hp) < float(max_hp) * 0.5:
+			crit_rate += float(inner_force.get("sword_crit_bonus_low_hp", 0.0))
 	if inner_force_id == "shipo_xinfa" and _is_actor_fully_unequipped(user):
 		crit_rate += float(inner_force.get("crit_rate_bonus_if_naked", 0.0))
 	crit_rate = clampf(crit_rate, 0.0, 0.95)
