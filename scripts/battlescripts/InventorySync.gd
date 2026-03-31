@@ -30,7 +30,7 @@ var party_inventory: Array = [
 const NEW_GAME_START_GOLD: int = 1000
 var party_gold: int = NEW_GAME_START_GOLD
 var equipped_by_actor: Dictionary = {}
-const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed", "accuracy", "evasion"]
+const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed", "accuracy", "evasion", "crit_rate_bonus"]
 const EQUIP_SLOTS := [
 	"weapon_1",
 	"weapon_2",
@@ -174,7 +174,7 @@ func is_equipped(item_id: String, actor_id: String = "") -> bool:
 func get_equipment_stat_bonus(actor_id: String = "") -> Dictionary:
 	var bonus := {}
 	for key in STAT_KEYS:
-		bonus[key] = 0
+		bonus[key] = 0.0 if key == "crit_rate_bonus" else 0
 	var equipped = _get_equipped_ref(actor_id)
 	for slot in equipped.keys():
 		var item_id := str(equipped.get(slot, ""))
@@ -186,7 +186,10 @@ func get_equipment_stat_bonus(actor_id: String = "") -> Dictionary:
 		var stats: Dictionary = item_def.get("stats", {})
 		for key in STAT_KEYS:
 			if stats.has(key):
-				bonus[key] = int(bonus.get(key, 0)) + int(stats.get(key, 0))
+				if key == "crit_rate_bonus":
+					bonus[key] = float(bonus.get(key, 0.0)) + float(stats.get(key, 0.0))
+				else:
+					bonus[key] = int(bonus.get(key, 0)) + int(stats.get(key, 0))
 	return bonus
 
 func _get_equipped_ref(actor_id: String) -> Dictionary:

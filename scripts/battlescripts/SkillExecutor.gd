@@ -180,6 +180,7 @@ func execute(
 
 	# --- 暴擊 ---
 	var crit_rate := 0.1 + float(skill_data.get("crit_rate_bonus", 0.0))
+	crit_rate += float(user.get("crit_rate_bonus", 0.0))
 	if inner_force_id == "shipo_xinfa" and _is_actor_fully_unequipped(user):
 		crit_rate += float(inner_force.get("crit_rate_bonus_if_naked", 0.0))
 	crit_rate = clampf(crit_rate, 0.0, 0.95)

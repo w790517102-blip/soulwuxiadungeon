@@ -33,6 +33,7 @@ const SHOPS := {
 			{"item_id": "arm_straw_sandals", "price": 28, "stock": -1},
 			{"item_id": "acc_boss_sighting_ring", "price": 1, "stock": -1},
 			{"item_id": "arm_boss_running_shoes", "price": 1, "stock": -1},
+			{"item_id": "arm_boss_crit_gloves", "price": 1, "stock": -1},
 			{"item_id": "arm_thin_leather", "price": 80, "stock": -1},
 			{"item_id": "tool_zhuge_crossbow", "price": 120, "stock": -1},
 			{"item_id": "ammo_arrow", "price": 1, "stock": -1},

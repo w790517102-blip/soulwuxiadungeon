@@ -227,6 +227,7 @@ func _apply_equipment_bonuses() -> void:
 		var bonus_speed := int(bonus.get("speed", 0)) + int(force_bonus.get("speed", 0))
 		var bonus_accuracy := int(bonus.get("accuracy", 0)) + int(force_bonus.get("accuracy", 0))
 		var bonus_evasion := int(bonus.get("evasion", 0)) + int(force_bonus.get("evasion", 0))
+		var bonus_crit_rate := float(bonus.get("crit_rate_bonus", 0.0))
 		var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(force_bonus.get("max_hp", 0))
 		var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(force_bonus.get("max_mp", 0))
 		var max_hp := int(p.get("max_hp", p.get("hp", 0))) + bonus_max_hp
@@ -236,6 +237,7 @@ func _apply_equipment_bonuses() -> void:
 		p["speed"] = int(p.get("speed", 0)) + bonus_speed
 		p["accuracy"] = int(p.get("accuracy", 100)) + bonus_accuracy
 		p["evasion"] = int(p.get("evasion", 0)) + bonus_evasion
+		p["crit_rate_bonus"] = float(p.get("crit_rate_bonus", 0.0)) + bonus_crit_rate
 		p["max_hp"] = max_hp
 		p["max_mp"] = max_mp
 		p["hp"] = min(int(p.get("hp", 0)), max_hp)
