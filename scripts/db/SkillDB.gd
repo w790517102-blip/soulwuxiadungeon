@@ -69,6 +69,7 @@ const SKILLS := {
 				{"type": "break_def", "amount": 15, "turns": 2},
 				{"type": "blind", "amount": 10, "turns": 2}
 			],
+			"self_debuff_state_name": "殘脈",
 			"on_kill_heal_max_hp_pct": 0.15,
 			"on_multi_kill_threshold": 2,
 			"on_multi_kill_self_effects": [

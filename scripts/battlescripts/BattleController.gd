@@ -1533,6 +1533,9 @@ func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeat
 		var self_effects: Array = self_effects_raw
 		if not self_effects.is_empty():
 			var applied_self: Array = []
+			var def_down := 0
+			var acc_down := 0
+			var state_turns := 0
 			for entry_any in self_effects:
 				if typeof(entry_any) != TYPE_DICTIONARY:
 					continue
@@ -1540,13 +1543,32 @@ func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeat
 				var effect_type := String(entry.get("type", ""))
 				if effect_type == "":
 					continue
-				var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {})
+				var amount := int(entry.get("amount", 0))
+				var turns := int(entry.get("turns", 0))
+				if turns > state_turns:
+					state_turns = turns
+				if effect_type == "break_def":
+					def_down = abs(amount if amount != 0 else 10)
+				elif effect_type == "blind":
+					acc_down = abs(amount if amount != 0 else 15)
+				var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {"_suppress_status_narration": true})
 				if record.is_empty():
 					continue
 				applied_self.append(record)
 			if not applied_self.is_empty():
 				_update_ui_for_actor(actor)
-				_log_applied_statuses(applied_self)
+				var state_name := String(skill_data.get("self_debuff_state_name", ""))
+				if state_name != "":
+					var turn_text := state_turns if state_turns > 0 else 2
+					_log("%s 施展禁術後經脈逆衝，進入「%s」%d 回合（防禦-%d、命中-%d）。" % [
+						String(actor.get("name", "???")),
+						state_name,
+						turn_text,
+						def_down,
+						acc_down
+					])
+				else:
+					_log_applied_statuses(applied_self)
 				await _await_log_stage_continue()
 
 	if defeated_count >= 1:
