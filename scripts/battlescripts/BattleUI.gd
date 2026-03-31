@@ -82,6 +82,7 @@ const DEBUFF_ABBREV := {
 const BUFF_ABBREV := {
 	"speed_buff": "速",
 	"warm_wine_buff": "攻",
+	"atk_up": "攻",
 	"focus": "命",
 	"evasion_boost": "閃",
 	"stat_buff_str": "力",
@@ -386,6 +387,9 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 		"weaken":
 			var atk_delta = int(data.get("payload", {}).get("atk_delta", 0))
 			return "無力：攻擊 %+d（剩 %d 回合）" % [atk_delta, turns]
+		"atk_up":
+			var atk_up_delta = int(data.get("payload", {}).get("atk_delta", 0))
+			return "昂勢：攻擊 %+d（剩 %d 回合）" % [atk_up_delta, turns]
 		"break_def":
 			var def_delta = int(data.get("payload", {}).get("def_delta", 0))
 			return "破防：防禦 %+d（剩 %d 回合）" % [def_delta, turns]

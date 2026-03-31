@@ -6,12 +6,14 @@ var _skill_db: Node = SkillDBScript.new()
 enum SkillCouplingTier {
 	NORMAL,
 	WEAPON_BOOST,
+	RISK_UPGRADE,
 	EXCLUSIVE,
 	ULTIMATE
 }
 
 const SKILL_COLOR_NORMAL := Color(1.0, 1.0, 1.0)
 const SKILL_COLOR_WEAPON_BOOST := Color(0.35, 0.78, 1.00) # 青藍
+const SKILL_COLOR_RISK_UPGRADE := Color(0.74, 0.40, 0.96) # 紫（絕技）
 const SKILL_COLOR_EXCLUSIVE := Color(1.00, 0.62, 0.20) # 橘（專屬）
 const SKILL_COLOR_ULTIMATE := Color(1.00, 0.22, 0.22) # 紅（奧義）
 
@@ -35,6 +37,19 @@ func get_skills_by_actor(actor) -> Array:
 
 func resolve_runtime_skill(skill: Dictionary, inner_force: Dictionary, actor: Dictionary = {}) -> Dictionary:
 	var runtime_skill: Dictionary = skill.duplicate(true)
+	var risk_upgrade = runtime_skill.get("risk_upgrade", {})
+	if typeof(risk_upgrade) == TYPE_DICTIONARY:
+		var risk_map: Dictionary = risk_upgrade
+		var required_risk_force_id := String(risk_map.get("inner_force_id", ""))
+		var current_force_id := String(inner_force.get("id", ""))
+		if required_risk_force_id != "" and current_force_id == required_risk_force_id:
+			for key in risk_map.keys():
+				var key_str := String(key)
+				if key_str == "inner_force_id":
+					continue
+				runtime_skill[key_str] = risk_map[key]
+			runtime_skill["coupling_tier"] = SkillCouplingTier.RISK_UPGRADE
+
 	var chain = runtime_skill.get("legendary_chain", {})
 	if typeof(chain) != TYPE_DICTIONARY:
 		return runtime_skill
@@ -86,6 +101,8 @@ func get_skill_color(skill: Dictionary, inner_force: Dictionary) -> Color:
 			return SKILL_COLOR_ULTIMATE
 		SkillCouplingTier.EXCLUSIVE:
 			return SKILL_COLOR_EXCLUSIVE
+		SkillCouplingTier.RISK_UPGRADE:
+			return SKILL_COLOR_RISK_UPGRADE
 		SkillCouplingTier.WEAPON_BOOST:
 			return SKILL_COLOR_WEAPON_BOOST
 		_:

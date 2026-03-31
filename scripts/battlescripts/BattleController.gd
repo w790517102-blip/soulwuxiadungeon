@@ -1263,7 +1263,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost", "stat_buff", "stat_debuff"]
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost", "atk_up", "stat_buff", "stat_debuff"]
 	var mp_cost = _resolve_skill_mp_cost(actor, skill_data)
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
@@ -1275,6 +1275,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	if mp_cost > 0:
 		actor["mp"] = actor_mp - mp_cost
 		_update_ui_for_actor(actor)
+
+	await _apply_skill_self_hp_cost(actor, skill_data)
 
 	# =========================
 	# 0️⃣ 支援 / 補血技能分流（保持你現在的回血邏輯）
@@ -1344,6 +1346,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			await get_tree().create_timer(0.35).timeout
 
 		var any_down = false
+		var defeated_count := 0
 		var alive_targets: Array = []
 		var hit_targets: Array = []
 
@@ -1382,6 +1385,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				_log(str(line))
 			if bool(r.get("target_down", false)):
 				_mark_actor_down(enemy)
+				defeated_count += 1
 				any_down = true
 
 		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, hit_targets)
@@ -1395,6 +1399,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		if any_down and battle_ui:
 			battle_ui.update_enemy_panel()
+		await _apply_skill_risk_rewards(actor, skill_data, defeated_count)
 
 		check_battle_status()
 		if battle_finished:
@@ -1490,12 +1495,103 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		_mark_actor_down(actual_target)
 		if battle_ui:
 			battle_ui.update_enemy_panel()
+	await _apply_skill_risk_rewards(actor, skill_data, 1 if bool(result_single.get("target_down", false)) else 0)
 
 	check_battle_status()
 	if battle_finished:
 		return
 	actor["acted_this_turn"] = true
 	_maybe_end_turn()
+
+
+func _apply_skill_self_hp_cost(actor: Dictionary, skill_data: Dictionary) -> void:
+	var hp_cost_pct := float(skill_data.get("self_hp_cost_current_pct", 0.0))
+	if hp_cost_pct <= 0.0 or actor.is_empty():
+		return
+	var before_hp := int(actor.get("hp", 0))
+	if before_hp <= 0:
+		return
+	var hp_cost := int(floor(float(before_hp) * hp_cost_pct))
+	if hp_cost <= 0:
+		return
+	var after_hp := max(0, before_hp - hp_cost)
+	actor["hp"] = after_hp
+	_update_ui_for_actor(actor)
+	_log("%s 逆行真氣，先耗去 [color=#ff8f8f]%d[/color] 點生命！" % [String(actor.get("name", "???")), hp_cost])
+	if after_hp <= 0:
+		_mark_actor_down(actor)
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+	await _await_log_stage_continue()
+
+
+func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeated_count: int) -> void:
+	if actor.is_empty():
+		return
+	var self_effects_raw = skill_data.get("post_cast_self_effects", [])
+	if typeof(self_effects_raw) == TYPE_ARRAY:
+		var self_effects: Array = self_effects_raw
+		if not self_effects.is_empty():
+			var applied_self: Array = []
+			for entry_any in self_effects:
+				if typeof(entry_any) != TYPE_DICTIONARY:
+					continue
+				var entry: Dictionary = entry_any
+				var effect_type := String(entry.get("type", ""))
+				if effect_type == "":
+					continue
+				var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {})
+				if record.is_empty():
+					continue
+				applied_self.append(record)
+			if not applied_self.is_empty():
+				_update_ui_for_actor(actor)
+				_log_applied_statuses(applied_self)
+				await _await_log_stage_continue()
+
+	if defeated_count >= 1:
+		var heal_pct := float(skill_data.get("on_kill_heal_max_hp_pct", 0.0))
+		if heal_pct > 0.0 and int(actor.get("hp", 0)) > 0:
+			var max_hp := int(actor.get("max_hp", actor.get("hp", 0)))
+			var heal_amount := int(floor(float(max_hp) * heal_pct))
+			if heal_amount > 0:
+				var before_hp := int(actor.get("hp", 0))
+				var after_hp := min(max_hp, before_hp + heal_amount)
+				var actual_heal := max(0, after_hp - before_hp)
+				if actual_heal > 0:
+					actor["hp"] = after_hp
+					_update_ui_for_actor(actor)
+					_log("%s 以血換勢反噬回元，回復 [color=#80ff80]%d[/color] 點生命。" % [String(actor.get("name", "???")), actual_heal])
+					if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+						await action_log_ui.wait_for_all_logs()
+					await _await_log_stage_continue()
+
+	var multi_kill_threshold := int(skill_data.get("on_multi_kill_threshold", 0))
+	if multi_kill_threshold <= 0 or defeated_count < multi_kill_threshold:
+		return
+	var bonus_effects_raw = skill_data.get("on_multi_kill_self_effects", [])
+	if typeof(bonus_effects_raw) != TYPE_ARRAY:
+		return
+	var bonus_effects: Array = bonus_effects_raw
+	if bonus_effects.is_empty():
+		return
+	var applied_bonus: Array = []
+	for entry_any in bonus_effects:
+		if typeof(entry_any) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = entry_any
+		var effect_type := String(entry.get("type", ""))
+		if effect_type == "":
+			continue
+		var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {})
+		if record.is_empty():
+			continue
+		applied_bonus.append(record)
+	if applied_bonus.is_empty():
+		return
+	_update_ui_for_actor(actor)
+	_log_applied_statuses(applied_bonus)
+	await _await_log_stage_continue()
 
 
 
@@ -1668,6 +1764,7 @@ func _is_support_status_effect(effect_id: String) -> bool:
 		"root",
 		"focus",
 		"evasion_boost",
+		"atk_up",
 		"stat_buff",
 		"stat_debuff",
 	]
@@ -1843,6 +1940,8 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 			payload["accuracy_delta"] = -abs(amount if amount > 0 else 15)
 		"focus":
 			payload["accuracy_delta"] = abs(amount if amount > 0 else 15)
+		"atk_up":
+			payload["atk_delta"] = abs(amount if amount > 0 else 10)
 		"root":
 			payload["evasion_delta"] = -abs(amount if amount > 0 else 20)
 		_:
@@ -2291,7 +2390,7 @@ func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
 		return false
 	if bool(skill_data.get("positive_buff", false)):
 		return true
-	return effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "stat_buff"]
+	return effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "atk_up", "stat_buff"]
 
 
 func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:

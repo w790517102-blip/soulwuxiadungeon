@@ -229,6 +229,19 @@ const INNER_FORCES := {
 		"extra_effect_summary": "空手拳勢增幅，裸裝暴擊與減傷",
 		"available": ["liuyu"],
 	},
+	"tiancan_jue": {
+		"id": "tiancan_jue",
+		"prefix": "天殘",
+		"type": "訣",
+		"boost_weapon": "劍",
+		"element": "剛",
+		"str_flat_bonus": 10,
+		"con_flat_bonus": 10,
+		"description": "天殘訣，逆行血氣、以殘換勢。行功時筋骨如烈火焚身，代價沉重，卻能逼出破局一斬。",
+		"extra_effect_desc": "可將「地缺劍」轉為紫色絕技「天殘．地缺劍」",
+		"extra_effect_summary": "解鎖地缺劍絕技分支",
+		"available": ["liuyu"],
+	},
 }
 
 func get_force(force_id: String) -> Dictionary:

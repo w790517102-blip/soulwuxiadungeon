@@ -31,7 +31,7 @@ var all_characters: Dictionary = {
 		"defense_value": 0,
 		"portrait_path": "res://assets/sprites/Liu_Yu/LiuYu_battle.png",
 		"inner_force_id": "qingfeng_jue",
-		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "shipo_xinfa"],
+		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "shipo_xinfa", "tiancan_jue"],
 		"inner_force_used_prefixes": [],
 		"str": 5,
 		"agi": 5,
@@ -97,7 +97,7 @@ var all_characters: Dictionary = {
 # === 目前出戰隊伍（用角色 ID 陣列） ===
 var current_team_ids: Array = ["liuyu", "shumian", "lieshao"]
 var known_skill_ids_by_actor: Dictionary = {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_tianjingquan", "skill_hawkeye_focus"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_tianjingquan", "skill_hawkeye_focus"],
 	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus"],
 }

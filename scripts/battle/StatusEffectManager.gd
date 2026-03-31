@@ -122,6 +122,9 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 			"weaken":
 				if int(effect_payload.get("atk_delta", 0)) == 0:
 					effect_payload["atk_delta"] = -10
+			"atk_up":
+				if int(effect_payload.get("atk_delta", 0)) <= 0:
+					effect_payload["atk_delta"] = 10
 			"break_def":
 				if int(effect_payload.get("def_delta", 0)) == 0:
 					effect_payload["def_delta"] = -10
@@ -286,6 +289,8 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			return "%s 神智混亂，單體行動可能誤擊敵我（剩 %d 回合）。" % [actor_name, turns_left]
 		"weaken":
 			return "%s 攻擊力下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("atk_delta", -10))), turns_left]
+		"atk_up":
+			return "%s 攻擊力上升 %d（剩 %d 回合）。" % [actor_name, int(payload.get("atk_delta", 10)), turns_left]
 		"break_def":
 			return "%s 防禦力下降 %d（剩 %d 回合）。" % [actor_name, abs(int(payload.get("def_delta", -10))), turns_left]
 		"weak":
@@ -394,6 +399,8 @@ func _recalc_atk(target: Dictionary) -> void:
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("weaken"):
 		delta += int(effects["weaken"].get("payload", {}).get("atk_delta", 0))
+	if typeof(effects) == TYPE_DICTIONARY and effects.has("atk_up"):
+		delta += int(effects["atk_up"].get("payload", {}).get("atk_delta", 0))
 	target["atk"] = max(0, base + delta)
 	target["atk_mod"] = delta
 
