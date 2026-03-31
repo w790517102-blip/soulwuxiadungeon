@@ -26,6 +26,9 @@ var _skill_data_db: Node = SkillDBScript.new()
 func _ready():
 	confirm_button.disabled = true
 	description_label.bbcode_enabled = true
+	description_label.add_theme_color_override("default_color", Color(1, 1, 1, 1))
+	description_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	description_label.add_theme_constant_override("outline_size", 4)
 	hide()
 	skill_list.item_selected.connect(_on_SkillList_item_selected)
 	confirm_button.pressed.connect(_on_Confirm_pressed)

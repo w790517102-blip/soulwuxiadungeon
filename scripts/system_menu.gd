@@ -325,7 +325,7 @@ func _update_skill_detail(skill: Dictionary) -> void:
 	if skill_detail == null:
 		return
 	if skill.is_empty():
-		skill_detail.text = "請選擇武術。"
+		skill_detail.text = "[b]請選擇武術。[/b]\n\n[b]【描述】[/b]\n-\n\n[b]【效果】[/b]\n-\n\n[b]【內功聯動】[/b]\n-"
 		if use_skill_button:
 			use_skill_button.disabled = true
 		return
