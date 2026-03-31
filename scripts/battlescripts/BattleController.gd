@@ -1514,7 +1514,7 @@ func _apply_skill_self_hp_cost(actor: Dictionary, skill_data: Dictionary) -> voi
 	var hp_cost := int(floor(float(before_hp) * hp_cost_pct))
 	if hp_cost <= 0:
 		return
-	var after_hp := max(0, before_hp - hp_cost)
+	var after_hp = max(0, before_hp - hp_cost)
 	actor["hp"] = after_hp
 	_update_ui_for_actor(actor)
 	_log("%s 逆行真氣，先耗去 [color=#ff8f8f]%d[/color] 點生命！" % [String(actor.get("name", "???")), hp_cost])
@@ -1578,8 +1578,8 @@ func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeat
 			var heal_amount := int(floor(float(max_hp) * heal_pct))
 			if heal_amount > 0:
 				var before_hp := int(actor.get("hp", 0))
-				var after_hp := min(max_hp, before_hp + heal_amount)
-				var actual_heal := max(0, after_hp - before_hp)
+				var after_hp = min(max_hp, before_hp + heal_amount)
+				var actual_heal = max(0, after_hp - before_hp)
 				if actual_heal > 0:
 					actor["hp"] = after_hp
 					_update_ui_for_actor(actor)

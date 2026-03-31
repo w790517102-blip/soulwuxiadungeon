@@ -181,8 +181,8 @@ func execute(
 	# --- 暴擊 ---
 	var luck_stat := int(user.get("luck", 0))
 	var base_crit := 0.05
-	var luck_bonus := floor(float(luck_stat) / 5.0) * 0.01
-	var crit_rate := base_crit + luck_bonus + float(skill_data.get("crit_rate_bonus", 0.0))
+	var luck_bonus = floor(float(luck_stat) / 5.0) * 0.01
+	var crit_rate = base_crit + luck_bonus + float(skill_data.get("crit_rate_bonus", 0.0))
 	crit_rate += float(user.get("crit_rate_bonus", 0.0))
 	if inner_force_id == "shipo_xinfa" and _is_actor_fully_unequipped(user):
 		crit_rate += float(inner_force.get("crit_rate_bonus_if_naked", 0.0))
