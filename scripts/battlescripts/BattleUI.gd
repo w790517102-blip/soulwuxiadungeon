@@ -499,6 +499,9 @@ func show_actor_line(actor_id: String, text: String) -> void:
 	var bubble = _actor_bubble_labels[actor_id] as Label
 	if bubble == null:
 		return
+	var slot := bubble.get_parent() as Control
+	if slot:
+		_position_bubble_below_name(slot, bubble)
 	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
 	_actor_bubble_tokens[actor_id] = token
 	var full_text := "💭 " + text
@@ -596,6 +599,7 @@ func _setup_actor_bubble_labels() -> void:
 		var slot := ally_slots[i] as Control
 		if slot == null:
 			continue
+		_apply_slot_label_font_style(slot)
 		var bubble := slot.get_node_or_null("OSBubble") as Label
 		if bubble == null:
 			bubble = Label.new()
@@ -606,7 +610,7 @@ func _setup_actor_bubble_labels() -> void:
 			bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 			bubble.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-			bubble.position = Vector2(126, 34)
+			bubble.position = Vector2(120, 34)
 			bubble.custom_minimum_size = Vector2(170, 44)
 			bubble.add_theme_color_override("font_color", Color(1, 0.97, 0.87, 1))
 			bubble.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
@@ -614,7 +618,26 @@ func _setup_actor_bubble_labels() -> void:
 			bubble.add_theme_font_override("font", MenuUIFont)
 			bubble.add_theme_font_size_override("font_size", 18)
 			slot.add_child(bubble)
+		_position_bubble_below_name(slot, bubble)
 		_actor_bubble_labels[actor_id] = bubble
+
+func _apply_slot_label_font_style(slot: Control) -> void:
+	for node_name in ["Name", "HPLabel", "MPLabel"]:
+		var label := slot.get_node_or_null("StatusUI/%s" % node_name) as Label
+		if label == null:
+			continue
+		label.add_theme_font_override("font", MenuUIFont)
+		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		label.add_theme_constant_override("outline_size", 4)
+
+func _position_bubble_below_name(slot: Control, bubble: Label) -> void:
+	var status_ui := slot.get_node_or_null("StatusUI") as Control
+	var name_label := slot.get_node_or_null("StatusUI/Name") as Label
+	if status_ui == null or name_label == null:
+		return
+	var name_height := maxf(name_label.size.y, maxf(name_label.custom_minimum_size.y, 30.0))
+	var name_bottom := status_ui.position.y + name_label.position.y + name_height
+	bubble.position = Vector2(status_ui.position.x, name_bottom + 2.0)
 
 ## 每回合開頭會重新刷新一次 UI
 func begin_turn(actor: Dictionary) -> void:
