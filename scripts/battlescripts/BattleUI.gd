@@ -61,6 +61,7 @@ var _ally_status_labels: Array = []
 var _enemy_status_labels: Array = []
 var _actor_bubble_labels: Dictionary = {}
 var _actor_bubble_tokens: Dictionary = {}
+var _bubble_debug_logged: Dictionary = {}
 var _status_abbrev_accum := 0.0
 var _has_blinking_tokens := false
 
@@ -499,7 +500,7 @@ func show_actor_line(actor_id: String, text: String) -> void:
 	var bubble = _actor_bubble_labels[actor_id] as Label
 	if bubble == null:
 		return
-	var slot := bubble.get_parent() as Control
+	var slot := _find_ally_slot_by_actor_id(actor_id)
 	if slot:
 		_position_bubble_below_name(slot, bubble)
 	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
@@ -600,24 +601,25 @@ func _setup_actor_bubble_labels() -> void:
 		if slot == null:
 			continue
 		_apply_slot_label_font_style(slot)
-		var bubble := slot.get_node_or_null("OSBubble") as Label
+		var bubble_name := "OSBubble_%s" % actor_id
+		var bubble := get_node_or_null(bubble_name) as Label
 		if bubble == null:
 			bubble = Label.new()
-			bubble.name = "OSBubble"
+			bubble.name = bubble_name
 			bubble.visible = false
+			bubble.top_level = true
 			bubble.z_index = 20
 			bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 			bubble.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-			bubble.position = Vector2(120, 34)
 			bubble.custom_minimum_size = Vector2(170, 44)
 			bubble.add_theme_color_override("font_color", Color(1, 0.97, 0.87, 1))
 			bubble.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 			bubble.add_theme_constant_override("outline_size", 4)
 			bubble.add_theme_font_override("font", MenuUIFont)
 			bubble.add_theme_font_size_override("font_size", 18)
-			slot.add_child(bubble)
+			add_child(bubble)
 		_position_bubble_below_name(slot, bubble)
 		_actor_bubble_labels[actor_id] = bubble
 
@@ -636,8 +638,21 @@ func _position_bubble_below_name(slot: Control, bubble: Label) -> void:
 	if status_ui == null or name_label == null:
 		return
 	var name_height := maxf(name_label.size.y, maxf(name_label.custom_minimum_size.y, 30.0))
-	var name_bottom := status_ui.position.y + name_label.position.y + name_height
-	bubble.position = Vector2(status_ui.position.x, name_bottom + 2.0)
+	var name_global := name_label.global_position
+	bubble.global_position = Vector2(name_global.x, name_global.y + name_height + 2.0)
+	var actor_id := str(slot.get("actor_id", ""))
+	if actor_id != "" and not bool(_bubble_debug_logged.get(actor_id, false)):
+		print("[BubblePos] actor=", actor_id, " name_global=", name_global, " bubble_global=", bubble.global_position, " bubble_parent=", bubble.get_parent().name, " top_level=", bubble.top_level)
+		_bubble_debug_logged[actor_id] = true
+
+func _find_ally_slot_by_actor_id(actor_id: String) -> Control:
+	for i in range(allies.size()):
+		if i >= ally_slots.size():
+			continue
+		var actor: Dictionary = allies[i]
+		if str(actor.get("id", "")) == actor_id:
+			return ally_slots[i] as Control
+	return null
 
 ## 每回合開頭會重新刷新一次 UI
 func begin_turn(actor: Dictionary) -> void:
