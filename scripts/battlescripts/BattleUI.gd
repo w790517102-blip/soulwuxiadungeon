@@ -6,6 +6,7 @@ signal battle_opening_confirmed
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
+const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 var tone = ToneMap.new()
 
 @onready var ally_panel = $AllyPanel
@@ -106,6 +107,7 @@ func _log_narration(text: String) -> void:
 func _ready() -> void:
 	print("✅ BattleUI 啟動")
 	print("📦 LogPanel 物件是：", log_panel)
+	_apply_menu_font_style(action_panel)
 	hide_all_popups()
 	action_panel.hide()
 
@@ -139,6 +141,21 @@ func _ready() -> void:
 	if status_hover_popup:
 		status_hover_popup.hide()
 		status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _apply_menu_font_style(root: Node) -> void:
+	if root == null:
+		return
+	if root is Control:
+		var ctrl: Control = root
+		ctrl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		ctrl.add_theme_constant_override("outline_size", 4)
+		ctrl.add_theme_font_override("font", MenuUIFont)
+		ctrl.add_theme_font_size_override("font_size", 20)
+		if ctrl is RichTextLabel:
+			ctrl.add_theme_font_override("normal_font", MenuUIFont)
+			ctrl.add_theme_font_size_override("normal_font_size", 20)
+	for child in root.get_children():
+		_apply_menu_font_style(child)
 
 func _setup_opening_overlay() -> void:
 	_opening_overlay = ColorRect.new()

@@ -43,6 +43,7 @@ var _status_member_slots: Array = []
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
+const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 var _skill_db: Node = CharacterSkillDB.new()
 var _skill_data_db: Node = SkillDBScript.new()
 
@@ -72,6 +73,7 @@ func _ready():
 
 	# ✅ 這邊開啟輸入處理
 	set_process_unhandled_input(true)
+	_apply_menu_font_style(self)
 	if skill_detail:
 		skill_detail.bbcode_enabled = true
 
@@ -127,6 +129,19 @@ func _ready():
 	_refresh_status_tab()
 	_refresh_martial_tabs()
 	_update_use_button("")
+
+func _apply_menu_font_style(root: Node) -> void:
+	if root is Control:
+		var ctrl: Control = root
+		ctrl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		ctrl.add_theme_constant_override("outline_size", 4)
+		ctrl.add_theme_font_override("font", MenuUIFont)
+		ctrl.add_theme_font_size_override("font_size", 20)
+		if ctrl is RichTextLabel:
+			ctrl.add_theme_font_override("normal_font", MenuUIFont)
+			ctrl.add_theme_font_size_override("normal_font_size", 20)
+	for child in root.get_children():
+		_apply_menu_font_style(child)
 
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):

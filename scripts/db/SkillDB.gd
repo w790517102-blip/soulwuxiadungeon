@@ -815,15 +815,13 @@ func normalize_skill_def(skill: Dictionary) -> Dictionary:
 func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, inner_force: Dictionary = {}) -> Array:
 	var skill_id := String(skill.get("id", ""))
 	var current_force_id := String(inner_force.get("id", ""))
+	var skill_weapon_type := String(skill.get("weapon_type", ""))
 	var out: Array = []
+	var weapon_boost_entry := _build_weapon_boost_entry(current_force_id, skill_weapon_type)
+	if not weapon_boost_entry.is_empty():
+		out.append(weapon_boost_entry)
 	match skill_id:
 		"skill_lianjuejian":
-			out.append({
-				"kind": "武器加成",
-				"text_long": "流塵訣下，劍系招式命中 +10、傷害 +10%。",
-				"text_short": "流塵訣：劍招命中+10、傷害+10%。",
-				"met": current_force_id == "liuchen_jue",
-			})
 			out.append({
 				"kind": "專屬搭配",
 				"text_long": "流塵訣下可進化為「流塵連訣劍」。",
@@ -831,12 +829,6 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 				"met": current_force_id == "liuchen_jue",
 			})
 		"skill_duanshuizhan":
-			out.append({
-				"kind": "武器加成",
-				"text_long": "伏潮訣下，刀系招式傷害 +12%；對已破防敵人出刀時，有機率追加暈眩。",
-				"text_short": "伏潮訣：刀傷+12%，打破防目標可追暈。",
-				"met": current_force_id == "fuchao_jue",
-			})
 			out.append({
 				"kind": "專屬搭配",
 				"text_long": "伏潮訣下可進化為「伏潮斷水斬」，命中附加破防 2 回合。",
@@ -859,12 +851,6 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 			})
 		"skill_diquejian":
 			out.append({
-				"kind": "武器加成",
-				"text_long": "天殘訣下，劍系招式傷害 +10%；當自身 HP 低於 50% 時，劍系招式暴擊率 +10%。",
-				"text_short": "天殘訣：劍傷+10%，低血(HP<50%)時劍招暴擊+10%。",
-				"met": current_force_id == "tiancan_jue",
-			})
-			out.append({
 				"kind": "絕技分支",
 				"text_long": "天殘訣下可施展「天殘．地缺劍」，消耗目前 HP 的 50%，對全體造成 3.0x ATK 傷害，並受 STR / CON 加權。",
 				"text_short": "絕技：可施展天殘．地缺劍（耗50%HP，全體3.0x ATK，STR/CON加權）。",
@@ -873,6 +859,40 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 		_:
 			pass
 	return out
+
+func _build_weapon_boost_entry(force_id: String, skill_weapon_type: String) -> Dictionary:
+	if force_id == "" or skill_weapon_type == "" or skill_weapon_type == "通用":
+		return {}
+	match force_id:
+		"liuchen_jue":
+			if skill_weapon_type != "劍":
+				return {}
+			return {
+				"kind": "武器加成",
+				"text_long": "流塵訣下，劍系招式命中 +10、傷害 +10%。",
+				"text_short": "流塵訣：劍招命中+10、傷害+10%。",
+				"met": true,
+			}
+		"fuchao_jue":
+			if skill_weapon_type != "刀":
+				return {}
+			return {
+				"kind": "武器加成",
+				"text_long": "伏潮訣下，刀系招式傷害 +12%；對已破防敵人出刀時，有機率追加暈眩。",
+				"text_short": "伏潮訣：刀傷+12%，打破防目標可追暈。",
+				"met": true,
+			}
+		"tiancan_jue":
+			if skill_weapon_type != "劍":
+				return {}
+			return {
+				"kind": "武器加成",
+				"text_long": "天殘訣下，劍系招式傷害 +10%；當自身 HP 低於 50% 時，劍系招式暴擊率 +10%。",
+				"text_short": "天殘訣：劍傷+10%，低血(HP<50%)時劍招暴擊+10%。",
+				"met": true,
+			}
+		_:
+			return {}
 
 func _is_actor_fully_unequipped(actor: Dictionary) -> bool:
 	if actor.is_empty():
