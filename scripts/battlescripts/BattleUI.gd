@@ -512,7 +512,7 @@ func show_actor_line(actor_id: String, text: String) -> void:
 		bubble.text = full_text.substr(0, i + 1)
 		await get_tree().create_timer(type_step).timeout
 	var typing_duration := float(full_text.length()) * type_step
-	var hold_duration := max(0.2, total_duration - typing_duration)
+	var hold_duration: float = maxf(0.2, total_duration - typing_duration)
 	await get_tree().create_timer(hold_duration).timeout
 	if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
 		return
