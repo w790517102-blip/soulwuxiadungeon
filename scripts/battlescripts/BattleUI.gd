@@ -59,8 +59,19 @@ var ally_slots: Array = []  # AllyPanel 底下的 TeamMate_1/2/3
 var enemy_slots: Array = [] # EnemyPanel 底下的敵人 slot（之後你可以做 EnemySlot.gd）
 var _ally_status_labels: Array = []
 var _enemy_status_labels: Array = []
+var _actor_bubble_labels: Dictionary = {}
+var _actor_bubble_tokens: Dictionary = {}
 var _status_abbrev_accum := 0.0
 var _has_blinking_tokens := false
+
+const COMBAT_DIALOGUE := {
+	"dodge": {
+		"liuyu": ["還不夠快。", "看清了。", "差一寸。", "這種招，碰不到我。", "別浪費力氣。", "你出手前，我就知道了。"],
+		"shumian": ["差一點，就碰著墨痕了呢。", "還好，紙頁沒有亂。", "風先替我讓開了。", "你來得急，我退得輕。", "這一下，還沒落到我身上。", "筆意未亂，心也未亂。"],
+		"lieshao": ["嘖，差遠了。", "就這？", "你連我的衣角都沒碰著。", "慢了半拍。", "我還以為能有點意思。", "別急，再練幾年吧。"],
+		"_generic": ["擦身而過。", "這招落空了。", "可惜，沒碰到我。"],
+	}
+}
 
 const DEBUFF_ABBREV := {
 	"poison": "毒",
@@ -133,6 +144,7 @@ func _ready() -> void:
 	# 把 AllyPanel / EnemyPanel 底下現有的 slot 存起來（例如 TeamMate_1, TeamMate_2...）
 	ally_slots = ally_panel.get_children()
 	enemy_slots = enemy_panel.get_children()
+	_setup_actor_bubble_labels()
 	_ensure_status_abbrev_labels()
 	set_process(true)
 	battle_result_overlay.hide()
@@ -472,9 +484,44 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	allies = allies_data
 	enemies = enemies_data
+	_setup_actor_bubble_labels()
 	update_ally_panel()
 	update_enemy_panel()
 	_refresh_all_status_abbrev_labels()
+
+func show_actor_line(actor_id: String, text: String) -> void:
+	if actor_id == "" or text == "":
+		return
+	if not _actor_bubble_labels.has(actor_id):
+		_setup_actor_bubble_labels()
+	if not _actor_bubble_labels.has(actor_id):
+		return
+	var bubble = _actor_bubble_labels[actor_id] as Label
+	if bubble == null:
+		return
+	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
+	_actor_bubble_tokens[actor_id] = token
+	bubble.text = "💭 " + text
+	bubble.visible = true
+	var duration := clampf(1.2 + float(text.length()) * 0.03, 1.2, 2.0)
+	await get_tree().create_timer(duration).timeout
+	if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
+		return
+	bubble.visible = false
+
+func show_actor_event_line(actor_id: String, event_key: String) -> void:
+	var event_map_any = COMBAT_DIALOGUE.get(event_key, {})
+	if typeof(event_map_any) != TYPE_DICTIONARY:
+		return
+	var event_map: Dictionary = event_map_any
+	var lines_any = event_map.get(actor_id, event_map.get("_generic", []))
+	if typeof(lines_any) != TYPE_ARRAY:
+		return
+	var lines: Array = lines_any
+	if lines.is_empty():
+		return
+	var text := str(lines[randi() % lines.size()])
+	show_actor_line(actor_id, text)
 
 func apply_ruleset(ruleset: Dictionary) -> void:
 	var allow_items = bool(ruleset.get("allow_items", true))
@@ -526,6 +573,39 @@ func _find_enemy_slot_index(target: Dictionary) -> int:
 		if idx >= 0 and idx < enemy_slots.size():
 			return idx
 	return enemies.find(target)
+
+func _setup_actor_bubble_labels() -> void:
+	_actor_bubble_labels.clear()
+	_actor_bubble_tokens.clear()
+	for i in range(allies.size()):
+		if i >= ally_slots.size():
+			continue
+		var actor: Dictionary = allies[i]
+		var actor_id := str(actor.get("id", ""))
+		if actor_id == "":
+			continue
+		var slot := ally_slots[i] as Control
+		if slot == null:
+			continue
+		var bubble := slot.get_node_or_null("OSBubble") as Label
+		if bubble == null:
+			bubble = Label.new()
+			bubble.name = "OSBubble"
+			bubble.visible = false
+			bubble.z_index = 20
+			bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+			bubble.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+			bubble.position = Vector2(92, 4)
+			bubble.custom_minimum_size = Vector2(200, 44)
+			bubble.add_theme_color_override("font_color", Color(1, 0.97, 0.87, 1))
+			bubble.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+			bubble.add_theme_constant_override("outline_size", 4)
+			bubble.add_theme_font_override("font", MenuUIFont)
+			bubble.add_theme_font_size_override("font_size", 18)
+			slot.add_child(bubble)
+		_actor_bubble_labels[actor_id] = bubble
 
 ## 每回合開頭會重新刷新一次 UI
 func begin_turn(actor: Dictionary) -> void:
