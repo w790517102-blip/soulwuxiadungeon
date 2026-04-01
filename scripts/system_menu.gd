@@ -13,6 +13,7 @@ const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 @onready var weapon_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/WeaponTabs")
 @onready var skill_detail: RichTextLabel = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/SkillDetail")
 @onready var use_skill_button: Button = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/UseSkillButton")
+@onready var martial_character_select: OptionButton = get_node_or_null("VBoxContainer/武術/MartialTabs/武術/CharacterRow/CharacterSelect")
 @onready var character_select: OptionButton = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/CharacterRow/CharacterSelect")
 @onready var inner_force_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceTabs")
 @onready var inner_force_detail: RichTextLabel = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceDetail")
@@ -244,6 +245,7 @@ func _refresh_martial_tabs() -> void:
 func _refresh_skill_tabs() -> void:
 	if weapon_tabs == null:
 		return
+	_refresh_martial_character_select()
 	_selected_skill = {}
 	_refresh_weapon_tab_lists()
 	_update_skill_detail({})
@@ -340,7 +342,7 @@ func _update_skill_detail(skill: Dictionary) -> void:
 	if skill_detail == null:
 		return
 	if skill.is_empty():
-		skill_detail.text = "[b]請選擇武術。[/b]\n\n[b]【描述】[/b]\n-\n\n[b]【效果】[/b]\n-\n\n[b]【內功聯動】[/b]\n-"
+		skill_detail.text = "[font_size=20][b]請選擇武術。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【內功聯動】[/b][/font_size]\n-"
 		if use_skill_button:
 			use_skill_button.disabled = true
 		return
@@ -354,17 +356,17 @@ func _update_skill_detail(skill: Dictionary) -> void:
 	var actor_dict: Dictionary = actor if typeof(actor) == TYPE_DICTIONARY else {}
 	var current_inner_force: Dictionary = actor_dict.get("inner_force", {}) if typeof(actor_dict.get("inner_force", {})) == TYPE_DICTIONARY else {}
 	var lines: Array = []
-	lines.append("[b]%s[/b]" % name)
+	lines.append("[font_size=20][b]%s[/b][/font_size]" % name)
 	lines.append("")
-	lines.append("[b]【描述】[/b]")
+	lines.append("[font_size=20][b]【描述】[/b][/font_size]")
 	lines.append(desc if desc != "" else "（未填寫）")
 	lines.append("")
-	lines.append("[b]【效果】[/b]")
+	lines.append("[font_size=20][b]【效果】[/b][/font_size]")
 	lines.append_array(_build_skill_effect_lines(skill, weapon_type, target_scope, target_side, require_free_hand))
 	var linkage_lines := _build_skill_linkage_lines(skill, actor_dict, current_inner_force)
 	if not linkage_lines.is_empty():
 		lines.append("")
-		lines.append("[b]【內功聯動】[/b]")
+		lines.append("[font_size=20][b]【內功聯動】[/b][/font_size]")
 		lines.append_array(linkage_lines)
 	skill_detail.text = "\n".join(lines)
 	if use_skill_button:
@@ -661,7 +663,7 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 	if inner_force_detail == null:
 		return
 	if force.is_empty():
-		inner_force_detail.text = "請選擇內功。"
+		inner_force_detail.text = "[font_size=20][b]請選擇內功。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【聯動】[/b][/font_size]\n-"
 		if switch_inner_force_button:
 			switch_inner_force_button.disabled = true
 		return
@@ -673,9 +675,12 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 	var require_unarmed = bool(force.get("boost_require_unarmed", false))
 	var stat_bonus: Dictionary = force.get("stat_bonus", {})
 	var lines = []
-	lines.append("[b]%s[/b]" % prefix)
-	if desc != "":
-		lines.append(desc)
+	lines.append("[font_size=20][b]%s[/b][/font_size]" % prefix)
+	lines.append("")
+	lines.append("[font_size=20][b]【描述】[/b][/font_size]")
+	lines.append(desc if desc != "" else "（未填寫）")
+	lines.append("")
+	lines.append("[font_size=20][b]【效果】[/b][/font_size]")
 	var actor = _get_actor_by_id(_selected_inner_force_actor_id)
 	var actor_data: Dictionary = actor if typeof(actor) == TYPE_DICTIONARY else {}
 	var effect_line := InnerForceDB.get_effect_description_line(force, actor_data)
@@ -694,9 +699,40 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 		lines.append("傷害加成：+%d%%" % int(boost_pct * 100))
 	if require_unarmed:
 		lines.append("需求：空手")
+	lines.append("")
+	lines.append("[font_size=20][b]【聯動】[/b][/font_size]")
+	lines.append_array(_build_inner_force_combo_lines(force, actor_data))
 	inner_force_detail.text = "\n".join(lines)
 	if switch_inner_force_button:
 		switch_inner_force_button.disabled = false
+
+func _build_inner_force_combo_lines(force: Dictionary, actor_data: Dictionary) -> Array:
+	if _skill_data_db == null or not _skill_data_db.has_method("get_all_skills"):
+		return ["（無）"]
+	var force_id := String(force.get("id", ""))
+	var all_skills: Array = _skill_data_db.get_all_skills()
+	var out: Array = []
+	for skill_any in all_skills:
+		if typeof(skill_any) != TYPE_DICTIONARY:
+			continue
+		var skill: Dictionary = skill_any
+		var entries: Array = _skill_data_db.get_inner_force_linkage_entries(skill, actor_data, force)
+		for entry_any in entries:
+			if typeof(entry_any) != TYPE_DICTIONARY:
+				continue
+			var entry: Dictionary = entry_any
+			if not bool(entry.get("met", false)):
+				continue
+			var kind := String(entry.get("kind", ""))
+			if kind != "專屬搭配" and kind != "奧義條件" and kind != "絕技分支":
+				continue
+			var text := String(entry.get("text_long", ""))
+			if text == "":
+				continue
+			out.append("• %s（%s）：%s" % [String(skill.get("name", "???")), kind, text])
+	if out.is_empty():
+		out.append("• %s 目前沒有可用的專屬／奧義／絕技聯動。" % force_id)
+	return out
 
 func _on_switch_inner_force_pressed() -> void:
 	if _selected_inner_force.is_empty():
@@ -925,18 +961,24 @@ func _get_active_actor():
 func _setup_equipment_character_select() -> void:
 	if equipment_tab == null or TeamData == null:
 		return
-	if equipment_tab.get_node_or_null("EquipmentCharacterRow"):
+	var row = equipment_tab.get_node_or_null("EquipmentCharacterRow") as HBoxContainer
+	var selector: OptionButton = null
+	if row == null:
+		row = HBoxContainer.new()
+		row.name = "EquipmentCharacterRow"
+		var label = Label.new()
+		label.text = "角色："
+		row.add_child(label)
+		selector = OptionButton.new()
+		selector.name = "EquipmentCharacterSelect"
+		row.add_child(selector)
+		equipment_tab.add_child(row)
+		equipment_tab.move_child(row, 0)
+	else:
+		selector = row.get_node_or_null("EquipmentCharacterSelect") as OptionButton
+	if selector == null:
 		return
-	var row = HBoxContainer.new()
-	row.name = "EquipmentCharacterRow"
-	var label = Label.new()
-	label.text = "角色："
-	row.add_child(label)
-	var selector = OptionButton.new()
-	selector.name = "EquipmentCharacterSelect"
-	row.add_child(selector)
-	equipment_tab.add_child(row)
-	equipment_tab.move_child(row, 0)
+	_apply_menu_font_style(row)
 
 	for actor in TeamData.get_active_party():
 		var actor_id = _get_actor_id_from_entry(actor)
@@ -953,6 +995,41 @@ func _setup_equipment_character_select() -> void:
 		_refresh_weapon_tab_lists()
 		_update_skill_detail(_selected_skill)
 	)
+
+func _refresh_martial_character_select() -> void:
+	if martial_character_select == null or TeamData == null:
+		return
+	var prev_id := _selected_actor_id
+	if martial_character_select.item_count > 0:
+		var prev_index := martial_character_select.get_selected()
+		if prev_index >= 0 and prev_index < martial_character_select.item_count:
+			prev_id = str(martial_character_select.get_item_metadata(prev_index))
+	martial_character_select.clear()
+	var party: Array = TeamData.get_active_party()
+	for actor in party:
+		var actor_id := _get_actor_id_from_entry(actor)
+		if actor_id == "":
+			continue
+		martial_character_select.add_item(_get_actor_name_from_entry(actor, actor_id))
+		martial_character_select.set_item_metadata(martial_character_select.item_count - 1, actor_id)
+	if martial_character_select.item_count <= 0:
+		return
+	var selected_index := 0
+	for i in range(martial_character_select.item_count):
+		if str(martial_character_select.get_item_metadata(i)) == prev_id:
+			selected_index = i
+			break
+	martial_character_select.select(selected_index)
+	_selected_actor_id = str(martial_character_select.get_item_metadata(selected_index))
+	if not martial_character_select.item_selected.is_connected(_on_martial_character_selected):
+		martial_character_select.item_selected.connect(_on_martial_character_selected)
+
+func _on_martial_character_selected(index: int) -> void:
+	if martial_character_select == null:
+		return
+	_selected_actor_id = str(martial_character_select.get_item_metadata(index))
+	_refresh_weapon_tab_lists()
+	_update_skill_detail(_selected_skill)
 
 func _setup_status_member_slots() -> void:
 	if status_tab == null:

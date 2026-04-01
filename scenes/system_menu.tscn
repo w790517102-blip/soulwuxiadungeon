@@ -44,7 +44,7 @@ layout_mode = 2
 theme_override_constants/separation = 14
 
 [node name="Member1" type="VBoxContainer" parent="VBoxContainer/狀態/PartyStatusRow"]
-custom_minimum_size = Vector2(300, 280)
+custom_minimum_size = Vector2(350, 280)
 layout_mode = 2
 
 [node name="Name" type="Label" parent="VBoxContainer/狀態/PartyStatusRow/Member1"]
@@ -66,7 +66,7 @@ layout_mode = 2
 text = "空位"
 
 [node name="Member2" type="VBoxContainer" parent="VBoxContainer/狀態/PartyStatusRow"]
-custom_minimum_size = Vector2(300, 280)
+custom_minimum_size = Vector2(350, 280)
 layout_mode = 2
 
 [node name="Name" type="Label" parent="VBoxContainer/狀態/PartyStatusRow/Member2"]
@@ -88,7 +88,7 @@ layout_mode = 2
 text = "空位"
 
 [node name="Member3" type="VBoxContainer" parent="VBoxContainer/狀態/PartyStatusRow"]
-custom_minimum_size = Vector2(300, 280)
+custom_minimum_size = Vector2(350, 280)
 layout_mode = 2
 
 [node name="Name" type="Label" parent="VBoxContainer/狀態/PartyStatusRow/Member3"]
@@ -183,6 +183,16 @@ current_tab = 0
 layout_mode = 2
 metadata/_tab_index = 0
 
+[node name="CharacterRow" type="HBoxContainer" parent="VBoxContainer/武術/MartialTabs/武術"]
+layout_mode = 2
+
+[node name="CharacterLabel" type="Label" parent="VBoxContainer/武術/MartialTabs/武術/CharacterRow"]
+layout_mode = 2
+text = "角色："
+
+[node name="CharacterSelect" type="OptionButton" parent="VBoxContainer/武術/MartialTabs/武術/CharacterRow"]
+layout_mode = 2
+
 [node name="WeaponTabs" type="TabContainer" parent="VBoxContainer/武術/MartialTabs/武術"]
 layout_mode = 2
 current_tab = 0
@@ -269,7 +279,7 @@ custom_minimum_size = Vector2(20, 200)
 layout_mode = 2
 
 [node name="SkillDetail" type="RichTextLabel" parent="VBoxContainer/武術/MartialTabs/武術"]
-custom_minimum_size = Vector2(0, 250)
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 text = "請選擇武術。"
 
@@ -333,7 +343,7 @@ custom_minimum_size = Vector2(20, 200)
 layout_mode = 2
 
 [node name="InnerForceDetail" type="RichTextLabel" parent="VBoxContainer/武術/MartialTabs/內功"]
-custom_minimum_size = Vector2(0, 250)
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 text = "請選擇內功。"
 
