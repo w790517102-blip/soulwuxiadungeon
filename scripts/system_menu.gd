@@ -971,6 +971,17 @@ func _setup_status_member_slots() -> void:
 			"portrait": member.get_node_or_null("Portrait") as TextureRect,
 			"stats": member.get_node_or_null("Stats") as Label,
 		})
+		var stats_label := member.get_node_or_null("Stats") as Label
+		if stats_label:
+			stats_label.add_theme_font_size_override("font_size", 18)
+		var portrait := member.get_node_or_null("Portrait") as TextureRect
+		if portrait:
+			var base_size: Vector2 = portrait.custom_minimum_size
+			if base_size == Vector2.ZERO:
+				base_size = Vector2(96, 96)
+			portrait.custom_minimum_size = base_size * 1.5
+			portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+			portrait.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var actor_id := _get_actor_id_from_entry(actor)
@@ -998,6 +1009,7 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var base_evasion := int(_get_actor_value(actor, "evasion", 0))
 	var bonus_accuracy := int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
 	var bonus_evasion := int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))
+	var crit_rate_pct := _calc_actor_overview_crit_rate_pct(actor, equip_bonus)
 
 	var name_label := slot_data.get("name") as Label
 	if name_label:
@@ -1029,7 +1041,7 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 			int(_get_actor_value(actor, "con", 5)),
 			int(_get_actor_value(actor, "luck", 5)),
 		]
-		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)  命中：%d (+%d)\n閃避：%d (+%d)\n%s" % [
+		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)  命中：%d (+%d)\n暴擊：%.1f%%  閃避：%d (+%d)\n%s" % [
 			actor_level, actor_exp, next_exp,
 			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
 			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
@@ -1037,9 +1049,17 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 			base_def, bonus_def,
 			base_speed, bonus_speed,
 			base_accuracy, bonus_accuracy,
+			crit_rate_pct,
 			base_evasion, bonus_evasion,
 			stat_str,
 		]
+
+func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary) -> float:
+	var luck_stat := int(_get_actor_value(actor, "luck", 0))
+	var base_crit := 0.05 + floor(float(luck_stat) / 5.0) * 0.01
+	var crit_bonus = float(equip_bonus.get("crit_rate_bonus", 0.0)) + float(_get_actor_value(actor, "crit_rate_bonus", 0.0))
+	var crit_rate = base_crit + crit_bonus
+	return clampf(crit_rate * 100.0, 0.0, 95.0)
 
 func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	var name_label := slot_data.get("name") as Label
