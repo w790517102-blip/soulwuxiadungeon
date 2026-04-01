@@ -672,7 +672,7 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 			switch_inner_force_button.disabled = true
 		return
 	var prefix = str(force.get("prefix", "???"))
-	var desc = str(force.get("description", ""))
+	var desc = _strip_embedded_effect_section(str(force.get("description", "")))
 	var element = str(force.get("element", ""))
 	var boost_weapon = str(force.get("boost_weapon", ""))
 	var boost_pct = float(force.get("boost_damage_pct", 0.0))
@@ -691,7 +691,7 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 	if effect_line != "":
 		lines.append(effect_line)
 	var summary_line := InnerForceDB.get_effect_summary_line(force, actor_data)
-	if summary_line != "":
+	if summary_line != "" and effect_line == "":
 		lines.append(summary_line)
 	if element != "":
 		lines.append("屬性：%s" % element)
@@ -1229,6 +1229,13 @@ func _as_plain_text(value) -> String:
 	if regex.compile("\\[[^\\]]+\\]") == OK:
 		return regex.sub(raw, "", true)
 	return raw
+
+func _strip_embedded_effect_section(desc: String) -> String:
+	var marker := "【效果】"
+	var idx := desc.find(marker)
+	if idx == -1:
+		return desc
+	return desc.substr(0, idx).strip_edges()
 
 func _apply_world_item(item_id: String, effect: String, amount: int, target, consume_item: bool = true) -> void:
 	if target == null:

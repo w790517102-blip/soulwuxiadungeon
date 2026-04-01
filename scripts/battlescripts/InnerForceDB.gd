@@ -80,8 +80,8 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 	if extra_desc != "":
 		parts.append(extra_desc)
 	if parts.is_empty():
-		return "【效果】目前無可量化數值加成"
-	return "【效果】%s" % "、".join(parts)
+		return "目前無可量化數值加成"
+	return "、".join(parts)
 
 static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -> String:
 	if force.is_empty():
@@ -224,7 +224,7 @@ const INNER_FORCES := {
 		"fist_accuracy_flat_if_both_hands_free": 10,
 		"crit_rate_bonus_if_naked": 0.10,
 		"damage_reduction_pct_if_naked": 0.10,
-		"description": "石破心法，講究捨物存真，氣勁沉於骨血之中。外物越少，拳意越純，方可觸及天驚之境。\n【效果】力量 +8、體能 +8；至少空一手時拳系傷害 +10%；雙手皆空時拳系命中 +10；全身無裝備時暴擊率 +10% 並減少所受傷害 10%。",
+		"description": "石破心法，講究捨物存真，氣勁沉於骨血之中。外物越少，拳意越純，方可觸及天驚之境。",
 		"extra_effect_desc": "至少空一手時拳系傷害 +10%、雙手皆空時拳系命中 +10、全身無裝備時暴擊率 +10% 並減少所受傷害 10%",
 		"extra_effect_summary": "空手拳勢增幅，裸裝暴擊與減傷",
 		"available": ["liuyu"],
@@ -239,7 +239,7 @@ const INNER_FORCES := {
 		"con_flat_bonus": 10,
 		"boost_damage_pct": 0.10,
 		"sword_crit_bonus_low_hp": 0.10,
-		"description": "天殘訣，逆行血氣、以殘換勢。行功時筋骨如烈火焚身，代價沉重，卻能逼出破局一斬。\n【效果】劍系招式傷害 +10%；自身 HP 低於 50% 時，劍系招式暴擊率 +10%。",
+		"description": "天殘訣，逆行血氣、以殘換勢。行功時筋骨如烈火焚身，代價沉重，卻能逼出破局一斬。",
 		"extra_effect_desc": "劍系招式傷害 +10%、自身 HP 低於 50% 時劍系招式暴擊率 +10%、可將「地缺劍」轉為紫色絕技「天殘．地缺劍」",
 		"extra_effect_summary": "劍勢增傷、低血劍招暴擊提升、解鎖地缺劍絕技分支",
 		"available": ["liuyu"],
