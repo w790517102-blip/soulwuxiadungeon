@@ -501,10 +501,19 @@ func show_actor_line(actor_id: String, text: String) -> void:
 		return
 	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
 	_actor_bubble_tokens[actor_id] = token
-	bubble.text = "💭 " + text
+	var full_text := "💭 " + text
+	var total_duration := randf_range(2.0, 4.0)
+	var type_step := 0.03
+	bubble.text = ""
 	bubble.visible = true
-	var duration := clampf(1.2 + float(text.length()) * 0.03, 1.2, 2.0)
-	await get_tree().create_timer(duration).timeout
+	for i in range(full_text.length()):
+		if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
+			return
+		bubble.text = full_text.substr(0, i + 1)
+		await get_tree().create_timer(type_step).timeout
+	var typing_duration := float(full_text.length()) * type_step
+	var hold_duration := max(0.2, total_duration - typing_duration)
+	await get_tree().create_timer(hold_duration).timeout
 	if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
 		return
 	bubble.visible = false
@@ -597,8 +606,8 @@ func _setup_actor_bubble_labels() -> void:
 			bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 			bubble.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-			bubble.position = Vector2(92, 4)
-			bubble.custom_minimum_size = Vector2(200, 44)
+			bubble.position = Vector2(126, 34)
+			bubble.custom_minimum_size = Vector2(170, 44)
 			bubble.add_theme_color_override("font_color", Color(1, 0.97, 0.87, 1))
 			bubble.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 			bubble.add_theme_constant_override("outline_size", 4)
