@@ -77,6 +77,10 @@ func _ready():
 	_apply_menu_font_style(self)
 	if skill_detail:
 		skill_detail.bbcode_enabled = true
+	if inner_force_detail:
+		inner_force_detail.bbcode_enabled = true
+	if item_desc:
+		item_desc.bbcode_enabled = true
 
 	if item_list:
 		item_list.item_selected.connect(_on_item_selected)
@@ -172,7 +176,7 @@ func _refresh_item_tab() -> void:
 	for item in _item_entries:
 		var count = int(item.get("quantity", item.get("count", 0)))
 		var item_id = str(item.get("id", ""))
-		var label = "%s x%d" % [item.get("name", item_id if item_id != "" else "???"), count]
+		var label = "%s x%d" % [_as_plain_text(item.get("name", item_id if item_id != "" else "???")), count]
 		if InventorySync.is_equipped(item_id, _get_active_character_id()):
 			label += "（裝備中）"
 		item_list.add_item(label)
@@ -206,10 +210,10 @@ func _on_item_selected(index: int) -> void:
 	var item: Dictionary = InventorySync.get_item_by_id(item_id)
 	if item.is_empty():
 		return
-	var name = item.get("name", item.get("id", "???"))
+	var name = _as_plain_text(item.get("name", item.get("id", "???")))
 	var desc = item.get("desc", item.get("description", ""))
 	var count = int(item.get("quantity", item.get("count", 0)))
-	item_desc.text = "[b]%s[/b]\n數量：%d\n\n%s" % [name, count, desc]
+	_set_detail_bbcode(item_desc, "[b]%s[/b]\n數量：%d\n\n%s" % [name, count, desc])
 	_update_use_button(item_id)
 
 func _on_inventory_changed() -> void:
@@ -342,7 +346,7 @@ func _update_skill_detail(skill: Dictionary) -> void:
 	if skill_detail == null:
 		return
 	if skill.is_empty():
-		skill_detail.text = "[font_size=20][b]請選擇武術。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【內功聯動】[/b][/font_size]\n-"
+		_set_detail_bbcode(skill_detail, "[font_size=20][b]請選擇武術。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【內功聯動】[/b][/font_size]\n-")
 		if use_skill_button:
 			use_skill_button.disabled = true
 		return
@@ -368,7 +372,7 @@ func _update_skill_detail(skill: Dictionary) -> void:
 		lines.append("")
 		lines.append("[font_size=20][b]【內功聯動】[/b][/font_size]")
 		lines.append_array(linkage_lines)
-	skill_detail.text = "\n".join(lines)
+	_set_detail_bbcode(skill_detail, "\n".join(lines))
 	if use_skill_button:
 		var menu_usable = bool(skill.get("menu_usable", false))
 		use_skill_button.disabled = (not menu_usable) or (not _can_use_skill_now(skill, _get_active_character_id()))
@@ -663,7 +667,7 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 	if inner_force_detail == null:
 		return
 	if force.is_empty():
-		inner_force_detail.text = "[font_size=20][b]請選擇內功。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【聯動】[/b][/font_size]\n-"
+		_set_detail_bbcode(inner_force_detail, "[font_size=20][b]請選擇內功。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【聯動】[/b][/font_size]\n-")
 		if switch_inner_force_button:
 			switch_inner_force_button.disabled = true
 		return
@@ -702,7 +706,7 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 	lines.append("")
 	lines.append("[font_size=20][b]【聯動】[/b][/font_size]")
 	lines.append_array(_build_inner_force_combo_lines(force, actor_data))
-	inner_force_detail.text = "\n".join(lines)
+	_set_detail_bbcode(inner_force_detail, "\n".join(lines))
 	if switch_inner_force_button:
 		switch_inner_force_button.disabled = false
 
@@ -999,7 +1003,7 @@ func _setup_equipment_character_select() -> void:
 func _refresh_martial_character_select() -> void:
 	if martial_character_select == null or TeamData == null:
 		return
-	var prev_id := _selected_actor_id
+	var prev_id = _selected_actor_id
 	if martial_character_select.item_count > 0:
 		var prev_index := martial_character_select.get_selected()
 		if prev_index >= 0 and prev_index < martial_character_select.item_count:
@@ -1211,7 +1215,20 @@ func _push_world_item_feedback(lines: Array) -> void:
 		print("[WorldItem] %s" % String(line))
 	if item_desc:
 		var old_text = item_desc.text
-		item_desc.text = "【使用結果】\n%s\n\n%s" % ["\n".join(lines), old_text]
+		_set_detail_bbcode(item_desc, "【使用結果】\n%s\n\n%s" % ["\n".join(lines), old_text])
+
+func _set_detail_bbcode(label: RichTextLabel, content: String) -> void:
+	if label == null:
+		return
+	label.bbcode_enabled = true
+	label.text = content
+
+func _as_plain_text(value) -> String:
+	var raw := str(value)
+	var regex := RegEx.new()
+	if regex.compile("\\[[^\\]]+\\]") == OK:
+		return regex.sub(raw, "", true)
+	return raw
 
 func _apply_world_item(item_id: String, effect: String, amount: int, target, consume_item: bool = true) -> void:
 	if target == null:
