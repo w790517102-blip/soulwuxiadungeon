@@ -1055,8 +1055,8 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 		]
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary) -> float:
-	var luck_stat := int(_get_actor_value(actor, "luck", 0))
-	var base_crit := 0.05 + floor(float(luck_stat) / 5.0) * 0.01
+	var luck_stat = int(_get_actor_value(actor, "luck", 0))
+	var base_crit = 0.05 + floor(float(luck_stat) / 5.0) * 0.01
 	var crit_bonus = float(equip_bonus.get("crit_rate_bonus", 0.0)) + float(_get_actor_value(actor, "crit_rate_bonus", 0.0))
 	var crit_rate = base_crit + crit_bonus
 	return clampf(crit_rate * 100.0, 0.0, 95.0)
