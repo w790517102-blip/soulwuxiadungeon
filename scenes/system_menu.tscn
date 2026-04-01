@@ -269,6 +269,7 @@ custom_minimum_size = Vector2(20, 200)
 layout_mode = 2
 
 [node name="SkillDetail" type="RichTextLabel" parent="VBoxContainer/武術/MartialTabs/武術"]
+custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
 text = "請選擇武術。"
 
