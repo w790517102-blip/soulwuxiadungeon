@@ -100,6 +100,21 @@ const COMBAT_THANKS := {
 	"_generic": ["謝了。", "幫上大忙。", "承情。"],
 }
 
+const COMBAT_CRIT_ADMIRE := {
+	"liuyu": {
+		"shumian": ["這一擊，真是漂亮。", "劉少俠這一招，當真凌厲。", "這一下，連我都看得心神一震。"],
+		"lieshao": ["呵，這才像樣。", "這一劍，倒真有幾分狠勁。", "行，這一下我認。"],
+	},
+	"shumian": {
+		"liuyu": ["這一筆，夠準。", "好時機。", "不錯，這一下很穩。"],
+		"lieshao": ["哦？這一筆倒真利落。", "看來你不只會寫字。", "這一下，倒是有點意思。"],
+	},
+	"lieshao": {
+		"liuyu": ["好一擊。", "夠狠。", "這一下，打得漂亮。"],
+		"shumian": ["列少俠這一擊，真是漂亮。", "這一聲琴勁，當真驚人。", "方才那一下，連我都替你捏了口氣。"],
+	},
+}
+
 const DEBUFF_ABBREV := {
 	"poison": "毒",
 	"stun": "暈",
@@ -682,6 +697,46 @@ func try_emit_thanks_for_help(helper: Dictionary, beneficiaries: Array) -> void:
 		return
 	var speaker_id := str(candidates[randi() % candidates.size()])
 	var lines_any = COMBAT_THANKS.get(speaker_id, COMBAT_THANKS.get("_generic", []))
+	if typeof(lines_any) != TYPE_ARRAY:
+		return
+	var lines: Array = lines_any
+	if lines.is_empty():
+		return
+	var line := _pick_non_repeat_line(speaker_id, lines)
+	_mark_actor_spoken(speaker_id)
+	await get_tree().create_timer(randf_range(0.4, 0.8)).timeout
+	show_actor_line(speaker_id, line)
+
+func try_emit_crit_admire(crit_actor: Dictionary) -> void:
+	var critter_id := str(crit_actor.get("id", ""))
+	if critter_id == "":
+		return
+	_dialogue_event_tick += 1
+	var praise_for_target_any = COMBAT_CRIT_ADMIRE.get(critter_id, {})
+	if typeof(praise_for_target_any) != TYPE_DICTIONARY:
+		return
+	var praise_for_target: Dictionary = praise_for_target_any
+	var candidates: Array = []
+	for ally_any in allies:
+		if typeof(ally_any) != TYPE_DICTIONARY:
+			continue
+		var ally: Dictionary = ally_any
+		if int(ally.get("hp", 0)) <= 0:
+			continue
+		var speaker_id := str(ally.get("id", ""))
+		if speaker_id == "" or speaker_id == critter_id:
+			continue
+		if not praise_for_target.has(speaker_id):
+			continue
+		if not _can_actor_speak(speaker_id):
+			continue
+		candidates.append(speaker_id)
+	if candidates.is_empty():
+		return
+	if randf() > 0.7:
+		return
+	var speaker_id := str(candidates[randi() % candidates.size()])
+	var lines_any = praise_for_target.get(speaker_id, [])
 	if typeof(lines_any) != TYPE_ARRAY:
 		return
 	var lines: Array = lines_any

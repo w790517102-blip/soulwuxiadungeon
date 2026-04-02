@@ -373,6 +373,15 @@ func _emit_dodge_actor_line(result: Dictionary, target: Dictionary) -> void:
 		battle_ui.play_dodge_motion(target)
 	battle_ui.show_actor_event_line(actor_id, "dodge")
 
+func _emit_crit_admire_line(result: Dictionary, actor: Dictionary) -> void:
+	if not bool(result.get("hit", true)):
+		return
+	if not bool(result.get("crit", false)):
+		return
+	if battle_ui == null or not battle_ui.has_method("try_emit_crit_admire"):
+		return
+	battle_ui.try_emit_crit_admire(actor)
+
 
 func _await_log_stage_continue() -> void:
 	if action_log_ui == null:
@@ -860,6 +869,7 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	target = _resolve_confuse_target(enemy, target, scope)
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
 	_emit_dodge_actor_line(result, target)
+	_emit_crit_admire_line(result, enemy)
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
 	var enemy_logs = await _play_attack_cinematic(enemy, target, skill, result)
@@ -1167,6 +1177,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 			strike_skill_data["_suppress_attack_opener"] = true
 		var strike_result = skill_executor.execute(actor, pick, strike_skill_data, inner_force)
 		_emit_dodge_actor_line(strike_result, pick)
+		_emit_crit_admire_line(strike_result, actor)
 		combined_logs.append("—— 震勁流轉・第 %d 段 ——" % [i + 1])
 		for line in strike_result.get("log", []):
 			combined_logs.append(line)
@@ -1230,6 +1241,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 				strike_skill_data["_suppress_attack_opener"] = true
 			var strike_result = skill_executor.execute(actor, enemy, strike_skill_data, inner_force)
 			_emit_dodge_actor_line(strike_result, enemy)
+			_emit_crit_admire_line(strike_result, actor)
 			combined_logs.append("—— %s・第 %d 段 ——" % [String(enemy.get("name", "敵人")), i + 1])
 			for line in strike_result.get("log", []):
 				combined_logs.append(line)
@@ -1351,6 +1363,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			var enemy_copy: Dictionary = enemy.duplicate(true)
 			var r: Dictionary = skill_executor.execute(actor, enemy_copy, aoe_skill_data, inner_force)
 			_emit_dodge_actor_line(r, enemy)
+			_emit_crit_admire_line(r, actor)
 			var after_hp: int = int(enemy_copy.get("hp", enemy.get("hp", 0)))
 			aoe_results.append({
 				"enemy": enemy,
@@ -1473,6 +1486,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			strike_skill_data["_suppress_attack_opener"] = true
 		var strike_result = skill_executor.execute(actor, actual_target, strike_skill_data, inner_force_single)
 		_emit_dodge_actor_line(strike_result, actual_target)
+		_emit_crit_admire_line(strike_result, actor)
 		if i == 0:
 			result_single = strike_result
 		total_damage += int(strike_result.get("damage", 0))
