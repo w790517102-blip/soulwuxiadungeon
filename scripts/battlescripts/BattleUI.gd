@@ -507,7 +507,7 @@ func show_actor_line(actor_id: String, text: String) -> void:
 		_position_bubble_on_portrait(slot, bubble_box)
 	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
 	_actor_bubble_tokens[actor_id] = token
-	var full_text := "💭 " + text
+	var full_text := text
 	var total_duration := randf_range(2.0, 4.0)
 	var type_step := 0.03
 	bubble.text = ""
@@ -666,8 +666,8 @@ func _position_bubble_on_portrait(slot: Control, bubble_box: PanelContainer) -> 
 	if bubble_size == Vector2.ZERO:
 		bubble_size = bubble_box.custom_minimum_size
 	var portrait_global := portrait.global_position
-	var x := portrait_global.x + (portrait_size.x - bubble_size.x) * 0.5
-	var y := portrait_global.y + portrait_size.y - bubble_size.y
+	var x := portrait_global.x + portrait_size.x
+	var y := portrait_global.y
 	bubble_box.global_position = Vector2(x, y)
 	var actor_id := str(slot.get("actor_id"))
 	if actor_id != "" and not bool(_bubble_debug_logged.get(actor_id, false)):
