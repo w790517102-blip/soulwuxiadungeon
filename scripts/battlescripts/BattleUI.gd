@@ -115,6 +115,13 @@ const COMBAT_CRIT_ADMIRE := {
 	},
 }
 
+const COMBAT_CRIT_SHOUT := {
+	"liuyu": ["看招。", "破。", "就是這裡。", "中。"],
+	"shumian": ["這一筆——", "破綻。", "定。", "落。"],
+	"lieshao": ["哦？", "中了。", "正好。", "這一下。"],
+	"_generic": ["喝！", "中！", "就是現在！"],
+}
+
 const DEBUFF_ABBREV := {
 	"poison": "毒",
 	"stun": "暈",
@@ -712,6 +719,13 @@ func try_emit_crit_admire(crit_actor: Dictionary) -> void:
 	if critter_id == "":
 		return
 	_dialogue_event_tick += 1
+	var shout_any = COMBAT_CRIT_SHOUT.get(critter_id, COMBAT_CRIT_SHOUT.get("_generic", []))
+	if typeof(shout_any) == TYPE_ARRAY:
+		var shout_lines: Array = shout_any
+		if not shout_lines.is_empty():
+			var shout := _pick_non_repeat_line(critter_id, shout_lines)
+			show_actor_line(critter_id, shout)
+			_mark_actor_spoken(critter_id)
 	var praise_for_target_any = COMBAT_CRIT_ADMIRE.get(critter_id, {})
 	if typeof(praise_for_target_any) != TYPE_DICTIONARY:
 		return
@@ -744,7 +758,7 @@ func try_emit_crit_admire(crit_actor: Dictionary) -> void:
 		return
 	var line := _pick_non_repeat_line(speaker_id, lines)
 	_mark_actor_spoken(speaker_id)
-	await get_tree().create_timer(randf_range(0.4, 0.8)).timeout
+	await get_tree().create_timer(randf_range(0.6, 1.0)).timeout
 	show_actor_line(speaker_id, line)
 
 func apply_ruleset(ruleset: Dictionary) -> void:
