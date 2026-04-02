@@ -121,6 +121,7 @@ func _ready() -> void:
 	print("✅ BattleUI 啟動")
 	print("📦 LogPanel 物件是：", log_panel)
 	_apply_menu_font_style(action_panel)
+	_apply_logpanel_style_to_battle_lists()
 	hide_all_popups()
 	action_panel.hide()
 
@@ -170,6 +171,40 @@ func _apply_menu_font_style(root: Node) -> void:
 			ctrl.add_theme_font_size_override("normal_font_size", 20)
 	for child in root.get_children():
 		_apply_menu_font_style(child)
+
+func _apply_logpanel_style_to_battle_lists() -> void:
+	if log_panel == null:
+		return
+	var targets: Array[ItemList] = []
+	if skill_list_popup:
+		var skill_list := skill_list_popup.get_node_or_null("VBoxContainer/SkillList") as ItemList
+		if skill_list:
+			targets.append(skill_list)
+	if inner_force_popup:
+		var force_list := inner_force_popup.get_node_or_null("VBoxContainer/ForceList") as ItemList
+		if force_list:
+			targets.append(force_list)
+	if item_list_popup:
+		var item_list := item_list_popup.get_node_or_null("VBoxContainer/ItemListPopup") as ItemList
+		if item_list:
+			targets.append(item_list)
+	for list in targets:
+		_apply_logpanel_style_to_item_list(list)
+
+func _apply_logpanel_style_to_item_list(list: ItemList) -> void:
+	if list == null or log_panel == null:
+		return
+	var font = log_panel.get_theme_font("normal_font")
+	if font:
+		list.add_theme_font_override("font", font)
+	var font_size := int(log_panel.get_theme_font_size("normal_font_size"))
+	if font_size > 0:
+		list.add_theme_font_size_override("font_size", font_size)
+	var outline_size := int(log_panel.get_theme_constant("outline_size"))
+	if outline_size > 0:
+		list.add_theme_constant_override("outline_size", outline_size)
+	var outline_color: Color = log_panel.get_theme_color("font_outline_color")
+	list.add_theme_color_override("font_outline_color", outline_color)
 
 func _setup_opening_overlay() -> void:
 	_opening_overlay = ColorRect.new()
