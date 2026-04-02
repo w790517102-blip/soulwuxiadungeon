@@ -63,6 +63,9 @@ var _actor_bubble_labels: Dictionary = {}
 var _actor_bubble_boxes: Dictionary = {}
 var _actor_bubble_tokens: Dictionary = {}
 var _bubble_debug_logged: Dictionary = {}
+var _dialogue_event_tick: int = 0
+var _actor_speech_cooldown_until: Dictionary = {}
+var _actor_last_line: Dictionary = {}
 var _status_abbrev_accum := 0.0
 var _has_blinking_tokens := false
 
@@ -73,6 +76,21 @@ const COMBAT_DIALOGUE := {
 		"lieshao": ["嘖，差遠了。", "就這？", "你連我的衣角都沒碰著。", "慢了半拍。", "我還以為能有點意思。", "別急，再練幾年吧。"],
 		"_generic": ["擦身而過。", "這招落空了。", "可惜，沒碰到我。"],
 	}
+}
+
+const COMBAT_DODGE_PRAISE := {
+	"liuyu": {
+		"shumian": ["真不愧是劉少俠。", "這一讓，乾淨俐落。", "我就知道你看得比他更快。"],
+		"lieshao": ["嘖，這身法倒是漂亮。", "躲得不錯，沒白費那雙眼。", "看來還輪不到我替你收屍。"],
+	},
+	"shumian": {
+		"liuyu": ["閃得漂亮。", "你退得很準。", "好身法。"],
+		"lieshao": ["哦？這步退得倒真輕。", "墨筆姑娘，躲得比我想的還俐落。", "看來你不只會寫字。"],
+	},
+	"lieshao": {
+		"liuyu": ["反應不慢。", "這一下躲得好。", "你還站得挺穩。"],
+		"shumian": ["列少俠，好身法。", "方才那一步，真是驚險又漂亮。", "幸好你讓得快。"],
+	},
 }
 
 const DEBUFF_ABBREV := {
@@ -560,6 +578,7 @@ func show_actor_line(actor_id: String, text: String) -> void:
 	bubble_box.visible = false
 
 func show_actor_event_line(actor_id: String, event_key: String) -> void:
+	_dialogue_event_tick += 1
 	var event_map_any = COMBAT_DIALOGUE.get(event_key, {})
 	if typeof(event_map_any) != TYPE_DICTIONARY:
 		return
@@ -570,8 +589,66 @@ func show_actor_event_line(actor_id: String, event_key: String) -> void:
 	var lines: Array = lines_any
 	if lines.is_empty():
 		return
-	var text := str(lines[randi() % lines.size()])
+	var text := _pick_non_repeat_line(actor_id, lines)
 	show_actor_line(actor_id, text)
+	_mark_actor_spoken(actor_id)
+	if event_key == "dodge":
+		_try_emit_dodge_praise(actor_id)
+
+func _pick_non_repeat_line(actor_id: String, lines: Array) -> String:
+	if lines.is_empty():
+		return ""
+	var picked := str(lines[randi() % lines.size()])
+	var last_line := str(_actor_last_line.get(actor_id, ""))
+	if lines.size() > 1 and picked == last_line:
+		var safety := 0
+		while picked == last_line and safety < 6:
+			picked = str(lines[randi() % lines.size()])
+			safety += 1
+	_actor_last_line[actor_id] = picked
+	return picked
+
+func _mark_actor_spoken(actor_id: String) -> void:
+	var cooldown_events := randi_range(2, 3)
+	_actor_speech_cooldown_until[actor_id] = _dialogue_event_tick + cooldown_events
+
+func _can_actor_speak(actor_id: String) -> bool:
+	return _dialogue_event_tick >= int(_actor_speech_cooldown_until.get(actor_id, -999))
+
+func _try_emit_dodge_praise(dodger_id: String) -> void:
+	if randf() > 0.65:
+		return
+	var praise_for_target_any = COMBAT_DODGE_PRAISE.get(dodger_id, {})
+	if typeof(praise_for_target_any) != TYPE_DICTIONARY:
+		return
+	var praise_for_target: Dictionary = praise_for_target_any
+	var candidates: Array = []
+	for ally_any in allies:
+		if typeof(ally_any) != TYPE_DICTIONARY:
+			continue
+		var ally: Dictionary = ally_any
+		if int(ally.get("hp", 0)) <= 0:
+			continue
+		var speaker_id := str(ally.get("id", ""))
+		if speaker_id == "" or speaker_id == dodger_id:
+			continue
+		if not praise_for_target.has(speaker_id):
+			continue
+		if not _can_actor_speak(speaker_id):
+			continue
+		candidates.append(speaker_id)
+	if candidates.is_empty():
+		return
+	var speaker_id := str(candidates[randi() % candidates.size()])
+	var lines_any = praise_for_target.get(speaker_id, [])
+	if typeof(lines_any) != TYPE_ARRAY:
+		return
+	var lines: Array = lines_any
+	if lines.is_empty():
+		return
+	var line := _pick_non_repeat_line(speaker_id, lines)
+	_mark_actor_spoken(speaker_id)
+	show_actor_line(speaker_id, line)
 
 func apply_ruleset(ruleset: Dictionary) -> void:
 	var allow_items = bool(ruleset.get("allow_items", true))
