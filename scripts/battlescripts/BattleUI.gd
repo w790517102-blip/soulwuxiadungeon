@@ -93,6 +93,13 @@ const COMBAT_DODGE_PRAISE := {
 	},
 }
 
+const COMBAT_THANKS := {
+	"liuyu": ["多謝。", "承你這一下。", "我記下了。", "這份人情，先收下。", "幫得正是時候。"],
+	"shumian": ["多謝出手相助。", "幸好有你。", "這一下，真是幫了大忙。", "我心裡記著呢。", "有你在，真讓人安心。"],
+	"lieshao": ["行，這次承你的情。", "倒是幫上了。", "哦？這一下不錯。", "算我欠你一次。", "還好你手快。"],
+	"_generic": ["謝了。", "幫上大忙。", "承情。"],
+}
+
 const DEBUFF_ABBREV := {
 	"poison": "毒",
 	"stun": "暈",
@@ -649,6 +656,40 @@ func _try_emit_dodge_praise(dodger_id: String) -> void:
 	var line := _pick_non_repeat_line(speaker_id, lines)
 	_mark_actor_spoken(speaker_id)
 	await get_tree().create_timer(0.75).timeout
+	show_actor_line(speaker_id, line)
+
+func try_emit_thanks_for_help(helper: Dictionary, beneficiaries: Array) -> void:
+	if beneficiaries.is_empty():
+		return
+	_dialogue_event_tick += 1
+	var helper_id := str(helper.get("id", ""))
+	var candidates: Array = []
+	for b_any in beneficiaries:
+		if typeof(b_any) != TYPE_DICTIONARY:
+			continue
+		var b: Dictionary = b_any
+		if int(b.get("hp", 0)) <= 0:
+			continue
+		var actor_id := str(b.get("id", ""))
+		if actor_id == "" or actor_id == helper_id:
+			continue
+		if not _can_actor_speak(actor_id):
+			continue
+		candidates.append(actor_id)
+	if candidates.is_empty():
+		return
+	if randf() > 0.7:
+		return
+	var speaker_id := str(candidates[randi() % candidates.size()])
+	var lines_any = COMBAT_THANKS.get(speaker_id, COMBAT_THANKS.get("_generic", []))
+	if typeof(lines_any) != TYPE_ARRAY:
+		return
+	var lines: Array = lines_any
+	if lines.is_empty():
+		return
+	var line := _pick_non_repeat_line(speaker_id, lines)
+	_mark_actor_spoken(speaker_id)
+	await get_tree().create_timer(randf_range(0.4, 0.8)).timeout
 	show_actor_line(speaker_id, line)
 
 func apply_ruleset(ruleset: Dictionary) -> void:

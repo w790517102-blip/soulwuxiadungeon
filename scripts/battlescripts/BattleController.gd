@@ -2236,6 +2236,8 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	for t in targets:
 		_update_ui_for_actor(t)
 	_update_ui_for_actor(user)
+	if battle_ui and battle_ui.has_method("try_emit_thanks_for_help"):
+		battle_ui.try_emit_thanks_for_help(user, targets)
 
 # 🔹 預留：補內力型支援技能（如果之後有「回內力心法」再用）
 func _execute_support_mp_heal(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> void:
@@ -2291,6 +2293,8 @@ func _execute_support_mp_heal(user: Dictionary, skill_data: Dictionary, target: 
 
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(user)
+	if battle_ui and battle_ui.has_method("try_emit_thanks_for_help"):
+		battle_ui.try_emit_thanks_for_help(user, [target])
 
 
 func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> bool:
@@ -2383,6 +2387,8 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 		var system_line := _build_positive_buff_system_line(user, applied_records)
 		if system_line != "":
 			_log(system_line)
+		if battle_ui and battle_ui.has_method("try_emit_thanks_for_help"):
+			battle_ui.try_emit_thanks_for_help(user, targets)
 	else:
 		var actual_target: Dictionary = targets[0]
 		_log("%s 對 %s 施展「%s」。" % [
