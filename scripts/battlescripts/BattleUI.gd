@@ -60,6 +60,7 @@ var enemy_slots: Array = [] # EnemyPanel 底下的敵人 slot（之後你可以�
 var _ally_status_labels: Array = []
 var _enemy_status_labels: Array = []
 var _actor_bubble_labels: Dictionary = {}
+var _actor_bubble_boxes: Dictionary = {}
 var _actor_bubble_tokens: Dictionary = {}
 var _bubble_debug_logged: Dictionary = {}
 var _status_abbrev_accum := 0.0
@@ -495,21 +496,22 @@ func show_actor_line(actor_id: String, text: String) -> void:
 		return
 	if not _actor_bubble_labels.has(actor_id):
 		_setup_actor_bubble_labels()
-	if not _actor_bubble_labels.has(actor_id):
+	if not _actor_bubble_labels.has(actor_id) or not _actor_bubble_boxes.has(actor_id):
 		return
 	var bubble = _actor_bubble_labels[actor_id] as Label
-	if bubble == null:
+	var bubble_box = _actor_bubble_boxes[actor_id] as PanelContainer
+	if bubble == null or bubble_box == null:
 		return
 	var slot := _find_ally_slot_by_actor_id(actor_id)
 	if slot:
-		_position_bubble_below_name(slot, bubble)
+		_position_bubble_on_portrait(slot, bubble_box)
 	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
 	_actor_bubble_tokens[actor_id] = token
 	var full_text := "💭 " + text
 	var total_duration := randf_range(2.0, 4.0)
 	var type_step := 0.03
 	bubble.text = ""
-	bubble.visible = true
+	bubble_box.visible = true
 	for i in range(full_text.length()):
 		if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
 			return
@@ -520,7 +522,7 @@ func show_actor_line(actor_id: String, text: String) -> void:
 	await get_tree().create_timer(hold_duration).timeout
 	if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
 		return
-	bubble.visible = false
+	bubble_box.visible = false
 
 func show_actor_event_line(actor_id: String, event_key: String) -> void:
 	var event_map_any = COMBAT_DIALOGUE.get(event_key, {})
@@ -589,6 +591,7 @@ func _find_enemy_slot_index(target: Dictionary) -> int:
 
 func _setup_actor_bubble_labels() -> void:
 	_actor_bubble_labels.clear()
+	_actor_bubble_boxes.clear()
 	_actor_bubble_tokens.clear()
 	for i in range(allies.size()):
 		if i >= ally_slots.size():
@@ -602,26 +605,46 @@ func _setup_actor_bubble_labels() -> void:
 			continue
 		_apply_slot_label_font_style(slot)
 		var bubble_name := "OSBubble_%s" % actor_id
-		var bubble := get_node_or_null(bubble_name) as Label
-		if bubble == null:
+		var bubble_box := get_node_or_null(bubble_name) as PanelContainer
+		var bubble: Label = null
+		if bubble_box == null:
+			bubble_box = PanelContainer.new()
+			bubble_box.name = bubble_name
+			bubble_box.visible = false
+			bubble_box.top_level = true
+			bubble_box.z_index = 20
+			bubble_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			bubble_box.custom_minimum_size = Vector2(132, 30)
+			var bg := StyleBoxFlat.new()
+			bg.bg_color = Color(0, 0, 0, 0.42)
+			bg.corner_radius_top_left = 4
+			bg.corner_radius_top_right = 4
+			bg.corner_radius_bottom_right = 4
+			bg.corner_radius_bottom_left = 4
+			bubble_box.add_theme_stylebox_override("panel", bg)
 			bubble = Label.new()
-			bubble.name = bubble_name
-			bubble.visible = false
-			bubble.top_level = true
-			bubble.z_index = 20
-			bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			bubble.name = "Text"
+			bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			bubble.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-			bubble.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-			bubble.custom_minimum_size = Vector2(170, 44)
+			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			bubble.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			bubble.add_theme_font_override("font", MenuUIFont)
+			bubble.add_theme_font_size_override("font_size", 18)
 			bubble.add_theme_color_override("font_color", Color(1, 0.97, 0.87, 1))
 			bubble.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 			bubble.add_theme_constant_override("outline_size", 4)
-			bubble.add_theme_font_override("font", MenuUIFont)
-			bubble.add_theme_font_size_override("font_size", 18)
-			add_child(bubble)
-		_position_bubble_below_name(slot, bubble)
+			bubble_box.add_child(bubble)
+			add_child(bubble_box)
+		else:
+			bubble = bubble_box.get_node_or_null("Text") as Label
+			if bubble == null:
+				bubble = Label.new()
+				bubble.name = "Text"
+				bubble_box.add_child(bubble)
+		_position_bubble_on_portrait(slot, bubble_box)
 		_actor_bubble_labels[actor_id] = bubble
+		_actor_bubble_boxes[actor_id] = bubble_box
 
 func _apply_slot_label_font_style(slot: Control) -> void:
 	for node_name in ["Name", "HPLabel", "MPLabel"]:
@@ -632,17 +655,23 @@ func _apply_slot_label_font_style(slot: Control) -> void:
 		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		label.add_theme_constant_override("outline_size", 4)
 
-func _position_bubble_below_name(slot: Control, bubble: Label) -> void:
-	var status_ui := slot.get_node_or_null("StatusUI") as Control
-	var name_label := slot.get_node_or_null("StatusUI/Name") as Label
-	if status_ui == null or name_label == null:
+func _position_bubble_on_portrait(slot: Control, bubble_box: PanelContainer) -> void:
+	var portrait := slot.get_node_or_null("Portrait") as Control
+	if portrait == null:
 		return
-	var name_height := maxf(name_label.size.y, maxf(name_label.custom_minimum_size.y, 30.0))
-	var name_global := name_label.global_position
-	bubble.global_position = Vector2(name_global.x, name_global.y + name_height + 2.0)
+	var portrait_size := portrait.size
+	if portrait_size == Vector2.ZERO:
+		portrait_size = portrait.custom_minimum_size
+	var bubble_size := bubble_box.size
+	if bubble_size == Vector2.ZERO:
+		bubble_size = bubble_box.custom_minimum_size
+	var portrait_global := portrait.global_position
+	var x := portrait_global.x + (portrait_size.x - bubble_size.x) * 0.5
+	var y := portrait_global.y + portrait_size.y - bubble_size.y
+	bubble_box.global_position = Vector2(x, y)
 	var actor_id := str(slot.get("actor_id"))
 	if actor_id != "" and not bool(_bubble_debug_logged.get(actor_id, false)):
-		print("[BubblePos] actor=", actor_id, " name_global=", name_global, " bubble_global=", bubble.global_position, " bubble_parent=", bubble.get_parent().name, " top_level=", bubble.top_level)
+		print("[BubblePos] actor=", actor_id, " portrait_global=", portrait_global, " bubble_global=", bubble_box.global_position, " bubble_parent=", bubble_box.get_parent().name, " top_level=", bubble_box.top_level)
 		_bubble_debug_logged[actor_id] = true
 
 func _find_ally_slot_by_actor_id(actor_id: String) -> Control:
