@@ -648,6 +648,7 @@ func _try_emit_dodge_praise(dodger_id: String) -> void:
 		return
 	var line := _pick_non_repeat_line(speaker_id, lines)
 	_mark_actor_spoken(speaker_id)
+	await get_tree().create_timer(0.75).timeout
 	show_actor_line(speaker_id, line)
 
 func apply_ruleset(ruleset: Dictionary) -> void:
