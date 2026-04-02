@@ -871,6 +871,23 @@ func play_attack_motion(actor: Dictionary) -> void:
 		if slot.has_method("play_attack_motion"):
 			slot.play_attack_motion()
 
+func play_dodge_motion(actor: Dictionary) -> void:
+	if allies.is_empty() and enemies.is_empty():
+		return
+
+	var idx = allies.find(actor)
+	if idx != -1 and idx < ally_slots.size():
+		var slot = ally_slots[idx]
+		if slot.has_method("play_dodge_motion"):
+			slot.play_dodge_motion()
+		return
+
+	idx = _find_enemy_slot_index(actor)
+	if idx != -1 and idx < enemy_slots.size():
+		var slot = enemy_slots[idx]
+		if slot.has_method("play_dodge_motion"):
+			slot.play_dodge_motion()
+
 # ===== 防禦動作：玩家選擇防禦時，做一個收招姿態 =====
 func play_defend_motion(actor: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():

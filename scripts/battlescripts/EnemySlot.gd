@@ -13,6 +13,7 @@ var max_hp_cached: int = 0
 
 var _turn_tween: Tween   = null   # ⭐ 輪到這隻敵人行動時的呼吸高亮
 var _target_tween: Tween = null   # ⭐ 被選成目標時的確認閃爍
+var _dodge_tween: Tween = null
 
 func _ready() -> void:
 	_reset_fx()
@@ -212,6 +213,17 @@ func play_attack_motion() -> void:
 	self.scale = Vector2.ONE
 	tween.tween_property(self, "scale", Vector2(1.08, 1.08), 0.12)
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.16)
+
+func play_dodge_motion() -> void:
+	if _dodge_tween:
+		_dodge_tween.kill()
+		_dodge_tween = null
+	var start_pos := self.position
+	var dodge_pos := start_pos + Vector2(-24, 0)
+	_dodge_tween = create_tween()
+	_dodge_tween.tween_property(self, "position", dodge_pos, 0.08)
+	_dodge_tween.tween_interval(0.8)
+	_dodge_tween.tween_property(self, "position", start_pos, 0.32)
 
 func play_damage_react() -> void:
 	var tween = create_tween()

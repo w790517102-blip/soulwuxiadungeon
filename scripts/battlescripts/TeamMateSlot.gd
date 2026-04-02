@@ -14,6 +14,7 @@ var actor_id: String = ""
 var _base_scale: Vector2 = Vector2.ONE   # 目前這個 slot 的「基準大小」
 var _turn_tween: Tween   = null   # ⭐ 輪到自己行動時的白色呼吸
 var _target_tween: Tween = null   # ⭐ 被選為目標時的確認閃爍
+var _dodge_tween: Tween = null
 
 func _ready() -> void:
 	_base_scale = self.scale
@@ -193,6 +194,17 @@ func play_attack_motion() -> void:
 	self.scale = _base_scale
 	tween.tween_property(self, "scale", _base_scale * 1.08, 0.12)
 	tween.tween_property(self, "scale", _base_scale,          0.16)
+
+func play_dodge_motion() -> void:
+	if _dodge_tween:
+		_dodge_tween.kill()
+		_dodge_tween = null
+	var start_pos := self.position
+	var dodge_pos := start_pos + Vector2(-24, 0)
+	_dodge_tween = create_tween()
+	_dodge_tween.tween_property(self, "position", dodge_pos, 0.08)
+	_dodge_tween.tween_interval(0.8)
+	_dodge_tween.tween_property(self, "position", start_pos, 0.32)
 
 func play_damage_react() -> void:
 	var tween = create_tween()

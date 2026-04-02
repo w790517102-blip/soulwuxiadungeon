@@ -369,6 +369,8 @@ func _emit_dodge_actor_line(result: Dictionary, target: Dictionary) -> void:
 	var actor_id := str(target.get("id", ""))
 	if actor_id == "":
 		return
+	if battle_ui.has_method("play_dodge_motion"):
+		battle_ui.play_dodge_motion(target)
 	battle_ui.show_actor_event_line(actor_id, "dodge")
 
 
