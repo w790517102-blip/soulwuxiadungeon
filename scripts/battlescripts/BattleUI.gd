@@ -640,7 +640,7 @@ func _position_bubble_below_name(slot: Control, bubble: Label) -> void:
 	var name_height := maxf(name_label.size.y, maxf(name_label.custom_minimum_size.y, 30.0))
 	var name_global := name_label.global_position
 	bubble.global_position = Vector2(name_global.x, name_global.y + name_height + 2.0)
-	var actor_id := str(slot.get("actor_id", ""))
+	var actor_id := str(slot.get("actor_id"))
 	if actor_id != "" and not bool(_bubble_debug_logged.get(actor_id, false)):
 		print("[BubblePos] actor=", actor_id, " name_global=", name_global, " bubble_global=", bubble.global_position, " bubble_parent=", bubble.get_parent().name, " top_level=", bubble.top_level)
 		_bubble_debug_logged[actor_id] = true
