@@ -396,13 +396,13 @@ func _emit_major_hit_reaction_from_result(result: Dictionary, victim: Dictionary
 		return
 	if victim not in player_party:
 		return
-	var max_hp := max(1, int(victim.get("max_hp", victim.get("hp", 1))))
-	var cur_hp := int(victim.get("hp", 0))
-	var damage := max(0, int(result.get("damage", 0)))
-	var is_danger := cur_hp > 0 and float(cur_hp) / float(max_hp) <= MAJOR_HIT_LOW_HP_THRESHOLD
-	var is_crit := bool(result.get("crit", false))
-	var is_heavy := damage > 0 and float(damage) >= float(max_hp) * MAJOR_HIT_HEAVY_DAMAGE_RATIO
-	var event_key := ""
+	var max_hp: int = maxi(1, int(victim.get("max_hp", victim.get("hp", 1))))
+	var cur_hp: int = int(victim.get("hp", 0))
+	var damage: int = maxi(0, int(result.get("damage", 0)))
+	var is_danger: bool = cur_hp > 0 and float(cur_hp) / float(max_hp) <= MAJOR_HIT_LOW_HP_THRESHOLD
+	var is_crit: bool = bool(result.get("crit", false))
+	var is_heavy: bool = damage > 0 and float(damage) >= float(max_hp) * MAJOR_HIT_HEAVY_DAMAGE_RATIO
+	var event_key: String = ""
 	if is_danger:
 		event_key = "danger"
 	elif is_crit:
@@ -438,9 +438,9 @@ func _emit_major_hit_reaction_from_applied_statuses(applied: Array) -> void:
 		if victim_id == "" or triggered_victim_ids.has(victim_id):
 			continue
 		triggered_victim_ids[victim_id] = true
-		var max_hp := max(1, int(target.get("max_hp", target.get("hp", 1))))
-		var cur_hp := int(target.get("hp", 0))
-		var event_key := "debuff"
+		var max_hp: int = maxi(1, int(target.get("max_hp", target.get("hp", 1))))
+		var cur_hp: int = int(target.get("hp", 0))
+		var event_key: String = "debuff"
 		if float(cur_hp) / float(max_hp) <= MAJOR_HIT_LOW_HP_THRESHOLD:
 			event_key = "danger"
 		battle_ui.try_emit_major_hit_reaction(target, event_key)
