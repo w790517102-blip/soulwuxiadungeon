@@ -613,6 +613,8 @@ func show_actor_line(actor_id: String, text: String) -> void:
 	if bubble == null or bubble_box == null:
 		return
 	var slot := _find_ally_slot_by_actor_id(actor_id)
+	if slot == null:
+		slot = _find_enemy_slot_by_actor_id(actor_id)
 	if slot:
 		_position_bubble_on_portrait(slot, bubble_box)
 	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
@@ -921,14 +923,18 @@ func _setup_actor_bubble_labels() -> void:
 	_actor_bubble_labels.clear()
 	_actor_bubble_boxes.clear()
 	_actor_bubble_tokens.clear()
-	for i in range(allies.size()):
-		if i >= ally_slots.size():
+	_setup_actor_bubbles_for_side(allies, ally_slots)
+	_setup_actor_bubbles_for_side(enemies, enemy_slots)
+
+func _setup_actor_bubbles_for_side(actor_list: Array, slots: Array) -> void:
+	for i in range(actor_list.size()):
+		if i >= slots.size():
 			continue
-		var actor: Dictionary = allies[i]
+		var actor: Dictionary = actor_list[i]
 		var actor_id := str(actor.get("id", ""))
 		if actor_id == "":
 			continue
-		var slot := ally_slots[i] as Control
+		var slot := slots[i] as Control
 		if slot == null:
 			continue
 		_apply_slot_label_font_style(slot)
@@ -1009,6 +1015,15 @@ func _find_ally_slot_by_actor_id(actor_id: String) -> Control:
 		var actor: Dictionary = allies[i]
 		if str(actor.get("id", "")) == actor_id:
 			return ally_slots[i] as Control
+	return null
+
+func _find_enemy_slot_by_actor_id(actor_id: String) -> Control:
+	for i in range(enemies.size()):
+		if i >= enemy_slots.size():
+			continue
+		var enemy: Dictionary = enemies[i]
+		if str(enemy.get("id", "")) == actor_id:
+			return enemy_slots[i] as Control
 	return null
 
 ## 每回合開頭會重新刷新一次 UI

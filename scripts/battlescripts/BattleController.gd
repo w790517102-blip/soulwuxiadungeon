@@ -309,7 +309,7 @@ func _maybe_emit_enemy_opening_line() -> void:
 	var line: String = String(tone_map.get_enemy_dialogue("opening", pick))
 	if line == "":
 		return
-	_log(line)
+	_emit_enemy_spoken_line(pick, line)
 
 func _resolve_battle_intro_line(context: Dictionary) -> String:
 	return BattleIntroDB.resolve_intro(context, tone_map)
@@ -382,6 +382,15 @@ func _log_narration(msg: String, allow_when_ending: bool = false) -> void:
 		action_log_ui.log_narration(msg)
 	else:
 		_log(msg, allow_when_ending)
+
+func _emit_enemy_spoken_line(enemy: Dictionary, text: String) -> void:
+	if text == "":
+		return
+	var enemy_id := String(enemy.get("id", ""))
+	if battle_ui != null and battle_ui.has_method("show_actor_line") and enemy_id != "":
+		battle_ui.show_actor_line(enemy_id, text)
+	else:
+		_log(text)
 
 func _emit_dodge_actor_line(result: Dictionary, target: Dictionary) -> void:
 	if target.is_empty():
@@ -954,7 +963,7 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
 		var enemy_skill_line: String = String(tone_map.get_enemy_dialogue("skill", enemy))
 		if enemy_skill_line != "":
-			_log(enemy_skill_line)
+			_emit_enemy_spoken_line(enemy, enemy_skill_line)
 	target = _resolve_confuse_target(enemy, target, scope)
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
 	_emit_dodge_actor_line(result, target)
@@ -1777,7 +1786,8 @@ func _enemy_defeat_line(enemy: Dictionary, attacker: Dictionary = {}) -> String:
 	if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
 		var enemy_down_line: String = String(tone_map.get_enemy_dialogue("down", enemy))
 		if enemy_down_line != "":
-			return enemy_down_line
+			_emit_enemy_spoken_line(enemy, enemy_down_line)
+			return "%s 倒下，傷勢過重，已無力再戰。" % name_e
 	if tone_map != null and typeof(attacker) == TYPE_DICTIONARY and not attacker.is_empty():
 		var attacker_id := str(attacker.get("id", ""))
 		if attacker_id != "" and not bool(attacker.get("is_enemy", false)):
@@ -2047,7 +2057,7 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 		if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
 			var debuff_line: String = String(tone_map.get_enemy_dialogue("debuff_success", user))
 			if debuff_line != "":
-				_log_narration(debuff_line)
+				_emit_enemy_spoken_line(user, debuff_line)
 	var tone_cast := ""
 	var tone_suffer := ""
 	var suppress_status_narration := bool(skill_data.get("_suppress_status_narration", false))
