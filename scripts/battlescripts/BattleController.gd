@@ -25,6 +25,8 @@ var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
 const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
 const MAJOR_HIT_HEAVY_DAMAGE_RATIO := 0.22
+const ENEMY_DODGE_LINE_CHANCE := 0.60
+const ENEMY_DEBUFF_SUFFER_LINE_CHANCE := 0.90
 const MARTIAL_PAIRING_BONUSES := [
 	{
 		"inner_force_id": "liuchen_jue",
@@ -397,13 +399,21 @@ func _emit_dodge_actor_line(result: Dictionary, target: Dictionary) -> void:
 		return
 	if bool(result.get("hit", true)):
 		return
-	if battle_ui == null or not battle_ui.has_method("show_actor_event_line"):
-		return
 	var actor_id := str(target.get("id", ""))
 	if actor_id == "":
 		return
-	if battle_ui.has_method("play_dodge_motion"):
+	if battle_ui != null and battle_ui.has_method("play_dodge_motion"):
 		battle_ui.play_dodge_motion(target)
+	if target in enemy_party:
+		if randf() > ENEMY_DODGE_LINE_CHANCE:
+			return
+		if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
+			var dodge_line: String = String(tone_map.get_enemy_dialogue("dodge", target))
+			if dodge_line != "":
+				_emit_enemy_spoken_line(target, dodge_line)
+		return
+	if battle_ui == null or not battle_ui.has_method("show_actor_event_line"):
+		return
 	battle_ui.show_actor_event_line(actor_id, "dodge")
 
 func _emit_crit_admire_line(result: Dictionary, actor: Dictionary) -> void:
@@ -2058,6 +2068,11 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 			var debuff_line: String = String(tone_map.get_enemy_dialogue("debuff_success", user))
 			if debuff_line != "":
 				_emit_enemy_spoken_line(user, debuff_line)
+	if not bool(user.get("is_enemy", false)) and effect_target in enemy_party and _is_major_negative_effect(normalized_effect_id):
+		if randf() <= ENEMY_DEBUFF_SUFFER_LINE_CHANCE and tone_map != null and tone_map.has_method("get_enemy_dialogue"):
+			var suffer_line: String = String(tone_map.get_enemy_dialogue("debuff_suffer", effect_target))
+			if suffer_line != "":
+				_emit_enemy_spoken_line(effect_target, suffer_line)
 	var tone_cast := ""
 	var tone_suffer := ""
 	var suppress_status_narration := bool(skill_data.get("_suppress_status_narration", false))
