@@ -122,6 +122,10 @@ const COMBAT_CRIT_SHOUT := {
 	"_generic": ["喝！", "中！", "就是現在！"],
 }
 
+const THANKS_SINGLE_TRIGGER_CHANCE := 1.0
+const THANKS_AOE_TRIGGER_CHANCE := 0.78
+const THANKS_AOE_MAX_SPEAKERS := 2
+
 const DEBUFF_ABBREV := {
 	"poison": "毒",
 	"stun": "暈",
@@ -685,6 +689,7 @@ func try_emit_thanks_for_help(helper: Dictionary, beneficiaries: Array) -> void:
 		return
 	_dialogue_event_tick += 1
 	var helper_id := str(helper.get("id", ""))
+	var is_aoe_event := beneficiaries.size() > 1
 	var candidates: Array = []
 	for b_any in beneficiaries:
 		if typeof(b_any) != TYPE_DICTIONARY:
@@ -700,19 +705,46 @@ func try_emit_thanks_for_help(helper: Dictionary, beneficiaries: Array) -> void:
 		candidates.append(actor_id)
 	if candidates.is_empty():
 		return
-	if randf() > 0.7:
+
+	var selected_speakers: Array = []
+	if not is_aoe_event:
+		# 單體幫助：固定由受惠者本人幾乎必定致謝（目前 100%）。
+		if randf() <= THANKS_SINGLE_TRIGGER_CHANCE:
+			selected_speakers.append(str(candidates[0]))
+	else:
+		# AOE 幫助：每位受惠者各自獨立判定是否發言，並限制同時最多 2 人。
+		var shuffled_candidates: Array = candidates.duplicate()
+		shuffled_candidates.shuffle()
+		for speaker_any in shuffled_candidates:
+			if selected_speakers.size() >= THANKS_AOE_MAX_SPEAKERS:
+				break
+			if randf() <= THANKS_AOE_TRIGGER_CHANCE:
+				selected_speakers.append(str(speaker_any))
+
+	if selected_speakers.is_empty():
 		return
-	var speaker_id := str(candidates[randi() % candidates.size()])
-	var lines_any = COMBAT_THANKS.get(speaker_id, COMBAT_THANKS.get("_generic", []))
-	if typeof(lines_any) != TYPE_ARRAY:
+
+	var speak_plans: Array = []
+	for speaker_any in selected_speakers:
+		var speaker_id := str(speaker_any)
+		var lines_any = COMBAT_THANKS.get(speaker_id, COMBAT_THANKS.get("_generic", []))
+		if typeof(lines_any) != TYPE_ARRAY:
+			continue
+		var lines: Array = lines_any
+		if lines.is_empty():
+			continue
+		var line := _pick_non_repeat_line(speaker_id, lines)
+		_mark_actor_spoken(speaker_id)
+		speak_plans.append({"speaker_id": speaker_id, "line": line})
+	if speak_plans.is_empty():
 		return
-	var lines: Array = lines_any
-	if lines.is_empty():
-		return
-	var line := _pick_non_repeat_line(speaker_id, lines)
-	_mark_actor_spoken(speaker_id)
+
 	await get_tree().create_timer(randf_range(0.4, 0.8)).timeout
-	show_actor_line(speaker_id, line)
+	for i in range(speak_plans.size()):
+		var plan: Dictionary = speak_plans[i]
+		show_actor_line(str(plan.get("speaker_id", "")), str(plan.get("line", "")))
+		if i + 1 < speak_plans.size():
+			await get_tree().create_timer(0.18).timeout
 
 func try_emit_crit_admire(crit_actor: Dictionary) -> void:
 	var critter_id := str(crit_actor.get("id", ""))
