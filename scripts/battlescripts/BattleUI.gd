@@ -615,8 +615,15 @@ func show_actor_line(actor_id: String, text: String) -> void:
 	var slot := _find_ally_slot_by_actor_id(actor_id)
 	if slot == null:
 		slot = _find_enemy_slot_by_actor_id(actor_id)
+	if slot == null:
+		_setup_actor_bubble_labels()
+		slot = _find_ally_slot_by_actor_id(actor_id)
+		if slot == null:
+			slot = _find_enemy_slot_by_actor_id(actor_id)
 	if slot:
 		_position_bubble_on_portrait(slot, bubble_box)
+	else:
+		return
 	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
 	_actor_bubble_tokens[actor_id] = token
 	var full_text := text
@@ -1015,6 +1022,12 @@ func _is_enemy_slot_control(slot: Control) -> bool:
 	return false
 
 func _find_ally_slot_by_actor_id(actor_id: String) -> Control:
+	for slot_any in ally_slots:
+		var slot := slot_any as Control
+		if slot == null:
+			continue
+		if str(slot.get("actor_id")) == actor_id:
+			return slot
 	for i in range(allies.size()):
 		if i >= ally_slots.size():
 			continue
@@ -1024,6 +1037,12 @@ func _find_ally_slot_by_actor_id(actor_id: String) -> Control:
 	return null
 
 func _find_enemy_slot_by_actor_id(actor_id: String) -> Control:
+	for slot_any in enemy_slots:
+		var slot := slot_any as Control
+		if slot == null:
+			continue
+		if str(slot.get("actor_id")) == actor_id:
+			return slot
 	for i in range(enemies.size()):
 		if i >= enemy_slots.size():
 			continue
