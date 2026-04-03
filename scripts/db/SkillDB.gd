@@ -12,7 +12,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"strike_count": 3,
-		"effects": [{"type": "damage", "power": 1.1}],
+		"effects": [{"type": "damage", "power": 0.4}],
 		"stat_scaling": {"str": 0.6, "agi": 0.3, "int": 0.1},
 		"available": {"mode": "all"},
 	},
