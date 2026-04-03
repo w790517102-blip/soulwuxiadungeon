@@ -1811,11 +1811,16 @@ func _resolve_confuse_target(actor: Dictionary, target: Dictionary, scope: Strin
 
 
 func _canonicalize_status_effect_id(effect_id: String) -> String:
-	match effect_id:
+	var normalized := effect_id.strip_edges().to_lower()
+	if normalized.begins_with("stat_buff_"):
+		return "stat_buff"
+	if normalized.begins_with("stat_debuff_"):
+		return "stat_debuff"
+	match normalized:
 		"debuff_speed", "speed_debuff":
 			return "slow"
 		_:
-			return effect_id
+			return normalized
 
 
 func _resolve_applied_status_effect_id(effect_id: String, payload: Dictionary) -> String:
@@ -2468,9 +2473,10 @@ func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
 	var side: String = str(skill_data.get("target_side", ""))
 	if side != "ally" and side != "self":
 		return false
+	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
 	if bool(skill_data.get("positive_buff", false)):
 		return true
-	return effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "atk_up", "stat_buff"]
+	return normalized_effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "atk_up", "stat_buff"]
 
 
 func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:
