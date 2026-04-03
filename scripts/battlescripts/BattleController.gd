@@ -1538,6 +1538,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 
 func _apply_skill_self_hp_cost(actor: Dictionary, skill_data: Dictionary) -> void:
+	if _is_risk_upgrade_inactive(actor, skill_data):
+		return
 	var hp_cost_pct := float(skill_data.get("self_hp_cost_current_pct", 0.0))
 	if hp_cost_pct <= 0.0 or actor.is_empty():
 		return
@@ -1559,6 +1561,8 @@ func _apply_skill_self_hp_cost(actor: Dictionary, skill_data: Dictionary) -> voi
 
 
 func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeated_count: int) -> void:
+	if _is_risk_upgrade_inactive(actor, skill_data):
+		return
 	if actor.is_empty():
 		return
 	var self_effects_raw = skill_data.get("post_cast_self_effects", [])
@@ -1604,6 +1608,7 @@ func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeat
 					_log_applied_statuses(applied_self)
 				await _await_log_stage_continue()
 
+
 	if defeated_count >= 1:
 		var heal_pct := float(skill_data.get("on_kill_heal_max_hp_pct", 0.0))
 		if heal_pct > 0.0 and int(actor.get("hp", 0)) > 0:
@@ -1647,6 +1652,20 @@ func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeat
 	_update_ui_for_actor(actor)
 	_log_applied_statuses(applied_bonus)
 	await _await_log_stage_continue()
+
+
+func _is_risk_upgrade_inactive(actor: Dictionary, skill_data: Dictionary) -> bool:
+	if actor.is_empty() or skill_data.is_empty():
+		return false
+	var risk_upgrade_raw = skill_data.get("risk_upgrade", {})
+	if typeof(risk_upgrade_raw) != TYPE_DICTIONARY:
+		return false
+	var risk_upgrade: Dictionary = risk_upgrade_raw
+	var required_inner_force_id := String(risk_upgrade.get("inner_force_id", ""))
+	if required_inner_force_id == "":
+		return false
+	var current_inner_force_id := String((actor.get("inner_force", {}) as Dictionary).get("id", ""))
+	return current_inner_force_id != required_inner_force_id
 
 
 
