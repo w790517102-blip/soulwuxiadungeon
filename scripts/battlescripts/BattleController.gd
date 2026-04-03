@@ -23,6 +23,8 @@ var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
+const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
+const MAJOR_HIT_HEAVY_DAMAGE_RATIO := 0.22
 const MARTIAL_PAIRING_BONUSES := [
 	{
 		"inner_force_id": "liuchen_jue",
@@ -381,6 +383,67 @@ func _emit_crit_admire_line(result: Dictionary, actor: Dictionary) -> void:
 	if battle_ui == null or not battle_ui.has_method("try_emit_crit_admire"):
 		return
 	battle_ui.try_emit_crit_admire(actor)
+
+func _is_major_negative_effect(effect_id: String) -> bool:
+	if effect_id.begins_with("stat_debuff"):
+		return true
+	return effect_id in ["poison", "stun", "confuse", "seal_mp", "weak", "blind", "root", "slow", "break_def", "weaken", "stat_debuff"]
+
+func _emit_major_hit_reaction_from_result(result: Dictionary, victim: Dictionary) -> void:
+	if victim.is_empty() or not bool(result.get("hit", true)):
+		return
+	if battle_ui == null or not battle_ui.has_method("try_emit_major_hit_reaction"):
+		return
+	if victim not in player_party:
+		return
+	var max_hp := max(1, int(victim.get("max_hp", victim.get("hp", 1))))
+	var cur_hp := int(victim.get("hp", 0))
+	var damage := max(0, int(result.get("damage", 0)))
+	var is_danger := cur_hp > 0 and float(cur_hp) / float(max_hp) <= MAJOR_HIT_LOW_HP_THRESHOLD
+	var is_crit := bool(result.get("crit", false))
+	var is_heavy := damage > 0 and float(damage) >= float(max_hp) * MAJOR_HIT_HEAVY_DAMAGE_RATIO
+	var event_key := ""
+	if is_danger:
+		event_key = "danger"
+	elif is_crit:
+		event_key = "crit"
+	elif is_heavy:
+		event_key = "heavy"
+	if event_key == "":
+		return
+	battle_ui.try_emit_major_hit_reaction(victim, event_key)
+
+func _emit_major_hit_reaction_from_applied_statuses(applied: Array) -> void:
+	if applied.is_empty():
+		return
+	if battle_ui == null or not battle_ui.has_method("try_emit_major_hit_reaction"):
+		return
+	var triggered_victim_ids: Dictionary = {}
+	for row_any in applied:
+		if typeof(row_any) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = row_any
+		var target_any = row.get("target", {})
+		if typeof(target_any) != TYPE_DICTIONARY:
+			continue
+		var target: Dictionary = target_any
+		if target.is_empty() or target not in player_party:
+			continue
+		if int(target.get("hp", 0)) <= 0:
+			continue
+		var effect_id := String(row.get("effect_id", ""))
+		if not _is_major_negative_effect(effect_id):
+			continue
+		var victim_id := String(target.get("id", ""))
+		if victim_id == "" or triggered_victim_ids.has(victim_id):
+			continue
+		triggered_victim_ids[victim_id] = true
+		var max_hp := max(1, int(target.get("max_hp", target.get("hp", 1))))
+		var cur_hp := int(target.get("hp", 0))
+		var event_key := "debuff"
+		if float(cur_hp) / float(max_hp) <= MAJOR_HIT_LOW_HP_THRESHOLD:
+			event_key = "danger"
+		battle_ui.try_emit_major_hit_reaction(target, event_key)
 
 
 func _await_log_stage_continue() -> void:
@@ -870,6 +933,7 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
 	_emit_dodge_actor_line(result, target)
 	_emit_crit_admire_line(result, enemy)
+	_emit_major_hit_reaction_from_result(result, target)
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
 	var enemy_logs = await _play_attack_cinematic(enemy, target, skill, result)
@@ -884,6 +948,7 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	var enemy_target_pool: Array = [target] if bool(result.get("hit", true)) else []
 	var enemy_applied: Array = _apply_skill_effects(enemy, target, skill, enemy_target_pool)
 	_log_applied_statuses(enemy_applied)
+	_emit_major_hit_reaction_from_applied_statuses(enemy_applied)
 	if enemy_applied.size() > 0:
 		await _await_log_stage_continue()
 
@@ -1178,6 +1243,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 		var strike_result = skill_executor.execute(actor, pick, strike_skill_data, inner_force)
 		_emit_dodge_actor_line(strike_result, pick)
 		_emit_crit_admire_line(strike_result, actor)
+		_emit_major_hit_reaction_from_result(strike_result, pick)
 		combined_logs.append("—— 震勁流轉・第 %d 段 ——" % [i + 1])
 		for line in strike_result.get("log", []):
 			combined_logs.append(line)
@@ -1206,6 +1272,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 	var apply_targets: Array = hit_targets if any_hit else []
 	var applied := _apply_skill_effects(actor, {}, skill_data, apply_targets)
 	_log_applied_statuses(applied)
+	_emit_major_hit_reaction_from_applied_statuses(applied)
 	if applied.size() > 0:
 		await _await_log_stage_continue()
 
@@ -1242,6 +1309,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 			var strike_result = skill_executor.execute(actor, enemy, strike_skill_data, inner_force)
 			_emit_dodge_actor_line(strike_result, enemy)
 			_emit_crit_admire_line(strike_result, actor)
+			_emit_major_hit_reaction_from_result(strike_result, enemy)
 			combined_logs.append("—— %s・第 %d 段 ——" % [String(enemy.get("name", "敵人")), i + 1])
 			for line in strike_result.get("log", []):
 				combined_logs.append(line)
@@ -1271,6 +1339,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 	var apply_targets: Array = hit_targets if any_hit else []
 	var applied := _apply_skill_effects(actor, {}, skill_data, apply_targets)
 	_log_applied_statuses(applied)
+	_emit_major_hit_reaction_from_applied_statuses(applied)
 	if applied.size() > 0:
 		await _await_log_stage_continue()
 
@@ -1364,6 +1433,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			var r: Dictionary = skill_executor.execute(actor, enemy_copy, aoe_skill_data, inner_force)
 			_emit_dodge_actor_line(r, enemy)
 			_emit_crit_admire_line(r, actor)
+			_emit_major_hit_reaction_from_result(r, enemy)
 			var after_hp: int = int(enemy_copy.get("hp", enemy.get("hp", 0)))
 			aoe_results.append({
 				"enemy": enemy,
@@ -1421,6 +1491,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, hit_targets)
 		_log_applied_statuses(aoe_applied)
+		_emit_major_hit_reaction_from_applied_statuses(aoe_applied)
 		if aoe_applied.size() > 0:
 			await _await_log_stage_continue()
 
@@ -1487,6 +1558,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		var strike_result = skill_executor.execute(actor, actual_target, strike_skill_data, inner_force_single)
 		_emit_dodge_actor_line(strike_result, actual_target)
 		_emit_crit_admire_line(strike_result, actor)
+		_emit_major_hit_reaction_from_result(strike_result, actual_target)
 		if i == 0:
 			result_single = strike_result
 		total_damage += int(strike_result.get("damage", 0))
@@ -1518,6 +1590,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var single_target_pool: Array = [actual_target] if bool(result_single.get("hit", true)) else []
 	var single_applied: Array = _apply_skill_effects(actor, actual_target, skill_data, single_target_pool)
 	_log_applied_statuses(single_applied)
+	_emit_major_hit_reaction_from_applied_statuses(single_applied)
 	if bool(result_single.get("hit", true)) and not actual_target.is_empty() and int(actual_target.get("hp", 0)) > 0:
 		_apply_pairing_post_hit_effects(actor, skill_data, actual_target, pairing_bonus)
 		_try_apply_fuchao_blade_stun(actor, actual_target, skill_data, target_had_break_before_action)
@@ -2435,6 +2508,7 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 			skill_name
 		])
 		_log_applied_statuses(applied_records)
+		_emit_major_hit_reaction_from_applied_statuses(applied_records)
 
 	_update_ui_for_actor(user)
 	return true

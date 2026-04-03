@@ -126,6 +126,30 @@ const THANKS_SINGLE_TRIGGER_CHANCE := 1.0
 const THANKS_AOE_TRIGGER_CHANCE := 0.78
 const THANKS_AOE_MAX_SPEAKERS := 2
 
+const COMBAT_HURT_REACT_SHORT := {
+	"_generic": ["啊……", "可惡。", "怎麼會……", "大意了。", "唔！", "糟了……", "失手了。"],
+}
+
+const COMBAT_ALLY_COMFORT := {
+	"shumian": ["你還好嗎？", "先穩住。", "沒事，我們還在。", "小心些……", "別急，先收一口氣。", "幸好還站得住。"],
+	"liuyu": ["別亂。", "先收勢。", "還能撐就撐一下。", "小心，他盯上你了。", "先穩住氣息。", "別急著亂動。"],
+	"lieshao": ["還行吧？", "先別逞強。", "能喘口氣就快調息。", "撐住，別在這時候倒。", "嘖，先把氣息穩住。", "麻煩了……先拖住他。"],
+	"_generic": ["先穩住。", "撐住。", "別亂了陣腳。"],
+}
+
+const MAJOR_HIT_SELF_REACT_CHANCE := {
+	"crit": 0.90,
+	"heavy": 0.70,
+	"danger": 0.90,
+	"debuff": 0.90,
+}
+
+const MAJOR_HIT_ALLY_COMFORT_CHANCE := {
+	"crit": 0.70,
+	"danger": 0.80,
+	"debuff": 0.80,
+}
+
 const DEBUFF_ABBREV := {
 	"poison": "毒",
 	"stun": "暈",
@@ -792,6 +816,55 @@ func try_emit_crit_admire(crit_actor: Dictionary) -> void:
 	_mark_actor_spoken(speaker_id)
 	await get_tree().create_timer(randf_range(0.6, 1.0)).timeout
 	show_actor_line(speaker_id, line)
+
+
+func try_emit_major_hit_reaction(victim: Dictionary, event_key: String) -> void:
+	var victim_id := str(victim.get("id", ""))
+	if victim_id == "":
+		return
+	if not MAJOR_HIT_SELF_REACT_CHANCE.has(event_key):
+		return
+	_dialogue_event_tick += 1
+
+	if _can_actor_speak(victim_id) and randf() <= float(MAJOR_HIT_SELF_REACT_CHANCE.get(event_key, 0.0)):
+		var short_lines_any = COMBAT_HURT_REACT_SHORT.get(victim_id, COMBAT_HURT_REACT_SHORT.get("_generic", []))
+		if typeof(short_lines_any) == TYPE_ARRAY:
+			var short_lines: Array = short_lines_any
+			if not short_lines.is_empty():
+				var short_line := _pick_non_repeat_line(victim_id, short_lines)
+				show_actor_line(victim_id, short_line)
+				_mark_actor_spoken(victim_id)
+
+	if not MAJOR_HIT_ALLY_COMFORT_CHANCE.has(event_key):
+		return
+	var comfort_candidates: Array = []
+	for ally_any in allies:
+		if typeof(ally_any) != TYPE_DICTIONARY:
+			continue
+		var ally: Dictionary = ally_any
+		if int(ally.get("hp", 0)) <= 0:
+			continue
+		var speaker_id := str(ally.get("id", ""))
+		if speaker_id == "" or speaker_id == victim_id:
+			continue
+		if not _can_actor_speak(speaker_id):
+			continue
+		comfort_candidates.append(speaker_id)
+	if comfort_candidates.is_empty():
+		return
+	if randf() > float(MAJOR_HIT_ALLY_COMFORT_CHANCE.get(event_key, 0.0)):
+		return
+	var speaker_id := str(comfort_candidates[randi() % comfort_candidates.size()])
+	var comfort_lines_any = COMBAT_ALLY_COMFORT.get(speaker_id, COMBAT_ALLY_COMFORT.get("_generic", []))
+	if typeof(comfort_lines_any) != TYPE_ARRAY:
+		return
+	var comfort_lines: Array = comfort_lines_any
+	if comfort_lines.is_empty():
+		return
+	var comfort_line := _pick_non_repeat_line(speaker_id, comfort_lines)
+	_mark_actor_spoken(speaker_id)
+	await get_tree().create_timer(randf_range(0.4, 0.8)).timeout
+	show_actor_line(speaker_id, comfort_line)
 
 func apply_ruleset(ruleset: Dictionary) -> void:
 	var allow_items = bool(ruleset.get("allow_items", true))
