@@ -996,17 +996,23 @@ func _position_bubble_on_portrait(slot: Control, bubble_box: PanelContainer) -> 
 	var portrait_size := portrait.size
 	if portrait_size == Vector2.ZERO:
 		portrait_size = portrait.custom_minimum_size
-	var bubble_size := bubble_box.size
-	if bubble_size == Vector2.ZERO:
-		bubble_size = bubble_box.custom_minimum_size
 	var portrait_global := portrait.global_position
-	var x := portrait_global.x + portrait_size.x
+	var is_enemy_slot := _is_enemy_slot_control(slot)
+	var x := portrait_global.x
+	if not is_enemy_slot:
+		x = portrait_global.x + portrait_size.x
 	var y := portrait_global.y
 	bubble_box.global_position = Vector2(x, y)
 	var actor_id := str(slot.get("actor_id"))
 	if actor_id != "" and not bool(_bubble_debug_logged.get(actor_id, false)):
 		print("[BubblePos] actor=", actor_id, " portrait_global=", portrait_global, " bubble_global=", bubble_box.global_position, " bubble_parent=", bubble_box.get_parent().name, " top_level=", bubble_box.top_level)
 		_bubble_debug_logged[actor_id] = true
+
+func _is_enemy_slot_control(slot: Control) -> bool:
+	for enemy_slot_any in enemy_slots:
+		if slot == enemy_slot_any:
+			return true
+	return false
 
 func _find_ally_slot_by_actor_id(actor_id: String) -> Control:
 	for i in range(allies.size()):
