@@ -287,7 +287,29 @@ func _run_battle_opening_sequence(context: Dictionary) -> void:
 	else:
 		_log(intro_line)
 		await _await_log_stage_continue()
+	_maybe_emit_enemy_opening_line()
 	_log_system("戰鬥開始")
+
+func _maybe_emit_enemy_opening_line() -> void:
+	if enemy_party.is_empty():
+		return
+	if tone_map == null or not tone_map.has_method("get_enemy_dialogue"):
+		return
+	var alive_enemies: Array = []
+	for enemy_any in enemy_party:
+		if typeof(enemy_any) != TYPE_DICTIONARY:
+			continue
+		var enemy: Dictionary = enemy_any
+		if int(enemy.get("hp", 0)) <= 0:
+			continue
+		alive_enemies.append(enemy)
+	if alive_enemies.is_empty():
+		return
+	var pick: Dictionary = alive_enemies[randi() % alive_enemies.size()]
+	var line: String = String(tone_map.get_enemy_dialogue("opening", pick))
+	if line == "":
+		return
+	_log(line)
 
 func _resolve_battle_intro_line(context: Dictionary) -> String:
 	return BattleIntroDB.resolve_intro(context, tone_map)
@@ -929,6 +951,10 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	var skill = action.skill
 	var target = action.target
 	var scope := String(skill.get("target_scope", "single"))
+	if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
+		var enemy_skill_line: String = String(tone_map.get_enemy_dialogue("skill", enemy))
+		if enemy_skill_line != "":
+			_log(enemy_skill_line)
 	target = _resolve_confuse_target(enemy, target, scope)
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
 	_emit_dodge_actor_line(result, target)
@@ -1748,6 +1774,10 @@ func _resolve_enemy_archetype(enemy: Dictionary) -> String:
 
 func _enemy_defeat_line(enemy: Dictionary, attacker: Dictionary = {}) -> String:
 	var name_e := str(enemy.get("name", "???"))
+	if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
+		var enemy_down_line: String = String(tone_map.get_enemy_dialogue("down", enemy))
+		if enemy_down_line != "":
+			return enemy_down_line
 	if tone_map != null and typeof(attacker) == TYPE_DICTIONARY and not attacker.is_empty():
 		var attacker_id := str(attacker.get("id", ""))
 		if attacker_id != "" and not bool(attacker.get("is_enemy", false)):
@@ -2013,6 +2043,11 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 	var desc := ""
 	if status_manager.has_method("describe_effect"):
 		desc = String(status_manager.describe_effect(normalized_effect_id, effect_target, effect_record))
+	if bool(user.get("is_enemy", false)) and effect_target in player_party and _is_major_negative_effect(normalized_effect_id):
+		if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
+			var debuff_line: String = String(tone_map.get_enemy_dialogue("debuff_success", user))
+			if debuff_line != "":
+				_log_narration(debuff_line)
 	var tone_cast := ""
 	var tone_suffer := ""
 	var suppress_status_narration := bool(skill_data.get("_suppress_status_narration", false))

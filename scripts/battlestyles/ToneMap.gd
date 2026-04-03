@@ -745,6 +745,60 @@ var tone_map := {
 	}
 }
 
+var enemy_dialogue := {
+	"opening": {
+		"野獸": ["嗚嗷——！", "吼……！", "嗷嗚！"],
+		"飛禽": ["戾——！", "嘎啊——！", "翅聲驟亂，帶著尖鳴盤旋而下。"],
+		"地痞": ["嘖，自己送上門來了？", "今兒個就拿你開刀。", "識相點，少受點罪。"],
+		"江湖人士": ["江湖有江湖的規矩，請了。", "出手之前，先報上名來。", "既已拔兵刃，那便手底下見真章。"],
+		"朝廷": ["奉命行事，閒雜人等退開。", "阻命者，按律不赦。", "朝命在前，莫怪刀下無情。"],
+		"default": ["殺機驟起，敵影已逼上前。"],
+	},
+	"skill": {
+		"野獸": ["吼！", "嗚啊——！", "嘶吼著猛撲上來！"],
+		"飛禽": ["長鳴一聲，自高處俯衝而下！", "翅影一掠，尖銳鳴聲刺破空氣。", "嘎——！挾風撲至。"],
+		"地痞": ["看老子這一手！", "給我躺下！", "嘴裡罵罵咧咧地撲了上來。"],
+		"江湖人士": ["得罪了。", "接招。", "這一式，請你指教。"],
+		"朝廷": ["拿下。", "伏誅吧。", "令行禁止，出手乾脆狠決。"],
+		"default": ["敵勢驟起，殺招已至。"],
+	},
+	"debuff_success": {
+		"野獸": ["低吼聲裡透出幾分得意與兇狠。", "乘勢逼近，像嗅到了獵物的慌亂。", "兇性更盛，步步緊逼。"],
+		"飛禽": ["鳴聲尖厲，似在半空中盤出一圈不祥。", "拍翅聲愈急，叫聲中帶著詭譎的壓迫。", "在半空振翅盤旋，死死盯住獵物。"],
+		"地痞": ["怎麼樣？還撐得住嗎？", "嘿，這下不好受吧？", "看你還怎麼硬撐。"],
+		"江湖人士": ["勁路已亂，你還撐得了多久？", "這口氣一散，再難回來。", "你的章法，已經亂了。"],
+		"朝廷": ["抗命至此，也該到頭了。", "你已無力回天。", "章法既亂，還妄想再抗？"],
+		"default": ["敵勢乘虛而入，壓迫感陡然加重。"],
+	},
+	"down": {
+		"野獸": ["嗚……！", "發出一聲不甘的哀鳴。", "掙扎著低吼幾聲，終究伏地不起。"],
+		"飛禽": ["鳴聲頓啞，翅膀無力垂落。", "亂羽紛飛，終究墜地不起。", "發出一聲短促哀鳴，便再也振不起翅。"],
+		"地痞": ["可惡……這筆帳……", "啐……今天算你走運……", "還沒罵完，便已撐不住倒了下去。"],
+		"江湖人士": ["……果然還是技不如人。", "這一敗，在下認了。", "內息已亂，再無力回天。"],
+		"朝廷": ["朝命……不可違……", "竟……到此為止……", "官帽歪斜，仍想撐住儀態，終究力盡倒下。"],
+		"default": ["敵影踉蹌幾步，終究無力再戰。"],
+	},
+}
+
+var yumei_dialogue := {
+	"opening": {
+		"磐石": ["何必要如此拼命？", "當顆與世無爭的石頭，不好嗎？", "言多必失，行久必敗。", "站著不動，就不會受傷。"],
+		"滯水": ["任何事物，終究都會消逝……", "留下來吧……", "越是掙扎，只會沉得越快。", "水流向下，人也一樣。"],
+	},
+	"skill": {
+		"磐石": ["安靜一點……", "停下來吧。", "你不必再往前走了。", "讓一切都凝住吧。"],
+		"滯水": ["沉下去吧……", "別再逆流了……", "你很累了，不是嗎？", "順著我，就不用再撐了。"],
+	},
+	"debuff_success": {
+		"磐石": ["看吧，掙扎只是徒勞。", "你終究還是慢下來了。", "思緒凝住之後，就不會再痛了。", "別動，別想，別再反抗。"],
+		"滯水": ["看吧，連腳步都慢下來了。", "你已經開始下沉了。", "抵抗會讓你更痛苦。", "放手之後，一切都會安靜。"],
+	},
+	"down": {
+		"磐石": ["原來……石頭……也會裂開……", "為何……還要……往前……", "你們……為何不肯停下……", "凝住的東西……竟也會崩散……"],
+		"滯水": ["水……竟也有盡頭……", "原來……還有人能逆流而上……", "我明明……只是想讓你留下……", "這股水聲……終於……也要停了……"],
+	},
+}
+
 
 var status_apply_tones := {
 	"stun": "點穴落在要害，氣脈驟然一滯。",
@@ -1173,6 +1227,45 @@ func get_character_tone_text(category: String, actor_id: String) -> String:
 		default_value,
 		"%s|%s" % [category, resolved_actor_id]
 	)
+
+
+func get_enemy_dialogue(event_key: String, enemy: Dictionary) -> String:
+	var archetype := String(enemy.get("archetype", enemy.get("species", ""))).strip_edges()
+	if archetype == "":
+		archetype = "default"
+	var yumei_kind := _resolve_yumei_kind(enemy)
+	var specific_pool: Array = []
+	if yumei_kind != "" and yumei_dialogue.has(event_key):
+		var yumei_event_map = yumei_dialogue.get(event_key, {})
+		if typeof(yumei_event_map) == TYPE_DICTIONARY:
+			specific_pool = (yumei_event_map as Dictionary).get(yumei_kind, [])
+	var default_pool: Array = []
+	if enemy_dialogue.has(event_key):
+		var event_map = enemy_dialogue.get(event_key, {})
+		if typeof(event_map) == TYPE_DICTIONARY:
+			var event_dict: Dictionary = event_map
+			default_pool = event_dict.get(archetype, event_dict.get("default", []))
+	var enemy_id := String(enemy.get("id", ""))
+	var history_context := yumei_kind if yumei_kind != "" else archetype
+	var history_key := "enemy_dialogue|%s|%s|%s" % [event_key, history_context, enemy_id]
+	return _pick_weighted_text(specific_pool, default_pool, history_key)
+
+
+func _resolve_yumei_kind(enemy: Dictionary) -> String:
+	var archetype := String(enemy.get("archetype", enemy.get("species", ""))).strip_edges()
+	if archetype != "語魅":
+		return ""
+	var explicit_kind := String(enemy.get("kind", enemy.get("subtype", ""))).strip_edges()
+	if explicit_kind != "":
+		return explicit_kind
+	var enemy_id := String(enemy.get("id", ""))
+	var enemy_name := String(enemy.get("display_name", enemy.get("name", "")))
+	var fingerprint := "%s|%s" % [enemy_id, enemy_name]
+	if fingerprint.find("磐石") != -1 or enemy_id == "enemy2":
+		return "磐石"
+	if fingerprint.find("滯水") != -1 or enemy_id == "enemy1":
+		return "滯水"
+	return ""
 
 
 func _canonicalize_character_tone_actor_id(actor_id: String) -> String:
