@@ -298,12 +298,14 @@ func _setup_opening_overlay() -> void:
 		add_child(_battle_black_overlay)
 	_battle_black_overlay.visible = true
 	_battle_black_overlay.modulate = Color(1, 1, 1, 1)
+	_battle_black_overlay.z_index = 500
 
 	_opening_overlay = Control.new()
 	_opening_overlay.name = "BattleOpeningOverlay"
 	_opening_overlay.visible = true
 	_opening_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_opening_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_opening_overlay.z_index = 600
 	add_child(_opening_overlay)
 
 	var intro := Label.new()
