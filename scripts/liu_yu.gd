@@ -43,7 +43,8 @@ const ENCOUNTER_POOLS := {
 		{"w": 5, "enemies": ["sewer_drowned_wight"]}
 	]
 }
-const ENCOUNTER_TRANSITION_FONT_PATH := "res://assets/fonts/hanyihuangkexingshufan.ttf"
+const ENCOUNTER_TRANSITION_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.ttf"
+const ENCOUNTER_IMPACT_SFX_PATH := "res://assets/sound/SE_hit_Sword_01.ogg"
 
 var in_danger_zone := false
 var current_zone_id := ""
@@ -227,6 +228,7 @@ func _trigger_random_battle() -> void:
 	if game_root:
 		_pause_for_battle()
 		await _play_encounter_transition()
+		visible = false
 		var cooldown_distance = _resolve_zone_value(
 			ZONE_CONFIG.get(current_zone_id, {}),
 			"cooldown_distance",
@@ -361,6 +363,14 @@ func _process(delta):
 
 func _play_encounter_transition() -> void:
 	_encounter_transition_playing = true
+	var game_root = get_node_or_null("/root/GameRoot")
+	var cam: Camera2D = null
+	var base_zoom := Vector2.ONE
+	if game_root:
+		cam = game_root.get_node_or_null("MainCamera") as Camera2D
+	if cam:
+		base_zoom = cam.zoom
+
 	var layer := CanvasLayer.new()
 	layer.name = "EncounterTransitionLayer"
 	layer.layer = 120
@@ -371,6 +381,12 @@ func _play_encounter_transition() -> void:
 	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	black.color = Color(0.03, 0.03, 0.04, 0.0)
 	layer.add_child(black)
+
+	var white := ColorRect.new()
+	white.set_anchors_preset(Control.PRESET_FULL_RECT)
+	white.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	white.color = Color(1, 1, 1, 0.0)
+	layer.add_child(white)
 
 	var ink := TextureRect.new()
 	ink.set_anchors_preset(Control.PRESET_CENTER)
@@ -403,18 +419,33 @@ func _play_encounter_transition() -> void:
 	war_label.modulate = Color(1, 1, 1, 0.0)
 	layer.add_child(war_label)
 
-	await get_tree().create_timer(0.08).timeout
-	var t1 := create_tween()
-	t1.tween_property(black, "color:a", 0.55, 0.16)
-	t1.parallel().tween_property(ink, "modulate:a", 0.62, 0.16)
-	t1.parallel().tween_property(war_label, "modulate:a", 1.0, 0.12)
-	await t1.finished
+	var sfx := AudioStreamPlayer.new()
+	sfx.bus = "Master"
+	sfx.stream = load(ENCOUNTER_IMPACT_SFX_PATH)
+	layer.add_child(sfx)
+	if sfx.stream:
+		sfx.play()
 
 	await get_tree().create_timer(0.08).timeout
+	var t1 := create_tween()
+	t1.tween_property(black, "color:a", 0.45, 0.18)
+	t1.parallel().tween_property(ink, "modulate:a", 0.56, 0.18)
+	t1.parallel().tween_property(war_label, "modulate:a", 1.0, 0.20)
+	if cam:
+		t1.parallel().tween_property(cam, "zoom", base_zoom * 0.88, 0.50)
+	await t1.finished
+
+	var flash := create_tween()
+	flash.tween_property(white, "color:a", 0.72, 0.08)
+	flash.tween_property(white, "color:a", 0.0, 0.16)
+
+	await get_tree().create_timer(1.2).timeout
 	var t2 := create_tween()
-	t2.tween_property(black, "color:a", 1.0, 0.24)
-	t2.parallel().tween_property(ink, "modulate:a", 1.0, 0.24)
-	t2.parallel().tween_property(war_label, "modulate:a", 0.0, 0.24)
+	t2.tween_property(war_label, "modulate:a", 0.0, 0.8)
+	t2.parallel().tween_property(black, "color:a", 1.0, 0.8)
+	t2.parallel().tween_property(ink, "modulate:a", 1.0, 0.8)
+	if cam:
+		t2.parallel().tween_property(cam, "zoom", base_zoom, 0.8)
 	await t2.finished
 
 	layer.queue_free()

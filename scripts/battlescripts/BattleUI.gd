@@ -7,6 +7,7 @@ signal battle_opening_confirmed
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.ttf"
 var tone = ToneMap.new()
 
 @onready var ally_panel = $AllyPanel
@@ -41,6 +42,7 @@ var _opening_overlay: ColorRect
 var _opening_intro_label: Label
 var _opening_hint_label: Label
 var _opening_start_label: Label
+var _battle_opening_font: Font
 var _battle_opening_locked := false
 var _battle_opening_waiting_confirm := false
 
@@ -282,6 +284,9 @@ func _apply_logpanel_style_to_item_list(list: ItemList) -> void:
 	list.add_theme_color_override("font_outline_color", outline_color)
 
 func _setup_opening_overlay() -> void:
+	_battle_opening_font = load(BATTLE_OPENING_FONT_PATH) as Font
+	if _battle_opening_font == null:
+		push_warning("❗ 找不到戰鬥開場字型：%s" % BATTLE_OPENING_FONT_PATH)
 	_opening_overlay = ColorRect.new()
 	_opening_overlay.name = "BattleOpeningOverlay"
 	_opening_overlay.visible = true
@@ -296,6 +301,8 @@ func _setup_opening_overlay() -> void:
 	intro.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	intro.add_theme_font_size_override("font_size", 24)
+	if _battle_opening_font:
+		intro.add_theme_font_override("font", _battle_opening_font)
 	intro.add_theme_color_override("font_color", Color(1, 0.96, 0.82, 1))
 	intro.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	intro.add_theme_constant_override("outline_size", 5)
@@ -334,6 +341,8 @@ func _setup_opening_overlay() -> void:
 	start.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	start.text = "戰鬥開始"
 	start.add_theme_font_size_override("font_size", 64)
+	if _battle_opening_font:
+		start.add_theme_font_override("font", _battle_opening_font)
 	start.add_theme_color_override("font_color", Color(1, 0.95, 0.55, 1))
 	start.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	start.add_theme_constant_override("outline_size", 8)
@@ -365,8 +374,13 @@ func play_battle_opening(intro_line: String) -> void:
 	_opening_hint_label.visible = true
 	_opening_intro_label.visible = true
 	_opening_start_label.visible = false
+	_opening_hint_label.modulate = Color(1, 1, 1, 0.0)
+	_opening_intro_label.modulate = Color(1, 1, 1, 0.0)
 	_opening_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_overlay.visible = true
+	var intro_fade := create_tween()
+	intro_fade.tween_property(_opening_intro_label, "modulate:a", 1.0, 0.24)
+	intro_fade.parallel().tween_property(_opening_hint_label, "modulate:a", 1.0, 0.32)
 	await battle_opening_confirmed
 	_battle_opening_waiting_confirm = false
 	_opening_hint_label.visible = false
