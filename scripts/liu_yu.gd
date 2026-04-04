@@ -252,12 +252,16 @@ func _trigger_random_battle() -> void:
 	var game_root = get_node_or_null("/root/GameRoot")
 	var current_map := ""
 	var scene_name := ""
+	var battle_bgm_path := "res://assets/BGM/battle_1.ogg"
 	if game_root:
 		var current_scene = game_root.get_node_or_null("CurrentScene")
 		if current_scene and current_scene.get_child_count() > 0:
 			var scene_root := current_scene.get_child(0)
 			current_map = String(scene_root.scene_file_path)
 			scene_name = String(scene_root.name)
+			var bgm_any = scene_root.get("battle_bgm_path")
+			if bgm_any != null and str(bgm_any) != "":
+				battle_bgm_path = str(bgm_any)
 
 	var enemies = _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS)
 	var transition_style := _resolve_encounter_transition_style(enemies)
@@ -272,6 +276,7 @@ func _trigger_random_battle() -> void:
 		"zone_id": current_zone_id,
 		"map_id": current_map,
 		"scene_name": scene_name,
+		"battle_bgm_path": battle_bgm_path,
 		"encounter_transition_style": transition_style
 	}
 
@@ -286,6 +291,8 @@ func _trigger_random_battle() -> void:
 
 	GlobalState.set_meta("pending_battle_context", context)
 	if game_root:
+		if game_root.has_method("pause_world_bgm_for_battle"):
+			game_root.pause_world_bgm_for_battle()
 		_pause_for_battle()
 		await _play_encounter_transition(context.get("encounter_transition_style", {}))
 		visible = false

@@ -193,6 +193,12 @@ func _start_training_battle() -> void:
 		scene_name = String(scene_root.name)
 		if current_map != "":
 			GlobalState.set_meta("return_map_path", current_map)
+	var battle_bgm_path := "res://assets/BGM/battle_1.ogg"
+	if current_scene and current_scene.get_child_count() > 0:
+		var scene_root_any := current_scene.get_child(0)
+		var bgm_any = scene_root_any.get("battle_bgm_path")
+		if bgm_any != null and str(bgm_any) != "":
+			battle_bgm_path = str(bgm_any)
 	GlobalState.set_meta("return_player_pos", liuyu.global_position)
 
 	var enemy := EnemyDB.make_enemy("tea_house_guest_guard")
@@ -211,9 +217,12 @@ func _start_training_battle() -> void:
 		"zone_id": "zueyue_teashop_training",
 		"map_id": current_map,
 		"scene_name": scene_name,
+		"battle_bgm_path": battle_bgm_path,
 		"no_rewards": true
 	}
 	GlobalState.set_meta("pending_battle_context", context)
+	if game_root.has_method("pause_world_bgm_for_battle"):
+		game_root.pause_world_bgm_for_battle()
 	liuyu.can_move = false
 	if liuyu.has_method("lock_for_battle"):
 		liuyu.lock_for_battle()

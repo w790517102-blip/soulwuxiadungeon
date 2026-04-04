@@ -8,6 +8,8 @@ var current_map_path = ""
 # 🎵 音樂播放邏輯（動態抓取 BGM 檔案）
 var current_music_tag = ""
 var music_folder = "res://assets/BGM/"
+var _world_bgm_paused_for_battle := false
+var _world_bgm_resume_volume_db := -5.0
 
 @onready var music_player = $MusicPlayer  # 音樂播放器節點
 
@@ -80,6 +82,7 @@ func change_map_to(path: String):
 			$LiuYu.battle_restore()
 		if $LiuYu.has_method("set_encounter_cooldown"):
 			$LiuYu.set_encounter_cooldown(cooldown_distance)
+		resume_world_bgm_after_battle(0.5)
 
 		print("[GameRoot Return] liuyu visible=", $LiuYu.visible, " can_move=", $LiuYu.get("can_move"))
 
@@ -91,6 +94,7 @@ func play_music_by_tag(tag: String, fade_time = 1.5):
 	print("[音樂] 嘗試載入：", track_path)
 	var track = load(track_path)
 	if track is AudioStream:
+		_world_bgm_paused_for_battle = false
 		current_music_tag = tag
 		fade_out_and_in(track, fade_time)
 		print("[音樂] 成功播放：", tag)
@@ -109,6 +113,27 @@ func fade_out_and_in(new_track: AudioStream, fade_time: float):
 		var fade_in = create_tween()
 		fade_in.tween_property(music_player, "volume_db", 1, 0.5)
 	)
+
+func pause_world_bgm_for_battle() -> void:
+	if music_player == null:
+		return
+	if not music_player.playing:
+		return
+	_world_bgm_resume_volume_db = music_player.volume_db
+	music_player.stream_paused = true
+	_world_bgm_paused_for_battle = true
+
+func resume_world_bgm_after_battle(fade_time: float = 0.5) -> void:
+	if music_player == null or not _world_bgm_paused_for_battle:
+		return
+	_world_bgm_paused_for_battle = false
+	var target_volume = _world_bgm_resume_volume_db
+	music_player.volume_db = -40.0
+	music_player.stream_paused = false
+	if not music_player.playing:
+		music_player.play()
+	var tween = create_tween()
+	tween.tween_property(music_player, "volume_db", target_volume, max(fade_time, 0.01))
 
 func _ready():
 	if go_to_intro_on_start:

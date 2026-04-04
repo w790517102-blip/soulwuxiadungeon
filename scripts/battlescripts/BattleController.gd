@@ -21,6 +21,7 @@ var _ending: bool = false
 var _player_base_snapshot: Dictionary = {}
 var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
+var battle_bgm_player: AudioStreamPlayer2D = null
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
 const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
@@ -158,6 +159,8 @@ func _init_battle_safe() -> void:
 	else:
 		push_error("❌ 無法找到 BattleUI")
 
+	battle_bgm_player = root.get_node_or_null("BattleAudio/BGMPlayer") as AudioStreamPlayer2D
+
 	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
 	turn_manager.turn_started.connect(_on_turn_started)
 	turn_manager.turn_ended.connect(_on_turn_ended)
@@ -177,6 +180,7 @@ func start_battle(context: Dictionary) -> void:
 		return
 
 	battle_context = context
+	_play_battle_bgm_from_context(context)
 	player_party = ctx_players
 	enemy_party = ctx_enemies
 	_pending_ally_down_reactions.clear()
@@ -216,6 +220,20 @@ func start_battle(context: Dictionary) -> void:
 
 	await _run_battle_opening_sequence(context)
 	turn_manager.start_battle(player_party, enemy_party)
+
+func _play_battle_bgm_from_context(context: Dictionary) -> void:
+	if battle_bgm_player == null:
+		return
+	var battle_bgm_path := str(context.get("battle_bgm_path", ""))
+	if battle_bgm_path == "":
+		return
+	var stream := load(battle_bgm_path)
+	if stream == null or not (stream is AudioStream):
+		push_warning("❗ battle_bgm_path 載入失敗：%s" % battle_bgm_path)
+		return
+	battle_bgm_player.stream = stream
+	battle_bgm_player.volume_db = -3.0
+	battle_bgm_player.play()
 
 func _apply_equipment_bonuses() -> void:
 	if InventorySync == null:
