@@ -49,6 +49,7 @@ const ENCOUNTER_ZOOM_SCALE := 0.88
 const ENCOUNTER_ZOOM_DURATION := 0.5
 const ENCOUNTER_WAR_HOLD_DURATION := 1.2
 const ENCOUNTER_WAR_FADE_DURATION := 0.8
+const ENCOUNTER_DEBUG_LOG := true
 const ENCOUNTER_STYLE_BY_ARCHETYPE := {
 	"地痞": "ruffian",
 	"朝廷": "court",
@@ -452,7 +453,7 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	ink.texture = load(texture_path)
 	if ink.texture == null:
 		push_warning("❗ 找不到遭遇轉場渲染圖：%s" % texture_path)
-	ink.modulate = Color(0, 0, 0, 0.0)
+	ink.modulate = Color(1, 1, 1, 0.0)
 	layer.add_child(ink)
 
 	var war_label := Label.new()
@@ -477,6 +478,12 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 		push_warning("❗ 找不到戰鬥轉場字型：%s" % ENCOUNTER_TRANSITION_FONT_PATH)
 	war_label.modulate = Color(1, 1, 1, 0.0)
 	layer.add_child(war_label)
+
+	if ENCOUNTER_DEBUG_LOG:
+		print("[EncounterTransition] style=", style.get("style_key", "default"), " glyph=", war_label.text, " texture_path=", texture_path)
+		print("[EncounterTransition] node=InkScreen visible=", ink.visible, " z_index=", ink.z_index, " modulate=", ink.modulate, " texture_ok=", ink.texture != null)
+		print("[EncounterTransition] node=BlackOverlay visible=", black.visible, " z_index=", black.z_index, " modulate=", black.modulate)
+		print("[EncounterTransition] node=WarLabel visible=", war_label.visible, " z_index=", war_label.z_index, " modulate=", war_label.modulate)
 
 	var sfx := AudioStreamPlayer.new()
 	sfx.bus = "Master"
@@ -551,9 +558,12 @@ func _resolve_encounter_transition_style(enemies: Array) -> Dictionary:
 	if texture_path == "":
 		texture_path = ENCOUNTER_STYLE_DEFAULT_TEXTURE
 
-	return {
+	var result := {
 		"style_key": selected_key,
 		"glyph": glyph,
 		"font_color": color,
 		"texture_path": texture_path
 	}
+	if ENCOUNTER_DEBUG_LOG:
+		print("[EncounterStyle] archetype_counts=", counts, " selected=", selected_key, " glyph=", glyph, " texture=", texture_path)
+	return result
