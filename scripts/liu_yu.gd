@@ -61,32 +61,38 @@ const ENCOUNTER_STYLE_PROFILES := {
 	"default": {
 		"glyphs": ["戰"],
 		"colors": [Color(0.95, 0.18, 0.16, 1.0)],
-		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
+		"glyph_texture_paths": {"戰": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	},
 	"ruffian": {
 		"glyphs": ["劫", "戰"],
 		"colors": [Color(0.57, 0.49, 0.33, 1.0), Color(0.45, 0.43, 0.40, 1.0), Color(0.24, 0.20, 0.16, 1.0)],
-		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
+		"glyph_texture_paths": {"劫": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "戰": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	},
 	"court": {
 		"glyphs": ["令", "緝"],
 		"colors": [Color(0.62, 0.66, 0.70, 1.0), Color(0.38, 0.50, 0.56, 1.0), Color(0.60, 0.28, 0.26, 1.0)],
-		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
+		"glyph_texture_paths": {"令": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "緝": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	},
 	"youmei": {
 		"glyphs": ["魅", "裂", "亂", "沉"],
 		"colors": [Color(0.20, 0.14, 0.25, 1.0), Color(0.16, 0.25, 0.27, 1.0)],
-		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
+		"glyph_texture_paths": {"魅": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "裂": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "亂": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "沉": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	},
 	"ghost": {
 		"glyphs": ["煞", "厄", "魘"],
 		"colors": [Color(0.10, 0.10, 0.10, 1.0), Color(0.45, 0.12, 0.12, 1.0), Color(0.36, 0.34, 0.34, 1.0)],
-		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
+		"glyph_texture_paths": {"煞": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "厄": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "魘": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	},
 	"jianghu": {
 		"glyphs": ["決", "鬥"],
 		"colors": [Color(0.12, 0.12, 0.12, 1.0), Color(0.56, 0.24, 0.18, 1.0), Color(0.86, 0.86, 0.82, 1.0)],
-		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
+		"glyph_texture_paths": {"決": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "鬥": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	}
 }
 
@@ -535,9 +541,15 @@ func _resolve_encounter_transition_style(enemies: Array) -> Dictionary:
 		if typeof(picked_color) == TYPE_COLOR:
 			color = picked_color
 
+	var glyph_texture_paths: Dictionary = profile.get("glyph_texture_paths", {})
+	var generic_texture_path := str(profile.get("generic_texture_path", ENCOUNTER_STYLE_DEFAULT_TEXTURE))
+	var texture_path := str(glyph_texture_paths.get(glyph, generic_texture_path))
+	if texture_path == "":
+		texture_path = ENCOUNTER_STYLE_DEFAULT_TEXTURE
+
 	return {
 		"style_key": selected_key,
 		"glyph": glyph,
 		"font_color": color,
-		"texture_path": str(profile.get("texture_path", ENCOUNTER_STYLE_DEFAULT_TEXTURE))
+		"texture_path": texture_path
 	}
