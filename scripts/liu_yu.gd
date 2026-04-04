@@ -44,7 +44,11 @@ const ENCOUNTER_POOLS := {
 	]
 }
 const ENCOUNTER_TRANSITION_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.ttf"
-const ENCOUNTER_IMPACT_SFX_PATH := "res://assets/sound/SE_hit_Sword_01.ogg"
+const ENCOUNTER_IMPACT_SFX_PATH := "res://assets/sound/encounter.ogg"
+const ENCOUNTER_ZOOM_SCALE := 0.88
+const ENCOUNTER_ZOOM_DURATION := 0.5
+const ENCOUNTER_WAR_HOLD_DURATION := 1.2
+const ENCOUNTER_WAR_FADE_DURATION := 0.8
 
 var in_danger_zone := false
 var current_zone_id := ""
@@ -425,6 +429,8 @@ func _play_encounter_transition() -> void:
 	layer.add_child(sfx)
 	if sfx.stream:
 		sfx.play()
+	else:
+		push_warning("❗ 找不到遭遇轉場音效：%s" % ENCOUNTER_IMPACT_SFX_PATH)
 
 	await get_tree().create_timer(0.08).timeout
 	var t1 := create_tween()
@@ -432,20 +438,20 @@ func _play_encounter_transition() -> void:
 	t1.parallel().tween_property(ink, "modulate:a", 0.56, 0.18)
 	t1.parallel().tween_property(war_label, "modulate:a", 1.0, 0.20)
 	if cam:
-		t1.parallel().tween_property(cam, "zoom", base_zoom * 0.88, 0.50)
+		t1.parallel().tween_property(cam, "zoom", base_zoom * ENCOUNTER_ZOOM_SCALE, ENCOUNTER_ZOOM_DURATION)
 	await t1.finished
 
 	var flash := create_tween()
 	flash.tween_property(white, "color:a", 0.72, 0.08)
 	flash.tween_property(white, "color:a", 0.0, 0.16)
 
-	await get_tree().create_timer(1.2).timeout
+	await get_tree().create_timer(ENCOUNTER_WAR_HOLD_DURATION).timeout
 	var t2 := create_tween()
-	t2.tween_property(war_label, "modulate:a", 0.0, 0.8)
-	t2.parallel().tween_property(black, "color:a", 1.0, 0.8)
-	t2.parallel().tween_property(ink, "modulate:a", 1.0, 0.8)
+	t2.tween_property(war_label, "modulate:a", 0.0, ENCOUNTER_WAR_FADE_DURATION)
+	t2.parallel().tween_property(black, "color:a", 1.0, ENCOUNTER_WAR_FADE_DURATION)
+	t2.parallel().tween_property(ink, "modulate:a", 1.0, ENCOUNTER_WAR_FADE_DURATION)
 	if cam:
-		t2.parallel().tween_property(cam, "zoom", base_zoom, 0.8)
+		t2.parallel().tween_property(cam, "zoom", base_zoom, ENCOUNTER_WAR_FADE_DURATION)
 	await t2.finished
 
 	layer.queue_free()
