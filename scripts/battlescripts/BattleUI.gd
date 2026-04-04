@@ -8,6 +8,8 @@ const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.ttf"
+const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
+const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
 var tone = ToneMap.new()
 
 @onready var ally_panel = $AllyPanel
@@ -299,6 +301,7 @@ func _setup_opening_overlay() -> void:
 	_battle_black_overlay.visible = true
 	_battle_black_overlay.modulate = Color(1, 1, 1, 1)
 	_battle_black_overlay.z_index = 500
+	_apply_opening_overlay_rect(_battle_black_overlay)
 
 	_opening_overlay = Control.new()
 	_opening_overlay.name = "BattleOpeningOverlay"
@@ -306,6 +309,7 @@ func _setup_opening_overlay() -> void:
 	_opening_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_opening_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_opening_overlay.z_index = 600
+	_apply_opening_overlay_rect(_opening_overlay)
 	add_child(_opening_overlay)
 
 	var intro := Label.new()
@@ -417,6 +421,18 @@ func play_battle_opening(intro_line: String) -> void:
 	_opening_intro_label.visible = true
 	_battle_opening_locked = false
 	_set_battle_input_locked(false)
+
+func _apply_opening_overlay_rect(ctrl: Control) -> void:
+	if ctrl == null:
+		return
+	ctrl.anchor_left = 0.0
+	ctrl.anchor_top = 0.0
+	ctrl.anchor_right = 0.0
+	ctrl.anchor_bottom = 0.0
+	ctrl.offset_left = BATTLE_OPENING_OVERLAY_POS.x
+	ctrl.offset_top = BATTLE_OPENING_OVERLAY_POS.y
+	ctrl.offset_right = BATTLE_OPENING_OVERLAY_POS.x + BATTLE_OPENING_OVERLAY_SIZE.x
+	ctrl.offset_bottom = BATTLE_OPENING_OVERLAY_POS.y + BATTLE_OPENING_OVERLAY_SIZE.y
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _battle_opening_locked or not _battle_opening_waiting_confirm:
