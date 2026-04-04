@@ -284,8 +284,8 @@ func _apply_logpanel_style_to_item_list(list: ItemList) -> void:
 func _setup_opening_overlay() -> void:
 	_opening_overlay = ColorRect.new()
 	_opening_overlay.name = "BattleOpeningOverlay"
-	_opening_overlay.visible = false
-	_opening_overlay.color = Color(0, 0, 0, 0.66)
+	_opening_overlay.visible = true
+	_opening_overlay.color = Color(0, 0, 0, 1.0)
 	_opening_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_opening_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_opening_overlay)
@@ -314,7 +314,7 @@ func _setup_opening_overlay() -> void:
 	hint.name = "ConfirmHint"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint.text = "按確認鍵 / 滑鼠左鍵"
+	hint.text = "按空白鍵 / 確認鍵 / 滑鼠左鍵"
 	hint.add_theme_font_size_override("font_size", 22)
 	hint.add_theme_color_override("font_color", Color(0.7, 0.88, 1.0, 0.95))
 	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
@@ -348,6 +348,9 @@ func _setup_opening_overlay() -> void:
 	start.visible = false
 	_opening_overlay.add_child(start)
 	_opening_start_label = start
+	_opening_hint_label.visible = false
+	_opening_intro_label.visible = false
+	_opening_start_label.visible = false
 
 func play_battle_opening(intro_line: String) -> void:
 	if _opening_overlay == null:
@@ -374,10 +377,12 @@ func play_battle_opening(intro_line: String) -> void:
 	var tween := create_tween()
 	tween.tween_property(_opening_start_label, "modulate:a", 1.0, 0.18)
 	tween.parallel().tween_property(_opening_start_label, "scale", Vector2(1.0, 1.0), 0.18)
-	tween.tween_interval(0.30)
-	tween.tween_property(_opening_start_label, "modulate:a", 0.0, 0.22)
+	tween.tween_interval(0.20)
+	tween.parallel().tween_property(_opening_overlay, "modulate:a", 0.0, 0.55)
+	tween.parallel().tween_property(_opening_start_label, "modulate:a", 0.0, 0.35)
 	await tween.finished
 	_opening_overlay.visible = false
+	_opening_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_intro_label.visible = true
 	_battle_opening_locked = false
 	_set_battle_input_locked(false)

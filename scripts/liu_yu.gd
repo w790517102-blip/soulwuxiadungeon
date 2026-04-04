@@ -43,6 +43,7 @@ const ENCOUNTER_POOLS := {
 		{"w": 5, "enemies": ["sewer_drowned_wight"]}
 	]
 }
+const ENCOUNTER_TRANSITION_FONT_PATH := "res://assets/fonts/hanyihuangkexingshufan.ttf"
 
 var in_danger_zone := false
 var current_zone_id := ""
@@ -51,6 +52,7 @@ var _encounter_distance_accum := 0.0
 var _encounter_cooldown_distance := 0.0
 var _encounter_rng := RandomNumberGenerator.new()
 var _encounter_paused := false
+var _encounter_transition_playing := false
 
 func _ready():
 	last_direction = GlobalState.last_facing_direction
@@ -183,6 +185,8 @@ func _is_battle_active() -> bool:
 	return get_tree().root.find_child("BattleScene", true, false) != null
 
 func _trigger_random_battle() -> void:
+	if _encounter_transition_playing:
+		return
 	var player_party = TeamData.get_active_party()
 	if player_party.is_empty():
 		push_warning("❗ 當前隊伍為空，無法啟動遭遇戰。")
@@ -222,6 +226,7 @@ func _trigger_random_battle() -> void:
 	GlobalState.set_meta("pending_battle_context", context)
 	if game_root:
 		_pause_for_battle()
+		await _play_encounter_transition()
 		var cooldown_distance = _resolve_zone_value(
 			ZONE_CONFIG.get(current_zone_id, {}),
 			"cooldown_distance",
@@ -310,7 +315,6 @@ func lock_for_battle() -> void:
 	can_move = false
 	velocity = Vector2.ZERO
 	_encounter_paused = true
-	visible = false
 	if animated_sprite:
 		animated_sprite.stop()
 
@@ -354,3 +358,64 @@ func _process(delta):
 	
 	# 角色的 z_index 隨 y 座標更新（整數避免浮點亂序）
 	z_index = int(global_position.y + z_index_offset)
+
+func _play_encounter_transition() -> void:
+	_encounter_transition_playing = true
+	var layer := CanvasLayer.new()
+	layer.name = "EncounterTransitionLayer"
+	layer.layer = 120
+	get_tree().root.add_child(layer)
+
+	var black := ColorRect.new()
+	black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	black.color = Color(0.03, 0.03, 0.04, 0.0)
+	layer.add_child(black)
+
+	var ink := TextureRect.new()
+	ink.set_anchors_preset(Control.PRESET_CENTER)
+	ink.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ink.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ink.size = Vector2(1200, 720)
+	ink.position = Vector2(-600, -360)
+	ink.texture = load("res://assets/fx/brush_stroke.png")
+	ink.modulate = Color(0, 0, 0, 0.0)
+	layer.add_child(ink)
+
+	var war_label := Label.new()
+	war_label.set_anchors_preset(Control.PRESET_CENTER)
+	war_label.offset_left = -220
+	war_label.offset_top = -190
+	war_label.offset_right = 220
+	war_label.offset_bottom = 190
+	war_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	war_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	war_label.text = "戰"
+	war_label.add_theme_font_size_override("font_size", 200)
+	war_label.add_theme_color_override("font_color", Color(0.95, 0.18, 0.16, 1.0))
+	war_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	war_label.add_theme_constant_override("outline_size", 10)
+	var war_font: Font = load(ENCOUNTER_TRANSITION_FONT_PATH) as Font
+	if war_font != null:
+		war_label.add_theme_font_override("font", war_font)
+	else:
+		push_warning("❗ 找不到戰鬥轉場字型：%s" % ENCOUNTER_TRANSITION_FONT_PATH)
+	war_label.modulate = Color(1, 1, 1, 0.0)
+	layer.add_child(war_label)
+
+	await get_tree().create_timer(0.08).timeout
+	var t1 := create_tween()
+	t1.tween_property(black, "color:a", 0.55, 0.16)
+	t1.parallel().tween_property(ink, "modulate:a", 0.62, 0.16)
+	t1.parallel().tween_property(war_label, "modulate:a", 1.0, 0.12)
+	await t1.finished
+
+	await get_tree().create_timer(0.08).timeout
+	var t2 := create_tween()
+	t2.tween_property(black, "color:a", 1.0, 0.24)
+	t2.parallel().tween_property(ink, "modulate:a", 1.0, 0.24)
+	t2.parallel().tween_property(war_label, "modulate:a", 0.0, 0.24)
+	await t2.finished
+
+	layer.queue_free()
+	_encounter_transition_playing = false
