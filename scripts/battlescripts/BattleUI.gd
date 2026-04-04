@@ -311,7 +311,10 @@ func _setup_opening_overlay() -> void:
 	_opening_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_opening_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_opening_overlay.z_index = 600
-	_apply_opening_overlay_rect(_opening_overlay)
+	_opening_overlay.offset_left = 0.0
+	_opening_overlay.offset_top = 0.0
+	_opening_overlay.offset_right = 0.0
+	_opening_overlay.offset_bottom = 0.0
 	add_child(_opening_overlay)
 
 	var intro := Label.new()
