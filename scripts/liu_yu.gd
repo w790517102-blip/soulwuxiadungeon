@@ -414,7 +414,7 @@ func _play_encounter_transition() -> void:
 	war_label.add_theme_font_size_override("font_size", 200)
 	war_label.add_theme_color_override("font_color", Color(0.95, 0.18, 0.16, 1.0))
 	war_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	war_label.add_theme_constant_override("outline_size", 10)
+	war_label.add_theme_constant_override("outline_size", 4)
 	var war_font: Font = load(ENCOUNTER_TRANSITION_FONT_PATH) as Font
 	if war_font != null:
 		war_label.add_theme_font_override("font", war_font)
