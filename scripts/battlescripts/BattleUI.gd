@@ -463,7 +463,7 @@ func _apply_opening_overlay_rect(ctrl: Control) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _battle_opening_locked or not _battle_opening_waiting_confirm:
 		return
-	var confirm_pressed := event.is_action_pressed("ui_accept")
+	var confirm_pressed := _is_opening_confirm_event(event)
 	if not confirm_pressed and event is InputEventMouseButton:
 		confirm_pressed = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	if not confirm_pressed:
@@ -472,6 +472,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		_battle_opening_waiting_confirm = false
 		emit_signal("battle_opening_confirmed")
 		get_viewport().set_input_as_handled()
+
+func _is_opening_confirm_event(event: InputEvent) -> bool:
+	if event == null:
+		return false
+	if event.is_action_pressed("ui_accept"):
+		return true
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if not key_event.pressed or key_event.echo:
+			return false
+		return key_event.keycode == KEY_ENTER \
+			or key_event.keycode == KEY_KP_ENTER \
+			or key_event.keycode == KEY_SPACE
+	return false
 
 func _set_battle_input_locked(locked: bool) -> void:
 	if action_panel:
