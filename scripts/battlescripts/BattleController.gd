@@ -291,6 +291,8 @@ func _run_battle_opening_sequence(context: Dictionary) -> void:
 		await _await_log_stage_continue()
 	_maybe_emit_enemy_opening_line()
 	_log_system("戰鬥開始")
+	if battle_ui and battle_ui.has_method("wait_for_first_turn_confirm"):
+		await battle_ui.wait_for_first_turn_confirm()
 
 func _maybe_emit_enemy_opening_line() -> void:
 	if enemy_party.is_empty():

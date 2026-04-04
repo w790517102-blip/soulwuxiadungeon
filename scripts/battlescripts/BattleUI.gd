@@ -48,6 +48,8 @@ var _opening_start_label: Label
 var _battle_opening_font: Font
 var _battle_opening_locked := false
 var _battle_opening_waiting_confirm := false
+const OPENING_HINT_DEFAULT := "按空白鍵 / 確認鍵 / 滑鼠左鍵"
+const OPENING_HINT_TURN_START := "按空白鍵 / 左鍵開始第一回合"
 
 
 # 用來暫存「還沒真正結算」的指令
@@ -338,7 +340,7 @@ func _setup_opening_overlay() -> void:
 	hint.name = "ConfirmHint"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint.text = "按空白鍵 / 確認鍵 / 滑鼠左鍵"
+	hint.text = OPENING_HINT_DEFAULT
 	hint.add_theme_font_size_override("font_size", 22)
 	hint.add_theme_color_override("font_color", Color(0.7, 0.88, 1.0, 0.95))
 	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
@@ -419,6 +421,27 @@ func play_battle_opening(intro_line: String) -> void:
 	_opening_overlay.visible = false
 	_opening_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_intro_label.visible = true
+	_battle_opening_locked = false
+	_set_battle_input_locked(false)
+
+func wait_for_first_turn_confirm() -> void:
+	if _opening_overlay == null:
+		return
+	_battle_opening_locked = true
+	_battle_opening_waiting_confirm = true
+	_set_battle_input_locked(true)
+	_opening_overlay.visible = true
+	_opening_overlay.modulate = Color(1, 1, 1, 1)
+	_opening_intro_label.visible = false
+	_opening_start_label.visible = false
+	_opening_hint_label.text = OPENING_HINT_TURN_START
+	_opening_hint_label.visible = true
+	_opening_hint_label.modulate = Color(1, 1, 1, 1)
+	await battle_opening_confirmed
+	_opening_hint_label.text = OPENING_HINT_DEFAULT
+	_opening_hint_label.visible = false
+	_opening_overlay.visible = false
+	_battle_opening_waiting_confirm = false
 	_battle_opening_locked = false
 	_set_battle_input_locked(false)
 
