@@ -400,12 +400,12 @@ func refresh_danger_zone_from_position(start_delay_sec: float = 0.7) -> void:
 		break
 
 	if matched_zone != null:
-		var zone_id := str(matched_zone.get("zone_id", ""))
+		var zone_id := str(_zone_prop_or(matched_zone, "zone_id", ""))
 		var overrides := {}
-		var dist_override = float(matched_zone.get("distance_threshold_override", -1.0))
-		var chance_override = float(matched_zone.get("chance_override", -1.0))
-		var cooldown_override = float(matched_zone.get("cooldown_distance_override", -1.0))
-		var intro_override = str(matched_zone.get("intro_key_override", ""))
+		var dist_override = float(_zone_prop_or(matched_zone, "distance_threshold_override", -1.0))
+		var chance_override = float(_zone_prop_or(matched_zone, "chance_override", -1.0))
+		var cooldown_override = float(_zone_prop_or(matched_zone, "cooldown_distance_override", -1.0))
+		var intro_override = str(_zone_prop_or(matched_zone, "intro_key_override", ""))
 		if dist_override >= 0.0:
 			overrides["distance_threshold"] = dist_override
 		if chance_override >= 0.0:
@@ -426,6 +426,12 @@ func refresh_danger_zone_from_position(start_delay_sec: float = 0.7) -> void:
 		_encounter_distance_accum = 0.0
 
 	_encounter_paused = was_paused
+
+func _zone_prop_or(area: Object, prop: String, fallback):
+	if area == null:
+		return fallback
+	var value = area.get(prop)
+	return fallback if value == null else value
 
 func _pause_for_battle() -> void:
 	lock_for_battle()
