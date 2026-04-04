@@ -38,7 +38,8 @@ var combat_controller: Node = null
 var current_turn_id = ""
 var current_target_focus: Dictionary = {}  # ⭐ 目前在 TargetSelect 中被選中的那個
 
-var _opening_overlay: ColorRect
+var _opening_overlay: Control
+var _battle_black_overlay: ColorRect
 var _opening_intro_label: Label
 var _opening_hint_label: Label
 var _opening_start_label: Label
@@ -287,10 +288,20 @@ func _setup_opening_overlay() -> void:
 	_battle_opening_font = load(BATTLE_OPENING_FONT_PATH) as Font
 	if _battle_opening_font == null:
 		push_warning("❗ 找不到戰鬥開場字型：%s" % BATTLE_OPENING_FONT_PATH)
-	_opening_overlay = ColorRect.new()
+	_battle_black_overlay = get_node_or_null("BattleBlackOverlay") as ColorRect
+	if _battle_black_overlay == null:
+		_battle_black_overlay = ColorRect.new()
+		_battle_black_overlay.name = "BattleBlackOverlay"
+		_battle_black_overlay.color = Color(0, 0, 0, 1.0)
+		_battle_black_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_battle_black_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+		add_child(_battle_black_overlay)
+	_battle_black_overlay.visible = true
+	_battle_black_overlay.modulate = Color(1, 1, 1, 1)
+
+	_opening_overlay = Control.new()
 	_opening_overlay.name = "BattleOpeningOverlay"
 	_opening_overlay.visible = true
-	_opening_overlay.color = Color(0, 0, 0, 1.0)
 	_opening_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_opening_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_opening_overlay)
@@ -362,7 +373,7 @@ func _setup_opening_overlay() -> void:
 	_opening_start_label.visible = false
 
 func play_battle_opening(intro_line: String) -> void:
-	if _opening_overlay == null:
+	if _opening_overlay == null or _battle_black_overlay == null:
 		return
 	_battle_opening_locked = true
 	_battle_opening_waiting_confirm = true
@@ -376,6 +387,8 @@ func play_battle_opening(intro_line: String) -> void:
 	_opening_start_label.visible = false
 	_opening_hint_label.modulate = Color(1, 1, 1, 0.0)
 	_opening_intro_label.modulate = Color(1, 1, 1, 0.0)
+	_battle_black_overlay.modulate = Color(1, 1, 1, 1)
+	_battle_black_overlay.visible = true
 	_opening_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_overlay.visible = true
 	var intro_fade := create_tween()
@@ -392,9 +405,11 @@ func play_battle_opening(intro_line: String) -> void:
 	tween.tween_property(_opening_start_label, "modulate:a", 1.0, 0.18)
 	tween.parallel().tween_property(_opening_start_label, "scale", Vector2(1.0, 1.0), 0.18)
 	tween.tween_interval(0.20)
-	tween.parallel().tween_property(_opening_overlay, "modulate:a", 0.0, 0.55)
+	tween.parallel().tween_property(_battle_black_overlay, "modulate:a", 0.0, 0.55)
 	tween.parallel().tween_property(_opening_start_label, "modulate:a", 0.0, 0.35)
 	await tween.finished
+	_battle_black_overlay.visible = false
+	_battle_black_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_overlay.visible = false
 	_opening_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_intro_label.visible = true
