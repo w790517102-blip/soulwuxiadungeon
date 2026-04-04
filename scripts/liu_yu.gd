@@ -66,10 +66,10 @@ const ENCOUNTER_STYLE_PROFILES := {
 		"glyph_texture_paths": {"戰": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	},
 	"ruffian": {
-		"glyphs": ["劫", "戰"],
+		"glyphs": ["劫"],
 		"colors": [Color(0.57, 0.49, 0.33, 1.0), Color(0.45, 0.43, 0.40, 1.0), Color(0.24, 0.20, 0.16, 1.0)],
 		"generic_texture_path": "res://assets/background/encounter_screen_rob.jpg",
-		"glyph_texture_paths": {"劫": "res://assets/background/encounter_screen_rob.jpg", "戰": "res://assets/background/encounter_screen_rob.jpg"}
+		"glyph_texture_paths": {"劫": "res://assets/background/encounter_screen_rob.jpg"}
 	},
 	"court": {
 		"glyphs": ["令", "緝"],
@@ -447,8 +447,8 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	ink.set_anchors_preset(Control.PRESET_CENTER)
 	ink.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ink.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	ink.size = Vector2(1200, 720)
-	ink.position = Vector2(-600, -360)
+	ink.size = Vector2(1320, 792)
+	ink.position = Vector2(-660, -396)
 	var texture_path := str(style.get("texture_path", ENCOUNTER_STYLE_DEFAULT_TEXTURE))
 	ink.texture = load(texture_path)
 	if ink.texture == null:
@@ -469,8 +469,6 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	var font_color_any = style.get("font_color", Color(0.95, 0.18, 0.16, 1.0))
 	var font_color: Color = font_color_any if typeof(font_color_any) == TYPE_COLOR else Color(0.95, 0.18, 0.16, 1.0)
 	war_label.add_theme_color_override("font_color", font_color)
-	war_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	war_label.add_theme_constant_override("outline_size", 4)
 	var war_font: Font = load(ENCOUNTER_TRANSITION_FONT_PATH) as Font
 	if war_font != null:
 		war_label.add_theme_font_override("font", war_font)
