@@ -56,7 +56,7 @@ const ENCOUNTER_STYLE_BY_ARCHETYPE := {
 	"鬼神": "ghost",
 	"江湖人士": "jianghu"
 }
-const ENCOUNTER_STYLE_DEFAULT_TEXTURE := "res://assets/fx/brush_stroke.png"
+const ENCOUNTER_STYLE_DEFAULT_TEXTURE := "res://assets/background/encounter_screen_defult.jpg"
 const ENCOUNTER_STYLE_PROFILES := {
 	"default": {
 		"glyphs": ["戰"],
@@ -67,32 +67,32 @@ const ENCOUNTER_STYLE_PROFILES := {
 	"ruffian": {
 		"glyphs": ["劫", "戰"],
 		"colors": [Color(0.57, 0.49, 0.33, 1.0), Color(0.45, 0.43, 0.40, 1.0), Color(0.24, 0.20, 0.16, 1.0)],
-		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
-		"glyph_texture_paths": {"劫": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "戰": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
+		"generic_texture_path": "res://assets/background/encounter_screen_rob.jpg",
+		"glyph_texture_paths": {"劫": "res://assets/background/encounter_screen_rob.jpg", "戰": "res://assets/background/encounter_screen_rob.jpg"}
 	},
 	"court": {
 		"glyphs": ["令", "緝"],
 		"colors": [Color(0.62, 0.66, 0.70, 1.0), Color(0.38, 0.50, 0.56, 1.0), Color(0.60, 0.28, 0.26, 1.0)],
-		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
-		"glyph_texture_paths": {"令": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "緝": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
+		"generic_texture_path": "res://assets/background/encounter_screen_court_defult.jpg",
+		"glyph_texture_paths": {"令": "res://assets/background/encounter_screen_court_ling.jpg", "緝": "res://assets/background/encounter_screen_court_chi.jpg"}
 	},
 	"youmei": {
 		"glyphs": ["魅", "裂", "亂", "沉"],
 		"colors": [Color(0.20, 0.14, 0.25, 1.0), Color(0.16, 0.25, 0.27, 1.0)],
-		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
-		"glyph_texture_paths": {"魅": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "裂": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "亂": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "沉": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
+		"generic_texture_path": "res://assets/background/encounter_screen_yumei.jpg",
+		"glyph_texture_paths": {"魅": "res://assets/background/encounter_screen_yumei.jpg", "裂": "res://assets/background/encounter_screen_yumei.jpg", "亂": "res://assets/background/encounter_screen_yumei.jpg", "沉": "res://assets/background/encounter_screen_yumei.jpg"}
 	},
 	"ghost": {
 		"glyphs": ["煞", "厄", "魘"],
 		"colors": [Color(0.10, 0.10, 0.10, 1.0), Color(0.45, 0.12, 0.12, 1.0), Color(0.36, 0.34, 0.34, 1.0)],
-		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
-		"glyph_texture_paths": {"煞": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "厄": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "魘": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
+		"generic_texture_path": "res://assets/background/encounter_screen_phantom_defult.jpg",
+		"glyph_texture_paths": {"煞": "res://assets/background/encounter_screen_phantom_xar.jpg", "厄": "res://assets/background/encounter_screen_phantom_er.jpg", "魘": "res://assets/background/encounter_screen_phantom_yan.jpg"}
 	},
 	"jianghu": {
 		"glyphs": ["決", "鬥"],
 		"colors": [Color(0.12, 0.12, 0.12, 1.0), Color(0.56, 0.24, 0.18, 1.0), Color(0.86, 0.86, 0.82, 1.0)],
 		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
-		"glyph_texture_paths": {"決": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "鬥": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
+		"glyph_texture_paths": {"決": "res://assets/background/encounter_screen_jianghu_jue.jpg", "鬥": "res://assets/background/encounter_screen_jianghu_do.jpg"}
 	}
 }
 
@@ -450,6 +450,8 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	ink.position = Vector2(-600, -360)
 	var texture_path := str(style.get("texture_path", ENCOUNTER_STYLE_DEFAULT_TEXTURE))
 	ink.texture = load(texture_path)
+	if ink.texture == null:
+		push_warning("❗ 找不到遭遇轉場渲染圖：%s" % texture_path)
 	ink.modulate = Color(0, 0, 0, 0.0)
 	layer.add_child(ink)
 
@@ -488,7 +490,7 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	await get_tree().create_timer(0.08).timeout
 	var t1 := create_tween()
 	t1.tween_property(black, "color:a", 0.45, 0.18)
-	t1.parallel().tween_property(ink, "modulate:a", 0.56, 0.18)
+	t1.parallel().tween_property(ink, "modulate:a", 0.80, 0.18)
 	t1.parallel().tween_property(war_label, "modulate:a", 1.0, 0.20)
 	if cam:
 		t1.parallel().tween_property(cam, "zoom", base_zoom * ENCOUNTER_ZOOM_SCALE, ENCOUNTER_ZOOM_DURATION)
@@ -497,12 +499,14 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	var flash := create_tween()
 	flash.tween_property(white, "color:a", 0.72, 0.08)
 	flash.tween_property(white, "color:a", 0.0, 0.16)
+	var ink_breath := create_tween()
+	ink_breath.tween_property(ink, "modulate:a", 0.50, 0.26)
 
 	await get_tree().create_timer(ENCOUNTER_WAR_HOLD_DURATION).timeout
 	var t2 := create_tween()
 	t2.tween_property(war_label, "modulate:a", 0.0, ENCOUNTER_WAR_FADE_DURATION)
 	t2.parallel().tween_property(black, "color:a", 1.0, ENCOUNTER_WAR_FADE_DURATION)
-	t2.parallel().tween_property(ink, "modulate:a", 1.0, ENCOUNTER_WAR_FADE_DURATION)
+	t2.parallel().tween_property(ink, "modulate:a", 0.50, ENCOUNTER_WAR_FADE_DURATION)
 	if cam:
 		t2.parallel().tween_property(cam, "zoom", base_zoom, ENCOUNTER_WAR_FADE_DURATION)
 	await t2.finished
