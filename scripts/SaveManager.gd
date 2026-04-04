@@ -265,6 +265,9 @@ func load_from_slot(slot_index: int) -> void:
 
 	if player:
 		player.global_position = data.get("player_position", player.global_position)
+		await get_tree().process_frame
+		if player.has_method("refresh_danger_zone_from_position"):
+			await player.refresh_danger_zone_from_position(0.7)
 
 	# Managers + runtime snapshot（地圖切換完成後再套用，避免 _ready 初始化覆蓋）
 	if SideQuestManager and SideQuestManager.has_method("reset_all"):

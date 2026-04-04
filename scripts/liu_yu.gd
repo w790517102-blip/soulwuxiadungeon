@@ -370,6 +370,63 @@ func set_encounter_paused(paused: bool) -> void:
 func set_encounter_cooldown(distance: float) -> void:
 	_encounter_cooldown_distance = max(distance, 0.0)
 
+func refresh_danger_zone_from_position(start_delay_sec: float = 0.7) -> void:
+	var was_paused := _encounter_paused
+	_encounter_paused = true
+	if start_delay_sec > 0.0:
+		await get_tree().create_timer(start_delay_sec).timeout
+
+	var state := get_world_2d().direct_space_state
+	var params := PhysicsPointQueryParameters2D.new()
+	params.position = global_position
+	params.collide_with_areas = true
+	params.collide_with_bodies = false
+	var hits := state.intersect_point(params, 16)
+	var matched_zone: Area2D = null
+	for hit_any in hits:
+		if typeof(hit_any) != TYPE_DICTIONARY:
+			continue
+		var hit: Dictionary = hit_any
+		var collider_any = hit.get("collider", null)
+		if collider_any == null or not (collider_any is Area2D):
+			continue
+		var area := collider_any as Area2D
+		var script_obj: Script = area.get_script() as Script
+		if script_obj == null:
+			continue
+		if String(script_obj.resource_path) != "res://scripts/encounter/DangerZone.gd":
+			continue
+		matched_zone = area
+		break
+
+	if matched_zone != null:
+		var zone_id := str(matched_zone.get("zone_id", ""))
+		var overrides := {}
+		var dist_override = float(matched_zone.get("distance_threshold_override", -1.0))
+		var chance_override = float(matched_zone.get("chance_override", -1.0))
+		var cooldown_override = float(matched_zone.get("cooldown_distance_override", -1.0))
+		var intro_override = str(matched_zone.get("intro_key_override", ""))
+		if dist_override >= 0.0:
+			overrides["distance_threshold"] = dist_override
+		if chance_override >= 0.0:
+			overrides["chance"] = chance_override
+		if cooldown_override >= 0.0:
+			overrides["cooldown_distance"] = cooldown_override
+		if intro_override != "":
+			overrides["intro_key"] = intro_override
+		enter_danger_zone(zone_id, overrides)
+		_encounter_distance_accum = 0.0
+		var config = ZONE_CONFIG.get(zone_id, {})
+		var soft_cooldown = _resolve_zone_value(config, "distance_threshold", 0.0) * 0.35
+		_encounter_cooldown_distance = max(_encounter_cooldown_distance, soft_cooldown)
+	else:
+		in_danger_zone = false
+		current_zone_id = ""
+		_zone_overrides = {}
+		_encounter_distance_accum = 0.0
+
+	_encounter_paused = was_paused
+
 func _pause_for_battle() -> void:
 	lock_for_battle()
 
