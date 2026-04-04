@@ -52,7 +52,12 @@ const ENCOUNTER_WAR_FADE_DURATION := 0.8
 const ENCOUNTER_DEBUG_LOG := true
 const ENCOUNTER_STYLE_BY_ARCHETYPE := {
 	"地痞": "ruffian",
+	"山賊": "ruffian",
+	"匪徒": "ruffian",
+	"流氓": "ruffian",
 	"朝廷": "court",
+	"官兵": "court",
+	"軍人": "court",
 	"語魅": "youmei",
 	"鬼神": "ghost",
 	"江湖人士": "jianghu"
