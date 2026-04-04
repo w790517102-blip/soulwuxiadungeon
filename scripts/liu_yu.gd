@@ -49,6 +49,46 @@ const ENCOUNTER_ZOOM_SCALE := 0.88
 const ENCOUNTER_ZOOM_DURATION := 0.5
 const ENCOUNTER_WAR_HOLD_DURATION := 1.2
 const ENCOUNTER_WAR_FADE_DURATION := 0.8
+const ENCOUNTER_STYLE_BY_ARCHETYPE := {
+	"地痞": "ruffian",
+	"朝廷": "court",
+	"語魅": "youmei",
+	"鬼神": "ghost",
+	"江湖人士": "jianghu"
+}
+const ENCOUNTER_STYLE_DEFAULT_TEXTURE := "res://assets/fx/brush_stroke.png"
+const ENCOUNTER_STYLE_PROFILES := {
+	"default": {
+		"glyphs": ["戰"],
+		"colors": [Color(0.95, 0.18, 0.16, 1.0)],
+		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+	},
+	"ruffian": {
+		"glyphs": ["劫", "戰"],
+		"colors": [Color(0.57, 0.49, 0.33, 1.0), Color(0.45, 0.43, 0.40, 1.0), Color(0.24, 0.20, 0.16, 1.0)],
+		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+	},
+	"court": {
+		"glyphs": ["令", "緝"],
+		"colors": [Color(0.62, 0.66, 0.70, 1.0), Color(0.38, 0.50, 0.56, 1.0), Color(0.60, 0.28, 0.26, 1.0)],
+		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+	},
+	"youmei": {
+		"glyphs": ["魅", "裂", "亂", "沉"],
+		"colors": [Color(0.20, 0.14, 0.25, 1.0), Color(0.16, 0.25, 0.27, 1.0)],
+		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+	},
+	"ghost": {
+		"glyphs": ["煞", "厄", "魘"],
+		"colors": [Color(0.10, 0.10, 0.10, 1.0), Color(0.45, 0.12, 0.12, 1.0), Color(0.36, 0.34, 0.34, 1.0)],
+		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+	},
+	"jianghu": {
+		"glyphs": ["決", "鬥"],
+		"colors": [Color(0.12, 0.12, 0.12, 1.0), Color(0.56, 0.24, 0.18, 1.0), Color(0.86, 0.86, 0.82, 1.0)],
+		"texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE
+	}
+}
 
 var in_danger_zone := false
 var current_zone_id := ""
@@ -207,16 +247,20 @@ func _trigger_random_battle() -> void:
 			current_map = String(scene_root.scene_file_path)
 			scene_name = String(scene_root.name)
 
+	var enemies = _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS)
+	var transition_style := _resolve_encounter_transition_style(enemies)
+
 	var context = {
 		"player_party": player_party,
-		"enemy_party": _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS),
+		"enemy_party": enemies,
 		"ruleset": {"id": "default"},
 		"regen_policy": {"id": "round_end_mp_regen_default"},
 		"tone": {"intro_key": _resolve_zone_intro_key()},
 		"battle_tag": current_zone_id,
 		"zone_id": current_zone_id,
 		"map_id": current_map,
-		"scene_name": scene_name
+		"scene_name": scene_name,
+		"encounter_transition_style": transition_style
 	}
 
 	if context["enemy_party"].is_empty():
@@ -231,7 +275,7 @@ func _trigger_random_battle() -> void:
 	GlobalState.set_meta("pending_battle_context", context)
 	if game_root:
 		_pause_for_battle()
-		await _play_encounter_transition()
+		await _play_encounter_transition(context.get("encounter_transition_style", {}))
 		visible = false
 		var cooldown_distance = _resolve_zone_value(
 			ZONE_CONFIG.get(current_zone_id, {}),
@@ -365,7 +409,7 @@ func _process(delta):
 	# 角色的 z_index 隨 y 座標更新（整數避免浮點亂序）
 	z_index = int(global_position.y + z_index_offset)
 
-func _play_encounter_transition() -> void:
+func _play_encounter_transition(style: Dictionary = {}) -> void:
 	_encounter_transition_playing = true
 	var game_root = get_node_or_null("/root/GameRoot")
 	var cam: Camera2D = null
@@ -398,7 +442,8 @@ func _play_encounter_transition() -> void:
 	ink.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	ink.size = Vector2(1200, 720)
 	ink.position = Vector2(-600, -360)
-	ink.texture = load("res://assets/fx/brush_stroke.png")
+	var texture_path := str(style.get("texture_path", ENCOUNTER_STYLE_DEFAULT_TEXTURE))
+	ink.texture = load(texture_path)
 	ink.modulate = Color(0, 0, 0, 0.0)
 	layer.add_child(ink)
 
@@ -410,9 +455,11 @@ func _play_encounter_transition() -> void:
 	war_label.offset_bottom = 190
 	war_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	war_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	war_label.text = "戰"
+	war_label.text = str(style.get("glyph", "戰"))
 	war_label.add_theme_font_size_override("font_size", 200)
-	war_label.add_theme_color_override("font_color", Color(0.95, 0.18, 0.16, 1.0))
+	var font_color_any = style.get("font_color", Color(0.95, 0.18, 0.16, 1.0))
+	var font_color: Color = font_color_any if typeof(font_color_any) == TYPE_COLOR else Color(0.95, 0.18, 0.16, 1.0)
+	war_label.add_theme_color_override("font_color", font_color)
 	war_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	war_label.add_theme_constant_override("outline_size", 4)
 	var war_font: Font = load(ENCOUNTER_TRANSITION_FONT_PATH) as Font
@@ -456,3 +503,41 @@ func _play_encounter_transition() -> void:
 
 	layer.queue_free()
 	_encounter_transition_playing = false
+
+func _resolve_encounter_transition_style(enemies: Array) -> Dictionary:
+	var counts := {}
+	for enemy_any in enemies:
+		if typeof(enemy_any) != TYPE_DICTIONARY:
+			continue
+		var enemy: Dictionary = enemy_any
+		var archetype := str(enemy.get("archetype", ""))
+		var style_key := str(ENCOUNTER_STYLE_BY_ARCHETYPE.get(archetype, "default"))
+		counts[style_key] = int(counts.get(style_key, 0)) + 1
+
+	var selected_key := "default"
+	var selected_count := -1
+	for key_any in counts.keys():
+		var key := str(key_any)
+		var c := int(counts[key_any])
+		if c > selected_count:
+			selected_key = key
+			selected_count = c
+
+	var profile: Dictionary = ENCOUNTER_STYLE_PROFILES.get(selected_key, ENCOUNTER_STYLE_PROFILES["default"])
+	var glyphs: Array = profile.get("glyphs", ["戰"])
+	var colors: Array = profile.get("colors", [Color(0.95, 0.18, 0.16, 1.0)])
+	var glyph := "戰"
+	if not glyphs.is_empty():
+		glyph = str(glyphs[_encounter_rng.randi_range(0, glyphs.size() - 1)])
+	var color := Color(0.95, 0.18, 0.16, 1.0)
+	if not colors.is_empty():
+		var picked_color = colors[_encounter_rng.randi_range(0, colors.size() - 1)]
+		if typeof(picked_color) == TYPE_COLOR:
+			color = picked_color
+
+	return {
+		"style_key": selected_key,
+		"glyph": glyph,
+		"font_color": color,
+		"texture_path": str(profile.get("texture_path", ENCOUNTER_STYLE_DEFAULT_TEXTURE))
+	}
