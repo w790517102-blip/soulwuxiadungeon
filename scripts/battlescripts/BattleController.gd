@@ -21,7 +21,7 @@ var _ending: bool = false
 var _player_base_snapshot: Dictionary = {}
 var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
-var battle_bgm_player: AudioStreamPlayer2D = null
+var battle_bgm_player: AudioStreamPlayer = null
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
 const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
@@ -159,7 +159,7 @@ func _init_battle_safe() -> void:
 	else:
 		push_error("❌ 無法找到 BattleUI")
 
-	battle_bgm_player = root.get_node_or_null("BattleAudio/BGMPlayer") as AudioStreamPlayer2D
+	battle_bgm_player = root.get_node_or_null("BattleAudio/BGMPlayer") as AudioStreamPlayer
 
 	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
 	turn_manager.turn_started.connect(_on_turn_started)

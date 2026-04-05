@@ -994,7 +994,7 @@ text = "確認"
 
 [node name="BattleAudio" type="Node" parent="."]
 
-[node name="BGMPlayer" type="AudioStreamPlayer2D" parent="BattleAudio"]
+[node name="BGMPlayer" type="AudioStreamPlayer" parent="BattleAudio"]
 
 [node name="SEPlayer" type="AudioStreamPlayer2D" parent="BattleAudio"]
 

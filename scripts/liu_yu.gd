@@ -570,7 +570,7 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	await get_tree().create_timer(0.08).timeout
 	var t1 := create_tween()
 	t1.tween_property(black, "color:a", 0.45, 0.18)
-	t1.parallel().tween_property(ink, "modulate:a", 0.80, 0.18)
+	t1.parallel().tween_property(ink, "modulate:a", 0.50, 0.18)
 	t1.parallel().tween_property(war_label, "modulate:a", 1.0, 0.20)
 	if cam:
 		t1.parallel().tween_property(cam, "zoom", base_zoom * ENCOUNTER_ZOOM_SCALE, ENCOUNTER_ZOOM_DURATION)
@@ -580,13 +580,13 @@ func _play_encounter_transition(style: Dictionary = {}) -> void:
 	flash.tween_property(white, "color:a", 0.72, 0.08)
 	flash.tween_property(white, "color:a", 0.0, 0.16)
 	var ink_breath := create_tween()
-	ink_breath.tween_property(ink, "modulate:a", 0.50, 0.26)
+	ink_breath.tween_property(ink, "modulate:a", 0.30, 0.26)
 
 	await get_tree().create_timer(ENCOUNTER_WAR_HOLD_DURATION).timeout
 	var t2 := create_tween()
 	t2.tween_property(war_label, "modulate:a", 0.0, ENCOUNTER_WAR_FADE_DURATION)
 	t2.parallel().tween_property(black, "color:a", 1.0, ENCOUNTER_WAR_FADE_DURATION)
-	t2.parallel().tween_property(ink, "modulate:a", 0.50, ENCOUNTER_WAR_FADE_DURATION)
+	t2.parallel().tween_property(ink, "modulate:a", 0.30, ENCOUNTER_WAR_FADE_DURATION)
 	if cam:
 		t2.parallel().tween_property(cam, "zoom", base_zoom, ENCOUNTER_WAR_FADE_DURATION)
 	await t2.finished
