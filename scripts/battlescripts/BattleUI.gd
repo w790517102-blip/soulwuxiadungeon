@@ -727,19 +727,29 @@ func _debug_enemy_panel_layout(stage: String) -> void:
 func _snap_enemy_panel_to_right_edge() -> void:
 	if enemy_panel == null:
 		return
+	var viewport_width := get_viewport_rect().size.x
+	if viewport_width <= 0.0:
+		return
 	var width := enemy_panel.size.x
 	if width <= 0.0:
 		width = enemy_panel.offset_right - enemy_panel.offset_left
 	if width <= 0.0:
 		width = 304.0
+	var height := enemy_panel.size.y
+	if height <= 0.0:
+		height = enemy_panel.offset_bottom - enemy_panel.offset_top
+	if height <= 0.0:
+		height = 508.0
 	var top := enemy_panel.offset_top
-	var bottom := enemy_panel.offset_bottom
-	enemy_panel.anchor_left = 1.0
-	enemy_panel.anchor_right = 1.0
-	enemy_panel.offset_left = -width - ENEMY_PANEL_RIGHT_MARGIN
-	enemy_panel.offset_right = -ENEMY_PANEL_RIGHT_MARGIN
+	var target_x := viewport_width - width - ENEMY_PANEL_RIGHT_MARGIN
+	enemy_panel.anchor_left = 0.0
+	enemy_panel.anchor_right = 0.0
+	enemy_panel.anchor_top = 0.0
+	enemy_panel.anchor_bottom = 0.0
+	enemy_panel.offset_left = target_x
+	enemy_panel.offset_right = target_x + width
 	enemy_panel.offset_top = top
-	enemy_panel.offset_bottom = bottom
+	enemy_panel.offset_bottom = top + height
 
 func show_actor_line(actor_id: String, text: String) -> void:
 	if actor_id == "" or text == "":
