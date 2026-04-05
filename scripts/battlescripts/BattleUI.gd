@@ -10,6 +10,7 @@ const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.ttf"
 const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
+const DEBUG_ENEMY_PANEL_LAYOUT := true
 var tone = ToneMap.new()
 
 @onready var ally_panel = $AllyPanel
@@ -238,6 +239,7 @@ func _ready() -> void:
 	if status_hover_popup:
 		status_hover_popup.hide()
 		status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	call_deferred("_debug_enemy_panel_layout", "ready_deferred")
 
 func _apply_menu_font_style(root: Node) -> void:
 	if root == null:
@@ -692,6 +694,30 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	update_ally_panel()
 	update_enemy_panel()
 	_refresh_all_status_abbrev_labels()
+	call_deferred("_debug_enemy_panel_layout", "set_teams")
+
+func _notification(what: int) -> void:
+	if not DEBUG_ENEMY_PANEL_LAYOUT:
+		return
+	if what == NOTIFICATION_RESIZED:
+		_debug_enemy_panel_layout("resized")
+
+func _debug_enemy_panel_layout(stage: String) -> void:
+	if not DEBUG_ENEMY_PANEL_LAYOUT or enemy_panel == null:
+		return
+	var parent := enemy_panel.get_parent()
+	var parent_type := parent.get_class() if parent != null else "null"
+	var anchors := Vector4(enemy_panel.anchor_left, enemy_panel.anchor_top, enemy_panel.anchor_right, enemy_panel.anchor_bottom)
+	var offsets := Vector4(enemy_panel.offset_left, enemy_panel.offset_top, enemy_panel.offset_right, enemy_panel.offset_bottom)
+	print("[EnemyPanelDebug] stage=", stage,
+		" path=", enemy_panel.get_path(),
+		" parent_type=", parent_type,
+		" position=", enemy_panel.position,
+		" global_position=", enemy_panel.global_position,
+		" size=", enemy_panel.size,
+		" anchors=", anchors,
+		" offsets=", offsets,
+		" viewport_size=", get_viewport_rect().size)
 
 func show_actor_line(actor_id: String, text: String) -> void:
 	if actor_id == "" or text == "":
