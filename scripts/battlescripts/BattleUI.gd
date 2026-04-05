@@ -11,6 +11,7 @@ const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.t
 const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
 const DEBUG_ENEMY_PANEL_LAYOUT := true
+const DEBUG_DISABLE_ENEMY_STATUS_ABBREV := true
 const ENEMY_PANEL_RIGHT_MARGIN := 8.0
 var tone = ToneMap.new()
 
@@ -692,11 +693,13 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	allies = allies_data
 	enemies = enemies_data
+	_log_enemy_layout_sizes("before_set_teams_update")
 	_setup_actor_bubble_labels()
 	update_ally_panel()
 	update_enemy_panel()
 	_snap_enemy_panel_to_right_edge()
 	_refresh_all_status_abbrev_labels()
+	_log_enemy_layout_sizes("after_set_teams_update")
 	call_deferred("_debug_enemy_panel_layout", "set_teams")
 
 func _notification(what: int) -> void:
@@ -1511,6 +1514,13 @@ func _ensure_status_abbrev_labels() -> void:
 	_enemy_status_labels.clear()
 	for slot in enemy_slots:
 		_enemy_status_labels.append(_ensure_slot_status_label(slot))
+	if DEBUG_DISABLE_ENEMY_STATUS_ABBREV:
+		for label_any in _enemy_status_labels:
+			var enemy_status_label := label_any as RichTextLabel
+			if enemy_status_label == null:
+				continue
+			enemy_status_label.visible = false
+			enemy_status_label.text = ""
 
 
 func _ensure_slot_status_label(slot: Node) -> RichTextLabel:
@@ -1582,6 +1592,26 @@ func _refresh_all_status_abbrev_labels() -> void:
 		label.text = String(packed_enemy.get("text", ""))
 		if bool(packed_enemy.get("blink", false)):
 			_has_blinking_tokens = true
+
+func _log_enemy_layout_sizes(stage: String) -> void:
+	if enemy_panel == null:
+		return
+	print("[EnemyLayoutSize] stage=", stage, " panel_size=", enemy_panel.size, " panel_custom_min=", enemy_panel.custom_minimum_size)
+	for i in range(enemy_slots.size()):
+		var slot_any = enemy_slots[i]
+		if not (slot_any is Control):
+			continue
+		var slot := slot_any as Control
+		var status_label: RichTextLabel = slot.get_node_or_null("StatusUI/NameRow/StatusAbbrev") as RichTextLabel
+		if status_label:
+			print("[EnemyLayoutSize] slot=", i,
+				" slot_size=", slot.size,
+				" slot_custom_min=", slot.custom_minimum_size,
+				" status_size=", status_label.size,
+				" status_custom_min=", status_label.custom_minimum_size,
+				" status_fit_content=", status_label.fit_content,
+				" status_size_flags_h=", status_label.size_flags_horizontal,
+				" status_visible=", status_label.visible)
 
 
 func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
