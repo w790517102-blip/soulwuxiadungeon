@@ -710,7 +710,7 @@ func _debug_enemy_panel_layout(stage: String) -> void:
 	if not DEBUG_ENEMY_PANEL_LAYOUT or enemy_panel == null:
 		return
 	var parent := enemy_panel.get_parent()
-	var parent_type := parent.get_class() if parent != null else "null"
+	var parent_type: String = parent.get_class() if parent != null else "null"
 	var anchors := Vector4(enemy_panel.anchor_left, enemy_panel.anchor_top, enemy_panel.anchor_right, enemy_panel.anchor_bottom)
 	var offsets := Vector4(enemy_panel.offset_left, enemy_panel.offset_top, enemy_panel.offset_right, enemy_panel.offset_bottom)
 	print("[EnemyPanelDebug] stage=", stage,
@@ -734,7 +734,7 @@ func show_actor_line(actor_id: String, text: String) -> void:
 	var bubble_box = _actor_bubble_boxes[actor_id] as PanelContainer
 	if bubble == null or bubble_box == null:
 		return
-	var slot := _find_ally_slot_by_actor_id(actor_id)
+	var slot: Control = _find_ally_slot_by_actor_id(actor_id)
 	if slot == null:
 		slot = _find_enemy_slot_by_actor_id(actor_id)
 	if slot == null:
@@ -1583,8 +1583,8 @@ func _log_enemy_layout_sizes(stage: String) -> void:
 				" status_visible=", status_label.visible)
 
 func _log_slot_vertical_baselines(stage: String) -> void:
-	var ally_sep := ally_panel.get_theme_constant("separation") if ally_panel else 0
-	var enemy_sep := enemy_panel.get_theme_constant("separation") if enemy_panel else 0
+	var ally_sep: int = ally_panel.get_theme_constant("separation") if ally_panel else 0
+	var enemy_sep: int = enemy_panel.get_theme_constant("separation") if enemy_panel else 0
 	print("[SlotBaseline] stage=", stage, " ally_sep=", ally_sep, " enemy_sep=", enemy_sep)
 	var count := mini(ally_slots.size(), enemy_slots.size())
 	for i in range(count):
