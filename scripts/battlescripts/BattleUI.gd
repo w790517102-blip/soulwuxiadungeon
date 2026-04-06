@@ -700,6 +700,7 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	_snap_enemy_panel_to_right_edge()
 	_refresh_all_status_abbrev_labels()
 	_log_enemy_layout_sizes("after_set_teams_update")
+	_log_slot_vertical_baselines("after_set_teams_update")
 	call_deferred("_debug_enemy_panel_layout", "set_teams")
 
 func _notification(what: int) -> void:
@@ -1612,6 +1613,36 @@ func _log_enemy_layout_sizes(stage: String) -> void:
 				" status_fit_content=", status_label.fit_content,
 				" status_size_flags_h=", status_label.size_flags_horizontal,
 				" status_visible=", status_label.visible)
+
+func _log_slot_vertical_baselines(stage: String) -> void:
+	var ally_sep := ally_panel.get_theme_constant("separation") if ally_panel else 0
+	var enemy_sep := enemy_panel.get_theme_constant("separation") if enemy_panel else 0
+	print("[SlotBaseline] stage=", stage, " ally_sep=", ally_sep, " enemy_sep=", enemy_sep)
+	var count := mini(ally_slots.size(), enemy_slots.size())
+	for i in range(count):
+		_log_single_slot_baseline("ally", i, ally_slots[i])
+		_log_single_slot_baseline("enemy", i, enemy_slots[i])
+
+func _log_single_slot_baseline(side: String, index: int, slot_any: Variant) -> void:
+	if not (slot_any is Control):
+		return
+	var slot := slot_any as Control
+	var portrait: Control = slot.get_node_or_null("Portrait") as Control
+	var status_ui: Control = slot.get_node_or_null("StatusUI") as Control
+	var name_label: Control = slot.get_node_or_null("StatusUI/Name") as Control
+	var hp_bar: Control = slot.get_node_or_null("StatusUI/HPBar") as Control
+	var status_sep := 0
+	if status_ui is BoxContainer:
+		status_sep = (status_ui as BoxContainer).get_theme_constant("separation")
+	print("[SlotBaseline] side=", side, " idx=", index,
+		" slot_size=", slot.size,
+		" slot_global=", slot.global_position,
+		" portrait_global=", portrait.global_position if portrait else Vector2.ZERO,
+		" portrait_size=", portrait.size if portrait else Vector2.ZERO,
+		" name_global=", name_label.global_position if name_label else Vector2.ZERO,
+		" hpbar_pos=", hp_bar.position if hp_bar else Vector2.ZERO,
+		" hpbar_size=", hp_bar.size if hp_bar else Vector2.ZERO,
+		" status_sep=", status_sep)
 
 
 func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
