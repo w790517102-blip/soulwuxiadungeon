@@ -1,6 +1,11 @@
 extends HBoxContainer
 
 const BATTLE_SLOT_FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const ENEMY_NAME_MIN_HEIGHT := 23.5
+const ENEMY_HP_MIN_HEIGHT := 23.0
+const ENEMY_ELEMENT_MIN_HEIGHT := 23.0
+const ENEMY_HPBAR_MIN_HEIGHT := 25.0
+const ENEMY_SPACER_MIN_HEIGHT := 14.0
 
 @onready var portrait      : TextureRect      = $Portrait
 @onready var status_ui     : VBoxContainer    = $StatusUI
@@ -8,6 +13,7 @@ const BATTLE_SLOT_FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 @onready var hp_bar        : ProgressBar      = $StatusUI/HPBar
 @onready var hp_label      : Label            = $StatusUI/HPLabel
 @onready var element_label : Label            = $StatusUI/ElementLabel
+@onready var status_spacer : Control          = $StatusUI/Control
 @onready var fx_hit        : AnimatedSprite2D = $FxHit   # 💥 被擊中特效
 
 var actor_id: String = ""
@@ -20,15 +26,27 @@ var _dodge_tween: Tween = null
 func _ready() -> void:
 	_reset_fx()
 	_apply_enemy_label_style()
+	_lock_status_layout_metrics()
 	if name_label:
 		name_label.clip_text = true
-		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		name_label.custom_minimum_size.y = 30.0
 	if status_ui:
 		status_ui.size_flags_horizontal = Control.SIZE_FILL
 	if fx_hit and not fx_hit.animation_finished.is_connected(_on_fx_hit_finished):
 		fx_hit.animation_finished.connect(_on_fx_hit_finished)
+
+func _lock_status_layout_metrics() -> void:
+	if name_label:
+		name_label.custom_minimum_size = Vector2(name_label.custom_minimum_size.x, ENEMY_NAME_MIN_HEIGHT)
+	if hp_label:
+		hp_label.custom_minimum_size = Vector2(hp_label.custom_minimum_size.x, ENEMY_HP_MIN_HEIGHT)
+	if status_spacer:
+		status_spacer.custom_minimum_size = Vector2(status_spacer.custom_minimum_size.x, ENEMY_SPACER_MIN_HEIGHT)
+	if element_label:
+		element_label.custom_minimum_size = Vector2(element_label.custom_minimum_size.x, ENEMY_ELEMENT_MIN_HEIGHT)
+	if hp_bar:
+		hp_bar.custom_minimum_size = Vector2(hp_bar.custom_minimum_size.x, ENEMY_HPBAR_MIN_HEIGHT)
 
 func _apply_enemy_label_style() -> void:
 	for label in [name_label, hp_label, element_label]:
@@ -41,6 +59,7 @@ func _apply_enemy_label_style() -> void:
 
 func setup_from_actor(actor: Dictionary) -> void:
 	actor_id = str(actor.get("id", actor.get("name", "")))
+	_lock_status_layout_metrics()
 	_init_max_hp(actor)
 	_update_all(actor)
 	_reset_fx()
@@ -51,6 +70,7 @@ func setup_from_actor(actor: Dictionary) -> void:
 		portrait.modulate = Color(1, 1, 1, 1)
 
 func update_from_actor(actor: Dictionary) -> void:
+	_lock_status_layout_metrics()
 	var new_id = str(actor.get("id", actor.get("name", "")))
 	if new_id != "" and new_id != actor_id:
 		actor_id = new_id
