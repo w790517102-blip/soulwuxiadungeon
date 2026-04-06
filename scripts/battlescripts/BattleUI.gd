@@ -1571,7 +1571,7 @@ func _ensure_slot_status_label(slot: Node) -> RichTextLabel:
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		label.custom_minimum_size = Vector2(120, 28)
 		label.size = Vector2(120, 28)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		label.clip_contents = true
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.z_index = 10
@@ -1584,11 +1584,15 @@ func _position_status_abbrev_overlay(slot: Control, label: RichTextLabel) -> voi
 	if slot == null or label == null:
 		return
 	var name_label: Control = slot.get_node_or_null("StatusUI/Name") as Control
+	var status_ui: Control = slot.get_node_or_null("StatusUI") as Control
 	if name_label == null:
 		return
-	var origin := _status_abbrev_overlay.get_global_transform_with_canvas().affine_inverse() * name_label.global_position
-	var x := origin.x + name_label.size.x - label.size.x
-	var y := origin.y
+	if status_ui == null:
+		return
+	var name_origin := _status_abbrev_overlay.get_global_transform_with_canvas().affine_inverse() * name_label.global_position
+	var status_origin := _status_abbrev_overlay.get_global_transform_with_canvas().affine_inverse() * status_ui.global_position
+	var x := status_origin.x + status_ui.size.x - label.size.x
+	var y := name_origin.y
 	label.position = Vector2(x, y)
 
 

@@ -1,5 +1,7 @@
 extends HBoxContainer
 
+const BATTLE_SLOT_FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+
 @onready var portrait      : TextureRect      = $Portrait
 @onready var status_ui     : VBoxContainer    = $StatusUI
 @onready var name_label    : Label            = $StatusUI/Name
@@ -17,14 +19,25 @@ var _dodge_tween: Tween = null
 
 func _ready() -> void:
 	_reset_fx()
+	_apply_enemy_label_style()
 	if name_label:
 		name_label.clip_text = true
 		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name_label.custom_minimum_size.y = 30.0
 	if status_ui:
 		status_ui.size_flags_horizontal = Control.SIZE_FILL
 	if fx_hit and not fx_hit.animation_finished.is_connected(_on_fx_hit_finished):
 		fx_hit.animation_finished.connect(_on_fx_hit_finished)
+
+func _apply_enemy_label_style() -> void:
+	for label in [name_label, hp_label, element_label]:
+		if label == null:
+			continue
+		label.add_theme_font_override("font", BATTLE_SLOT_FONT)
+		label.add_theme_font_size_override("font_size", 16)
+		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		label.add_theme_constant_override("outline_size", 4)
 
 func setup_from_actor(actor: Dictionary) -> void:
 	actor_id = str(actor.get("id", actor.get("name", "")))
