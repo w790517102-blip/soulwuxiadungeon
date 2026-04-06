@@ -77,6 +77,7 @@ var _actor_speech_cooldown_until: Dictionary = {}
 var _actor_last_line: Dictionary = {}
 var _status_abbrev_accum := 0.0
 var _has_blinking_tokens := false
+var _status_abbrev_overlay: Control = null
 
 const COMBAT_DIALOGUE := {
 	"dodge": {
@@ -240,6 +241,9 @@ func _ready() -> void:
 	if status_hover_popup:
 		status_hover_popup.hide()
 		status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		status_hover_popup.top_level = true
+		status_hover_popup.z_index = 12
+	_ensure_status_abbrev_overlay()
 	_debug_enemy_panel_layout("ready_immediate")
 	call_deferred("_debug_enemy_panel_layout", "ready_deferred")
 
@@ -570,6 +574,18 @@ func _position_hover_popup(mouse_pos: Vector2) -> void:
 		pos.y = max(0.0, viewport_rect.size.y - popup_size.y)
 	status_hover_popup.global_position = pos
 
+func _ensure_status_abbrev_overlay() -> void:
+	if _status_abbrev_overlay != null and is_instance_valid(_status_abbrev_overlay):
+		return
+	_status_abbrev_overlay = get_node_or_null("StatusAbbrevOverlay") as Control
+	if _status_abbrev_overlay == null:
+		_status_abbrev_overlay = Control.new()
+		_status_abbrev_overlay.name = "StatusAbbrevOverlay"
+		_status_abbrev_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_status_abbrev_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_status_abbrev_overlay.z_index = 10
+		add_child(_status_abbrev_overlay)
+
 func _build_status_hover_text(actor: Dictionary) -> String:
 	var name = str(actor.get("display_name", actor.get("name", "???")))
 	var hp = int(actor.get("hp", 0))
@@ -702,10 +718,10 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	call_deferred("_debug_enemy_panel_layout", "set_teams")
 
 func _notification(what: int) -> void:
-	if not DEBUG_ENEMY_PANEL_LAYOUT:
-		return
 	if what == NOTIFICATION_RESIZED:
-		_debug_enemy_panel_layout("resized")
+		_refresh_all_status_abbrev_labels("resized")
+		if DEBUG_ENEMY_PANEL_LAYOUT:
+			_debug_enemy_panel_layout("resized")
 
 func _debug_enemy_panel_layout(stage: String) -> void:
 	if not DEBUG_ENEMY_PANEL_LAYOUT or enemy_panel == null:
@@ -1115,7 +1131,6 @@ func _setup_actor_bubbles_for_side(actor_list: Array, slots: Array) -> void:
 		var slot := slots[i] as Control
 		if slot == null:
 			continue
-		_apply_slot_label_font_style(slot)
 		var bubble_name := "OSBubble_%s" % actor_id
 		var bubble_box := get_node_or_null(bubble_name) as PanelContainer
 		var bubble: Label = null
@@ -1157,15 +1172,6 @@ func _setup_actor_bubbles_for_side(actor_list: Array, slots: Array) -> void:
 		_position_bubble_on_portrait(slot, bubble_box)
 		_actor_bubble_labels[actor_id] = bubble
 		_actor_bubble_boxes[actor_id] = bubble_box
-
-func _apply_slot_label_font_style(slot: Control) -> void:
-	for node_name in ["Name", "HPLabel", "MPLabel"]:
-		var label := slot.get_node_or_null("StatusUI/%s" % node_name) as Label
-		if label == null:
-			continue
-		label.add_theme_font_override("font", MenuUIFont)
-		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		label.add_theme_constant_override("outline_size", 4)
 
 func _position_bubble_on_portrait(slot: Control, bubble_box: PanelContainer) -> void:
 	var portrait := slot.get_node_or_null("Portrait") as Control
@@ -1550,35 +1556,40 @@ func _ensure_slot_status_label(slot: Node) -> RichTextLabel:
 	var name_label: Label = status_ui.get_node_or_null("Name") as Label
 	if name_label == null:
 		return null
-
-	var name_row: HBoxContainer = status_ui.get_node_or_null("NameRow") as HBoxContainer
-	if name_row == null:
-		name_row = HBoxContainer.new()
-		name_row.name = "NameRow"
-		name_row.custom_minimum_size = Vector2(0, 30)
-		name_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var idx = name_label.get_index()
-		status_ui.remove_child(name_label)
-		status_ui.add_child(name_row)
-		status_ui.move_child(name_row, idx)
-		name_row.add_child(name_label)
-		name_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-
-	var label: RichTextLabel = name_row.get_node_or_null("StatusAbbrev") as RichTextLabel
+	_ensure_status_abbrev_overlay()
+	var slot_ctrl := slot as Control
+	if slot_ctrl == null:
+		return null
+	var overlay_name := "StatusAbbrev_%s" % slot_ctrl.name
+	var label: RichTextLabel = _status_abbrev_overlay.get_node_or_null(overlay_name) as RichTextLabel
 	if label == null:
 		label = RichTextLabel.new()
-		label.name = "StatusAbbrev"
+		label.name = overlay_name
 		label.bbcode_enabled = true
 		label.fit_content = false
 		label.scroll_active = false
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		label.custom_minimum_size = Vector2(120, 30)
-		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		label.custom_minimum_size = Vector2(120, 28)
+		label.size = Vector2(120, 28)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		label.clip_contents = true
-		name_row.add_child(label)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.z_index = 10
+		_status_abbrev_overlay.add_child(label)
 	label.text = ""
+	_position_status_abbrev_overlay(slot_ctrl, label)
 	return label
+
+func _position_status_abbrev_overlay(slot: Control, label: RichTextLabel) -> void:
+	if slot == null or label == null:
+		return
+	var name_label: Control = slot.get_node_or_null("StatusUI/Name") as Control
+	if name_label == null:
+		return
+	var origin := _status_abbrev_overlay.get_global_transform_with_canvas().affine_inverse() * name_label.global_position
+	var x := origin.x + name_label.size.x - label.size.x
+	var y := origin.y
+	label.position = Vector2(x, y)
 
 
 func _refresh_all_status_abbrev_labels(stage: String = "") -> void:
@@ -1592,6 +1603,7 @@ func _refresh_all_status_abbrev_labels(stage: String = "") -> void:
 			continue
 		var packed := _build_status_abbrev_text(allies[i])
 		label.text = String(packed.get("text", ""))
+		_position_status_abbrev_overlay(ally_slots[i] as Control, label)
 		if bool(packed.get("blink", false)):
 			_has_blinking_tokens = true
 
@@ -1608,6 +1620,7 @@ func _refresh_all_status_abbrev_labels(stage: String = "") -> void:
 			continue
 		var packed_enemy := _build_status_abbrev_text(enemy)
 		label.text = String(packed_enemy.get("text", ""))
+		_position_status_abbrev_overlay(enemy_slots[i] as Control, label)
 		if bool(packed_enemy.get("blink", false)):
 			_has_blinking_tokens = true
 	if stage != "":
@@ -1623,7 +1636,10 @@ func _log_enemy_layout_sizes(stage: String) -> void:
 		if not (slot_any is Control):
 			continue
 		var slot := slot_any as Control
-		var status_label: RichTextLabel = slot.get_node_or_null("StatusUI/NameRow/StatusAbbrev") as RichTextLabel
+		var status_label_name := "StatusAbbrev_%s" % slot.name
+		var status_label: RichTextLabel = null
+		if _status_abbrev_overlay:
+			status_label = _status_abbrev_overlay.get_node_or_null(status_label_name) as RichTextLabel
 		if status_label:
 			print("[EnemyLayoutSize] slot=", i,
 				" slot_size=", slot.size,

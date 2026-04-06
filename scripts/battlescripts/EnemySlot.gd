@@ -17,6 +17,12 @@ var _dodge_tween: Tween = null
 
 func _ready() -> void:
 	_reset_fx()
+	if name_label:
+		name_label.clip_text = true
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	if status_ui:
+		status_ui.size_flags_horizontal = Control.SIZE_FILL
 	if fx_hit and not fx_hit.animation_finished.is_connected(_on_fx_hit_finished):
 		fx_hit.animation_finished.connect(_on_fx_hit_finished)
 
