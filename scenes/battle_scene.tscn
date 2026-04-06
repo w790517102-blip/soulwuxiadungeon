@@ -1,4 +1,4 @@
-[gd_scene load_steps=75 format=3 uid="uid://bqa7bwydf6gxp"]
+[gd_scene load_steps=81 format=3 uid="uid://bqa7bwydf6gxp"]
 
 [ext_resource type="Script" uid="uid://cmsitrldg0lw6" path="res://scripts/battlescripts/BattleController.gd" id="1_idkgt"]
 [ext_resource type="Script" uid="uid://ccles58frpsnf" path="res://scripts/battlescripts/BattleScene.gd" id="1_xr8tn"]
@@ -24,6 +24,12 @@
 [ext_resource type="Script" uid="uid://bca4ab7nipbv8" path="res://scripts/battlescripts/EnemyAI.gd" id="11_g72on"]
 [ext_resource type="Texture2D" uid="uid://cg1lwk7wbmat7" path="res://assets/fx/recovery.png" id="12_porms"]
 [ext_resource type="Script" uid="uid://bh605afdh8gwr" path="res://scripts/battlescripts/EnemySlot.gd" id="13_yt3ua"]
+[ext_resource type="Texture2D" uid="uid://bb1p2jy5t2sy0" path="res://assets/background/battleUI/defult/ally_namecard.png" id="16_16mmc"]
+[ext_resource type="Texture2D" uid="uid://cl1oymxk0m6gs" path="res://assets/background/battleUI/defult/bar_frame.png" id="17_fg2lh"]
+[ext_resource type="Texture2D" uid="uid://crhs4t7dvq7jh" path="res://assets/background/battleUI/defult/enemy_namecard.png" id="25_tr5ov"]
+[ext_resource type="Texture2D" uid="uid://bdpxg8163md0j" path="res://assets/background/battleUI/defult/Background_defult.jpg" id="25_y8gcu"]
+[ext_resource type="Texture2D" uid="uid://pvcubcopitwn" path="res://assets/background/battleUI/defult/logpanel.png" id="26_31luo"]
+[ext_resource type="Texture2D" uid="uid://cudmyhuqtdw6l" path="res://assets/background/battleUI/defult/enemybarframe.png" id="26_c6fjk"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yt3ua"]
 bg_color = Color(0.376471, 0.0627451, 0.0627451, 1)
@@ -405,8 +411,10 @@ text = "狀態"
 
 [node name="AllyPanel" type="VBoxContainer" parent="BattleUILayer/BattleUI"]
 layout_mode = 0
-offset_right = 306.0
-offset_bottom = 445.0
+offset_left = 11.4
+offset_top = 9.545
+offset_right = 319.4
+offset_bottom = 461.545
 
 [node name="TeamMate_1" type="HBoxContainer" parent="BattleUILayer/BattleUI/AllyPanel"]
 custom_minimum_size = Vector2(306, 148)
@@ -424,15 +432,15 @@ layout_mode = 2
 [node name="Name" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1/StatusUI"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="HPLabel" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1/StatusUI"]
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="HPBar" type="ProgressBar" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1/StatusUI"]
 custom_minimum_size = Vector2(0, 25)
@@ -443,9 +451,9 @@ show_percentage = false
 
 [node name="MPLabel" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1/StatusUI"]
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="MPBar" type="ProgressBar" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1/StatusUI"]
 custom_minimum_size = Vector2(0, 25)
@@ -460,6 +468,31 @@ scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
 animation = &"ItemHeal"
 frame_progress = 0.395146
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1"]
+layout_mode = 2
+
+[node name="namecard_ally1" type="TextureRect" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1/Control"]
+z_index = -10
+layout_mode = 0
+offset_left = -318.285
+offset_top = -7.625
+offset_right = 13.19
+offset_bottom = 155.185
+mouse_filter = 2
+texture = ExtResource("16_16mmc")
+expand_mode = 1
+
+[node name="barframe_ally1" type="TextureRect" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_1/Control"]
+z_index = 20
+layout_mode = 0
+offset_left = -318.0
+offset_top = -8.0
+offset_right = 14.0
+offset_bottom = 155.0
+mouse_filter = 2
+texture = ExtResource("17_fg2lh")
+expand_mode = 1
 
 [node name="TeamMate_2" type="HBoxContainer" parent="BattleUILayer/BattleUI/AllyPanel"]
 custom_minimum_size = Vector2(0, 148)
@@ -477,15 +510,15 @@ layout_mode = 2
 [node name="Name" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2/StatusUI"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="HPLabel" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2/StatusUI"]
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="HPBar" type="ProgressBar" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2/StatusUI"]
 custom_minimum_size = Vector2(0, 25)
@@ -496,9 +529,9 @@ show_percentage = false
 
 [node name="MPLabel" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2/StatusUI"]
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="MPBar" type="ProgressBar" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2/StatusUI"]
 custom_minimum_size = Vector2(0, 25)
@@ -512,6 +545,31 @@ position = Vector2(52, 90)
 scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
 animation = &"GuardShield"
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2"]
+layout_mode = 2
+
+[node name="namecard_ally2" type="TextureRect" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2/Control"]
+z_index = -10
+layout_mode = 0
+offset_left = -318.285
+offset_top = -7.625
+offset_right = 13.19
+offset_bottom = 155.185
+mouse_filter = 2
+texture = ExtResource("16_16mmc")
+expand_mode = 1
+
+[node name="barframe_ally2" type="TextureRect" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_2/Control"]
+z_index = 20
+layout_mode = 0
+offset_left = -318.0
+offset_top = -8.0
+offset_right = 14.0
+offset_bottom = 155.0
+mouse_filter = 2
+texture = ExtResource("17_fg2lh")
+expand_mode = 1
 
 [node name="TeamMate_3" type="HBoxContainer" parent="BattleUILayer/BattleUI/AllyPanel"]
 custom_minimum_size = Vector2(0, 148)
@@ -529,15 +587,15 @@ layout_mode = 2
 [node name="Name" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3/StatusUI"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="HPLabel" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3/StatusUI"]
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="HPBar" type="ProgressBar" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3/StatusUI"]
 custom_minimum_size = Vector2(0, 25)
@@ -548,9 +606,9 @@ show_percentage = false
 
 [node name="MPLabel" type="Label" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3/StatusUI"]
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 
 [node name="MPBar" type="ProgressBar" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3/StatusUI"]
 custom_minimum_size = Vector2(0, 25)
@@ -566,11 +624,38 @@ sprite_frames = SubResource("SpriteFrames_porms")
 animation = &"fx_hit_fist"
 frame_progress = 0.943972
 
-[node name="ActionPanel" type="VBoxContainer" parent="BattleUILayer/BattleUI"]
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3"]
+layout_mode = 2
+
+[node name="namecard_ally3" type="TextureRect" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3/Control"]
+z_index = -10
 layout_mode = 0
-offset_top = 460.0
-offset_right = 249.0
-offset_bottom = 644.0
+offset_left = -318.285
+offset_top = -7.625
+offset_right = 13.19
+offset_bottom = 155.185
+mouse_filter = 2
+texture = ExtResource("16_16mmc")
+expand_mode = 1
+
+[node name="barframe_ally3" type="TextureRect" parent="BattleUILayer/BattleUI/AllyPanel/TeamMate_3/Control"]
+z_index = 20
+layout_mode = 0
+offset_left = -318.0
+offset_top = -8.0
+offset_right = 14.0
+offset_bottom = 155.0
+mouse_filter = 2
+texture = ExtResource("17_fg2lh")
+expand_mode = 1
+
+[node name="ActionPanel" type="VBoxContainer" parent="BattleUILayer/BattleUI"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 0
+offset_left = 23.975
+offset_top = 473.435
+offset_right = 272.975
+offset_bottom = 657.435
 
 [node name="TargetSelectPopup" type="PopupPanel" parent="BattleUILayer/BattleUI/ActionPanel"]
 size = Vector2i(500, 350)
@@ -611,6 +696,26 @@ theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
 theme_override_font_sizes/font_size = 20
 text = "取消"
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/ActionPanel/TargetSelectPopup"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+mouse_filter = 2
+
+[node name="background" type="TextureRect" parent="BattleUILayer/BattleUI/ActionPanel/TargetSelectPopup/Control"]
+z_index = -5
+layout_mode = 0
+offset_left = -48.0
+offset_top = -62.0
+offset_right = 548.0
+offset_bottom = 373.0
+mouse_filter = 2
+texture = ExtResource("26_31luo")
+expand_mode = 1
 
 [node name="PopupSkillSelect" type="PopupPanel" parent="BattleUILayer/BattleUI/ActionPanel"]
 size = Vector2i(500, 350)
@@ -653,6 +758,26 @@ theme_override_fonts/font = ExtResource("5_1i8jf")
 theme_override_font_sizes/font_size = 20
 text = "取消"
 
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/ActionPanel/PopupSkillSelect"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+mouse_filter = 2
+
+[node name="background" type="TextureRect" parent="BattleUILayer/BattleUI/ActionPanel/PopupSkillSelect/Control"]
+z_index = -5
+layout_mode = 0
+offset_left = -48.0
+offset_top = -62.0
+offset_right = 548.0
+offset_bottom = 373.0
+mouse_filter = 2
+texture = ExtResource("26_31luo")
+expand_mode = 1
+
 [node name="InnerForcePopup" type="PopupPanel" parent="BattleUILayer/BattleUI/ActionPanel"]
 size = Vector2i(500, 350)
 script = ExtResource("7_rum4d")
@@ -691,6 +816,26 @@ theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_1i8jf")
 theme_override_font_sizes/font_size = 20
 text = "取消"
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/ActionPanel/InnerForcePopup"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 346.0
+mouse_filter = 2
+
+[node name="background" type="TextureRect" parent="BattleUILayer/BattleUI/ActionPanel/InnerForcePopup/Control"]
+z_index = -5
+layout_mode = 0
+offset_left = -48.0
+offset_top = -62.0
+offset_right = 548.0
+offset_bottom = 373.0
+mouse_filter = 2
+texture = ExtResource("26_31luo")
+expand_mode = 1
 
 [node name="ItemListPopup" type="PopupPanel" parent="BattleUILayer/BattleUI/ActionPanel"]
 size = Vector2i(500, 377)
@@ -736,6 +881,26 @@ theme_override_fonts/font = ExtResource("5_1i8jf")
 theme_override_font_sizes/font_size = 20
 text = "取消"
 
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/ActionPanel/ItemListPopup"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 496.0
+offset_bottom = 373.0
+mouse_filter = 2
+
+[node name="background" type="TextureRect" parent="BattleUILayer/BattleUI/ActionPanel/ItemListPopup/Control"]
+z_index = -5
+layout_mode = 0
+offset_left = -48.0
+offset_top = -62.0
+offset_right = 548.0
+offset_bottom = 397.0
+mouse_filter = 2
+texture = ExtResource("26_31luo")
+expand_mode = 1
+
 [node name="DefenseConfirmPopup" type="PopupPanel" parent="BattleUILayer/BattleUI/ActionPanel"]
 size = Vector2i(500, 150)
 script = ExtResource("8_3oc74")
@@ -780,7 +945,7 @@ theme_override_font_sizes/font_size = 20
 text = "取消"
 
 [node name="BtnSkill" type="Button" parent="BattleUILayer/BattleUI/ActionPanel"]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
@@ -789,7 +954,7 @@ theme_override_font_sizes/font_size = 20
 text = "出招"
 
 [node name="BtnInnerForce" type="Button" parent="BattleUILayer/BattleUI/ActionPanel"]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
@@ -798,7 +963,7 @@ theme_override_font_sizes/font_size = 20
 text = "內功"
 
 [node name="BtnItem" type="Button" parent="BattleUILayer/BattleUI/ActionPanel"]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
@@ -807,7 +972,7 @@ theme_override_font_sizes/font_size = 20
 text = "道具"
 
 [node name="BtnDefend" type="Button" parent="BattleUILayer/BattleUI/ActionPanel"]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
@@ -818,10 +983,10 @@ text = "防禦"
 [node name="LogPanel" type="RichTextLabel" parent="BattleUILayer/BattleUI"]
 custom_minimum_size = Vector2(0, 200)
 layout_mode = 0
-offset_left = 306.0
-offset_top = 32.0
-offset_right = 864.0
-offset_bottom = 614.0
+offset_left = 338.81
+offset_top = 40.0
+offset_right = 812.81
+offset_bottom = 605.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/normal_font = ExtResource("5_1i8jf")
@@ -835,9 +1000,9 @@ script = ExtResource("10_tttxe")
 
 [node name="EnemyPanel" type="VBoxContainer" parent="BattleUILayer/BattleUI"]
 layout_mode = 0
-offset_left = 864.0
+offset_left = 844.77
 offset_top = 77.0
-offset_right = 1168.0
+offset_right = 1148.77
 offset_bottom = 585.0
 
 [node name="Enemy_1" type="HBoxContainer" parent="BattleUILayer/BattleUI/EnemyPanel"]
@@ -865,6 +1030,10 @@ theme_override_styles/background = SubResource("StyleBoxFlat_dm2tv")
 theme_override_styles/fill = SubResource("StyleBoxFlat_16mmc")
 show_percentage = false
 
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_1/StatusUI"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
 [node name="ElementLabel" type="Label" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_1/StatusUI"]
 layout_mode = 2
 
@@ -874,6 +1043,30 @@ scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
 animation = &"GuardShield"
 frame_progress = 0.621039
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_1"]
+layout_mode = 2
+
+[node name="namecard_enemy1" type="TextureRect" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_1/Control"]
+z_index = -1
+layout_mode = 0
+offset_left = -305.0
+offset_top = -8.0
+offset_right = 19.0
+offset_bottom = 154.01
+mouse_filter = 2
+texture = ExtResource("25_tr5ov")
+expand_mode = 1
+
+[node name="barframe_enemy1" type="TextureRect" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_1/Control"]
+layout_mode = 0
+offset_left = -305.0
+offset_top = -8.0
+offset_right = 19.0
+offset_bottom = 154.0
+mouse_filter = 2
+texture = ExtResource("26_c6fjk")
+expand_mode = 1
 
 [node name="Enemy_2" type="HBoxContainer" parent="BattleUILayer/BattleUI/EnemyPanel"]
 layout_mode = 2
@@ -900,6 +1093,10 @@ theme_override_styles/background = SubResource("StyleBoxFlat_dm2tv")
 theme_override_styles/fill = SubResource("StyleBoxFlat_16mmc")
 show_percentage = false
 
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_2/StatusUI"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
 [node name="ElementLabel" type="Label" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_2/StatusUI"]
 layout_mode = 2
 
@@ -909,6 +1106,30 @@ scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
 animation = &"fx_brush_stroke"
 frame_progress = 0.492613
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_2"]
+layout_mode = 2
+
+[node name="namecard_enemy1" type="TextureRect" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_2/Control"]
+z_index = -1
+layout_mode = 0
+offset_left = -305.0
+offset_top = -8.0
+offset_right = 19.0
+offset_bottom = 154.01
+mouse_filter = 2
+texture = ExtResource("25_tr5ov")
+expand_mode = 1
+
+[node name="barframe_enemy1" type="TextureRect" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_2/Control"]
+layout_mode = 0
+offset_left = -305.0
+offset_top = -8.0
+offset_right = 19.0
+offset_bottom = 154.0
+mouse_filter = 2
+texture = ExtResource("26_c6fjk")
+expand_mode = 1
 
 [node name="Enemy_3" type="HBoxContainer" parent="BattleUILayer/BattleUI/EnemyPanel"]
 layout_mode = 2
@@ -935,6 +1156,10 @@ theme_override_styles/background = SubResource("StyleBoxFlat_dm2tv")
 theme_override_styles/fill = SubResource("StyleBoxFlat_16mmc")
 show_percentage = false
 
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_3/StatusUI"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
 [node name="ElementLabel" type="Label" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_3/StatusUI"]
 layout_mode = 2
 
@@ -943,6 +1168,31 @@ position = Vector2(52, 90)
 scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
 animation = &"fx_brush_stroke"
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_3"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="namecard_enemy1" type="TextureRect" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_3/Control"]
+z_index = -1
+layout_mode = 0
+offset_left = -305.0
+offset_top = -8.0
+offset_right = 19.0
+offset_bottom = 154.01
+mouse_filter = 2
+texture = ExtResource("25_tr5ov")
+expand_mode = 1
+
+[node name="barframe_enemy1" type="TextureRect" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_3/Control"]
+layout_mode = 0
+offset_left = -305.0
+offset_top = -8.0
+offset_right = 19.0
+offset_bottom = 154.0
+mouse_filter = 2
+texture = ExtResource("26_c6fjk")
+expand_mode = 1
 
 [node name="BattleResultOverlay" type="Control" parent="BattleUILayer/BattleUI"]
 anchors_preset = 0
@@ -962,19 +1212,38 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -220.0
-offset_top = -130.0
-offset_right = 220.0
-offset_bottom = 130.0
+offset_left = 350.0
+offset_top = 200.0
+offset_right = 790.0
+offset_bottom = 460.0
+
+[node name="Control" type="Control" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="background" type="TextureRect" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel/Control"]
+layout_mode = 0
+offset_left = -17.0
+offset_top = -4.0
+offset_right = 440.0
+offset_bottom = 273.0
+mouse_filter = 2
+texture = ExtResource("26_31luo")
+expand_mode = 1
 
 [node name="ResultContent" type="VBoxContainer" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel"]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 16.0
+offset_left = 25.0
 offset_top = 16.0
-offset_right = -16.0
+offset_right = -42.0
 offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="ResultTitle" type="Label" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel/ResultContent"]
 layout_mode = 2
@@ -991,6 +1260,23 @@ autowrap_mode = 3
 [node name="ConfirmButton" type="Button" parent="BattleUILayer/BattleUI/BattleResultOverlay/ResultPanel/ResultContent"]
 layout_mode = 2
 text = "確認"
+
+[node name="background" type="TextureRect" parent="BattleUILayer/BattleUI"]
+z_index = -50
+offset_right = 1152.0
+offset_bottom = 648.0
+mouse_filter = 2
+texture = ExtResource("25_y8gcu")
+expand_mode = 1
+
+[node name="logpanel" type="TextureRect" parent="BattleUILayer/BattleUI"]
+z_index = -35
+offset_left = 296.96
+offset_right = 857.965
+offset_bottom = 644.0
+mouse_filter = 2
+texture = ExtResource("26_31luo")
+expand_mode = 1
 
 [node name="BattleAudio" type="Node" parent="."]
 
