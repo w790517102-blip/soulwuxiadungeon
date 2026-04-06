@@ -12,7 +12,6 @@ const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
 const DEBUG_ENEMY_PANEL_LAYOUT := true
 const DEBUG_DISABLE_ENEMY_STATUS_ABBREV := true
-const ENEMY_PANEL_RIGHT_MARGIN := 8.0
 var tone = ToneMap.new()
 
 @onready var ally_panel = $AllyPanel
@@ -232,7 +231,6 @@ func _ready() -> void:
 	# 把 AllyPanel / EnemyPanel 底下現有的 slot 存起來（例如 TeamMate_1, TeamMate_2...）
 	ally_slots = ally_panel.get_children()
 	enemy_slots = enemy_panel.get_children()
-	_snap_enemy_panel_to_right_edge()
 	_setup_actor_bubble_labels()
 	_ensure_status_abbrev_labels()
 	set_process(true)
@@ -697,15 +695,12 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	_setup_actor_bubble_labels()
 	update_ally_panel()
 	update_enemy_panel()
-	_snap_enemy_panel_to_right_edge()
 	_refresh_all_status_abbrev_labels()
 	_log_enemy_layout_sizes("after_set_teams_update")
 	_log_slot_vertical_baselines("after_set_teams_update")
 	call_deferred("_debug_enemy_panel_layout", "set_teams")
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED:
-		_snap_enemy_panel_to_right_edge()
 	if not DEBUG_ENEMY_PANEL_LAYOUT:
 		return
 	if what == NOTIFICATION_RESIZED:
@@ -727,33 +722,6 @@ func _debug_enemy_panel_layout(stage: String) -> void:
 		" anchors=", anchors,
 		" offsets=", offsets,
 		" viewport_size=", get_viewport_rect().size)
-
-func _snap_enemy_panel_to_right_edge() -> void:
-	if enemy_panel == null:
-		return
-	var viewport_width := get_viewport_rect().size.x
-	if viewport_width <= 0.0:
-		return
-	var width := enemy_panel.size.x
-	if width <= 0.0:
-		width = enemy_panel.offset_right - enemy_panel.offset_left
-	if width <= 0.0:
-		width = 304.0
-	var height := enemy_panel.size.y
-	if height <= 0.0:
-		height = enemy_panel.offset_bottom - enemy_panel.offset_top
-	if height <= 0.0:
-		height = 508.0
-	var top := enemy_panel.offset_top
-	var target_x := viewport_width - width - ENEMY_PANEL_RIGHT_MARGIN
-	enemy_panel.anchor_left = 0.0
-	enemy_panel.anchor_right = 0.0
-	enemy_panel.anchor_top = 0.0
-	enemy_panel.anchor_bottom = 0.0
-	enemy_panel.offset_left = target_x
-	enemy_panel.offset_right = target_x + width
-	enemy_panel.offset_top = top
-	enemy_panel.offset_bottom = top + height
 
 func show_actor_line(actor_id: String, text: String) -> void:
 	if actor_id == "" or text == "":
