@@ -240,6 +240,7 @@ func _ready() -> void:
 	if status_hover_popup:
 		status_hover_popup.hide()
 		status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_debug_enemy_panel_layout("ready_immediate")
 	call_deferred("_debug_enemy_panel_layout", "ready_deferred")
 
 func _apply_menu_font_style(root: Node) -> void:
@@ -722,6 +723,54 @@ func _debug_enemy_panel_layout(stage: String) -> void:
 		" anchors=", anchors,
 		" offsets=", offsets,
 		" viewport_size=", get_viewport_rect().size)
+	_debug_enemy_panel_parent_chain(stage)
+
+func _debug_enemy_panel_parent_chain(stage: String) -> void:
+	if not DEBUG_ENEMY_PANEL_LAYOUT:
+		return
+	_debug_layout_node("EnemyPanel", enemy_panel)
+	_debug_layout_node("BattleUI", self)
+	var ui_layer := get_parent()
+	_debug_layout_node("BattleUILayer", ui_layer)
+	var scene_root := get_tree().current_scene
+	_debug_layout_node("BattleScene", scene_root)
+	print("[EnemyPanelDebug] stage=", stage, " chain_logged=true")
+
+func _debug_layout_node(label: String, node: Node) -> void:
+	if node == null:
+		print("[LayoutChain] ", label, " = null")
+		return
+	if node is Control:
+		var ctrl := node as Control
+		var anchors := Vector4(ctrl.anchor_left, ctrl.anchor_top, ctrl.anchor_right, ctrl.anchor_bottom)
+		var offsets := Vector4(ctrl.offset_left, ctrl.offset_top, ctrl.offset_right, ctrl.offset_bottom)
+		print("[LayoutChain] ", label,
+			" class=", ctrl.get_class(),
+			" path=", ctrl.get_path(),
+			" position=", ctrl.position,
+			" global_position=", ctrl.global_position,
+			" size=", ctrl.size,
+			" anchors=", anchors,
+			" offsets=", offsets)
+		return
+	if node is CanvasLayer:
+		var canvas := node as CanvasLayer
+		print("[LayoutChain] ", label,
+			" class=CanvasLayer",
+			" path=", canvas.get_path(),
+			" offset=", canvas.offset,
+			" follow_viewport_enabled=", canvas.follow_viewport_enabled,
+			" follow_viewport_scale=", canvas.follow_viewport_scale)
+		return
+	if node is Node2D:
+		var node2d := node as Node2D
+		print("[LayoutChain] ", label,
+			" class=", node2d.get_class(),
+			" path=", node2d.get_path(),
+			" position=", node2d.position,
+			" global_position=", node2d.global_position)
+		return
+	print("[LayoutChain] ", label, " class=", node.get_class(), " path=", node.get_path())
 
 func show_actor_line(actor_id: String, text: String) -> void:
 	if actor_id == "" or text == "":
