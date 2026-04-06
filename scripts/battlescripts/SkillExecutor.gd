@@ -30,6 +30,7 @@ func execute(
 		"target_down": false,
 		"hit": true,
 		"dodged": false,
+		"target_defending": false,
 		"hit_chance": 100,
 		"hit_roll": 0.0
 	}
@@ -220,6 +221,7 @@ func execute(
 	var target_hp: int = int(target.get("hp", 0)) - dmg_int
 	target["hp"] = target_hp
 	result["damage"] = dmg_int
+	result["target_defending"] = bool(context.get("defending", false))
 
 	# --- 是否倒下 ---
 	if target_hp <= 0:

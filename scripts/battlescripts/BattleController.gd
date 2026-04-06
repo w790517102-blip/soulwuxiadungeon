@@ -22,12 +22,34 @@ var _player_base_snapshot: Dictionary = {}
 var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
 var battle_bgm_player: AudioStreamPlayer = null
+var battle_se_player: AudioStreamPlayer2D = null
+var _se_stream_cache: Dictionary = {}
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
 const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
 const MAJOR_HIT_HEAVY_DAMAGE_RATIO := 0.22
 const ENEMY_DODGE_LINE_CHANCE := 0.60
 const ENEMY_DEBUFF_SUFFER_LINE_CHANCE := 0.90
+const SE_SEARCH_DIRS := [
+	"res://assets/audio/se/battle",
+	"res://assets/audio/battle/se",
+	"res://assets/se/battle",
+	"res://assets/se",
+	"res://assets/sfx/battle",
+	"res://assets/sfx",
+]
+const SE_EXTENSIONS := [".ogg", ".wav", ".mp3"]
+const SE_VARIANT_MAX := 4
+const WEAPON_SE_MAP := {
+	"刀": "sword",
+	"劍": "sword",
+	"棍": "stick",
+	"槍": "spear",
+	"琴": "zither",
+	"筆": "pen",
+	"拳": "fist",
+	"掌": "fist",
+}
 const MARTIAL_PAIRING_BONUSES := [
 	{
 		"inner_force_id": "liuchen_jue",
@@ -160,6 +182,7 @@ func _init_battle_safe() -> void:
 		push_error("❌ 無法找到 BattleUI")
 
 	battle_bgm_player = root.get_node_or_null("BattleAudio/BGMPlayer") as AudioStreamPlayer
+	battle_se_player = root.get_node_or_null("BattleAudio/SEPlayer") as AudioStreamPlayer2D
 
 	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
 	turn_manager.turn_started.connect(_on_turn_started)
@@ -234,6 +257,144 @@ func _play_battle_bgm_from_context(context: Dictionary) -> void:
 	battle_bgm_player.stream = stream
 	battle_bgm_player.volume_db = -3.0
 	battle_bgm_player.play()
+
+func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+	if battle_se_player == null:
+		return
+	var hit := bool(result.get("hit", true))
+	var dodged := bool(result.get("dodged", not hit))
+	var is_crit := bool(result.get("crit", false))
+	var target_guarding := bool(result.get("target_defending", target.get("defending", false)))
+
+	# 1) onguard 最高優先
+	if hit and target_guarding:
+		_play_named_se_with_fallback(["SE_hit_onguard"])
+		return
+
+	# 2) evade / miss
+	if not hit:
+		if dodged:
+			_play_named_se_with_fallback(["SE_evade", "SE_%s_miss" % _resolve_weapon_se_key(user, skill_data)])
+		else:
+			_play_named_se_with_fallback(["SE_%s_miss" % _resolve_weapon_se_key(user, skill_data), "SE_evade"])
+		return
+
+	# 3) crit
+	if is_crit:
+		var w_crit := "SE_%s_crit" % _resolve_weapon_se_key(user, skill_data)
+		var w_power := "SE_%s_power" % _resolve_weapon_se_key(user, skill_data)
+		var w_hit := "SE_%s_hit" % _resolve_weapon_se_key(user, skill_data)
+		_play_named_se_with_fallback([w_crit, w_power, w_hit])
+		return
+
+	# 4) weapon + mode
+	var weapon_key := _resolve_weapon_se_key(user, skill_data)
+	var mode := _resolve_skill_se_mode(skill_data)
+	match mode:
+		"aoe":
+			_play_named_se_with_fallback([
+				"SE_%s_aoe" % weapon_key,
+				"SE_%s_power" % weapon_key,
+				"SE_%s_hit" % weapon_key,
+			])
+		"multi":
+			_play_named_se_with_fallback([
+				"SE_%s_multi" % weapon_key,
+				"SE_%s_hit" % weapon_key,
+			])
+		"power":
+			_play_named_se_with_fallback([
+				"SE_%s_power" % weapon_key,
+				"SE_%s_aoe" % weapon_key,
+				"SE_%s_hit" % weapon_key,
+			])
+		_:
+			_play_named_se_with_fallback(["SE_%s_hit" % weapon_key])
+
+func _play_support_se(kind: String, effect: String = "") -> void:
+	if battle_se_player == null:
+		return
+	var normalized_kind := kind.strip_edges().to_lower()
+	var normalized_effect := _canonicalize_status_effect_id(effect)
+	if normalized_effect in ["cleanse", "cure", "purify", "dispel", "remove_debuff"]:
+		_play_named_se_with_fallback(["SE_cure", "SE_heal"])
+		return
+	match normalized_kind:
+		"heal":
+			_play_named_se_with_fallback(["SE_heal", "SE_buff"])
+		"cure":
+			_play_named_se_with_fallback(["SE_cure", "SE_heal"])
+		"buff":
+			_play_named_se_with_fallback(["SE_buff", "SE_heal"])
+		"debuff":
+			_play_named_se_with_fallback(["SE_debuff"])
+		_:
+			_play_named_se_with_fallback(["SE_heal"])
+
+func _play_named_se_with_fallback(base_keys: Array) -> void:
+	if battle_se_player == null:
+		return
+	for key_any in base_keys:
+		var key := String(key_any).strip_edges()
+		if key == "":
+			continue
+		var stream := _find_se_stream_for_base(key)
+		if stream != null:
+			battle_se_player.stream = stream
+			battle_se_player.play()
+			return
+
+func _find_se_stream_for_base(base_key: String) -> AudioStream:
+	if base_key == "":
+		return null
+	var variant_indices: Array = []
+	for i in range(1, SE_VARIANT_MAX + 1):
+		variant_indices.append(i)
+	variant_indices.shuffle()
+	for idx_any in variant_indices:
+		var stream_variant := _load_se_stream("%s_%d" % [base_key, int(idx_any)])
+		if stream_variant != null:
+			return stream_variant
+	return _load_se_stream(base_key)
+
+func _load_se_stream(name: String) -> AudioStream:
+	for dir_any in SE_SEARCH_DIRS:
+		var dir := String(dir_any).strip_edges()
+		for ext_any in SE_EXTENSIONS:
+			var path := "%s/%s%s" % [dir, name, String(ext_any)]
+			if _se_stream_cache.has(path):
+				return _se_stream_cache[path]
+			if ResourceLoader.exists(path):
+				var loaded = load(path)
+				if loaded is AudioStream:
+					_se_stream_cache[path] = loaded
+					return loaded
+			_se_stream_cache[path] = null
+	return null
+
+func _resolve_weapon_se_key(actor: Dictionary, skill_data: Dictionary) -> String:
+	var wt := String(skill_data.get("weapon_type", "")).strip_edges()
+	if wt == "":
+		wt = String(actor.get("weapon_1", "拳")).strip_edges()
+	if WEAPON_SE_MAP.has(wt):
+		return String(WEAPON_SE_MAP[wt])
+	return "fist"
+
+func _resolve_skill_se_mode(skill_data: Dictionary) -> String:
+	var sid := String(skill_data.get("id", skill_data.get("skill_id", ""))).to_lower()
+	var scope := String(skill_data.get("target_scope", "single")).to_lower()
+	var kind := String(skill_data.get("kind", "")).strip_edges()
+	if bool(skill_data.get("is_power", false)) or kind in ["絕技", "奧義"] or sid.find("power") != -1 or sid.find("ultimate") != -1 or sid.find("aoyi") != -1:
+		return "power"
+	if scope in ["enemy_all", "ally_all", "all", "aoe", "all_enemy", "all_enemies"]:
+		return "aoe"
+	var strike_count := maxi(
+		int(skill_data.get("strike_count", skill_data.get("attack_count", skill_data.get("hit_count", skill_data.get("hits", 1))))),
+		int(skill_data.get("strike_count_max", 1))
+	)
+	if strike_count > 1:
+		return "multi"
+	return "hit"
 
 func _apply_equipment_bonuses() -> void:
 	if InventorySync == null:
@@ -996,6 +1157,7 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 			_emit_enemy_spoken_line(enemy, enemy_skill_line)
 	target = _resolve_confuse_target(enemy, target, scope)
 	var result = skill_executor.execute(enemy, target, skill, inner_force)
+	_play_attack_se_from_result(enemy, target, skill, result)
 	_emit_dodge_actor_line(result, target)
 	_emit_crit_admire_line(result, enemy)
 	_emit_major_hit_reaction_from_result(result, target)
@@ -1306,6 +1468,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 		if i > 0:
 			strike_skill_data["_suppress_attack_opener"] = true
 		var strike_result = skill_executor.execute(actor, pick, strike_skill_data, inner_force)
+		_play_attack_se_from_result(actor, pick, strike_skill_data, strike_result)
 		_emit_dodge_actor_line(strike_result, pick)
 		_emit_crit_admire_line(strike_result, actor)
 		_emit_major_hit_reaction_from_result(strike_result, pick)
@@ -1372,6 +1535,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 			if i > 0:
 				strike_skill_data["_suppress_attack_opener"] = true
 			var strike_result = skill_executor.execute(actor, enemy, strike_skill_data, inner_force)
+			_play_attack_se_from_result(actor, enemy, strike_skill_data, strike_result)
 			_emit_dodge_actor_line(strike_result, enemy)
 			_emit_crit_admire_line(strike_result, actor)
 			_emit_major_hit_reaction_from_result(strike_result, enemy)
@@ -1496,6 +1660,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 			var enemy_copy: Dictionary = enemy.duplicate(true)
 			var r: Dictionary = skill_executor.execute(actor, enemy_copy, aoe_skill_data, inner_force)
+			_play_attack_se_from_result(actor, enemy, aoe_skill_data, r)
 			_emit_dodge_actor_line(r, enemy)
 			_emit_crit_admire_line(r, actor)
 			_emit_major_hit_reaction_from_result(r, enemy)
@@ -1621,6 +1786,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		if i > 0:
 			strike_skill_data["_suppress_attack_opener"] = true
 		var strike_result = skill_executor.execute(actor, actual_target, strike_skill_data, inner_force_single)
+		_play_attack_se_from_result(actor, actual_target, strike_skill_data, strike_result)
 		_emit_dodge_actor_line(strike_result, actual_target)
 		_emit_crit_admire_line(strike_result, actor)
 		_emit_major_hit_reaction_from_result(strike_result, actual_target)
@@ -2418,10 +2584,10 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 	if battle_ui:
 		if battle_ui.has_method("play_attack_motion"):
 			battle_ui.play_attack_motion(user)
-
 		if battle_ui.has_method("play_heal_react"):
 			for t in targets:
 				battle_ui.play_heal_react(t)
+	_play_support_se("heal")
 
 	# 🔁 同步 UI
 	for t in targets:
@@ -2481,6 +2647,7 @@ func _execute_support_mp_heal(user: Dictionary, skill_data: Dictionary, target: 
 
 	if battle_ui and battle_ui.has_method("play_heal_react"):
 		battle_ui.play_heal_react(target)
+	_play_support_se("heal")
 
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(user)
@@ -2580,6 +2747,7 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 			_log(system_line)
 		if battle_ui and battle_ui.has_method("try_emit_thanks_for_help"):
 			battle_ui.try_emit_thanks_for_help(user, targets)
+		_play_support_se("buff", effect)
 	else:
 		var actual_target: Dictionary = targets[0]
 		_log("%s 對 %s 施展「%s」。" % [
@@ -2589,6 +2757,7 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 		])
 		_log_applied_statuses(applied_records)
 		_emit_major_hit_reaction_from_applied_statuses(applied_records)
+		_play_support_se("debuff", effect)
 
 	_update_ui_for_actor(user)
 	return true
