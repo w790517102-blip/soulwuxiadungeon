@@ -11,7 +11,7 @@ const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.t
 const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
 const DEBUG_ENEMY_PANEL_LAYOUT := true
-const DEBUG_DISABLE_ENEMY_STATUS_ABBREV := true
+const DEBUG_DISABLE_ENEMY_STATUS_ABBREV := false
 var tone = ToneMap.new()
 
 @onready var ally_panel = $AllyPanel
@@ -696,7 +696,7 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	_setup_actor_bubble_labels()
 	update_ally_panel()
 	update_enemy_panel()
-	_refresh_all_status_abbrev_labels()
+	_refresh_all_status_abbrev_labels("set_teams")
 	_log_enemy_layout_sizes("after_set_teams_update")
 	_log_slot_vertical_baselines("after_set_teams_update")
 	call_deferred("_debug_enemy_panel_layout", "set_teams")
@@ -1237,7 +1237,7 @@ func begin_turn(actor: Dictionary) -> void:
 
 	update_ally_panel()
 	update_enemy_panel()
-	_refresh_all_status_abbrev_labels()
+	_refresh_all_status_abbrev_labels("begin_turn")
 
 	# ⭐ 新增：更新回合高亮
 	_update_turn_highlight()
@@ -1300,7 +1300,7 @@ func update_ally_panel() -> void:
 			slot.update_from_actor(actor)
 		elif slot.has_method("setup_from_actor"):
 			slot.setup_from_actor(actor)
-	_refresh_all_status_abbrev_labels()
+	_refresh_all_status_abbrev_labels("update_ally_panel")
 
 
 ## 整隊敵方 UI 刷新
@@ -1333,7 +1333,7 @@ func update_enemy_panel() -> void:
 				slot.clear_slot()
 			else:
 				slot.hide()
-	_refresh_all_status_abbrev_labels()
+	_refresh_all_status_abbrev_labels("update_enemy_panel")
 
 ## 單一我方成員狀態更新（被打 / 回血 時由 BattleController 呼叫）
 func update_ally_status(index: int, actor: Dictionary) -> void:
@@ -1342,7 +1342,7 @@ func update_ally_status(index: int, actor: Dictionary) -> void:
 	var slot = ally_slots[index]
 	if slot.has_method("update_from_actor"):
 		slot.update_from_actor(actor)
-	_refresh_all_status_abbrev_labels()
+	_refresh_all_status_abbrev_labels("update_ally_status")
 
 
 ## 單一敵方成員狀態更新
@@ -1352,7 +1352,7 @@ func update_enemy_status(index: int, actor: Dictionary) -> void:
 	var slot = enemy_slots[index]
 	if slot.has_method("update_from_actor"):
 		slot.update_from_actor(actor)
-	_refresh_all_status_abbrev_labels()
+	_refresh_all_status_abbrev_labels("update_enemy_status")
 
 # =========================
 #  攻擊動畫橋接：讓 Controller 不用管 slot 細節
@@ -1581,7 +1581,7 @@ func _ensure_slot_status_label(slot: Node) -> RichTextLabel:
 	return label
 
 
-func _refresh_all_status_abbrev_labels() -> void:
+func _refresh_all_status_abbrev_labels(stage: String = "") -> void:
 	_has_blinking_tokens = false
 	for i in range(_ally_status_labels.size()):
 		var label: RichTextLabel = _ally_status_labels[i]
@@ -1610,6 +1610,9 @@ func _refresh_all_status_abbrev_labels() -> void:
 		label.text = String(packed_enemy.get("text", ""))
 		if bool(packed_enemy.get("blink", false)):
 			_has_blinking_tokens = true
+	if stage != "":
+		_log_enemy_layout_sizes("status_refresh_" + stage)
+		_log_slot_vertical_baselines("status_refresh_" + stage)
 
 func _log_enemy_layout_sizes(stage: String) -> void:
 	if enemy_panel == null:
@@ -1629,7 +1632,8 @@ func _log_enemy_layout_sizes(stage: String) -> void:
 				" status_custom_min=", status_label.custom_minimum_size,
 				" status_fit_content=", status_label.fit_content,
 				" status_size_flags_h=", status_label.size_flags_horizontal,
-				" status_visible=", status_label.visible)
+				" status_visible=", status_label.visible,
+				" status_text=", status_label.text)
 
 func _log_slot_vertical_baselines(stage: String) -> void:
 	var ally_sep: int = ally_panel.get_theme_constant("separation") if ally_panel else 0
