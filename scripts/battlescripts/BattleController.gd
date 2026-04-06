@@ -31,6 +31,7 @@ const MAJOR_HIT_HEAVY_DAMAGE_RATIO := 0.22
 const ENEMY_DODGE_LINE_CHANCE := 0.60
 const ENEMY_DEBUFF_SUFFER_LINE_CHANCE := 0.90
 const SE_SEARCH_DIRS := [
+	"res://assets/sound",
 	"res://assets/audio/se/battle",
 	"res://assets/audio/battle/se",
 	"res://assets/se/battle",
