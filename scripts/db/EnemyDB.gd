@@ -79,7 +79,7 @@ const ENEMY_DEFS := {
 		"atk": 12,
 		"def": 4,
 		"speed": 14,
-		"element": "毒",
+		"element": "柔",
 		"exp": 10,
 		"gold": {"chance": 0.3, "min": 1, "max": 4},
 		"drops": [],
