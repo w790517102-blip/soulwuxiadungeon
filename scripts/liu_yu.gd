@@ -33,7 +33,7 @@ const ENCOUNTER_POOLS := {
 		{"w": 25, "enemies": ["bamboo_bandit_scout", "bamboo_bandit_archer"]},
 		{"w": 20, "enemies": ["bamboo_wild_boar"]},
 		{"w": 10, "enemies": ["bamboo_poison_snake", "bamboo_poison_snake"]},
-		{"w": 5, "enemies": ["bamboo_youmei"]}
+		{"w": 5, "enemies": ["bamboo_bandit_archer", "bamboo_poison_snake"]}
 	],
 	"yuheng_sewer": [
 		{"w": 35, "enemies": ["sewer_rat_swarm"]},
@@ -58,7 +58,8 @@ const ENCOUNTER_STYLE_BY_ARCHETYPE := {
 	"朝廷": "court",
 	"官兵": "court",
 	"軍人": "court",
-	"語魅": "youmei",
+	"野獸": "beast",
+	"爬蟲": "beast",
 	"鬼神": "ghost",
 	"江湖人士": "jianghu"
 }
@@ -82,11 +83,11 @@ const ENCOUNTER_STYLE_PROFILES := {
 		"generic_texture_path": "res://assets/background/encounter_screen_court_defult.jpg",
 		"glyph_texture_paths": {"令": "res://assets/background/encounter_screen_court_ling.jpg", "緝": "res://assets/background/encounter_screen_court_chi.jpg"}
 	},
-	"youmei": {
-		"glyphs": ["魅", "裂", "亂", "沉"],
-		"colors": [Color(0.20, 0.14, 0.25, 1.0), Color(0.16, 0.25, 0.27, 1.0)],
-		"generic_texture_path": "res://assets/background/encounter_screen_yumei.jpg",
-		"glyph_texture_paths": {"魅": "res://assets/background/encounter_screen_yumei.jpg", "裂": "res://assets/background/encounter_screen_yumei.jpg", "亂": "res://assets/background/encounter_screen_yumei.jpg", "沉": "res://assets/background/encounter_screen_yumei.jpg"}
+	"beast": {
+		"glyphs": ["獵", "獸"],
+		"colors": [Color(0.43, 0.30, 0.18, 1.0), Color(0.62, 0.48, 0.28, 1.0), Color(0.82, 0.74, 0.56, 1.0)],
+		"generic_texture_path": ENCOUNTER_STYLE_DEFAULT_TEXTURE,
+		"glyph_texture_paths": {"獵": ENCOUNTER_STYLE_DEFAULT_TEXTURE, "獸": ENCOUNTER_STYLE_DEFAULT_TEXTURE}
 	},
 	"ghost": {
 		"glyphs": ["煞", "厄", "魘"],

@@ -15,36 +15,42 @@ const ARCHETYPE_ALIASES := {
 
 const ENEMY_DEFS := {
 	"bamboo_bandit_scout": {
-		"display_name": "山賊探子",
-		"hp": 60,
-		"max_hp": 60,
-		"mp": 10,
-		"atk": 10,
-		"def": 6,
-		"speed": 10,
-		"element": "遲",
-		"exp": 8,
-		"gold": {"chance": 0.4, "min": 2, "max": 5},
-		"drops": [],
-		"ai_profile": "default",
-		"skills": [],
-		"archetype": "地痞"
-	},
-	"bamboo_bandit_archer": {
-		"display_name": "山賊弓手",
-		"hp": 50,
-		"max_hp": 50,
-		"mp": 15,
-		"atk": 11,
+		"display_name": "獼猴",
+		"hp": 52,
+		"max_hp": 52,
+		"mp": 0,
+		"atk": 9,
 		"def": 5,
-		"speed": 12,
-		"element": "巧",
-		"exp": 9,
-		"gold": {"chance": 0.45, "min": 2, "max": 6},
+		"speed": 13,
+		"element": "快",
+		"exp": 8,
+		"gold": {"chance": 0.3, "min": 1, "max": 4},
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
-		"archetype": "地痞"
+		"archetype": "野獸",
+		"accuracy": 104,
+		"evasion": 10,
+		"crit_rate_bonus": 0.01
+	},
+	"bamboo_bandit_archer": {
+		"display_name": "山貓",
+		"hp": 48,
+		"max_hp": 48,
+		"mp": 0,
+		"atk": 12,
+		"def": 4,
+		"speed": 15,
+		"element": "快",
+		"exp": 10,
+		"gold": {"chance": 0.25, "min": 1, "max": 4},
+		"drops": [],
+		"ai_profile": "aggressive",
+		"skills": [],
+		"archetype": "野獸",
+		"accuracy": 111,
+		"evasion": 14,
+		"crit_rate_bonus": 0.03
 	},
 	"bamboo_wild_boar": {
 		"display_name": "野豬",
@@ -60,7 +66,10 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
-		"archetype": "野獸"
+		"archetype": "野獸",
+		"accuracy": 98,
+		"evasion": 0,
+		"crit_rate_bonus": 0.01
 	},
 	"bamboo_poison_snake": {
 		"display_name": "毒蛇",
@@ -76,23 +85,10 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
-		"archetype": "爬蟲"
-	},
-	"bamboo_youmei": {
-		"display_name": "語魅",
-		"hp": 75,
-		"max_hp": 75,
-		"mp": 20,
-		"atk": 12,
-		"def": 7,
-		"speed": 9,
-		"element": "遲",
-		"exp": 14,
-		"gold": {"chance": 0.5, "min": 4, "max": 9},
-		"drops": [],
-		"ai_profile": "support",
-		"skills": [],
-		"archetype": "語魅"
+		"archetype": "爬蟲",
+		"accuracy": 108,
+		"evasion": 14,
+		"crit_rate_bonus": 0.02
 	},
 	"sewer_rat_swarm": {
 		"display_name": "鼠群",
