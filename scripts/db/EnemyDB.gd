@@ -14,7 +14,7 @@ const ARCHETYPE_ALIASES := {
 }
 
 const ENEMY_DEFS := {
-	"bamboo_bandit_scout": {
+	"bamboo_macaque": {
 		"display_name": "獼猴",
 		"hp": 52,
 		"max_hp": 52,
@@ -33,7 +33,7 @@ const ENEMY_DEFS := {
 		"evasion": 10,
 		"crit_rate_bonus": 0.01
 	},
-	"bamboo_bandit_archer": {
+	"bamboo_bobcat": {
 		"display_name": "山貓",
 		"hp": 48,
 		"max_hp": 48,
