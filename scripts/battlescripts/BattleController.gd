@@ -22,8 +22,10 @@ var _player_base_snapshot: Dictionary = {}
 var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
 var battle_bgm_player: AudioStreamPlayer = null
-var battle_se_player: AudioStreamPlayer2D = null
+var battle_se_player: Node = null
 var _se_stream_cache: Dictionary = {}
+var _se_name_to_paths: Dictionary = {}
+var _se_catalog_built := false
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
 const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
@@ -183,7 +185,7 @@ func _init_battle_safe() -> void:
 		push_error("❌ 無法找到 BattleUI")
 
 	battle_bgm_player = root.get_node_or_null("BattleAudio/BGMPlayer") as AudioStreamPlayer
-	battle_se_player = root.get_node_or_null("BattleAudio/SEPlayer") as AudioStreamPlayer2D
+	battle_se_player = root.get_node_or_null("BattleAudio/SEPlayer")
 
 	# ⭐ 戰鬥開始前，把隊伍資料丟給 BattleUI
 	turn_manager.turn_started.connect(_on_turn_started)
@@ -260,7 +262,7 @@ func _play_battle_bgm_from_context(context: Dictionary) -> void:
 	battle_bgm_player.play()
 
 func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
-	if battle_se_player == null:
+	if not _can_play_se():
 		return
 	var hit := bool(result.get("hit", true))
 	var dodged := bool(result.get("dodged", not hit))
@@ -296,24 +298,30 @@ func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_dat
 			_play_named_se_with_fallback([
 				"SE_%s_aoe" % weapon_key,
 				"SE_%s_power" % weapon_key,
+				"SE_hit_%s" % weapon_key,
 				"SE_%s_hit" % weapon_key,
 			])
 		"multi":
 			_play_named_se_with_fallback([
 				"SE_%s_multi" % weapon_key,
+				"SE_hit_%s" % weapon_key,
 				"SE_%s_hit" % weapon_key,
 			])
 		"power":
 			_play_named_se_with_fallback([
 				"SE_%s_power" % weapon_key,
 				"SE_%s_aoe" % weapon_key,
+				"SE_hit_%s" % weapon_key,
 				"SE_%s_hit" % weapon_key,
 			])
 		_:
-			_play_named_se_with_fallback(["SE_%s_hit" % weapon_key])
+			_play_named_se_with_fallback([
+				"SE_%s_hit" % weapon_key,
+				"SE_hit_%s" % weapon_key,
+			])
 
 func _play_support_se(kind: String, effect: String = "") -> void:
-	if battle_se_player == null:
+	if not _can_play_se():
 		return
 	var normalized_kind := kind.strip_edges().to_lower()
 	var normalized_effect := _canonicalize_status_effect_id(effect)
@@ -333,7 +341,7 @@ func _play_support_se(kind: String, effect: String = "") -> void:
 			_play_named_se_with_fallback(["SE_heal"])
 
 func _play_named_se_with_fallback(base_keys: Array) -> void:
-	if battle_se_player == null:
+	if not _can_play_se():
 		return
 	for key_any in base_keys:
 		var key := String(key_any).strip_edges()
@@ -341,8 +349,7 @@ func _play_named_se_with_fallback(base_keys: Array) -> void:
 			continue
 		var stream := _find_se_stream_for_base(key)
 		if stream != null:
-			battle_se_player.stream = stream
-			battle_se_player.play()
+			_play_stream_on_se_player(stream)
 			return
 
 func _find_se_stream_for_base(base_key: String) -> AudioStream:
@@ -353,12 +360,29 @@ func _find_se_stream_for_base(base_key: String) -> AudioStream:
 		variant_indices.append(i)
 	variant_indices.shuffle()
 	for idx_any in variant_indices:
-		var stream_variant := _load_se_stream("%s_%d" % [base_key, int(idx_any)])
+		var idx := int(idx_any)
+		var stream_variant := _load_se_stream("%s_%d" % [base_key, idx])
+		if stream_variant != null:
+			return stream_variant
+		stream_variant = _load_se_stream("%s_%02d" % [base_key, idx])
 		if stream_variant != null:
 			return stream_variant
 	return _load_se_stream(base_key)
 
 func _load_se_stream(name: String) -> AudioStream:
+	_build_se_catalog_if_needed()
+	var normalized := name.to_lower()
+	if _se_name_to_paths.has(normalized):
+		var paths: Array = _se_name_to_paths[normalized]
+		for p_any in paths:
+			var p := String(p_any)
+			if _se_stream_cache.has(p):
+				return _se_stream_cache[p]
+			var loaded_catalog = load(p)
+			if loaded_catalog is AudioStream:
+				_se_stream_cache[p] = loaded_catalog
+				return loaded_catalog
+			_se_stream_cache[p] = null
 	for dir_any in SE_SEARCH_DIRS:
 		var dir := String(dir_any).strip_edges()
 		for ext_any in SE_EXTENSIONS:
@@ -372,6 +396,58 @@ func _load_se_stream(name: String) -> AudioStream:
 					return loaded
 			_se_stream_cache[path] = null
 	return null
+
+func _build_se_catalog_if_needed() -> void:
+	if _se_catalog_built:
+		return
+	_se_catalog_built = true
+	for dir_any in SE_SEARCH_DIRS:
+		var dir_path := String(dir_any).strip_edges()
+		var dir := DirAccess.open(dir_path)
+		if dir == null:
+			continue
+		dir.list_dir_begin()
+		while true:
+			var filename := dir.get_next()
+			if filename == "":
+				break
+			if dir.current_is_dir():
+				continue
+			var lower := filename.to_lower()
+			var matched := false
+			for ext_any in SE_EXTENSIONS:
+				var ext := String(ext_any).to_lower()
+				if lower.ends_with(ext):
+					matched = true
+					break
+			if not matched:
+				continue
+			var base := filename.get_basename().to_lower()
+			var full_path := "%s/%s" % [dir_path, filename]
+			if not _se_name_to_paths.has(base):
+				_se_name_to_paths[base] = []
+			var bucket: Array = _se_name_to_paths[base]
+			bucket.append(full_path)
+			_se_name_to_paths[base] = bucket
+		dir.list_dir_end()
+
+func _can_play_se() -> bool:
+	if battle_se_player == null:
+		return false
+	return battle_se_player is AudioStreamPlayer or battle_se_player is AudioStreamPlayer2D
+
+func _play_stream_on_se_player(stream: AudioStream) -> void:
+	if stream == null or not _can_play_se():
+		return
+	if battle_se_player is AudioStreamPlayer:
+		var p := battle_se_player as AudioStreamPlayer
+		p.stream = stream
+		p.play()
+		return
+	if battle_se_player is AudioStreamPlayer2D:
+		var p2 := battle_se_player as AudioStreamPlayer2D
+		p2.stream = stream
+		p2.play()
 
 func _resolve_weapon_se_key(actor: Dictionary, skill_data: Dictionary) -> String:
 	var wt := String(skill_data.get("weapon_type", "")).strip_edges()
