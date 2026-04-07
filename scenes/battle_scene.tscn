@@ -1282,7 +1282,7 @@ expand_mode = 1
 
 [node name="BGMPlayer" type="AudioStreamPlayer" parent="BattleAudio"]
 
-[node name="SEPlayer" type="AudioStreamPlayer2D" parent="BattleAudio"]
+[node name="SEPlayer" type="AudioStreamPlayer" parent="BattleAudio"]
 
 [node name="FXManager" type="Node2D" parent="."]
 

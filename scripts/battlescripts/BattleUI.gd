@@ -330,7 +330,7 @@ func _setup_opening_overlay() -> void:
 	intro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	intro.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro.add_theme_font_size_override("font_size", 24)
+	intro.add_theme_font_size_override("font_size", 28)
 	if _battle_opening_font:
 		intro.add_theme_font_override("font", _battle_opening_font)
 	intro.add_theme_color_override("font_color", Color(1, 0.96, 0.82, 1))
@@ -352,7 +352,7 @@ func _setup_opening_overlay() -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hint.text = OPENING_HINT_DEFAULT
-	hint.add_theme_font_size_override("font_size", 22)
+	hint.add_theme_font_size_override("font_size", 26)
 	hint.add_theme_color_override("font_color", Color(0.7, 0.88, 1.0, 0.95))
 	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	hint.add_theme_constant_override("outline_size", 4)
@@ -370,7 +370,7 @@ func _setup_opening_overlay() -> void:
 	start.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	start.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	start.text = "戰鬥開始"
-	start.add_theme_font_size_override("font_size", 64)
+	start.add_theme_font_size_override("font_size", 68)
 	if _battle_opening_font:
 		start.add_theme_font_override("font", _battle_opening_font)
 	start.add_theme_color_override("font_color", Color(1, 0.95, 0.55, 1))
