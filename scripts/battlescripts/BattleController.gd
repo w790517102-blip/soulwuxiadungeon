@@ -776,6 +776,9 @@ func _compute_inner_force_runtime_bonus(actor: Dictionary, force: Dictionary) ->
 		"accuracy": 0,
 		"def": 0,
 		"max_mp": 0,
+		"speed": 0,
+		"evasion": 0,
+		"crit_rate_bonus": 0.0,
 	}
 	bonus["str"] = int(force.get("str_flat_bonus", 0))
 	bonus["con"] = int(force.get("con_flat_bonus", 0))
@@ -789,6 +792,20 @@ func _compute_inner_force_runtime_bonus(actor: Dictionary, force: Dictionary) ->
 	var int_ratio := float(force.get("max_mp_from_int_ratio", 0.0))
 	if int_ratio != 0.0:
 		bonus["max_mp"] += int(floor(float(int(actor.get("int", 0))) * int_ratio))
+	var force_element := String(force.get("element", ""))
+	match force_element:
+		"快":
+			bonus["speed"] += int(round(float(int(actor.get("speed", 0))) * 0.15))
+			bonus["def"] += int(round(float(int(actor.get("def", 0))) * -0.10))
+		"柔":
+			bonus["evasion"] += int(round(float(int(actor.get("evasion", 0))) * 0.15))
+			bonus["crit_rate_bonus"] += float(actor.get("crit_rate_bonus", 0.0)) * -0.10
+		"遲":
+			bonus["accuracy"] += int(round(float(int(actor.get("accuracy", 100))) * 0.15))
+			bonus["evasion"] += int(round(float(int(actor.get("evasion", 0))) * -0.10))
+		"剛":
+			bonus["def"] += int(round(float(int(actor.get("def", 0))) * 0.15))
+			bonus["speed"] += int(round(float(int(actor.get("speed", 0))) * -0.10))
 	return bonus
 
 
@@ -804,6 +821,9 @@ func _remove_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 	actor["agi"] = int(actor.get("agi", 0)) - int(prev_bonus.get("agi", 0))
 	actor["accuracy"] = int(actor.get("accuracy", 100)) - int(prev_bonus.get("accuracy", 0))
 	actor["def"] = int(actor.get("def", 0)) - int(prev_bonus.get("def", 0))
+	actor["speed"] = int(actor.get("speed", 0)) - int(prev_bonus.get("speed", 0))
+	actor["evasion"] = int(actor.get("evasion", 0)) - int(prev_bonus.get("evasion", 0))
+	actor["crit_rate_bonus"] = float(actor.get("crit_rate_bonus", 0.0)) - float(prev_bonus.get("crit_rate_bonus", 0.0))
 	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) - int(prev_bonus.get("max_mp", 0))
 	actor["max_mp"] = max(0, int(actor.get("max_mp", 0)))
 	if int(actor.get("mp", 0)) > int(actor.get("max_mp", 0)):
@@ -824,6 +844,9 @@ func _apply_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 	actor["con"] = int(actor.get("con", 0)) + int(bonus.get("con", 0))
 	actor["accuracy"] = int(actor.get("accuracy", 100)) + int(bonus.get("accuracy", 0))
 	actor["def"] = int(actor.get("def", 0)) + int(bonus.get("def", 0))
+	actor["speed"] = int(actor.get("speed", 0)) + int(bonus.get("speed", 0))
+	actor["evasion"] = int(actor.get("evasion", 0)) + int(bonus.get("evasion", 0))
+	actor["crit_rate_bonus"] = float(actor.get("crit_rate_bonus", 0.0)) + float(bonus.get("crit_rate_bonus", 0.0))
 	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + int(bonus.get("max_mp", 0))
 	actor["max_mp"] = max(0, int(actor.get("max_mp", 0)))
 	actor["mp"] = min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
