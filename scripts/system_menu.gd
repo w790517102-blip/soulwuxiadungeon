@@ -1187,11 +1187,11 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	if stats_label:
 		stats_label.set_meta("actor_id", actor_id)
 		var stat_str := "%s  %s  %s  %s  %s" % [
-			_status_metric_token("str", "STR", base_str + bonus_str),
-			_status_metric_token("agi", "AGI", base_agi + bonus_agi),
-			_status_metric_token("int", "INT", base_int + bonus_int),
-			_status_metric_token("con", "CON", base_con + bonus_con),
-			_status_metric_token("luck", "LUCK", base_luck + bonus_luck),
+			_status_metric_token("str", "力", base_str + bonus_str),
+			_status_metric_token("agi", "敏", base_agi + bonus_agi),
+			_status_metric_token("int", "智", base_int + bonus_int),
+			_status_metric_token("con", "體", base_con + bonus_con),
+			_status_metric_token("luck", "幸", base_luck + bonus_luck),
 		]
 		stats_label.bbcode_text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n%s  %s  %s\n%s  %s  %s\n%s" % [
 			actor_level, actor_exp, next_exp,
@@ -1200,9 +1200,9 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 			_status_metric_token("atk", "攻", base_atk + bonus_atk),
 			_status_metric_token("def", "防", base_def + bonus_def),
 			_status_metric_token("speed", "身法", base_speed + bonus_speed),
-			_status_metric_token("hit_power", "命中力", hit_power),
+			_status_metric_token("hit_power", "命中", hit_power),
 			_status_metric_token("crit", "暴擊", "%.1f%%" % crit_rate_pct),
-			_status_metric_token("evade_power", "閃避力", evade_power),
+			_status_metric_token("evade_power", "閃避", evade_power),
 			stat_str,
 		]
 
@@ -1223,7 +1223,8 @@ func _ensure_status_hover_popup() -> void:
 	_status_hover_popup.name = "StatusHoverPopup"
 	_status_hover_popup.visible = false
 	_status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_status_hover_popup.z_index = 200
+	_status_hover_popup.z_index = 2000
+	_status_hover_popup.top_level = true
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.07, 0.07, 0.09, 1.0)
 	bg.corner_radius_top_left = 8
@@ -1302,7 +1303,7 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
 			var luck_total := int(_get_actor_value(actor, "luck", 0)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
 			var hit_power := int(round((float(acc_total) - 100.0) + float(agi_total) * 0.7 + float(luck_total) * 0.3))
-			return "[b]命中力[/b]\n影響攻擊命中的對抗能力值（不是命中率）。\n目前值：%d\n拆解：accuracy_mod %d + AGI項 %.1f + LUCK項 %.1f" % [
+			return "[b]命中[/b]\n影響攻擊命中的對抗能力值（不是命中率）。\n目前值：%d\n拆解：accuracy_mod %d + 敏項 %.1f + 幸項 %.1f" % [
 				hit_power, acc_total - 100, float(agi_total) * 0.7, float(luck_total) * 0.3
 			]
 		"evade_power":
@@ -1310,7 +1311,7 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
 			var luck_total := int(_get_actor_value(actor, "luck", 0)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
 			var evade_power := int(round(float(agi_total) * 0.7 + float(luck_total) * 0.3 + float(evade_total)))
-			return "[b]閃避力[/b]\n影響躲避攻擊的對抗能力值（不是閃避率）。\n目前值：%d\n拆解：AGI項 %.1f + LUCK項 %.1f + evasion_mod %d" % [
+			return "[b]閃避[/b]\n影響躲避攻擊的對抗能力值（不是閃避率）。\n目前值：%d\n拆解：敏項 %.1f + 幸項 %.1f + evasion_mod %d" % [
 				evade_power, float(agi_total) * 0.7, float(luck_total) * 0.3, evade_total
 			]
 		"crit":
@@ -1323,8 +1324,35 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var inner_delta := int(inner_bonus.get(stat_key, 0))
 			var reversible := equip_delta + inner_delta
 			return "[b]%s[/b]\n目前值：%d\n可逆來源：裝備 %+d、內功 %+d（合計 %+d）" % [
-				stat_key.to_upper(), total_value, equip_delta, inner_delta, reversible
+				_status_key_display_name(stat_key), total_value, equip_delta, inner_delta, reversible
 			]
+
+func _status_key_display_name(stat_key: String) -> String:
+	match stat_key:
+		"str":
+			return "力"
+		"agi":
+			return "敏"
+		"int":
+			return "智"
+		"con":
+			return "體"
+		"luck":
+			return "幸"
+		"atk":
+			return "攻擊"
+		"def":
+			return "防禦"
+		"speed":
+			return "速度"
+		"hit_power":
+			return "命中"
+		"evade_power":
+			return "閃避"
+		"crit":
+			return "暴擊"
+		_:
+			return stat_key
 
 func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	var name_label := slot_data.get("name") as Label
