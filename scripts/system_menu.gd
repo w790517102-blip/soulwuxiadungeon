@@ -1309,7 +1309,7 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
 			var luck_total := int(_get_actor_value(actor, "luck", 0)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
 			var hit_power := int(round((float(acc_total) - 100.0) + float(agi_total) * 0.7 + float(luck_total) * 0.3))
-			return "[b]命中[/b]\n影響攻擊命中的對抗能力值（不是命中率）。\n目前值：%d\n拆解：accuracy_mod %d + 敏項 %.1f + 幸項 %.1f" % [
+			return "[b]命中[/b]\n影響攻擊命中的對抗能力值（不是命中率）。\n目前值：%d\n拆解：其他 %d + 敏項 %.1f + 幸項 %.1f" % [
 				hit_power, acc_total - 100, float(agi_total) * 0.7, float(luck_total) * 0.3
 			]
 		"evade_power":
@@ -1317,7 +1317,7 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
 			var luck_total := int(_get_actor_value(actor, "luck", 0)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
 			var evade_power := int(round(float(agi_total) * 0.7 + float(luck_total) * 0.3 + float(evade_total)))
-			return "[b]閃避[/b]\n影響躲避攻擊的對抗能力值（不是閃避率）。\n目前值：%d\n拆解：敏項 %.1f + 幸項 %.1f + evasion_mod %d" % [
+			return "[b]閃避[/b]\n影響躲避攻擊的對抗能力值（不是閃避率）。\n目前值：%d\n拆解：敏項 %.1f + 幸項 %.1f + 其他 %d" % [
 				evade_power, float(agi_total) * 0.7, float(luck_total) * 0.3, evade_total
 			]
 		"crit":
