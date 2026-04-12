@@ -1106,14 +1106,24 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var bonus_max_hp := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
 	var bonus_max_mp := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
 	var bonus_speed := int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0))
+	var base_str := int(_get_actor_value(actor, "str", 5))
+	var base_agi := int(_get_actor_value(actor, "agi", 5))
+	var base_int := int(_get_actor_value(actor, "int", 5))
+	var base_con := int(_get_actor_value(actor, "con", 5))
+	var base_luck := int(_get_actor_value(actor, "luck", 5))
+	var bonus_str := int(equip_bonus.get("str", 0)) + int(inner_bonus.get("str", 0))
+	var bonus_agi := int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
+	var bonus_int := int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0))
+	var bonus_con := int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0))
+	var bonus_luck := int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
 	var base_accuracy := int(_get_actor_value(actor, "accuracy", 100))
 	var base_evasion := int(_get_actor_value(actor, "evasion", 0))
 	var bonus_accuracy := int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
 	var bonus_evasion := int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))
 	var total_accuracy := base_accuracy + bonus_accuracy
 	var total_evasion := base_evasion + bonus_evasion
-	var agi_stat := float(int(_get_actor_value(actor, "agi", 5)))
-	var luck_stat := float(int(_get_actor_value(actor, "luck", 5)))
+	var agi_stat := float(base_agi + bonus_agi)
+	var luck_stat := float(base_luck + bonus_luck)
 	var hit_power := int(round((float(total_accuracy) - 100.0) + agi_stat * 0.7 + luck_stat * 0.3))
 	var evade_power := int(round(agi_stat * 0.7 + luck_stat * 0.3 + float(total_evasion)))
 	var crit_rate_pct := _calc_actor_overview_crit_rate_pct(actor, equip_bonus, inner_bonus)
@@ -1141,12 +1151,12 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 
 	var stats_label := slot_data.get("stats") as Label
 	if stats_label:
-		var stat_str := "STR %d  AGI %d  INT %d  CON %d  LUCK %d" % [
-			int(_get_actor_value(actor, "str", 5)),
-			int(_get_actor_value(actor, "agi", 5)),
-			int(_get_actor_value(actor, "int", 5)),
-			int(_get_actor_value(actor, "con", 5)),
-			int(_get_actor_value(actor, "luck", 5)),
+		var stat_str := "STR %d (%+d)  AGI %d (%+d)  INT %d (%+d)  CON %d (%+d)  LUCK %d (%+d)" % [
+			base_str + bonus_str, bonus_str,
+			base_agi + bonus_agi, bonus_agi,
+			base_int + bonus_int, bonus_int,
+			base_con + bonus_con, bonus_con,
+			base_luck + bonus_luck, bonus_luck,
 		]
 		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)  命中力：%d\n暴擊：%.1f%%  閃避力：%d\n%s\n※ 命中力/閃避力為對抗能力值（力），非最終命中率/閃避率。" % [
 			actor_level, actor_exp, next_exp,
