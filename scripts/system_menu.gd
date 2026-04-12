@@ -1090,6 +1090,12 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var base_evasion := int(_get_actor_value(actor, "evasion", 0))
 	var bonus_accuracy := int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
 	var bonus_evasion := int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))
+	var total_accuracy := base_accuracy + bonus_accuracy
+	var total_evasion := base_evasion + bonus_evasion
+	var agi_stat := float(int(_get_actor_value(actor, "agi", 5)))
+	var luck_stat := float(int(_get_actor_value(actor, "luck", 5)))
+	var hit_power := int(round((float(total_accuracy) - 100.0) + agi_stat * 0.7 + luck_stat * 0.3))
+	var evade_power := int(round(agi_stat * 0.7 + luck_stat * 0.3 + float(total_evasion)))
 	var crit_rate_pct := _calc_actor_overview_crit_rate_pct(actor, equip_bonus)
 
 	var name_label := slot_data.get("name") as Label
@@ -1122,16 +1128,16 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 			int(_get_actor_value(actor, "con", 5)),
 			int(_get_actor_value(actor, "luck", 5)),
 		]
-		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)  命中：%d (+%d)\n暴擊：%.1f%%  閃避：%d (+%d)\n%s" % [
+		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)  命中力：%d\n暴擊：%.1f%%  閃避力：%d\n%s\n※ 命中力/閃避力為對抗能力值（力），非最終命中率/閃避率。" % [
 			actor_level, actor_exp, next_exp,
 			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
 			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
 			base_atk, bonus_atk,
 			base_def, bonus_def,
 			base_speed, bonus_speed,
-			base_accuracy, bonus_accuracy,
+			hit_power,
 			crit_rate_pct,
-			base_evasion, bonus_evasion,
+			evade_power,
 			stat_str,
 		]
 
