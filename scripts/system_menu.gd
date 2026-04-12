@@ -41,6 +41,7 @@ var _pending_item_use_id = ""
 var _pending_item_effect = ""
 var _pending_item_amount = 0
 var _status_member_slots: Array = []
+var _status_hover_layer: CanvasLayer = null
 var _status_hover_popup: PanelContainer = null
 var _status_hover_label: RichTextLabel = null
 
@@ -1219,12 +1220,17 @@ func _status_metric_token(key: String, label: String, value) -> String:
 func _ensure_status_hover_popup() -> void:
 	if _status_hover_popup != null and is_instance_valid(_status_hover_popup):
 		return
+	if _status_hover_layer == null or not is_instance_valid(_status_hover_layer):
+		_status_hover_layer = CanvasLayer.new()
+		_status_hover_layer.name = "StatusHoverOverlayLayer"
+		_status_hover_layer.layer = 200
+		add_child(_status_hover_layer)
 	_status_hover_popup = PanelContainer.new()
 	_status_hover_popup.name = "StatusHoverPopup"
 	_status_hover_popup.visible = false
 	_status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_status_hover_popup.z_index = 2000
-	_status_hover_popup.top_level = true
+	_status_hover_popup.z_index = 100
+	_status_hover_popup.top_level = false
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.07, 0.07, 0.09, 1.0)
 	bg.corner_radius_top_left = 8
@@ -1237,7 +1243,7 @@ func _ensure_status_hover_popup() -> void:
 	bg.border_width_bottom = 1
 	bg.border_color = Color(0.8, 0.8, 0.8, 0.22)
 	_status_hover_popup.add_theme_stylebox_override("panel", bg)
-	add_child(_status_hover_popup)
+	_status_hover_layer.add_child(_status_hover_popup)
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 10)
 	pad.add_theme_constant_override("margin_top", 8)
@@ -1289,7 +1295,7 @@ func _position_status_hover_popup(mouse_pos: Vector2) -> void:
 		pos.x = max(0.0, viewport_rect.size.x - popup_size.x)
 	if pos.y + popup_size.y > viewport_rect.size.y:
 		pos.y = max(0.0, viewport_rect.size.y - popup_size.y)
-	_status_hover_popup.global_position = pos
+	_status_hover_popup.position = pos
 
 func _build_status_hover_text(actor, stat_key: String) -> String:
 	var equip_bonus: Dictionary = InventorySync.get_equipment_stat_bonus(_get_actor_id_from_entry(actor)) if InventorySync else {}
