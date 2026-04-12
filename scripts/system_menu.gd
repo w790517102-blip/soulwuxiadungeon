@@ -809,10 +809,30 @@ func _get_inner_force_bonus(actor) -> Dictionary:
 	var inner_force = _get_actor_value(actor, "inner_force", {})
 	if typeof(inner_force) != TYPE_DICTIONARY:
 		return {}
-	var bonus = (inner_force as Dictionary).get("stat_bonus", {})
-	if typeof(bonus) != TYPE_DICTIONARY:
-		return {}
-	return (bonus as Dictionary)
+	var out: Dictionary = {}
+	var stat_bonus = (inner_force as Dictionary).get("stat_bonus", {})
+	if typeof(stat_bonus) == TYPE_DICTIONARY:
+		for key in (stat_bonus as Dictionary).keys():
+			out[key] = (stat_bonus as Dictionary)[key]
+	var actor_snapshot := {
+		"str": int(_get_actor_value(actor, "str", 0)),
+		"con": int(_get_actor_value(actor, "con", 0)),
+		"agi": int(_get_actor_value(actor, "agi", 0)),
+		"int": int(_get_actor_value(actor, "int", 0)),
+		"luck": int(_get_actor_value(actor, "luck", 0)),
+	}
+	var runtime_effects: Dictionary = InnerForceDB.get_runtime_effects(inner_force, actor_snapshot)
+	for stat_key in ["str", "con", "agi", "accuracy", "def", "max_hp", "max_mp", "speed", "evasion", "crit_rate_bonus"]:
+		if not runtime_effects.has(stat_key):
+			continue
+		var incoming = runtime_effects.get(stat_key, 0)
+		if typeof(incoming) in [TYPE_FLOAT, TYPE_INT]:
+			var current = out.get(stat_key, 0)
+			if typeof(incoming) == TYPE_FLOAT or typeof(current) == TYPE_FLOAT:
+				out[stat_key] = float(current) + float(incoming)
+			else:
+				out[stat_key] = int(current) + int(incoming)
+	return out
 
 func _get_effective_max_hp(actor, actor_id: String = "") -> int:
 	var current_hp := int(_get_actor_value(actor, "hp", 1))
@@ -1096,7 +1116,7 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var luck_stat := float(int(_get_actor_value(actor, "luck", 5)))
 	var hit_power := int(round((float(total_accuracy) - 100.0) + agi_stat * 0.7 + luck_stat * 0.3))
 	var evade_power := int(round(agi_stat * 0.7 + luck_stat * 0.3 + float(total_evasion)))
-	var crit_rate_pct := _calc_actor_overview_crit_rate_pct(actor, equip_bonus)
+	var crit_rate_pct := _calc_actor_overview_crit_rate_pct(actor, equip_bonus, inner_bonus)
 
 	var name_label := slot_data.get("name") as Label
 	if name_label:
@@ -1141,10 +1161,10 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 			stat_str,
 		]
 
-func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary) -> float:
+func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
 	var luck_stat = int(_get_actor_value(actor, "luck", 0))
 	var base_crit = 0.05 + floor(float(luck_stat) / 5.0) * 0.01
-	var crit_bonus = float(equip_bonus.get("crit_rate_bonus", 0.0)) + float(_get_actor_value(actor, "crit_rate_bonus", 0.0))
+	var crit_bonus = float(equip_bonus.get("crit_rate_bonus", 0.0)) + float(inner_bonus.get("crit_rate_bonus", 0.0)) + float(_get_actor_value(actor, "crit_rate_bonus", 0.0))
 	var crit_rate = base_crit + crit_bonus
 	return clampf(crit_rate * 100.0, 0.0, 95.0)
 

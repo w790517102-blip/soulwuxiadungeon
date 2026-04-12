@@ -32,6 +32,9 @@ static func _compute_runtime_effects(force: Dictionary, actor: Dictionary = {}) 
 	result["fast_resist"] = clampf(resist_base + float(actor_str) * resist_from_str, 0.0, max(0.0, resist_cap))
 	return result
 
+static func get_runtime_effects(force: Dictionary, actor: Dictionary = {}) -> Dictionary:
+	return _compute_runtime_effects(force, actor)
+
 static func get_effect_description_line(force: Dictionary, actor: Dictionary = {}) -> String:
 	if force.is_empty():
 		return ""
