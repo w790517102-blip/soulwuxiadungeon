@@ -16,6 +16,11 @@ var panel: Panel
 var title_label: Label
 var gold_label: Label
 var item_list: ItemList
+var info_panel: PanelContainer
+var info_name_label: Label
+var info_price_label: Label
+var info_desc_label: RichTextLabel
+var info_extra_label: Label
 var mode_buy_button: Button
 var mode_sell_button: Button
 var action_button: Button
@@ -48,6 +53,7 @@ func _ready() -> void:
 		action_button.disabled = true
 		mode_buy_button.disabled = true
 		mode_sell_button.disabled = true
+		_update_info_panel({})
 		return
 	title_label.text = String(_shop_data.get("name", _shop_id))
 	_set_mode("buy")
@@ -84,9 +90,51 @@ func _build_ui() -> void:
 	mode_sell_button.text = "販賣"
 	mode_hb.add_child(mode_sell_button)
 
+	var content_hb := HBoxContainer.new()
+	content_hb.custom_minimum_size = Vector2(0, 270)
+	vb.add_child(content_hb)
+
 	item_list = ItemList.new()
-	item_list.custom_minimum_size = Vector2(0, 270)
-	vb.add_child(item_list)
+	item_list.custom_minimum_size = Vector2(320, 270)
+	item_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_hb.add_child(item_list)
+
+	info_panel = PanelContainer.new()
+	info_panel.custom_minimum_size = Vector2(250, 270)
+	info_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_hb.add_child(info_panel)
+
+	var info_vb := VBoxContainer.new()
+	info_vb.anchor_right = 1
+	info_vb.anchor_bottom = 1
+	info_vb.offset_left = 10
+	info_vb.offset_top = 10
+	info_vb.offset_right = -10
+	info_vb.offset_bottom = -10
+	info_panel.add_child(info_vb)
+
+	info_name_label = Label.new()
+	info_name_label.text = "名稱：-"
+	info_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info_vb.add_child(info_name_label)
+
+	info_price_label = Label.new()
+	info_price_label.text = "價格：-"
+	info_price_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info_vb.add_child(info_price_label)
+
+	info_extra_label = Label.new()
+	info_extra_label.text = "備註：-"
+	info_extra_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info_vb.add_child(info_extra_label)
+
+	info_desc_label = RichTextLabel.new()
+	info_desc_label.bbcode_enabled = true
+	info_desc_label.fit_content = true
+	info_desc_label.scroll_active = false
+	info_desc_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	info_desc_label.custom_minimum_size = Vector2(0, 170)
+	info_vb.add_child(info_desc_label)
 
 	var action_hb := HBoxContainer.new()
 	vb.add_child(action_hb)
@@ -139,6 +187,7 @@ func _set_mode(mode: String) -> void:
 	_pending_item.clear()
 	_refresh_items()
 	_update_qty_label()
+	_update_info_panel(_selected_entry)
 
 func _refresh_gold() -> void:
 	var g := InventorySync.get_gold() if InventorySync else 0
@@ -189,6 +238,7 @@ func _refresh_items() -> void:
 	else:
 		_selected_entry.clear()
 		_selected_max_qty = 1
+		_update_info_panel({})
 	_update_qty_label()
 
 func _refresh_buy_items() -> void:
@@ -248,6 +298,7 @@ func _on_item_selected(index: int) -> void:
 		_selected_entry.clear()
 		_selected_max_qty = 1
 		_update_qty_label()
+		_update_info_panel({})
 		return
 	_selected_entry = (entry as Dictionary).duplicate(true)
 	var selected_qty := int(_selected_entry.get("selected_qty", 1))
@@ -259,6 +310,37 @@ func _on_item_selected(index: int) -> void:
 		_selected_entry["selected_qty"] = clamp(selected_qty, 1, _selected_max_qty)
 	action_button.disabled = _selected_max_qty <= 0
 	_update_qty_label()
+	_update_info_panel(_selected_entry)
+
+func _update_info_panel(entry: Dictionary) -> void:
+	if info_name_label == null or info_price_label == null or info_desc_label == null or info_extra_label == null:
+		return
+	if entry.is_empty():
+		info_name_label.text = "名稱：-"
+		info_price_label.text = "價格：-"
+		info_extra_label.text = "備註：請先選擇商品"
+		info_desc_label.text = "描述：-"
+		return
+	var item_id := String(entry.get("item_id", ""))
+	var item_def := ItemDB.get_def(item_id) if item_id != "" else {}
+	var item_name := String(item_def.get("name", item_id))
+	var item_desc := String(item_def.get("desc", ""))
+	if item_desc == "":
+		item_desc = "（尚無描述）"
+	info_name_label.text = "名稱：%s" % item_name
+	if _mode == "buy":
+		info_price_label.text = "價格：%d 文" % int(entry.get("price", 0))
+		var runtime_stock := int(entry.get("runtime_stock", int(entry.get("stock", -1))))
+		var stock_text := "∞" if runtime_stock < 0 else str(runtime_stock)
+		info_extra_label.text = "備註：庫存 %s｜類型：%s" % [stock_text, String(item_def.get("type", "-"))]
+	else:
+		info_price_label.text = "回收：%d 文" % int(entry.get("sell_price", 0))
+		var equipped_text := "（已裝備，暫不可賣）" if bool(entry.get("equipped_blocked", false)) else ""
+		var sell_note := "持有 %d" % int(entry.get("quantity", 0))
+		if equipped_text != "":
+			sell_note += " " + equipped_text
+		info_extra_label.text = "備註：%s" % sell_note
+	info_desc_label.text = "描述：%s" % item_desc
 
 func _compute_max_qty(entry: Dictionary) -> int:
 	if _mode == "buy":
