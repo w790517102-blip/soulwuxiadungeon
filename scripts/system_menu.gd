@@ -41,6 +41,8 @@ var _pending_item_use_id = ""
 var _pending_item_effect = ""
 var _pending_item_amount = 0
 var _status_member_slots: Array = []
+var _status_hover_popup: PanelContainer = null
+var _status_hover_label: RichTextLabel = null
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -127,6 +129,7 @@ func _ready():
 	if skill_target_popup:
 		skill_target_popup.index_pressed.connect(_on_skill_target_selected)
 	_setup_status_member_slots()
+	_ensure_status_hover_popup()
 	_setup_equipment_character_select()
 	_refresh_item_tab()
 	_refresh_gold()
@@ -1066,13 +1069,40 @@ func _setup_status_member_slots() -> void:
 		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
 		if member == null:
 			continue
+		var raw_stats_node := member.get_node_or_null("Stats")
+		var stats_rich: RichTextLabel = null
+		if raw_stats_node is RichTextLabel:
+			stats_rich = raw_stats_node as RichTextLabel
+		elif raw_stats_node is Label:
+			var old_label := raw_stats_node as Label
+			stats_rich = RichTextLabel.new()
+			stats_rich.name = "Stats"
+			stats_rich.custom_minimum_size = old_label.custom_minimum_size
+			stats_rich.size_flags_horizontal = old_label.size_flags_horizontal
+			stats_rich.size_flags_vertical = old_label.size_flags_vertical
+			stats_rich.bbcode_enabled = true
+			stats_rich.fit_content = true
+			stats_rich.scroll_active = false
+			stats_rich.mouse_filter = Control.MOUSE_FILTER_STOP
+			var parent_node := old_label.get_parent()
+			var idx := old_label.get_index()
+			parent_node.add_child(stats_rich)
+			parent_node.move_child(stats_rich, idx)
+			old_label.queue_free()
+		if stats_rich:
+			if not stats_rich.meta_hover_started.is_connected(_on_status_meta_hover_started):
+				stats_rich.meta_hover_started.connect(_on_status_meta_hover_started.bind(stats_rich))
+			if not stats_rich.meta_hover_ended.is_connected(_on_status_meta_hover_ended):
+				stats_rich.meta_hover_ended.connect(_on_status_meta_hover_ended)
+			if not stats_rich.mouse_exited.is_connected(_hide_status_hover_popup):
+				stats_rich.mouse_exited.connect(_hide_status_hover_popup)
 		_status_member_slots.append({
 			"name": member.get_node_or_null("Name") as Label,
 			"job_class": member.get_node_or_null("JobClass") as Label,
 			"portrait": member.get_node_or_null("Portrait") as TextureRect,
-			"stats": member.get_node_or_null("Stats") as Label,
+			"stats": stats_rich,
 		})
-		var stats_label := member.get_node_or_null("Stats") as Label
+		var stats_label := stats_rich
 		if stats_label:
 			stats_label.add_theme_font_size_override("font_size", 18)
 		var portrait := member.get_node_or_null("Portrait") as TextureRect
@@ -1149,25 +1179,26 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 		portrait.texture = _get_actor_portrait(actor)
 		portrait.modulate = Color(1, 1, 1, 1)
 
-	var stats_label := slot_data.get("stats") as Label
+	var stats_label := slot_data.get("stats") as RichTextLabel
 	if stats_label:
-		var stat_str := "STR %d (%+d)  AGI %d (%+d)  INT %d (%+d)  CON %d (%+d)  LUCK %d (%+d)" % [
-			base_str + bonus_str, bonus_str,
-			base_agi + bonus_agi, bonus_agi,
-			base_int + bonus_int, bonus_int,
-			base_con + bonus_con, bonus_con,
-			base_luck + bonus_luck, bonus_luck,
+		stats_label.set_meta("actor_id", actor_id)
+		var stat_str := "%s  %s  %s  %s  %s" % [
+			_status_metric_token("str", "STR", base_str + bonus_str),
+			_status_metric_token("agi", "AGI", base_agi + bonus_agi),
+			_status_metric_token("int", "INT", base_int + bonus_int),
+			_status_metric_token("con", "CON", base_con + bonus_con),
+			_status_metric_token("luck", "LUCK", base_luck + bonus_luck),
 		]
-		stats_label.text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n攻：%d (+%d)  防：%d (+%d)\n身法：%d (+%d)  命中力：%d\n暴擊：%.1f%%  閃避力：%d\n%s\n※ 命中力/閃避力為對抗能力值（力），非最終命中率/閃避率。" % [
+		stats_label.bbcode_text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n%s  %s  %s\n%s  %s  %s\n%s" % [
 			actor_level, actor_exp, next_exp,
 			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
 			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
-			base_atk, bonus_atk,
-			base_def, bonus_def,
-			base_speed, bonus_speed,
-			hit_power,
-			crit_rate_pct,
-			evade_power,
+			_status_metric_token("atk", "攻", base_atk + bonus_atk),
+			_status_metric_token("def", "防", base_def + bonus_def),
+			_status_metric_token("speed", "身法", base_speed + bonus_speed),
+			_status_metric_token("hit_power", "命中力", hit_power),
+			_status_metric_token("crit", "暴擊", "%.1f%%" % crit_rate_pct),
+			_status_metric_token("evade_power", "閃避力", evade_power),
 			stat_str,
 		]
 
@@ -1177,6 +1208,102 @@ func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bo
 	var crit_bonus = float(equip_bonus.get("crit_rate_bonus", 0.0)) + float(inner_bonus.get("crit_rate_bonus", 0.0)) + float(_get_actor_value(actor, "crit_rate_bonus", 0.0))
 	var crit_rate = base_crit + crit_bonus
 	return clampf(crit_rate * 100.0, 0.0, 95.0)
+
+func _status_metric_token(key: String, label: String, value) -> String:
+	return "[url=%s]%s：%s[/url]" % [key, label, str(value)]
+
+func _ensure_status_hover_popup() -> void:
+	if _status_hover_popup != null and is_instance_valid(_status_hover_popup):
+		return
+	_status_hover_popup = PanelContainer.new()
+	_status_hover_popup.name = "StatusHoverPopup"
+	_status_hover_popup.visible = false
+	_status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_hover_popup.z_index = 200
+	add_child(_status_hover_popup)
+	var pad := MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 10)
+	pad.add_theme_constant_override("margin_top", 8)
+	pad.add_theme_constant_override("margin_right", 10)
+	pad.add_theme_constant_override("margin_bottom", 8)
+	_status_hover_popup.add_child(pad)
+	_status_hover_label = RichTextLabel.new()
+	_status_hover_label.bbcode_enabled = true
+	_status_hover_label.fit_content = true
+	_status_hover_label.scroll_active = false
+	_status_hover_label.custom_minimum_size = Vector2(300, 0)
+	pad.add_child(_status_hover_label)
+
+func _on_status_meta_hover_started(meta: Variant, stats_label: RichTextLabel) -> void:
+	_ensure_status_hover_popup()
+	if _status_hover_popup == null or _status_hover_label == null:
+		return
+	var actor_id := String(stats_label.get_meta("actor_id", ""))
+	var actor = _get_actor_by_id(actor_id)
+	if actor == null:
+		return
+	var text := _build_status_hover_text(actor, String(meta))
+	if text == "":
+		return
+	_status_hover_label.bbcode_text = text
+	_status_hover_popup.show()
+	_status_hover_popup.reset_size()
+	_position_status_hover_popup(get_global_mouse_position())
+
+func _on_status_meta_hover_ended(_meta: Variant) -> void:
+	_hide_status_hover_popup()
+
+func _hide_status_hover_popup() -> void:
+	if _status_hover_popup:
+		_status_hover_popup.hide()
+
+func _position_status_hover_popup(mouse_pos: Vector2) -> void:
+	if _status_hover_popup == null:
+		return
+	var viewport_rect := get_viewport_rect()
+	var popup_size := _status_hover_popup.size
+	var pos := mouse_pos + Vector2(14, 14)
+	if pos.x + popup_size.x > viewport_rect.size.x:
+		pos.x = max(0.0, viewport_rect.size.x - popup_size.x)
+	if pos.y + popup_size.y > viewport_rect.size.y:
+		pos.y = max(0.0, viewport_rect.size.y - popup_size.y)
+	_status_hover_popup.global_position = pos
+
+func _build_status_hover_text(actor, stat_key: String) -> String:
+	var equip_bonus: Dictionary = InventorySync.get_equipment_stat_bonus(_get_actor_id_from_entry(actor)) if InventorySync else {}
+	var inner_bonus := _get_inner_force_bonus(actor)
+	var total_value = int(_get_actor_value(actor, stat_key, 0))
+	if stat_key in ["str", "agi", "int", "con", "luck", "atk", "def", "speed", "accuracy", "evasion"]:
+		total_value += int(equip_bonus.get(stat_key, 0)) + int(inner_bonus.get(stat_key, 0))
+	match stat_key:
+		"hit_power":
+			var acc_total := int(_get_actor_value(actor, "accuracy", 100)) + int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
+			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
+			var luck_total := int(_get_actor_value(actor, "luck", 0)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
+			var hit_power := int(round((float(acc_total) - 100.0) + float(agi_total) * 0.7 + float(luck_total) * 0.3))
+			return "[b]命中力[/b]\n影響攻擊命中的對抗能力值（不是命中率）。\n目前值：%d\n拆解：accuracy_mod %d + AGI項 %.1f + LUCK項 %.1f" % [
+				hit_power, acc_total - 100, float(agi_total) * 0.7, float(luck_total) * 0.3
+			]
+		"evade_power":
+			var evade_total := int(_get_actor_value(actor, "evasion", 0)) + int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))
+			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
+			var luck_total := int(_get_actor_value(actor, "luck", 0)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
+			var evade_power := int(round(float(agi_total) * 0.7 + float(luck_total) * 0.3 + float(evade_total)))
+			return "[b]閃避力[/b]\n影響躲避攻擊的對抗能力值（不是閃避率）。\n目前值：%d\n拆解：AGI項 %.1f + LUCK項 %.1f + evasion_mod %d" % [
+				evade_power, float(agi_total) * 0.7, float(luck_total) * 0.3, evade_total
+			]
+		"crit":
+			var crit_pct := _calc_actor_overview_crit_rate_pct(actor, equip_bonus, inner_bonus)
+			return "[b]暴擊[/b]\n目前顯示：%.1f%%\n可逆來源：裝備 %+0.1f%%、內功 %+0.1f%%" % [
+				crit_pct, float(equip_bonus.get("crit_rate_bonus", 0.0)) * 100.0, float(inner_bonus.get("crit_rate_bonus", 0.0)) * 100.0
+			]
+		_:
+			var equip_delta := int(equip_bonus.get(stat_key, 0))
+			var inner_delta := int(inner_bonus.get(stat_key, 0))
+			var reversible := equip_delta + inner_delta
+			return "[b]%s[/b]\n目前值：%d\n可逆來源：裝備 %+d、內功 %+d（合計 %+d）" % [
+				stat_key.to_upper(), total_value, equip_delta, inner_delta, reversible
+			]
 
 func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	var name_label := slot_data.get("name") as Label
@@ -1189,9 +1316,9 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	if portrait:
 		portrait.texture = null
 		portrait.modulate = Color(0.4, 0.4, 0.4, 1)
-	var stats_label := slot_data.get("stats") as Label
+	var stats_label := slot_data.get("stats") as RichTextLabel
 	if stats_label:
-		stats_label.text = "空位"
+		stats_label.bbcode_text = "空位"
 
 func _get_actor_portrait(actor) -> Texture2D:
 	var portrait_path := str(_get_actor_value(actor, "portrait_path", ""))
