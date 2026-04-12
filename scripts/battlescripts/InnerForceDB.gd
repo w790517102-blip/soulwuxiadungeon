@@ -228,7 +228,7 @@ const INNER_FORCES := {
 		"extra_effect_desc": "至少空一手時拳系傷害 +10%、雙手皆空時拳系命中 +10、全身無裝備時暴擊率 +10% 並減少所受傷害 10%",
 		"extra_effect_summary": "空手拳勢增幅，裸裝暴擊與減傷",
 		"available": ["liuyu"],
-	},
+	}, 
 	"tiancan_jue": {
 		"id": "tiancan_jue",
 		"prefix": "天殘",

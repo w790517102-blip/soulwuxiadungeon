@@ -211,7 +211,7 @@ func _choose_trade() -> void:
 		dialog_manager.choice_box.hide_choices()
 	if not _can_open_shop():
 		var lock_lines := [
-			{ "text": "書眠：（輕聲）「眼下還不是談書的時候…不是不賣。只是，你還沒讀到那一頁。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "書眠：（輕聲）「眼下還不是談書的時候…不是不賣。只是，你還沒\n讀到那一頁。」", "speaker": speaker_id, "portrait": portrait_path },
 		]
 		show_dialog_sequence(lock_lines)
 		await dialog_manager.dialog_finished

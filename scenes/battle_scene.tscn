@@ -1263,6 +1263,7 @@ text = "確認"
 
 [node name="background" type="TextureRect" parent="BattleUILayer/BattleUI"]
 z_index = -50
+layout_mode = 0
 offset_right = 1152.0
 offset_bottom = 648.0
 mouse_filter = 2
@@ -1271,6 +1272,7 @@ expand_mode = 1
 
 [node name="logpanel" type="TextureRect" parent="BattleUILayer/BattleUI"]
 z_index = -35
+layout_mode = 0
 offset_left = 296.96
 offset_right = 857.965
 offset_bottom = 644.0
