@@ -23,7 +23,7 @@ var party_inventory: Array = [
 	{"id": "ink_brush", "count": 1},
 	{"id": "yaoqin", "count": 1},
 	{"id": "short_dao", "count": 1},
-	{"id": "cloth_armor", "count": 1},
+	{"id": "arm_cloth", "count": 1},
 	{"id": "jade_pendant", "count": 1},
 	{"id": "quest_letter", "count": 1},
 ]

@@ -29,10 +29,10 @@ const ZONE_CONFIG := {
 
 const ENCOUNTER_POOLS := {
 	"yuheng_bamboo_outskirts": [
-		{"w": 0, "enemies": ["bamboo_macaque", "bamboo_macaque"]},
-		{"w": 0, "enemies": ["bamboo_macaque", "bamboo_bobcat"]},
+		{"w": 35, "enemies": ["bamboo_macaque", "bamboo_macaque"]},
+		{"w": 30, "enemies": ["bamboo_macaque", "bamboo_bobcat"]},
 		{"w": 20, "enemies": ["bamboo_wild_boar"]},
-		{"w": 75, "enemies": ["bamboo_poison_snake", "bamboo_poison_snake"]},
+		{"w": 10, "enemies": ["bamboo_poison_snake", "bamboo_poison_snake"]},
 		{"w": 5, "enemies": ["bamboo_bobcat", "bamboo_poison_snake"]}
 	],
 	"yuheng_sewer": [
