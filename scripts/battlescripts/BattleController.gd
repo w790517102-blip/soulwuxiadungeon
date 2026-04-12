@@ -599,6 +599,11 @@ func _restore_player_base_stats() -> void:
 		var key = _actor_key(p)
 		if key == "" or not _player_base_snapshot.has(key):
 			continue
+		var runtime_inner_force_id := String(p.get("inner_force_id", ""))
+		var runtime_inner_force: Dictionary = p.get("inner_force", {}) if typeof(p.get("inner_force", {})) == TYPE_DICTIONARY else {}
+		var runtime_element := String(p.get("element", ""))
+		var runtime_known_ids: Array = p.get("known_inner_force_ids", []) if typeof(p.get("known_inner_force_ids", [])) == TYPE_ARRAY else []
+		var runtime_available_forces: Array = p.get("available_inner_forces", []) if typeof(p.get("available_inner_forces", [])) == TYPE_ARRAY else []
 		var snapshot: Dictionary = _player_base_snapshot[key].duplicate(true)
 		var keep_hp = int(p.get("hp", snapshot.get("hp", 0)))
 		var keep_mp = int(p.get("mp", snapshot.get("mp", 0)))
@@ -610,6 +615,18 @@ func _restore_player_base_stats() -> void:
 		var restored_max_mp = int(p.get("max_mp", keep_mp))
 		p["hp"] = min(keep_hp, restored_max_hp)
 		p["mp"] = min(keep_mp, restored_max_mp)
+		if runtime_inner_force_id != "":
+			p["inner_force_id"] = runtime_inner_force_id
+		if not runtime_inner_force.is_empty():
+			p["inner_force"] = runtime_inner_force.duplicate(true)
+		if runtime_element != "":
+			p["element"] = runtime_element
+		if not runtime_known_ids.is_empty():
+			p["known_inner_force_ids"] = runtime_known_ids.duplicate()
+		if not runtime_available_forces.is_empty():
+			p["available_inner_forces"] = runtime_available_forces.duplicate(true)
+		if runtime_inner_force_id != "" and team_data_manager != null and team_data_manager.has_method("set_inner_force"):
+			team_data_manager.set_inner_force(String(p.get("id", key)), runtime_inner_force_id)
 		print("[BattleRestore] after status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
 
 
