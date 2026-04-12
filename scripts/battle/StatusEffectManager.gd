@@ -256,6 +256,19 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 	_recalc_max_hp(target)
 	_recalc_max_mp(target)
 
+func recalc_actor_stats(target: Dictionary) -> void:
+	if target.is_empty():
+		return
+	_ensure_base_stats(target)
+	_recalc_speed(target)
+	_recalc_accuracy(target)
+	_recalc_evasion(target)
+	_recalc_atk(target)
+	_recalc_def(target)
+	_recalc_primary_stats(target)
+	_recalc_max_hp(target)
+	_recalc_max_mp(target)
+
 
 func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictionary = {}) -> String:
 	effect_id = _canonicalize_effect_id(effect_id)

@@ -793,20 +793,68 @@ func _compute_inner_force_runtime_bonus(actor: Dictionary, force: Dictionary) ->
 	if int_ratio != 0.0:
 		bonus["max_mp"] += int(floor(float(int(actor.get("int", 0))) * int_ratio))
 	var force_element := String(force.get("element", ""))
+	var base_speed := _runtime_stat_base(actor, "speed", 0)
+	var base_def := _runtime_stat_base(actor, "def", 0)
+	var base_accuracy := _runtime_stat_base(actor, "accuracy", 100)
+	var base_evasion := _runtime_stat_base(actor, "evasion", 0)
+	var base_crit_rate_bonus := _runtime_stat_base_float(actor, "crit_rate_bonus", 0.0)
 	match force_element:
 		"快":
-			bonus["speed"] += int(round(float(int(actor.get("speed", 0))) * 0.15))
-			bonus["def"] += int(round(float(int(actor.get("def", 0))) * -0.10))
+			bonus["speed"] += int(round(float(base_speed) * 0.15))
+			bonus["def"] += int(round(float(base_def) * -0.10))
 		"柔":
-			bonus["evasion"] += int(round(float(int(actor.get("evasion", 0))) * 0.15))
-			bonus["crit_rate_bonus"] += float(actor.get("crit_rate_bonus", 0.0)) * -0.10
+			bonus["evasion"] += int(round(float(base_evasion) * 0.15))
+			bonus["crit_rate_bonus"] += base_crit_rate_bonus * -0.10
 		"遲":
-			bonus["accuracy"] += int(round(float(int(actor.get("accuracy", 100))) * 0.15))
-			bonus["evasion"] += int(round(float(int(actor.get("evasion", 0))) * -0.10))
+			bonus["accuracy"] += int(round(float(base_accuracy) * 0.15))
+			bonus["evasion"] += int(round(float(base_evasion) * -0.10))
 		"剛":
-			bonus["def"] += int(round(float(int(actor.get("def", 0))) * 0.15))
-			bonus["speed"] += int(round(float(int(actor.get("speed", 0))) * -0.10))
+			bonus["def"] += int(round(float(base_def) * 0.15))
+			bonus["speed"] += int(round(float(base_speed) * -0.10))
 	return bonus
+
+func _runtime_stat_base(actor: Dictionary, stat_key: String, fallback: int) -> int:
+	var base_key := "base_%s" % stat_key
+	if actor.has(base_key):
+		return int(actor.get(base_key, fallback))
+	return int(actor.get(stat_key, fallback))
+
+func _runtime_stat_base_float(actor: Dictionary, stat_key: String, fallback: float) -> float:
+	var base_key := "base_%s" % stat_key
+	if actor.has(base_key):
+		return float(actor.get(base_key, fallback))
+	return float(actor.get(stat_key, fallback))
+
+func _add_runtime_bonus_stat(actor: Dictionary, stat_key: String, delta: int, fallback: int) -> void:
+	if delta == 0:
+		return
+	actor[stat_key] = int(actor.get(stat_key, fallback)) + delta
+	var base_key := "base_%s" % stat_key
+	if actor.has(base_key):
+		actor[base_key] = int(actor.get(base_key, actor.get(stat_key, fallback))) + delta
+
+func _add_runtime_bonus_stat_float(actor: Dictionary, stat_key: String, delta: float, fallback: float) -> void:
+	if is_zero_approx(delta):
+		return
+	actor[stat_key] = float(actor.get(stat_key, fallback)) + delta
+	var base_key := "base_%s" % stat_key
+	if actor.has(base_key):
+		actor[base_key] = float(actor.get(base_key, actor.get(stat_key, fallback))) + delta
+
+func _add_runtime_bonus_max_stat(actor: Dictionary, max_stat_key: String, delta: int, fallback_from_key: String) -> void:
+	if delta == 0:
+		return
+	var fallback_value := int(actor.get(max_stat_key, actor.get(fallback_from_key, 0)))
+	actor[max_stat_key] = max(0, fallback_value + delta)
+	var base_key := "base_%s" % max_stat_key
+	if actor.has(base_key):
+		actor[base_key] = max(0, int(actor.get(base_key, fallback_value)) + delta)
+
+func _recalc_actor_status_snapshot(actor: Dictionary) -> void:
+	if actor.is_empty() or status_manager == null:
+		return
+	if status_manager.has_method("recalc_actor_stats"):
+		status_manager.recalc_actor_stats(actor)
 
 
 func _remove_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
@@ -816,19 +864,19 @@ func _remove_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 	if typeof(prev) != TYPE_DICTIONARY:
 		return
 	var prev_bonus: Dictionary = prev
-	actor["str"] = int(actor.get("str", 0)) - int(prev_bonus.get("str", 0))
-	actor["con"] = int(actor.get("con", 0)) - int(prev_bonus.get("con", 0))
-	actor["agi"] = int(actor.get("agi", 0)) - int(prev_bonus.get("agi", 0))
-	actor["accuracy"] = int(actor.get("accuracy", 100)) - int(prev_bonus.get("accuracy", 0))
-	actor["def"] = int(actor.get("def", 0)) - int(prev_bonus.get("def", 0))
-	actor["speed"] = int(actor.get("speed", 0)) - int(prev_bonus.get("speed", 0))
-	actor["evasion"] = int(actor.get("evasion", 0)) - int(prev_bonus.get("evasion", 0))
-	actor["crit_rate_bonus"] = float(actor.get("crit_rate_bonus", 0.0)) - float(prev_bonus.get("crit_rate_bonus", 0.0))
-	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) - int(prev_bonus.get("max_mp", 0))
-	actor["max_mp"] = max(0, int(actor.get("max_mp", 0)))
+	_add_runtime_bonus_stat(actor, "str", -int(prev_bonus.get("str", 0)), 0)
+	_add_runtime_bonus_stat(actor, "con", -int(prev_bonus.get("con", 0)), 0)
+	_add_runtime_bonus_stat(actor, "agi", -int(prev_bonus.get("agi", 0)), 0)
+	_add_runtime_bonus_stat(actor, "accuracy", -int(prev_bonus.get("accuracy", 0)), 100)
+	_add_runtime_bonus_stat(actor, "def", -int(prev_bonus.get("def", 0)), 0)
+	_add_runtime_bonus_stat(actor, "speed", -int(prev_bonus.get("speed", 0)), 0)
+	_add_runtime_bonus_stat(actor, "evasion", -int(prev_bonus.get("evasion", 0)), 0)
+	_add_runtime_bonus_stat_float(actor, "crit_rate_bonus", -float(prev_bonus.get("crit_rate_bonus", 0.0)), 0.0)
+	_add_runtime_bonus_max_stat(actor, "max_mp", -int(prev_bonus.get("max_mp", 0)), "mp")
 	if int(actor.get("mp", 0)) > int(actor.get("max_mp", 0)):
 		actor["mp"] = int(actor.get("max_mp", 0))
 	actor.erase("_inner_force_runtime_bonus")
+	_recalc_actor_status_snapshot(actor)
 
 
 func _apply_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
@@ -839,18 +887,18 @@ func _apply_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 	var bonus := _compute_inner_force_runtime_bonus(actor, force)
 	if bonus.is_empty():
 		return
-	actor["agi"] = int(actor.get("agi", 0)) + int(bonus.get("agi", 0))
-	actor["str"] = int(actor.get("str", 0)) + int(bonus.get("str", 0))
-	actor["con"] = int(actor.get("con", 0)) + int(bonus.get("con", 0))
-	actor["accuracy"] = int(actor.get("accuracy", 100)) + int(bonus.get("accuracy", 0))
-	actor["def"] = int(actor.get("def", 0)) + int(bonus.get("def", 0))
-	actor["speed"] = int(actor.get("speed", 0)) + int(bonus.get("speed", 0))
-	actor["evasion"] = int(actor.get("evasion", 0)) + int(bonus.get("evasion", 0))
-	actor["crit_rate_bonus"] = float(actor.get("crit_rate_bonus", 0.0)) + float(bonus.get("crit_rate_bonus", 0.0))
-	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + int(bonus.get("max_mp", 0))
-	actor["max_mp"] = max(0, int(actor.get("max_mp", 0)))
+	_add_runtime_bonus_stat(actor, "agi", int(bonus.get("agi", 0)), 0)
+	_add_runtime_bonus_stat(actor, "str", int(bonus.get("str", 0)), 0)
+	_add_runtime_bonus_stat(actor, "con", int(bonus.get("con", 0)), 0)
+	_add_runtime_bonus_stat(actor, "accuracy", int(bonus.get("accuracy", 0)), 100)
+	_add_runtime_bonus_stat(actor, "def", int(bonus.get("def", 0)), 0)
+	_add_runtime_bonus_stat(actor, "speed", int(bonus.get("speed", 0)), 0)
+	_add_runtime_bonus_stat(actor, "evasion", int(bonus.get("evasion", 0)), 0)
+	_add_runtime_bonus_stat_float(actor, "crit_rate_bonus", float(bonus.get("crit_rate_bonus", 0.0)), 0.0)
+	_add_runtime_bonus_max_stat(actor, "max_mp", int(bonus.get("max_mp", 0)), "mp")
 	actor["mp"] = min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
 	actor["_inner_force_runtime_bonus"] = bonus
+	_recalc_actor_status_snapshot(actor)
 
 
 func _resolve_skill_mp_cost(actor: Dictionary, skill_data: Dictionary) -> int:
