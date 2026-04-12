@@ -1104,6 +1104,10 @@ func _setup_status_member_slots() -> void:
 		})
 		var stats_label := stats_rich
 		if stats_label:
+			stats_label.add_theme_font_override("normal_font", MenuUIFont)
+			stats_label.add_theme_font_size_override("normal_font_size", 18)
+			stats_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+			stats_label.add_theme_constant_override("outline_size", 4)
 			stats_label.add_theme_font_size_override("font_size", 18)
 		var portrait := member.get_node_or_null("Portrait") as TextureRect
 		if portrait:
@@ -1220,6 +1224,18 @@ func _ensure_status_hover_popup() -> void:
 	_status_hover_popup.visible = false
 	_status_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_hover_popup.z_index = 200
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.07, 0.07, 0.09, 1.0)
+	bg.corner_radius_top_left = 8
+	bg.corner_radius_top_right = 8
+	bg.corner_radius_bottom_left = 8
+	bg.corner_radius_bottom_right = 8
+	bg.border_width_left = 1
+	bg.border_width_top = 1
+	bg.border_width_right = 1
+	bg.border_width_bottom = 1
+	bg.border_color = Color(0.8, 0.8, 0.8, 0.22)
+	_status_hover_popup.add_theme_stylebox_override("panel", bg)
 	add_child(_status_hover_popup)
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 10)
@@ -1232,6 +1248,11 @@ func _ensure_status_hover_popup() -> void:
 	_status_hover_label.fit_content = true
 	_status_hover_label.scroll_active = false
 	_status_hover_label.custom_minimum_size = Vector2(300, 0)
+	_status_hover_label.add_theme_font_override("normal_font", MenuUIFont)
+	_status_hover_label.add_theme_font_size_override("normal_font_size", 18)
+	_status_hover_label.add_theme_color_override("default_color", Color(1, 1, 1, 1))
+	_status_hover_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_status_hover_label.add_theme_constant_override("outline_size", 4)
 	pad.add_child(_status_hover_label)
 
 func _on_status_meta_hover_started(meta: Variant, stats_label: RichTextLabel) -> void:
