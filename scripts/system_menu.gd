@@ -674,7 +674,7 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 	if inner_force_detail == null:
 		return
 	if force.is_empty():
-		_set_detail_bbcode(inner_force_detail, "[font_size=20][b]請選擇內功。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【聯動】[/b][/font_size]\n-")
+		_set_detail_bbcode(inner_force_detail, "[font_size=20][b]請選擇內功。[/b][/font_size]\n\n[font_size=20][b]【描述】[/b][/font_size]\n-\n\n[font_size=20][b]【效果】[/b][/font_size]\n-\n\n[font_size=20][b]【特殊效果】[/b][/font_size]\n-\n\n[font_size=20][b]【聯動】[/b][/font_size]\n-")
 		if switch_inner_force_button:
 			switch_inner_force_button.disabled = true
 		return
@@ -710,6 +710,11 @@ func _update_inner_force_detail(force: Dictionary) -> void:
 		lines.append("傷害加成：+%d%%" % int(boost_pct * 100))
 	if require_unarmed:
 		lines.append("需求：空手")
+	var special_effect_desc := String(force.get("special_effect_desc", ""))
+	if special_effect_desc != "":
+		lines.append("")
+		lines.append("[font_size=20][b]【特殊效果】[/b][/font_size]")
+		lines.append(special_effect_desc)
 	lines.append("")
 	lines.append("[font_size=20][b]【聯動】[/b][/font_size]")
 	lines.append_array(_build_inner_force_combo_lines(force, actor_data))

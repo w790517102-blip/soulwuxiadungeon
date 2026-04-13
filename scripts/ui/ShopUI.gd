@@ -183,12 +183,12 @@ func _apply_shop_font_style(root: Node) -> void:
 	if root is Control:
 		var ctrl := root as Control
 		ctrl.add_theme_font_override("font", MenuUIFont)
-		ctrl.add_theme_font_size_override("font_size", 16)
+		ctrl.add_theme_font_size_override("font_size", 18)
 		ctrl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		ctrl.add_theme_constant_override("outline_size", 4)
 		if ctrl is RichTextLabel:
 			ctrl.add_theme_font_override("normal_font", MenuUIFont)
-			ctrl.add_theme_font_size_override("normal_font_size", 16)
+			ctrl.add_theme_font_size_override("normal_font_size", 18)
 	for child in root.get_children():
 		_apply_shop_font_style(child)
 

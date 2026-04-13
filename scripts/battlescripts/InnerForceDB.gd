@@ -160,6 +160,7 @@ const INNER_FORCES := {
 		"str_flat_bonus": 6,
 		"boost_damage_pct": 0.12,
 		"description": "伏潮訣，真氣沉厚如潛潮伏岩，平時不顯，出刀時一波壓一波，專破對手氣勢。",
+		"special_effect_desc": "刀類技能命中已破防的敵人時，有機率使其陷入暈眩。\n暈眩機率受智慧與幸運影響。",
 		"available": ["liuyu", "lieshao"],
 	},
 	"wuji_zhenjing": {
