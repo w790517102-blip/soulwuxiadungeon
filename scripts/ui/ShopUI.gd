@@ -2,6 +2,7 @@ extends CanvasLayer
 class_name ShopUI
 
 const ShopDatabaseScript = preload("res://scripts/db/ShopDatabase.gd")
+const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 
 var _shop_db: Node = ShopDatabaseScript.new()
 var _shop_id := ""
@@ -61,7 +62,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	panel = Panel.new()
-	panel.size = Vector2(620, 430)
+	panel.size = Vector2(820, 530)
 	panel.position = (get_viewport().get_visible_rect().size - panel.size) * 0.5
 	add_child(panel)
 
@@ -176,6 +177,20 @@ func _build_ui() -> void:
 	qty_plus_button.pressed.connect(_on_qty_plus_pressed)
 	item_list.item_selected.connect(_on_item_selected)
 	confirm_dialog.confirmed.connect(_on_confirmed)
+	_apply_shop_font_style(panel)
+
+func _apply_shop_font_style(root: Node) -> void:
+	if root is Control:
+		var ctrl := root as Control
+		ctrl.add_theme_font_override("font", MenuUIFont)
+		ctrl.add_theme_font_size_override("font_size", 16)
+		ctrl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		ctrl.add_theme_constant_override("outline_size", 4)
+		if ctrl is RichTextLabel:
+			ctrl.add_theme_font_override("normal_font", MenuUIFont)
+			ctrl.add_theme_font_size_override("normal_font_size", 16)
+	for child in root.get_children():
+		_apply_shop_font_style(child)
 
 func _set_mode(mode: String) -> void:
 	_mode = mode if ["buy", "sell"].has(mode) else "buy"
