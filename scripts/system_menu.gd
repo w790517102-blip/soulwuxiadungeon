@@ -220,7 +220,8 @@ func _on_item_selected(index: int) -> void:
 	var name = _as_plain_text(item.get("name", item.get("id", "???")))
 	var desc = item.get("desc", item.get("description", ""))
 	var count = int(item.get("quantity", item.get("count", 0)))
-	_set_detail_bbcode(item_desc, "[b]%s[/b]\n數量：%d\n\n%s" % [name, count, desc])
+	var effect_text := ItemDB.get_effect_display_text(item)
+	_set_detail_bbcode(item_desc, "[b]%s[/b]\n描述：%s\n效果：%s\n數量：%d" % [name, str(desc), effect_text, count])
 	_update_use_button(item_id)
 
 func _on_inventory_changed() -> void:
@@ -1342,8 +1343,8 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
 			var luck_total := int(_get_actor_value(actor, "luck", 0)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
 			var hit_power := int(round((float(acc_total) - 100.0) + float(agi_total) * 0.7 + float(luck_total) * 0.3))
-			return "[b]命中[/b]\n影響攻擊命中的對抗能力值（不是命中率）。\n目前值：%d\n拆解：其他 %d + 敏項 %.1f + 幸項 %.1f" % [
-				hit_power, acc_total - 100, float(agi_total) * 0.7, float(luck_total) * 0.3
+			return "[b]命中[/b]\n影響攻擊命中的對抗能力值（不是命中率）。\n目前值：%d\n拆解：敏項 %.1f + 幸項 %.1f + 其他 %d" % [
+				hit_power, float(agi_total) * 0.7, float(luck_total) * 0.3, acc_total - 100
 			]
 		"evade_power":
 			var evade_total := int(_get_actor_value(actor, "evasion", 0)) + int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))

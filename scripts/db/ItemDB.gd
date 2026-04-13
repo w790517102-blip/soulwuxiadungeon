@@ -36,16 +36,16 @@ const ITEM_DEFS := {
 	"wep_short_blade": {"name": "短刀", "desc": "短柄單刀。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_2", "weapon_type": "刀", "stats": {"atk": 2}},
 	"wep_qingfeng_sword": {"name": "青鋒劍", "desc": "均衡劍器。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 3}},
 	"wep_bamboo_staff": {"name": "竹槍", "desc": "竹製長槍。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "槍", "stats": {"atk": 2}},
-	"arm_cloth": {"name": "布衣", "desc": "輕便布衣，基本護身衣著。防禦+1。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 1}},
-	"acc_bracer": {"name": "護腕", "desc": "厚實護腕，能穩定手勢與招架。防禦+5，命中+5。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 5, "accuracy": 5}},
+	"arm_cloth": {"name": "布衣", "desc": "輕便布衣，基本護身衣著。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 1}},
+	"acc_bracer": {"name": "護腕", "desc": "厚實護腕，能穩定手勢與招架。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 5, "accuracy": 5}},
 	"arm_straw_sandals": {"name": "草履", "desc": "結實草履。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_feet", "stats": {"speed": 1}},
 	"acc_boss_sighting_ring": {"name": "老闆的校準戒", "desc": "鐵匠老闆拿來校正試招的戒指，特別適合測試命中。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "accessory_1", "can_sell": false, "stats": {"accuracy": 60}},
 	"arm_boss_running_shoes": {"name": "老闆的跑鞋", "desc": "鐵匠老闆私藏的跑鞋，穿上後腳步輕快，特別適合測試閃避。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_feet", "can_sell": false, "stats": {"speed": 3, "evasion": 60}},
 	"arm_boss_crit_gloves": {"name": "老闆必殺拳套", "desc": "QA 驗證專用拳套，特化暴擊測試。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "can_sell": false, "stats": {"crit_rate_bonus": 0.8}},
-	"arm_thin_leather": {"name": "輕薄皮甲", "desc": "輕薄的皮製甲冑，比起一般衣物更為結實。防禦+10，最大生命值+10。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 10, "max_hp": 10}},
-	"arm_leather_cloth": {"name": "皮衣", "desc": "動物的皮毛製成的厚實大衣。防禦力+5，最大生命值+3。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 5, "max_hp": 3}},
-	"cloth_gloves": {"name": "布手套", "desc": "柔軟布製手套，提供基礎保護。防禦+1。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 1}},
-	"leather_gloves": {"name": "皮手套", "desc": "耐磨皮革手套，強化手部防護。防禦+3。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 3}},
+	"arm_thin_leather": {"name": "輕薄皮甲", "desc": "輕薄的皮製甲冑，比起一般衣物更為結實。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 10, "max_hp": 10}},
+	"arm_leather_cloth": {"name": "皮衣", "desc": "動物的皮毛製成的厚實大衣。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_body", "stats": {"def": 5, "max_hp": 3}},
+	"cloth_gloves": {"name": "布手套", "desc": "柔軟布製手套，提供基礎保護。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 1}},
+	"leather_gloves": {"name": "皮手套", "desc": "耐磨皮革手套，強化手部防護。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 3}},
 	"misc_tinderbox": {"name": "火折子", "desc": "可點火的雜貨。", "type": "misc", "use_scope": "none", "use_action": "none"},
 	"misc_hemp_twine": {"name": "麻線", "desc": "耐用麻線。", "type": "material", "use_scope": "none", "use_action": "none"},
 	"misc_small_rope": {"name": "麻繩", "desc": "簡易麻繩。", "type": "material", "use_scope": "none", "use_action": "none"},
@@ -292,7 +292,6 @@ static func get_def(id: String) -> Dictionary:
 		out["price"] = int(out.get("base_price", 0))
 	if not out.has("can_sell"):
 		out["can_sell"] = str(out.get("type", "consumable")) != "quest" and int(out.get("base_price", 0)) > 0
-	_ensure_equipment_desc_has_effects(out)
 	return out
 
 static func _normalize_equip_slot(slot: String) -> String:
@@ -350,6 +349,43 @@ static func _equipment_stat_desc_part(stat_key: String, value) -> String:
 			return "暴擊率%+.1f%%" % (float(value) * 100.0)
 		_:
 			return ""
+
+static func get_effect_display_text(item_def: Dictionary) -> String:
+	if item_def.is_empty():
+		return "（無）"
+	if str(item_def.get("type", "")) == "equipment":
+		var stats_raw = item_def.get("stats", {})
+		if typeof(stats_raw) != TYPE_DICTIONARY:
+			return "（無）"
+		var stats: Dictionary = stats_raw
+		var effect_parts: Array[String] = []
+		var ordered_keys := ["atk", "def", "max_hp", "max_mp", "speed", "accuracy", "evasion", "crit_rate_bonus"]
+		for stat_key in ordered_keys:
+			if not stats.has(stat_key):
+				continue
+			var part := _equipment_stat_desc_part(stat_key, stats.get(stat_key))
+			if part != "":
+				effect_parts.append(part)
+		return "、".join(effect_parts) if not effect_parts.is_empty() else "（無）"
+	var effect_key := String(item_def.get("effect", ""))
+	match effect_key:
+		"heal":
+			return "回復 %d 點氣血" % int(item_def.get("amount", 0))
+		"mp_heal":
+			return "回復 %d 點內力" % int(item_def.get("amount", 0))
+		"cure_status":
+			var status_id := String(item_def.get("status_id", ""))
+			if status_id == "poison":
+				return "解除中毒"
+			if status_id == "stun":
+				return "解除暈眩"
+			if status_id == "confuse":
+				return "解除混亂"
+			return "解除狀態：%s" % status_id
+		"perm_stat":
+			return "%s 永久 %+d" % [String(item_def.get("stat_key", "能力")), int(item_def.get("amount", 0))]
+		_:
+			return "效果代號：%s" % effect_key if effect_key != "" else "（無）"
 
 static func make_item(id: String) -> Dictionary:
 	var data: Dictionary = get_def(id)
