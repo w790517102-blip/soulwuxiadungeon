@@ -44,6 +44,9 @@ var _status_member_slots: Array = []
 var _status_hover_layer: CanvasLayer = null
 var _status_hover_popup: PanelContainer = null
 var _status_hover_label: RichTextLabel = null
+var _status_hover_timer: Timer = null
+var _pending_status_hover_meta: String = ""
+var _pending_status_hover_actor_id: String = ""
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -1261,16 +1264,40 @@ func _ensure_status_hover_popup() -> void:
 	_status_hover_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	_status_hover_label.add_theme_constant_override("outline_size", 4)
 	pad.add_child(_status_hover_label)
+	_ensure_status_hover_timer()
+
+func _ensure_status_hover_timer() -> void:
+	if _status_hover_timer != null and is_instance_valid(_status_hover_timer):
+		return
+	_status_hover_timer = Timer.new()
+	_status_hover_timer.name = "StatusHoverDelayTimer"
+	_status_hover_timer.one_shot = true
+	_status_hover_timer.wait_time = 0.5
+	_status_hover_timer.timeout.connect(_on_status_hover_delay_timeout)
+	add_child(_status_hover_timer)
 
 func _on_status_meta_hover_started(meta: Variant, stats_label: RichTextLabel) -> void:
 	_ensure_status_hover_popup()
-	if _status_hover_popup == null or _status_hover_label == null:
+	_ensure_status_hover_timer()
+	if _status_hover_popup == null or _status_hover_label == null or _status_hover_timer == null:
 		return
 	var actor_id := String(stats_label.get_meta("actor_id", ""))
-	var actor = _get_actor_by_id(actor_id)
+	if actor_id == "":
+		return
+	_pending_status_hover_meta = String(meta)
+	_pending_status_hover_actor_id = actor_id
+	_status_hover_timer.start(0.5)
+
+func _on_status_meta_hover_ended(_meta: Variant) -> void:
+	_hide_status_hover_popup()
+
+func _on_status_hover_delay_timeout() -> void:
+	if _pending_status_hover_meta == "" or _pending_status_hover_actor_id == "":
+		return
+	var actor = _get_actor_by_id(_pending_status_hover_actor_id)
 	if actor == null:
 		return
-	var text := _build_status_hover_text(actor, String(meta))
+	var text := _build_status_hover_text(actor, _pending_status_hover_meta)
 	if text == "":
 		return
 	_status_hover_label.bbcode_text = text
@@ -1278,10 +1305,11 @@ func _on_status_meta_hover_started(meta: Variant, stats_label: RichTextLabel) ->
 	_status_hover_popup.reset_size()
 	_position_status_hover_popup(get_global_mouse_position())
 
-func _on_status_meta_hover_ended(_meta: Variant) -> void:
-	_hide_status_hover_popup()
-
 func _hide_status_hover_popup() -> void:
+	_pending_status_hover_meta = ""
+	_pending_status_hover_actor_id = ""
+	if _status_hover_timer:
+		_status_hover_timer.stop()
 	if _status_hover_popup:
 		_status_hover_popup.hide()
 
