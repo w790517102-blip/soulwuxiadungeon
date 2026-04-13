@@ -166,6 +166,7 @@ const ITEM_DEFS := {
 		"use_action": "equip",
 		"equip_slot": "weapon_1",
 		"weapon_type": "筆",
+		"stats": {"atk": 3},
 	},
 	"yaoqin": {
 		"name": "瑤琴",
@@ -175,15 +176,7 @@ const ITEM_DEFS := {
 		"use_action": "equip",
 		"equip_slot": "weapon_1",
 		"weapon_type": "琴",
-	},
-	"short_dao": {
-		"name": "短刀",
-		"desc": "刀身短小，利於副手運用。",
-		"type": "equipment",
-		"use_scope": "world",
-		"use_action": "equip",
-		"equip_slot": "weapon_2",
-		"weapon_type": "刀",
+		"stats": {"atk": 3},
 	},
 	"jade_pendant": {
 		"name": "玉佩",
@@ -260,7 +253,6 @@ const BASE_PRICES := {
 	"bronze_sword": 55,
 	"ink_brush": 48,
 	"yaoqin": 58,
-	"short_dao": 36,
 	"jade_pendant": 42,
 }
 
