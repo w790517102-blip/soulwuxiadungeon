@@ -12,16 +12,21 @@ var _mode: String = "buy"
 var _pending_item: Dictionary = {}
 var _selected_entry: Dictionary = {}
 var _selected_max_qty: int = 1
+var _buy_cart: Dictionary = {}
+var _buy_entries: Dictionary = {}
 
 var panel: Panel
 var title_label: Label
 var gold_label: Label
 var item_list: ItemList
+var buy_scroll: ScrollContainer
+var buy_list_vbox: VBoxContainer
 var info_panel: PanelContainer
 var info_name_label: Label
 var info_price_label: Label
 var info_desc_label: RichTextLabel
 var info_extra_label: Label
+var info_effect_label: Label
 var mode_buy_button: Button
 var mode_sell_button: Button
 var action_button: Button
@@ -95,10 +100,34 @@ func _build_ui() -> void:
 	content_hb.custom_minimum_size = Vector2(0, 270)
 	vb.add_child(content_hb)
 
+	var list_panel := PanelContainer.new()
+	list_panel.custom_minimum_size = Vector2(360, 270)
+	list_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_hb.add_child(list_panel)
+
+	var list_stack := VBoxContainer.new()
+	list_stack.anchor_right = 1
+	list_stack.anchor_bottom = 1
+	list_stack.offset_left = 8
+	list_stack.offset_top = 8
+	list_stack.offset_right = -8
+	list_stack.offset_bottom = -8
+	list_panel.add_child(list_stack)
+
+	buy_scroll = ScrollContainer.new()
+	buy_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buy_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list_stack.add_child(buy_scroll)
+
+	buy_list_vbox = VBoxContainer.new()
+	buy_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buy_scroll.add_child(buy_list_vbox)
+
 	item_list = ItemList.new()
-	item_list.custom_minimum_size = Vector2(320, 270)
 	item_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_hb.add_child(item_list)
+	item_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	item_list.visible = false
+	list_stack.add_child(item_list)
 
 	info_panel = PanelContainer.new()
 	info_panel.custom_minimum_size = Vector2(250, 270)
@@ -134,8 +163,13 @@ func _build_ui() -> void:
 	info_desc_label.fit_content = true
 	info_desc_label.scroll_active = false
 	info_desc_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	info_desc_label.custom_minimum_size = Vector2(0, 170)
+	info_desc_label.custom_minimum_size = Vector2(0, 130)
 	info_vb.add_child(info_desc_label)
+
+	info_effect_label = Label.new()
+	info_effect_label.text = "效果：-"
+	info_effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info_vb.add_child(info_effect_label)
 
 	var action_hb := HBoxContainer.new()
 	vb.add_child(action_hb)
@@ -194,12 +228,24 @@ func _apply_shop_font_style(root: Node) -> void:
 
 func _set_mode(mode: String) -> void:
 	_mode = mode if ["buy", "sell"].has(mode) else "buy"
-	action_button.text = "購買" if _mode == "buy" else "販賣"
+	action_button.text = "結帳" if _mode == "buy" else "販賣"
 	mode_buy_button.disabled = _mode == "buy"
 	mode_sell_button.disabled = _mode == "sell"
+	if buy_scroll:
+		buy_scroll.visible = _mode == "buy"
+	if item_list:
+		item_list.visible = _mode == "sell"
+	if qty_minus_button:
+		qty_minus_button.visible = _mode == "sell"
+	if qty_plus_button:
+		qty_plus_button.visible = _mode == "sell"
+	if qty_label:
+		qty_label.visible = _mode == "sell"
 	_selected_entry.clear()
 	_selected_max_qty = 1
 	_pending_item.clear()
+	_buy_cart.clear()
+	_buy_entries.clear()
 	_refresh_items()
 	_update_qty_label()
 	_update_info_panel(_selected_entry)
@@ -239,24 +285,30 @@ func _set_runtime_stock(item_id: String, new_stock: int) -> void:
 	GlobalState.shop_runtime_stock[key] = max(new_stock, 0)
 
 func _refresh_items() -> void:
-	item_list.clear()
 	if _mode == "buy":
 		_refresh_buy_items()
+		var has_cart_items := _buy_cart.values().any(func(v): return int(v) > 0)
+		action_button.disabled = not has_cart_items
+		qty_minus_button.disabled = true
+		qty_plus_button.disabled = true
 	else:
+		item_list.clear()
 		_refresh_sell_items()
-	action_button.disabled = item_list.item_count <= 0
-	qty_minus_button.disabled = true
-	qty_plus_button.disabled = item_list.item_count <= 0
-	if item_list.item_count > 0:
-		item_list.select(0)
-		_on_item_selected(0)
-	else:
-		_selected_entry.clear()
-		_selected_max_qty = 1
-		_update_info_panel({})
+		action_button.disabled = item_list.item_count <= 0
+		qty_minus_button.disabled = true
+		qty_plus_button.disabled = item_list.item_count <= 0
+		if item_list.item_count > 0:
+			item_list.select(0)
+			_on_item_selected(0)
+		else:
+			_selected_entry.clear()
+			_selected_max_qty = 1
+			_update_info_panel({})
 	_update_qty_label()
 
 func _refresh_buy_items() -> void:
+	for child in buy_list_vbox.get_children():
+		child.queue_free()
 	var entries: Array = _shop_data.get("items", [])
 	for entry in entries:
 		if typeof(entry) != TYPE_DICTIONARY:
@@ -266,11 +318,52 @@ func _refresh_buy_items() -> void:
 			continue
 		var price := int((entry as Dictionary).get("price", 0))
 		var runtime_stock := _get_runtime_stock(item_id, entry)
-		var stock_text := "" if runtime_stock < 0 else "｜庫存:%d" % runtime_stock
-		item_list.add_item("%s｜%d文%s" % [_item_name(item_id), price, stock_text])
 		var metadata := (entry as Dictionary).duplicate(true)
 		metadata["runtime_stock"] = runtime_stock
-		item_list.set_item_metadata(item_list.item_count - 1, metadata)
+		_buy_entries[item_id] = metadata
+		if not _buy_cart.has(item_id):
+			_buy_cart[item_id] = 0
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		buy_list_vbox.add_child(row)
+		var name_btn := Button.new()
+		name_btn.flat = true
+		name_btn.text_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var stock_text := "∞" if runtime_stock < 0 else str(runtime_stock)
+		name_btn.text = "%s｜%d文｜庫存:%s" % [_item_name(item_id), price, stock_text]
+		name_btn.pressed.connect(func():
+			_selected_entry = metadata.duplicate(true)
+			_update_info_panel(_selected_entry)
+		)
+		row.add_child(name_btn)
+		var minus_btn := Button.new()
+		minus_btn.text = "-"
+		minus_btn.custom_minimum_size = Vector2(28, 0)
+		row.add_child(minus_btn)
+		var qty_label_row := Label.new()
+		qty_label_row.custom_minimum_size = Vector2(34, 0)
+		qty_label_row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		qty_label_row.text = str(int(_buy_cart.get(item_id, 0)))
+		row.add_child(qty_label_row)
+		var plus_btn := Button.new()
+		plus_btn.text = "+"
+		plus_btn.custom_minimum_size = Vector2(28, 0)
+		row.add_child(plus_btn)
+		minus_btn.pressed.connect(func():
+			var qty := max(int(_buy_cart.get(item_id, 0)) - 1, 0)
+			_buy_cart[item_id] = qty
+			qty_label_row.text = str(qty)
+			action_button.disabled = not _buy_cart.values().any(func(v): return int(v) > 0)
+		)
+		plus_btn.pressed.connect(func():
+			var qty := int(_buy_cart.get(item_id, 0))
+			if runtime_stock >= 0 and qty >= runtime_stock:
+				return
+			_buy_cart[item_id] = qty + 1
+			qty_label_row.text = str(qty + 1)
+			action_button.disabled = false
+		)
 
 func _refresh_sell_items() -> void:
 	if InventorySync == null:
@@ -328,34 +421,57 @@ func _on_item_selected(index: int) -> void:
 	_update_info_panel(_selected_entry)
 
 func _update_info_panel(entry: Dictionary) -> void:
-	if info_name_label == null or info_price_label == null or info_desc_label == null or info_extra_label == null:
+	if info_name_label == null or info_price_label == null or info_desc_label == null or info_extra_label == null or info_effect_label == null:
 		return
 	if entry.is_empty():
 		info_name_label.text = "名稱：-"
 		info_price_label.text = "價格：-"
 		info_extra_label.text = "備註：請先選擇商品"
 		info_desc_label.text = "描述：-"
+		info_effect_label.text = "效果：-"
 		return
 	var item_id := String(entry.get("item_id", ""))
 	var item_def := ItemDB.get_def(item_id) if item_id != "" else {}
 	var item_name := String(item_def.get("name", item_id))
 	var item_desc := String(item_def.get("desc", ""))
+	var item_effect := ItemDB.get_effect_display_text(item_def)
 	if item_desc == "":
 		item_desc = "（尚無描述）"
 	info_name_label.text = "名稱：%s" % item_name
+	var type_text := _item_type_display_name(String(item_def.get("type", "-")))
 	if _mode == "buy":
 		info_price_label.text = "價格：%d 文" % int(entry.get("price", 0))
 		var runtime_stock := int(entry.get("runtime_stock", int(entry.get("stock", -1))))
 		var stock_text := "∞" if runtime_stock < 0 else str(runtime_stock)
-		info_extra_label.text = "備註：庫存 %s｜類型：%s" % [stock_text, String(item_def.get("type", "-"))]
+		info_extra_label.text = "備註：庫存 %s｜類型：%s" % [stock_text, type_text]
 	else:
 		info_price_label.text = "回收：%d 文" % int(entry.get("sell_price", 0))
 		var equipped_text := "（已裝備，暫不可賣）" if bool(entry.get("equipped_blocked", false)) else ""
 		var sell_note := "持有 %d" % int(entry.get("quantity", 0))
 		if equipped_text != "":
 			sell_note += " " + equipped_text
-		info_extra_label.text = "備註：%s" % sell_note
+		info_extra_label.text = "備註：%s｜類型：%s" % [sell_note, type_text]
 	info_desc_label.text = "描述：%s" % item_desc
+	info_effect_label.text = "效果：%s" % item_effect
+
+func _item_type_display_name(item_type: String) -> String:
+	match item_type:
+		"equipment":
+			return "裝備"
+		"consumable":
+			return "消耗"
+		"material":
+			return "材料"
+		"tool":
+			return "器具"
+		"food":
+			return "食物"
+		"misc":
+			return "雜項"
+		"quest":
+			return "任務"
+		_:
+			return item_type
 
 func _compute_max_qty(entry: Dictionary) -> int:
 	if _mode == "buy":
@@ -403,28 +519,90 @@ func _show_notice(text: String) -> void:
 	notice_dialog.popup_centered()
 
 func _on_action_pressed() -> void:
+	if _mode == "buy":
+		_pending_item.clear()
+		var lines: Array[String] = []
+		var total_cost := 0
+		for item_id in _buy_cart.keys():
+			var qty := int(_buy_cart.get(item_id, 0))
+			if qty <= 0:
+				continue
+			var entry: Dictionary = (_buy_entries.get(item_id, {}) as Dictionary).duplicate(true)
+			if entry.is_empty():
+				continue
+			entry["selected_qty"] = qty
+			_pending_item[item_id] = entry
+			var price := int(entry.get("price", 0))
+			total_cost += price * qty
+			lines.append("• %s × %d（%d文）" % [_item_name(item_id), qty, price * qty])
+		if _pending_item.is_empty():
+			_show_notice("請先選擇要購買的商品。")
+			return
+		confirm_dialog.dialog_text = "是否購買以下商品？\n\n%s\n\n總計：%d 文" % ["\n".join(lines), total_cost]
+		confirm_dialog.popup_centered()
+		return
 	if _selected_entry.is_empty():
 		return
 	_pending_item = _selected_entry.duplicate(true)
 	var qty := int(_pending_item.get("selected_qty", 1))
-	if _mode == "buy":
-		var item_id := String(_pending_item.get("item_id", ""))
-		var price := int(_pending_item.get("price", 0))
-		confirm_dialog.dialog_text = "購買 %d 個 %s，花費 %d 文？" % [qty, _item_name(item_id), price * qty]
-	else:
-		var sell_item_id := String(_pending_item.get("item_id", ""))
-		var sell_price := int(_pending_item.get("sell_price", 0))
-		confirm_dialog.dialog_text = "販賣 %d 個 %s，獲得 %d 文？" % [qty, _item_name(sell_item_id), sell_price * qty]
+	var sell_item_id := String(_pending_item.get("item_id", ""))
+	var sell_price := int(_pending_item.get("sell_price", 0))
+	confirm_dialog.dialog_text = "販賣 %d 個 %s，獲得 %d 文？" % [qty, _item_name(sell_item_id), sell_price * qty]
 	confirm_dialog.popup_centered()
 
 func _on_confirmed() -> void:
-	if _pending_item.is_empty():
-		return
 	if _mode == "buy":
-		_execute_buy(_pending_item)
+		if _pending_item.is_empty():
+			return
+		_execute_buy_cart(_pending_item)
 	else:
+		if _pending_item.is_empty():
+			return
 		_execute_sell(_pending_item)
 	_pending_item.clear()
+
+func _execute_buy_cart(cart_entries: Dictionary) -> void:
+	if InventorySync == null:
+		return
+	var total_cost := 0
+	for item_id in cart_entries.keys():
+		var entry := cart_entries.get(item_id, {})
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var d: Dictionary = entry
+		var qty := max(int(d.get("selected_qty", 0)), 0)
+		var runtime_stock := int(d.get("runtime_stock", int(d.get("stock", -1))))
+		if runtime_stock >= 0:
+			qty = min(qty, runtime_stock)
+		if qty <= 0:
+			continue
+		total_cost += int(d.get("price", 0)) * qty
+	if total_cost <= 0:
+		_show_notice("沒有可購買的品項。")
+		return
+	if InventorySync.get_gold() < total_cost:
+		_show_notice("盤纏不足。")
+		return
+	if not InventorySync.spend_gold(total_cost):
+		_show_notice("盤纏不足。")
+		return
+	for item_id in cart_entries.keys():
+		var entry := cart_entries.get(item_id, {})
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var d: Dictionary = entry
+		var qty := max(int(d.get("selected_qty", 0)), 0)
+		var runtime_stock := int(d.get("runtime_stock", int(d.get("stock", -1))))
+		if runtime_stock >= 0:
+			qty = min(qty, runtime_stock)
+		if qty <= 0:
+			continue
+		InventorySync.add_item_stack(item_id, qty)
+		if runtime_stock > 0:
+			_set_runtime_stock(item_id, runtime_stock - qty)
+		_buy_cart[item_id] = 0
+	_refresh_gold()
+	_refresh_items()
 
 func _execute_buy(entry: Dictionary) -> void:
 	var item_id := String(entry.get("item_id", ""))
