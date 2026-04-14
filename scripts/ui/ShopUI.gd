@@ -14,6 +14,8 @@ var _selected_entry: Dictionary = {}
 var _selected_max_qty: int = 1
 var _buy_cart: Dictionary = {}
 var _buy_entries: Dictionary = {}
+var _sell_cart: Dictionary = {}
+var _sell_entries: Dictionary = {}
 
 var panel: Panel
 var title_label: Label
@@ -128,7 +130,7 @@ func _build_ui() -> void:
 	item_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	item_list.visible = false
 	item_list.add_theme_font_override("font", MenuUIFont)
-	item_list.add_theme_font_size_override("font_size", 16)
+	item_list.add_theme_font_size_override("font_size", 18)
 	item_list.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	item_list.add_theme_constant_override("outline_size", 4)
 	list_stack.add_child(item_list)
@@ -202,7 +204,7 @@ func _build_ui() -> void:
 	confirm_dialog = ConfirmationDialog.new()
 	confirm_dialog.title = "確認"
 	confirm_dialog.add_theme_font_override("font", MenuUIFont)
-	confirm_dialog.add_theme_font_size_override("font_size", 16)
+	confirm_dialog.add_theme_font_size_override("font_size", 18)
 	confirm_dialog.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	confirm_dialog.add_theme_constant_override("outline_size", 4)
 	panel.add_child(confirm_dialog)
@@ -240,20 +242,22 @@ func _set_mode(mode: String) -> void:
 	mode_buy_button.disabled = _mode == "buy"
 	mode_sell_button.disabled = _mode == "sell"
 	if buy_scroll:
-		buy_scroll.visible = _mode == "buy"
+		buy_scroll.visible = true
 	if item_list:
-		item_list.visible = _mode == "sell"
+		item_list.visible = false
 	if qty_minus_button:
-		qty_minus_button.visible = _mode == "sell"
+		qty_minus_button.visible = false
 	if qty_plus_button:
-		qty_plus_button.visible = _mode == "sell"
+		qty_plus_button.visible = false
 	if qty_label:
-		qty_label.visible = _mode == "sell"
+		qty_label.visible = false
 	_selected_entry.clear()
 	_selected_max_qty = 1
 	_pending_item.clear()
 	_buy_cart.clear()
 	_buy_entries.clear()
+	_sell_cart.clear()
+	_sell_entries.clear()
 	_refresh_items()
 	_update_qty_label()
 	_update_info_panel(_selected_entry)
@@ -297,21 +301,16 @@ func _refresh_items() -> void:
 		_refresh_buy_items()
 		var has_cart_items := _buy_cart.values().any(func(v): return int(v) > 0)
 		action_button.disabled = not has_cart_items
-		qty_minus_button.disabled = true
-		qty_plus_button.disabled = true
 	else:
-		item_list.clear()
 		_refresh_sell_items()
-		action_button.disabled = item_list.item_count <= 0
-		qty_minus_button.disabled = true
-		qty_plus_button.disabled = item_list.item_count <= 0
-		if item_list.item_count > 0:
-			item_list.select(0)
-			_on_item_selected(0)
-		else:
-			_selected_entry.clear()
-			_selected_max_qty = 1
-			_update_info_panel({})
+		var has_sell_items := _sell_cart.values().any(func(v): return int(v) > 0)
+		action_button.disabled = not has_sell_items
+	qty_minus_button.disabled = true
+	qty_plus_button.disabled = true
+	if _selected_entry.is_empty():
+		_update_info_panel({})
+	else:
+		_update_info_panel(_selected_entry)
 	_update_qty_label()
 
 func _refresh_buy_items() -> void:
@@ -338,7 +337,7 @@ func _refresh_buy_items() -> void:
 		name_btn.flat = true
 		name_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_apply_buy_list_text_style(name_btn)
+		_apply_cart_list_text_style(name_btn)
 		var stock_text := "∞" if runtime_stock < 0 else str(runtime_stock)
 		name_btn.text = "%s｜%d文｜庫存:%s" % [_item_name(item_id), price, stock_text]
 		name_btn.pressed.connect(func():
@@ -349,18 +348,18 @@ func _refresh_buy_items() -> void:
 		var minus_btn := Button.new()
 		minus_btn.text = "-"
 		minus_btn.custom_minimum_size = Vector2(28, 0)
-		_apply_buy_list_text_style(minus_btn)
+		_apply_cart_list_text_style(minus_btn)
 		row.add_child(minus_btn)
 		var qty_label_row := Label.new()
 		qty_label_row.custom_minimum_size = Vector2(34, 0)
 		qty_label_row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		qty_label_row.text = str(int(_buy_cart.get(item_id, 0)))
-		_apply_buy_list_text_style(qty_label_row)
+		_apply_cart_list_text_style(qty_label_row)
 		row.add_child(qty_label_row)
 		var plus_btn := Button.new()
 		plus_btn.text = "+"
 		plus_btn.custom_minimum_size = Vector2(28, 0)
-		_apply_buy_list_text_style(plus_btn)
+		_apply_cart_list_text_style(plus_btn)
 		row.add_child(plus_btn)
 		minus_btn.pressed.connect(func():
 			var qty: int = max(int(_buy_cart.get(item_id, 0)) - 1, 0)
@@ -378,8 +377,11 @@ func _refresh_buy_items() -> void:
 		)
 
 func _refresh_sell_items() -> void:
+	for child in buy_list_vbox.get_children():
+		child.queue_free()
 	if InventorySync == null:
 		return
+	var first_entry := {}
 	for item in InventorySync.get_items():
 		if typeof(item) != TYPE_DICTIONARY:
 			continue
@@ -408,9 +410,62 @@ func _refresh_sell_items() -> void:
 			"quantity": quantity,
 			"equipped_blocked": equipped_blocked,
 		}
+		_sell_entries[item_id] = metadata
+		if not _sell_cart.has(item_id):
+			_sell_cart[item_id] = 0
+		if first_entry.is_empty():
+			first_entry = metadata.duplicate(true)
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		buy_list_vbox.add_child(row)
+		var name_btn := Button.new()
+		name_btn.flat = true
+		name_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_apply_cart_list_text_style(name_btn)
 		var equipped_text := "（已裝備）" if equipped_blocked else ""
-		item_list.add_item("%s ×%d｜回收:%d文%s" % [_item_name(item_id), quantity, sell_price, equipped_text])
-		item_list.set_item_metadata(item_list.item_count - 1, metadata)
+		name_btn.text = "%s｜持有:%d｜回收:%d文%s" % [_item_name(item_id), quantity, sell_price, equipped_text]
+		name_btn.pressed.connect(func():
+			_selected_entry = metadata.duplicate(true)
+			_update_info_panel(_selected_entry)
+		)
+		row.add_child(name_btn)
+		var minus_btn := Button.new()
+		minus_btn.text = "-"
+		minus_btn.custom_minimum_size = Vector2(28, 0)
+		_apply_cart_list_text_style(minus_btn)
+		row.add_child(minus_btn)
+		var qty_label_row := Label.new()
+		qty_label_row.custom_minimum_size = Vector2(34, 0)
+		qty_label_row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		qty_label_row.text = str(int(_sell_cart.get(item_id, 0)))
+		_apply_cart_list_text_style(qty_label_row)
+		row.add_child(qty_label_row)
+		var plus_btn := Button.new()
+		plus_btn.text = "+"
+		plus_btn.custom_minimum_size = Vector2(28, 0)
+		plus_btn.disabled = equipped_blocked
+		_apply_cart_list_text_style(plus_btn)
+		row.add_child(plus_btn)
+		minus_btn.pressed.connect(func():
+			var qty: int = max(int(_sell_cart.get(item_id, 0)) - 1, 0)
+			_sell_cart[item_id] = qty
+			qty_label_row.text = str(qty)
+			action_button.disabled = not _sell_cart.values().any(func(v): return int(v) > 0)
+		)
+		plus_btn.pressed.connect(func():
+			if equipped_blocked:
+				return
+			var qty: int = int(_sell_cart.get(item_id, 0))
+			if qty >= quantity:
+				return
+			_sell_cart[item_id] = qty + 1
+			qty_label_row.text = str(qty + 1)
+			action_button.disabled = false
+		)
+	if not first_entry.is_empty():
+		_selected_entry = (first_entry as Dictionary).duplicate(true)
+		_update_info_panel(_selected_entry)
 
 func _on_item_selected(index: int) -> void:
 	var entry = item_list.get_item_metadata(index)
@@ -485,11 +540,11 @@ func _item_type_display_name(item_type: String) -> String:
 		_:
 			return item_type
 
-func _apply_buy_list_text_style(ctrl: Control) -> void:
+func _apply_cart_list_text_style(ctrl: Control) -> void:
 	if ctrl == null:
 		return
 	ctrl.add_theme_font_override("font", MenuUIFont)
-	ctrl.add_theme_font_size_override("font_size", 16)
+	ctrl.add_theme_font_size_override("font_size", 18)
 	ctrl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	ctrl.add_theme_constant_override("outline_size", 4)
 
@@ -561,13 +616,31 @@ func _on_action_pressed() -> void:
 		confirm_dialog.dialog_text = "是否購買以下商品？\n\n%s\n\n總計：%d 文" % ["\n".join(lines), total_cost]
 		confirm_dialog.popup_centered()
 		return
-	if _selected_entry.is_empty():
+	_pending_item.clear()
+	var sell_lines: Array[String] = []
+	var total_gain := 0
+	for item_id in _sell_cart.keys():
+		var qty := int(_sell_cart.get(item_id, 0))
+		if qty <= 0:
+			continue
+		var sell_entry: Dictionary = (_sell_entries.get(item_id, {}) as Dictionary).duplicate(true)
+		if sell_entry.is_empty():
+			continue
+		if bool(sell_entry.get("equipped_blocked", false)):
+			continue
+		var owned := int(sell_entry.get("quantity", 0))
+		qty = min(qty, owned)
+		if qty <= 0:
+			continue
+		sell_entry["selected_qty"] = qty
+		_pending_item[item_id] = sell_entry
+		var sell_price := int(sell_entry.get("sell_price", 0))
+		total_gain += sell_price * qty
+		sell_lines.append("• %s × %d（%d文）" % [_item_name(item_id), qty, sell_price * qty])
+	if _pending_item.is_empty():
+		_show_notice("請先選擇要販賣的商品。")
 		return
-	_pending_item = _selected_entry.duplicate(true)
-	var qty := int(_pending_item.get("selected_qty", 1))
-	var sell_item_id := String(_pending_item.get("item_id", ""))
-	var sell_price := int(_pending_item.get("sell_price", 0))
-	confirm_dialog.dialog_text = "販賣 %d 個 %s，獲得 %d 文？" % [qty, _item_name(sell_item_id), sell_price * qty]
+	confirm_dialog.dialog_text = "是否販賣以下商品？\n\n%s\n\n總計：%d 文" % ["\n".join(sell_lines), total_gain]
 	confirm_dialog.popup_centered()
 
 func _on_confirmed() -> void:
@@ -578,7 +651,7 @@ func _on_confirmed() -> void:
 	else:
 		if _pending_item.is_empty():
 			return
-		_execute_sell(_pending_item)
+		_execute_sell_cart(_pending_item)
 	_pending_item.clear()
 
 func _execute_buy_cart(cart_entries: Dictionary) -> void:
@@ -671,6 +744,44 @@ func _execute_sell(entry: Dictionary) -> void:
 	qty = min(qty, count)
 	InventorySync.consume_item(item_id, qty)
 	InventorySync.add_gold(sell_price * qty)
+	_refresh_gold()
+	_refresh_items()
+
+func _execute_sell_cart(cart_entries: Dictionary) -> void:
+	if InventorySync == null:
+		return
+	var total_gain := 0
+	for item_id in cart_entries.keys():
+		var entry_any: Variant = cart_entries.get(item_id, {})
+		if typeof(entry_any) != TYPE_DICTIONARY:
+			continue
+		var d: Dictionary = entry_any as Dictionary
+		if bool(d.get("equipped_blocked", false)):
+			continue
+		var qty: int = max(int(d.get("selected_qty", 0)), 0)
+		var owned := int(d.get("quantity", 0))
+		qty = min(qty, owned)
+		if qty <= 0:
+			continue
+		total_gain += int(d.get("sell_price", 0)) * qty
+	if total_gain <= 0:
+		_show_notice("沒有可販賣的品項。")
+		return
+	for item_id in cart_entries.keys():
+		var entry_any: Variant = cart_entries.get(item_id, {})
+		if typeof(entry_any) != TYPE_DICTIONARY:
+			continue
+		var d: Dictionary = entry_any as Dictionary
+		if bool(d.get("equipped_blocked", false)):
+			continue
+		var qty: int = max(int(d.get("selected_qty", 0)), 0)
+		var owned := int(d.get("quantity", 0))
+		qty = min(qty, owned)
+		if qty <= 0:
+			continue
+		InventorySync.consume_item(item_id, qty)
+		InventorySync.add_gold(int(d.get("sell_price", 0)) * qty)
+		_sell_cart[item_id] = 0
 	_refresh_gold()
 	_refresh_items()
 
