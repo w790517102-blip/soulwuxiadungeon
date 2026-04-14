@@ -328,7 +328,7 @@ func _refresh_buy_items() -> void:
 		buy_list_vbox.add_child(row)
 		var name_btn := Button.new()
 		name_btn.flat = true
-		name_btn.text_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		name_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var stock_text := "∞" if runtime_stock < 0 else str(runtime_stock)
 		name_btn.text = "%s｜%d文｜庫存:%s" % [_item_name(item_id), price, stock_text]
@@ -351,13 +351,13 @@ func _refresh_buy_items() -> void:
 		plus_btn.custom_minimum_size = Vector2(28, 0)
 		row.add_child(plus_btn)
 		minus_btn.pressed.connect(func():
-			var qty := max(int(_buy_cart.get(item_id, 0)) - 1, 0)
+			var qty: int = max(int(_buy_cart.get(item_id, 0)) - 1, 0)
 			_buy_cart[item_id] = qty
 			qty_label_row.text = str(qty)
 			action_button.disabled = not _buy_cart.values().any(func(v): return int(v) > 0)
 		)
 		plus_btn.pressed.connect(func():
-			var qty := int(_buy_cart.get(item_id, 0))
+			var qty: int = int(_buy_cart.get(item_id, 0))
 			if runtime_stock >= 0 and qty >= runtime_stock:
 				return
 			_buy_cart[item_id] = qty + 1
