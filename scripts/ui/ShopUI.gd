@@ -566,12 +566,12 @@ func _execute_buy_cart(cart_entries: Dictionary) -> void:
 		return
 	var total_cost := 0
 	for item_id in cart_entries.keys():
-		var entry := cart_entries.get(item_id, {})
-		if typeof(entry) != TYPE_DICTIONARY:
+		var entry_any: Variant = cart_entries.get(item_id, {})
+		if typeof(entry_any) != TYPE_DICTIONARY:
 			continue
-		var d: Dictionary = entry
-		var qty := max(int(d.get("selected_qty", 0)), 0)
-		var runtime_stock := int(d.get("runtime_stock", int(d.get("stock", -1))))
+		var d: Dictionary = entry_any as Dictionary
+		var qty: int = max(int(d.get("selected_qty", 0)), 0)
+		var runtime_stock: int = int(d.get("runtime_stock", int(d.get("stock", -1))))
 		if runtime_stock >= 0:
 			qty = min(qty, runtime_stock)
 		if qty <= 0:
@@ -587,12 +587,12 @@ func _execute_buy_cart(cart_entries: Dictionary) -> void:
 		_show_notice("盤纏不足。")
 		return
 	for item_id in cart_entries.keys():
-		var entry := cart_entries.get(item_id, {})
-		if typeof(entry) != TYPE_DICTIONARY:
+		var entry_any: Variant = cart_entries.get(item_id, {})
+		if typeof(entry_any) != TYPE_DICTIONARY:
 			continue
-		var d: Dictionary = entry
-		var qty := max(int(d.get("selected_qty", 0)), 0)
-		var runtime_stock := int(d.get("runtime_stock", int(d.get("stock", -1))))
+		var d: Dictionary = entry_any as Dictionary
+		var qty: int = max(int(d.get("selected_qty", 0)), 0)
+		var runtime_stock: int = int(d.get("runtime_stock", int(d.get("stock", -1))))
 		if runtime_stock >= 0:
 			qty = min(qty, runtime_stock)
 		if qty <= 0:
