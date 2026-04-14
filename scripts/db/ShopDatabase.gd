@@ -61,8 +61,6 @@ const SHOPS := {
 	"bai_jian_jue_bookstore": {
 		"name": "白箋居",
 		"items": [
-			{"item_id": "book_debug_str_10", "price": 1, "stock": 1, "restock_rule": "never"},
-			{"item_id": "book_debug_agi_10", "price": 1, "stock": 1, "restock_rule": "never"},
 			{"item_id": "book_poem_a_int", "price": 88, "stock": 1, "restock_rule": "never"},
 			{"item_id": "book_poem_b_luck", "price": 88, "stock": 1, "restock_rule": "never"},
 			{"item_id": "book_essay_c_pen_up", "price": 72, "stock": 1, "restock_rule": "never"},
