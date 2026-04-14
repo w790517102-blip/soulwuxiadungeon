@@ -127,6 +127,10 @@ func _build_ui() -> void:
 	item_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	item_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	item_list.visible = false
+	item_list.add_theme_font_override("font", MenuUIFont)
+	item_list.add_theme_font_size_override("font_size", 16)
+	item_list.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	item_list.add_theme_constant_override("outline_size", 4)
 	list_stack.add_child(item_list)
 
 	info_panel = PanelContainer.new()
@@ -197,6 +201,10 @@ func _build_ui() -> void:
 
 	confirm_dialog = ConfirmationDialog.new()
 	confirm_dialog.title = "確認"
+	confirm_dialog.add_theme_font_override("font", MenuUIFont)
+	confirm_dialog.add_theme_font_size_override("font_size", 16)
+	confirm_dialog.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	confirm_dialog.add_theme_constant_override("outline_size", 4)
 	panel.add_child(confirm_dialog)
 
 	notice_dialog = AcceptDialog.new()
@@ -330,6 +338,7 @@ func _refresh_buy_items() -> void:
 		name_btn.flat = true
 		name_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_apply_buy_list_text_style(name_btn)
 		var stock_text := "∞" if runtime_stock < 0 else str(runtime_stock)
 		name_btn.text = "%s｜%d文｜庫存:%s" % [_item_name(item_id), price, stock_text]
 		name_btn.pressed.connect(func():
@@ -340,15 +349,18 @@ func _refresh_buy_items() -> void:
 		var minus_btn := Button.new()
 		minus_btn.text = "-"
 		minus_btn.custom_minimum_size = Vector2(28, 0)
+		_apply_buy_list_text_style(minus_btn)
 		row.add_child(minus_btn)
 		var qty_label_row := Label.new()
 		qty_label_row.custom_minimum_size = Vector2(34, 0)
 		qty_label_row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		qty_label_row.text = str(int(_buy_cart.get(item_id, 0)))
+		_apply_buy_list_text_style(qty_label_row)
 		row.add_child(qty_label_row)
 		var plus_btn := Button.new()
 		plus_btn.text = "+"
 		plus_btn.custom_minimum_size = Vector2(28, 0)
+		_apply_buy_list_text_style(plus_btn)
 		row.add_child(plus_btn)
 		minus_btn.pressed.connect(func():
 			var qty: int = max(int(_buy_cart.get(item_id, 0)) - 1, 0)
@@ -472,6 +484,14 @@ func _item_type_display_name(item_type: String) -> String:
 			return "任務"
 		_:
 			return item_type
+
+func _apply_buy_list_text_style(ctrl: Control) -> void:
+	if ctrl == null:
+		return
+	ctrl.add_theme_font_override("font", MenuUIFont)
+	ctrl.add_theme_font_size_override("font_size", 16)
+	ctrl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	ctrl.add_theme_constant_override("outline_size", 4)
 
 func _compute_max_qty(entry: Dictionary) -> int:
 	if _mode == "buy":
