@@ -576,7 +576,7 @@ func _handle_walnut(controller, user: Dictionary, item: Dictionary, target: Dict
 		target = user
 	var user_name: String = user.get("name", "???")
 	var stat_key = String(item.get("require_stat", "str")).to_lower()
-	var require_min = int(item.get("require_min", 31))
+	var require_min = int(item.get("require_min", 20))
 	var stat_val = int(target.get(stat_key, 0))
 	var cracker_count = int(InventorySync.get_item_by_id("misc_walnut_cracker").get("count", 0))
 	var has_cracker = cracker_count > 0
@@ -603,7 +603,7 @@ func _handle_zhuge_crossbow(controller, user: Dictionary, item: Dictionary, targ
 	var target_name: String = target.get("name", "???")
 	var power = int(item.get("power", 18))
 	var agi_total = int(user.get("agi", 0))
-	var hits_raw = clamp(int(floor(float(agi_total) / 20.0)) + 1, 1, 5)
+	var hits_raw = clamp(int(floor(float(agi_total) / 10.0)) + 1, 1, 5)
 	var ammo_id = String(item.get("ammo_item_id", "ammo_arrow"))
 	var ammo_item = InventorySync.get_item_by_id(ammo_id)
 	var arrow_count = int(ammo_item.get("count", 0))

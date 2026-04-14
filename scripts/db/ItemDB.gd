@@ -16,7 +16,7 @@ const ITEM_DEFS := {
 	"med_focus_powder": {"name": "凝神散", "desc": "以醒腦定息的藥材磨成細粉，聞之可收斂心神，最適合心浮氣躁、招式失準之時服用。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "focus", "amount": 10, "turns": 3, "target_scope": "ally_single"},
 	"med_heartguard_small": {"name": "小護心丹", "desc": "前期行走江湖常備的小丸藥，藥性平穩，重在護住一口元氣，危急時總勝過沒有。", "type": "consumable", "use_scope": "none", "use_action": "none"},
 
-	"food_walnut": {"name": "胡桃", "desc": "自西域傳入的堅果，香而不膩，補神益氣。只是殼硬得惱人，沒點手勁還真奈何不了它。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "walnut", "target_scope": "ally_single", "require_stat": "str", "require_min": 31, "hp_restore": 30, "mp_restore": 10},
+	"food_walnut": {"name": "胡桃", "desc": "自西域傳入的堅果，香而不膩，補神益氣。只是殼硬得惱人，沒點手勁還真奈何不了它。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "walnut", "target_scope": "ally_single", "require_stat": "str", "require_min": 20, "hp_restore": 30, "mp_restore": 10},
 	"misc_walnut_cracker": {"name": "胡桃鉗", "desc": "專為硬殼果實打造的小巧工具，握在手裡不起眼，真用上時倒比拳頭可靠。", "type": "tool", "use_scope": "none", "use_action": "none"},
 	"tool_zhuge_crossbow": {"name": "諸葛連弩", "desc": "機括連發的巧造弩器，扣弦如雨，最適合在對手尚未近身前先聲奪人。弩身可反覆使用，唯箭矢消耗極快。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "zhuge_crossbow", "target_scope": "enemy_single", "power": 18, "ammo_item_id": "ammo_arrow", "no_consume": true},
 	"ammo_arrow": {"name": "箭矢", "desc": "連弩與弓器所需的消耗品，數量不多時，再精巧的機關也只是擺設。", "type": "material", "use_scope": "none", "use_action": "none"},
@@ -338,6 +338,21 @@ static func _equipment_stat_desc_part(stat_key: String, value) -> String:
 		_:
 			return ""
 
+static func _stat_key_display_name(stat_key: String) -> String:
+	match stat_key.to_lower():
+		"str":
+			return "力量"
+		"agi":
+			return "敏捷"
+		"con":
+			return "體能"
+		"int":
+			return "智慧"
+		"luck":
+			return "幸運"
+		_:
+			return stat_key
+
 static func get_effect_display_text(item_def: Dictionary) -> String:
 	if item_def.is_empty():
 		return "（無）"
@@ -378,7 +393,7 @@ static func get_effect_display_text(item_def: Dictionary) -> String:
 				return "解除混亂"
 			return "解除狀態：%s" % status_id
 		"perm_stat":
-			return "%s 永久 %+d" % [String(item_def.get("stat_key", "能力")), int(item_def.get("amount", 0))]
+			return "%s 永久 %+d" % [_stat_key_display_name(String(item_def.get("stat_key", "能力"))), int(item_def.get("amount", 0))]
 		"warm_wine":
 			var wine_turns := int(item_def.get("turns", 3))
 			return "若處於緩速狀態，解除緩速；否則速度提升 10、命中下降 5，持續 %d 回合" % wine_turns
@@ -399,7 +414,7 @@ static func get_effect_display_text(item_def: Dictionary) -> String:
 			]
 		"walnut":
 			return "需力量達 %d，或持有胡桃鉗方可食用；食用後回復 %d 生命、%d 內力" % [
-				int(item_def.get("require_min", 31)),
+				int(item_def.get("require_min", 20)),
 				int(item_def.get("hp_restore", 0)),
 				int(item_def.get("mp_restore", 0))
 			]
@@ -440,21 +455,27 @@ static func get_effect_display_text(item_def: Dictionary) -> String:
 			var buff_key := String(item_def.get("buff_key", ""))
 			var buff_value := float(item_def.get("buff_value", 0.0))
 			var pct := int(round(buff_value * 100.0))
-			return "下一場戰鬥套用 %s（%d%%）" % [buff_key, pct]
+			match buff_key:
+				"pen_damage_up":
+					return "下一場戰鬥，筆系武功傷害提升 %d%%。" % pct
+				"pen_damage_resist":
+					return "下一場戰鬥，受到筆系武功傷害降低 %d%%。" % pct
+				_:
+					return "下一場戰鬥套用 %s（%d%%）" % [buff_key, pct]
 		"mp_heal_by_stat":
 			return "依 %s 回復內力：%d + %s×%s（範圍 %d~%d）" % [
-				String(item_def.get("stat_key", "能力")).to_upper(),
+				_stat_key_display_name(String(item_def.get("stat_key", "能力"))),
 				int(item_def.get("base_amount", 0)),
-				String(item_def.get("stat_key", "能力")).to_upper(),
+				_stat_key_display_name(String(item_def.get("stat_key", "能力"))),
 				str(item_def.get("scale", 1)),
 				int(item_def.get("min_amount", 0)),
 				int(item_def.get("max_amount", 0))
 			]
 		"heal_by_stat":
 			return "依 %s 回復生命：%d + %s×%s（範圍 %d~%d）" % [
-				String(item_def.get("stat_key", "能力")).to_upper(),
+				_stat_key_display_name(String(item_def.get("stat_key", "能力"))),
 				int(item_def.get("base_amount", 0)),
-				String(item_def.get("stat_key", "能力")).to_upper(),
+				_stat_key_display_name(String(item_def.get("stat_key", "能力"))),
 				str(item_def.get("scale", 1)),
 				int(item_def.get("min_amount", 0)),
 				int(item_def.get("max_amount", 0))
