@@ -10,17 +10,17 @@ const ITEM_DEFS := {
 	"med_awaken_tonic": {"name": "醒神湯", "desc": "提神藥湯。解除暈眩。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "cure_status", "status_id": "stun", "target_scope": "ally_single"},
 	"med_calm_pill": {"name": "清心丸", "desc": "安神定心。解除混亂。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "cure_status", "status_id": "confuse", "target_scope": "ally_single"},
 	"med_qi_restore_small": {"name": "回氣散·小", "desc": "小量回氣。全體回復10點內力。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "mp_heal", "amount": 10, "target_scope": "ally_all"},
-	"med_warm_wine": {"name": "暖身酒", "desc": "溫身散寒。若有緩速則解除，否則速度+10、命中-5（3回合）。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "warm_wine", "target_scope": "ally_single", "turns": 3},
-	"med_smoke_sand": {"name": "迷煙砂", "desc": "朝敵面揚出細砂，使命中下降15（3回合）。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "blind", "amount": 15, "turns": 3, "target_scope": "enemy_single"},
-	"med_binding_resin": {"name": "纏步膠", "desc": "黏住敵人下盤，使閃避下降20（2回合）。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "root", "amount": 20, "turns": 2, "target_scope": "enemy_single"},
-	"med_focus_powder": {"name": "凝神散", "desc": "穩定心神，使命中上升10（3回合）。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "focus", "amount": 10, "turns": 3, "target_scope": "ally_single"},
-	"med_heartguard_small": {"name": "小護心丹", "desc": "前期保命丹藥。", "type": "consumable", "use_scope": "none", "use_action": "none"},
+	"med_warm_wine": {"name": "暖身酒", "desc": "以辛辣藥材溫煨而成的小酒，入口火熱，最宜驅寒活血。若筋骨發滯，飲下一口也能逼出幾分勁道。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "warm_wine", "target_scope": "ally_single", "turns": 3},
+	"med_smoke_sand": {"name": "迷煙砂", "desc": "將細砂與藥粉混拌而成，揚手灑出時最擅亂人眼目。縱使不傷筋骨，也足以叫人一時看不真切。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "blind", "amount": 15, "turns": 3, "target_scope": "enemy_single"},
+	"med_binding_resin": {"name": "纏步膠", "desc": "由樹脂與膠粉調製而成，黏地則滯步，沾鞋則亂身。用得陰，但確實好使。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "root", "amount": 20, "turns": 2, "target_scope": "enemy_single"},
+	"med_focus_powder": {"name": "凝神散", "desc": "以醒腦定息的藥材磨成細粉，聞之可收斂心神，最適合心浮氣躁、招式失準之時服用。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "focus", "amount": 10, "turns": 3, "target_scope": "ally_single"},
+	"med_heartguard_small": {"name": "小護心丹", "desc": "前期行走江湖常備的小丸藥，藥性平穩，重在護住一口元氣，危急時總勝過沒有。", "type": "consumable", "use_scope": "none", "use_action": "none"},
 
-	"food_walnut": {"name": "胡桃", "desc": "來自西域美味且營養的堅果，然而堅硬的外表使得在食用之前必須先付出一番心力。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "walnut", "target_scope": "ally_single", "require_stat": "str", "require_min": 31, "hp_restore": 30, "mp_restore": 10},
-	"misc_walnut_cracker": {"name": "胡桃鉗", "desc": "破殼工具。只要持有就能輕鬆開胡桃。", "type": "tool", "use_scope": "none", "use_action": "none"},
-	"tool_zhuge_crossbow": {"name": "諸葛連弩", "desc": "機巧連弩，可連射箭矢；本體可重複使用。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "zhuge_crossbow", "target_scope": "enemy_single", "power": 18, "ammo_item_id": "ammo_arrow", "no_consume": true},
-	"ammo_arrow": {"name": "箭矢", "desc": "連弩使用的消耗箭矢。", "type": "material", "use_scope": "none", "use_action": "none"},
-	"misc_smoke_pellet": {"name": "煙霧丸", "desc": "投擲後煙霧四散，可趁隙脫離戰場。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "escape_battle", "target_scope": "self"},
+	"food_walnut": {"name": "胡桃", "desc": "自西域傳入的堅果，香而不膩，補神益氣。只是殼硬得惱人，沒點手勁還真奈何不了它。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "walnut", "target_scope": "ally_single", "require_stat": "str", "require_min": 31, "hp_restore": 30, "mp_restore": 10},
+	"misc_walnut_cracker": {"name": "胡桃鉗", "desc": "專為硬殼果實打造的小巧工具，握在手裡不起眼，真用上時倒比拳頭可靠。", "type": "tool", "use_scope": "none", "use_action": "none"},
+	"tool_zhuge_crossbow": {"name": "諸葛連弩", "desc": "機括連發的巧造弩器，扣弦如雨，最適合在對手尚未近身前先聲奪人。弩身可反覆使用，唯箭矢消耗極快。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "zhuge_crossbow", "target_scope": "enemy_single", "power": 18, "ammo_item_id": "ammo_arrow", "no_consume": true},
+	"ammo_arrow": {"name": "箭矢", "desc": "連弩與弓器所需的消耗品，數量不多時，再精巧的機關也只是擺設。", "type": "material", "use_scope": "none", "use_action": "none"},
+	"misc_smoke_pellet": {"name": "煙霧丸", "desc": "落地即散，轉眼煙起。江湖中人未必拿它取勝，卻常拿它保命。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "escape_battle", "target_scope": "self"},
 	"book_poem_a_int": {"name": "詩歌A", "desc": "閱讀後文思共鳴，智慧永久 +5。", "type": "consumable", "use_scope": "world", "use_action": "consume", "effect": "perm_stat", "stat_key": "int", "amount": 5, "target_scope": "ally_single", "can_sell": false, "stock_once": true, "restock_rule": "never"},
 	"book_poem_b_luck": {"name": "詩歌B", "desc": "閱讀後靈感流轉，幸運永久 +5。", "type": "consumable", "use_scope": "world", "use_action": "consume", "effect": "perm_stat", "stat_key": "luck", "amount": 5, "target_scope": "ally_single", "can_sell": false, "stock_once": true, "restock_rule": "never"},
 	"book_debug_str_10": {"name": "秘笈·力量", "desc": "測試秘笈，研讀後力量永久 +10。", "type": "consumable", "use_scope": "world", "use_action": "consume", "effect": "perm_stat", "stat_key": "str", "amount": 10, "target_scope": "ally_single", "price": 1, "base_price": 1, "can_sell": false, "stock_once": true, "restock_rule": "never"},
@@ -78,7 +78,7 @@ const ITEM_DEFS := {
 	},
 	"light_step_powder": {
 		"name": "輕身散",
-		"desc": "暫時提升使用者的身法速度。",
+		"desc": "以數味輕靈藥材調成的散劑，服後步履如燕，最宜趕路與脫身時使用。",
 		"type": "consumable",
 		"use_scope": "any",
 		"use_action": "consume",
@@ -88,7 +88,7 @@ const ITEM_DEFS := {
 	},
 	"chicken_spike": {
 		"name": "雞爪釘",
-		"desc": "拋向敵人足下，可拖慢對方腳步。",
+		"desc": "宵小之徒常用的陰損暗器，撒落地面後最擅亂人步伐。",
 		"type": "consumable",
 		"use_scope": "battle",
 		"use_action": "consume",
@@ -98,7 +98,7 @@ const ITEM_DEFS := {
 	},
 	"haste_talisman": {
 		"name": "神速符",
-		"desc": "貼在己方可加速，貼在敵方可改變其屬性為「快」。",
+		"desc": "以疾行符意書成，催氣貼身，可使行動一時快若驚鴻。",
 		"type": "consumable",
 		"use_scope": "battle",
 		"use_action": "consume",
@@ -109,7 +109,7 @@ const ITEM_DEFS := {
 	},
 	"item_pili_single": {
 		"name": "霹靂彈",
-		"desc": "單體爆裂道具，對單一敵人造成固定傷害。",
+		"desc": "火藥填實的爆裂彈，一經擲出，近身者難逃皮開肉綻。",
 		"type": "consumable",
 		"use_scope": "battle",
 		"use_action": "consume",
@@ -119,7 +119,7 @@ const ITEM_DEFS := {
 	},
 	"item_pili_aoe": {
 		"name": "轟雷霹靂彈",
-		"desc": "對敵方全體造成爆裂傷害。",
+		"desc": "比霹靂彈更猛的火藥投具，炸開時火光四散，足以震懾一片。",
 		"type": "consumable",
 		"use_scope": "battle",
 		"use_action": "consume",
@@ -129,7 +129,7 @@ const ITEM_DEFS := {
 	},
 	"item_fire_talisman": {
 		"name": "烈火符",
-		"desc": "點燃烈焰之符，可對敵人造成火焰傷害。",
+		"desc": "以火意封存於符紙之中，催發時或焚敵，或借火勢催動己身。",
 		"type": "consumable",
 		"use_scope": "battle",
 		"use_action": "consume",
@@ -345,6 +345,13 @@ static func _equipment_stat_desc_part(stat_key: String, value) -> String:
 static func get_effect_display_text(item_def: Dictionary) -> String:
 	if item_def.is_empty():
 		return "（無）"
+	var item_id := String(item_def.get("id", ""))
+	if item_id == "med_heartguard_small":
+		return "暫未實裝"
+	if item_id == "misc_walnut_cracker":
+		return "持有時可直接食用胡桃"
+	if item_id == "ammo_arrow":
+		return "諸葛連弩的消耗彈藥"
 	if str(item_def.get("type", "")) == "equipment":
 		var stats_raw = item_def.get("stats", {})
 		if typeof(stats_raw) != TYPE_DICTIONARY:
@@ -376,6 +383,86 @@ static func get_effect_display_text(item_def: Dictionary) -> String:
 			return "解除狀態：%s" % status_id
 		"perm_stat":
 			return "%s 永久 %+d" % [String(item_def.get("stat_key", "能力")), int(item_def.get("amount", 0))]
+		"warm_wine":
+			var wine_turns := int(item_def.get("turns", 3))
+			return "若處於緩速狀態，解除緩速；否則速度提升 10、命中下降 5，持續 %d 回合" % wine_turns
+		"blind":
+			return "使單一敵人的命中下降 %d，持續 %d 回合" % [
+				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3))
+			]
+		"root":
+			return "使單一敵人的閃避下降 %d，持續 %d 回合" % [
+				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3))
+			]
+		"focus":
+			return "使命中提升 %d，持續 %d 回合" % [
+				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3))
+			]
+		"walnut":
+			return "需力量達 %d，或持有胡桃鉗方可食用；食用後回復 %d 生命、%d 內力" % [
+				int(item_def.get("require_min", 31)),
+				int(item_def.get("hp_restore", 0)),
+				int(item_def.get("mp_restore", 0))
+			]
+		"zhuge_crossbow":
+			var ammo_id := String(item_def.get("ammo_item_id", "ammo_arrow"))
+			return "消耗 1 枚 %s，對單一敵人造成 %d 點傷害（連射次數依敏捷計算，上限 5 發）" % [
+				ammo_id, int(item_def.get("power", 0))
+			]
+		"escape_battle":
+			return "嘗試脫離戰鬥"
+		"buff_speed":
+			return "使單一我方角色速度提升 %d，持續 %d 回合" % [
+				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3))
+			]
+		"debuff_speed":
+			return "使單一敵人的速度下降 %d，持續 %d 回合" % [
+				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3))
+			]
+		"bomb_single":
+			return "對單一敵人造成 %d 點傷害" % int(item_def.get("amount", 0))
+		"bomb_aoe":
+			return "對全體敵人各造成 %d 點傷害" % int(item_def.get("amount", 0))
+		"haste_talisman":
+			return "對我方使用時，速度提升 %d，持續 %d 回合；對敵方使用時，將其屬性轉為「%s」，持續 %d 回合" % [
+				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3)),
+				String(item_def.get("enemy_element", "快")),
+				int(item_def.get("turns", 3))
+			]
+		"fire_talisman":
+			return "對我方使用時，攻擊提升 %d；對敵方使用時，造成 %d 點傷害" % [
+				int(item_def.get("amount", 0)),
+				int(item_def.get("enemy_damage", 0))
+			]
+		"apply_battle_buff":
+			var buff_key := String(item_def.get("buff_key", ""))
+			var buff_value := float(item_def.get("buff_value", 0.0))
+			var pct := int(round(buff_value * 100.0))
+			return "下一場戰鬥套用 %s（%d%%）" % [buff_key, pct]
+		"mp_heal_by_stat":
+			return "依 %s 回復內力：%d + %s×%s（範圍 %d~%d）" % [
+				String(item_def.get("stat_key", "能力")).to_upper(),
+				int(item_def.get("base_amount", 0)),
+				String(item_def.get("stat_key", "能力")).to_upper(),
+				str(item_def.get("scale", 1)),
+				int(item_def.get("min_amount", 0)),
+				int(item_def.get("max_amount", 0))
+			]
+		"heal_by_stat":
+			return "依 %s 回復生命：%d + %s×%s（範圍 %d~%d）" % [
+				String(item_def.get("stat_key", "能力")).to_upper(),
+				int(item_def.get("base_amount", 0)),
+				String(item_def.get("stat_key", "能力")).to_upper(),
+				str(item_def.get("scale", 1)),
+				int(item_def.get("min_amount", 0)),
+				int(item_def.get("max_amount", 0))
+			]
 		_:
 			return "效果代號：%s" % effect_key if effect_key != "" else "（無）"
 
