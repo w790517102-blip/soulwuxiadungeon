@@ -207,6 +207,7 @@ func _build_ui() -> void:
 	confirm_dialog.add_theme_font_size_override("font_size", 18)
 	confirm_dialog.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	confirm_dialog.add_theme_constant_override("outline_size", 4)
+	confirm_dialog.about_to_popup.connect(_apply_confirm_dialog_style)
 	panel.add_child(confirm_dialog)
 
 	notice_dialog = AcceptDialog.new()
@@ -222,6 +223,7 @@ func _build_ui() -> void:
 	item_list.item_selected.connect(_on_item_selected)
 	confirm_dialog.confirmed.connect(_on_confirmed)
 	_apply_shop_font_style(panel)
+	_apply_confirm_dialog_style()
 
 func _apply_shop_font_style(root: Node) -> void:
 	if root is Control:
@@ -235,6 +237,33 @@ func _apply_shop_font_style(root: Node) -> void:
 			ctrl.add_theme_font_size_override("normal_font_size", 18)
 	for child in root.get_children():
 		_apply_shop_font_style(child)
+
+func _apply_confirm_dialog_style() -> void:
+	if confirm_dialog == null:
+		return
+	confirm_dialog.add_theme_font_override("font", MenuUIFont)
+	confirm_dialog.add_theme_font_size_override("font_size", 18)
+	confirm_dialog.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	confirm_dialog.add_theme_constant_override("outline_size", 4)
+	var text_label := confirm_dialog.get_label()
+	if text_label:
+		text_label.add_theme_font_override("font", MenuUIFont)
+		text_label.add_theme_font_size_override("font_size", 18)
+		text_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		text_label.add_theme_constant_override("outline_size", 4)
+	var ok_btn := confirm_dialog.get_ok_button()
+	if ok_btn:
+		ok_btn.add_theme_font_override("font", MenuUIFont)
+		ok_btn.add_theme_font_size_override("font_size", 18)
+		ok_btn.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		ok_btn.add_theme_constant_override("outline_size", 4)
+	if confirm_dialog.has_method("get_cancel_button"):
+		var cancel_btn = confirm_dialog.get_cancel_button()
+		if cancel_btn:
+			cancel_btn.add_theme_font_override("font", MenuUIFont)
+			cancel_btn.add_theme_font_size_override("font_size", 18)
+			cancel_btn.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+			cancel_btn.add_theme_constant_override("outline_size", 4)
 
 func _set_mode(mode: String) -> void:
 	_mode = mode if ["buy", "sell"].has(mode) else "buy"
