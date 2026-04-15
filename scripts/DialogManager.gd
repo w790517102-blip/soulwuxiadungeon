@@ -123,11 +123,20 @@ func _wait_for_continue():
 	waiting_for_close = false
 
 func _unhandled_input(event):
+	var proceed = false
 	if event.is_action_pressed("ui_accept"):
-		if is_typing:
-			skip_typing = true
-		elif waiting_for_close:
-			continue_emitted = true
+		proceed = true
+	elif event is InputEventMouseButton:
+		var mb = event as InputEventMouseButton
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			proceed = true
+	if not proceed:
+		return
+	get_viewport().set_input_as_handled()
+	if is_typing:
+		skip_typing = true
+	elif waiting_for_close:
+		continue_emitted = true
 
 func hide_dialog():
 	dialog_box_1.visible = false

@@ -542,17 +542,48 @@ func _apply_pending_item_use_with_sequence(target) -> void:
 
 func _set_menu_item_use_locked(locked: bool) -> void:
 	_item_use_locked = locked
-	if use_button:
-		use_button.disabled = locked
-	if tabs:
-		tabs.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
-	if item_list:
-		item_list.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+	set_process_unhandled_input(not locked)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
+	if locked:
+		release_focus()
+		focus_mode = Control.FOCUS_NONE
+	else:
+		focus_mode = Control.FOCUS_ALL
+		grab_focus()
+	_set_tab_switch_locked(locked)
+	_set_menu_controls_disabled(self, locked)
 	if skill_target_popup:
 		if locked:
 			skill_target_popup.hide()
+	if equip_popup:
+		if locked:
+			equip_popup.hide()
 	if GlobalState:
 		GlobalState.set_meta("menu_locked", locked)
+	if not locked:
+		_refresh_item_tab()
+		_refresh_martial_tabs()
+		_refresh_equipment_tab()
+		_refresh_status_tab()
+
+func _set_tab_switch_locked(locked: bool) -> void:
+	if tabs:
+		var tab_count = tabs.get_tab_count()
+		for i in range(tab_count):
+			tabs.set_tab_disabled(i, locked)
+
+func _set_menu_controls_disabled(root: Node, disabled: bool) -> void:
+	if root is BaseButton:
+		(root as BaseButton).disabled = disabled
+	elif root is OptionButton:
+		(root as OptionButton).disabled = disabled
+	elif root is TabContainer:
+		var tab_container = root as TabContainer
+		var count = tab_container.get_tab_count()
+		for i in range(count):
+			tab_container.set_tab_disabled(i, disabled)
+	for child in root.get_children():
+		_set_menu_controls_disabled(child, disabled)
 
 func _apply_world_skill(skill: Dictionary, caster, target) -> void:
 	var effects: Array = []
