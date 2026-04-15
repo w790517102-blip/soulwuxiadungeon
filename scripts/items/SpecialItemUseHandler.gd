@@ -37,15 +37,18 @@ func _play_dialog_now(lines: Array) -> void:
 	var dialog_manager = tree.root.get_node_or_null("GameRoot/DialogManager")
 	if dialog_manager == null or not dialog_manager.has_method("show_dialog_sequence"):
 		return
-	var was_paused = tree.paused
 	var prev_mode = dialog_manager.process_mode
+	var had_layer = false
+	var prev_layer = 0
+	if dialog_manager is CanvasLayer:
+		had_layer = true
+		prev_layer = int((dialog_manager as CanvasLayer).layer)
+		(dialog_manager as CanvasLayer).layer = 500
 	dialog_manager.process_mode = Node.PROCESS_MODE_ALWAYS
-	if was_paused:
-		tree.paused = false
 	await dialog_manager.show_dialog_sequence(lines)
 	dialog_manager.process_mode = prev_mode
-	if was_paused:
-		tree.paused = true
+	if had_layer:
+		(dialog_manager as CanvasLayer).layer = prev_layer
 
 func _build_dialog_lines(event_id: String, target) -> Array:
 	var portrait_path = LIU_YU_BOOK_PORTRAIT
