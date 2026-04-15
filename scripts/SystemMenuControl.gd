@@ -11,6 +11,8 @@ func _ready() -> void:
 	set_process_unhandled_input(true)
 
 func _unhandled_input(event):
+	if GlobalState and bool(GlobalState.get_meta("menu_locked", false)):
+		return
 	if event.is_action_pressed("ui_cancel"):
 		if system_menu_instance:
 			_close_system_menu()
