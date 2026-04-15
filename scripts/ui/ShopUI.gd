@@ -110,10 +110,10 @@ func _build_ui() -> void:
 	var list_stack := VBoxContainer.new()
 	list_stack.anchor_right = 1
 	list_stack.anchor_bottom = 1
-	list_stack.offset_left = 8
-	list_stack.offset_top = 8
-	list_stack.offset_right = -8
-	list_stack.offset_bottom = -8
+	list_stack.offset_left = 13
+	list_stack.offset_top = 13
+	list_stack.offset_right = -13
+	list_stack.offset_bottom = -13
 	list_panel.add_child(list_stack)
 
 	buy_scroll = ScrollContainer.new()
@@ -164,13 +164,21 @@ func _build_ui() -> void:
 	info_extra_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info_vb.add_child(info_extra_label)
 
+	var desc_margin := MarginContainer.new()
+	desc_margin.add_theme_constant_override("margin_left", 5)
+	desc_margin.add_theme_constant_override("margin_top", 5)
+	desc_margin.add_theme_constant_override("margin_right", 5)
+	desc_margin.add_theme_constant_override("margin_bottom", 5)
+	desc_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	info_vb.add_child(desc_margin)
+
 	info_desc_label = RichTextLabel.new()
 	info_desc_label.bbcode_enabled = true
 	info_desc_label.fit_content = true
 	info_desc_label.scroll_active = false
 	info_desc_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	info_desc_label.custom_minimum_size = Vector2(0, 130)
-	info_vb.add_child(info_desc_label)
+	desc_margin.add_child(info_desc_label)
 
 	info_effect_label = Label.new()
 	info_effect_label.text = "效果：-"
