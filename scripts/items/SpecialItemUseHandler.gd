@@ -154,10 +154,10 @@ func _build_tea_tasting_drunk_moon_qingkui(actor_key: String) -> Array:
 			return [
 				{ "text": "你端起《醉月青魁》，茶湯清亮，月色似乎也在杯中輕輕晃了一下。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "《醉月青魁》\n   回甘不苦澀，提神不擾眠。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "(你先啜了一口，茶氣清而不薄，滑過喉間後，竟還留著一縷安靜的甜。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「……這茶不急著把人叫醒，倒像是在等你自己慢慢清明過來。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「若不是泡茶的人手穩，製茶的人心也穩，這股回甘不會停得這麼久。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "你將餘茶飲盡，只覺原本散亂的思緒一點一點重新收攏，內息也隨之平順了些。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "(你先啜了一口，茶氣清而不薄，滑過喉間後，\n竟還留著一縷安靜的甜。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「……這茶不急著把人叫醒，倒像是在等你\n自己慢慢清明過來。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「若不是泡茶的人手穩，製茶的人心也穩，\n這股回甘不會停得這麼久。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "你將餘茶飲盡，只覺原本散亂的思緒一點一點重新收攏，\n內息也隨之平順了些。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "你在茶湯的回甘之中穩住了心神。\n【回復內力】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 
@@ -165,12 +165,12 @@ func _build_tea_tasting_brush_mist_newbud(actor_key: String) -> Array:
 	match actor_key:
 		_:
 			return [
-				{ "text": "你揭開《拂霧新芽》的茶蓋，清氣先一步浮了起來，像晨間山道尚未散盡的薄霧。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "你揭開《拂霧新芽》的茶蓋，清氣先一步浮了起來，\n像晨間山道尚未散盡的薄霧。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "《拂霧新芽》\n   茶氣清揚，如晨風拂霧。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "(你低頭飲下一口，只覺胸口一亮，連肩背都鬆開了些。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「……原來身子發滯時，不一定是氣不夠，也可能只是心口積了太多霧。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「這一口下去，倒像有人替我把多餘的遲滯都輕輕拂開了。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "茶氣入腹後，你只覺步履與呼吸都比方才更輕了一些，整個人像被晨風吹醒。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「……原來身子發滯時，不一定是氣不夠，\n也可能只是心口積了太多霧。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「這一口下去，倒像有人替我把多餘的遲滯\n都輕輕拂開了。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "茶氣入腹後，你只覺步履與呼吸都比方才更輕了一些，\n整個人像被晨風吹醒。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "你的身法似乎變得更輕快了。\n【敏捷 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 
@@ -178,12 +178,12 @@ func _build_tea_tasting_deep_roast_chenxiang(actor_key: String) -> Array:
 	match actor_key:
 		_:
 			return [
-				{ "text": "你捧起《深焙沉香》，茶色較深，未入口前，先有一股暖厚的氣息沉沉落了下來。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "你捧起《深焙沉香》，茶色較深，未入口前，先有一股\n暖厚的氣息沉沉落了下來。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "《深焙沉香》\n   火候沉穩，餘香不散。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "(你飲下一口，初時不覺驚豔，待茶湯入喉，暖意卻緩緩沉進胸腹，久久不退。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「這茶倒不搶先出頭……可一旦咽下去，便像在身子裡慢慢墊起一層底氣。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「不是一下叫人振作，而是讓那口快散掉的氣，重新有地方落下來。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "你把茶盞放下時，只覺筋骨間那股原本虛浮的勁道，似乎被這份溫厚慢慢養實了。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "(你飲下一口，初時不覺驚豔，待茶湯入喉，\n暖意卻緩緩沉進胸腹，久久不退。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「這茶倒不搶先出頭……可一旦咽下去，\n便像在身子裡慢慢墊起一層底氣。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「不是一下叫人振作，而是讓那口快散掉的氣，\n重新有地方落下來。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "你把茶盞放下時，只覺筋骨間那股原本虛浮的勁道，\n似乎被這份溫厚慢慢養實了。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "你的體魄似乎穩健了幾分。\n【體能 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 
@@ -191,11 +191,11 @@ func _build_tea_snack_delicate_su(actor_key: String) -> Array:
 	match actor_key:
 		_:
 			return [
-				{ "text": "你取出一枚《玲瓏酥》，點心不大，邊角卻做得很細，像是專為茶席留住餘韻而生。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "你取出一枚《玲瓏酥》，點心不大，邊角卻做得很細，\n像是專為茶席留住餘韻而生。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "《玲瓏酥》\n   一口大小，最宜收拾將散未散的心神。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "(你輕咬一口，酥皮先碎，甜香卻不膩，像是正好替疲乏的身子補上一點剛好的氣力。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「……這點心倒有意思，不是一下把人填滿，而是把散掉的那幾分精神重新攏回來。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「若是手腳還跟得上、氣息也未亂透，這一口下去，確實比想像中更能續得住。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "你將最後一點酥屑拂去，只覺疲乏沒有立刻散盡，卻已不像方才那樣四處漏風。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "(你輕咬一口，酥皮先碎，甜香卻不膩，像是正好替\n疲乏的身子補上一點剛好的氣力。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「……這點心倒有意思，不是一下把人填滿，\n而是把散掉的那幾分精神重新攏回來。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「若是手腳還跟得上、氣息也未亂透，\n這一口下去，確實比想像中更能續得住。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "你將最後一點酥屑拂去，只覺疲乏沒有立刻散盡，\n卻已不像方才那樣四處漏風。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "你重新攏住了幾分將散的氣力。\n【回復生命】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
