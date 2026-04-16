@@ -529,14 +529,16 @@ func _apply_pending_item_use_with_sequence(target) -> void:
 	var handled_special_use = false
 	if _special_item_use_handler and _special_item_use_handler.can_handle_item(item_def):
 		handled_special_use = true
-		_set_menu_item_use_locked(true)
 		var before_count = int(item_def.get("count", 0))
-		var result = await _special_item_use_handler.play_special_use_dialog(item_def, target)
+		var result = {"handled": false}
+		if _special_item_use_handler.should_play_special_use_dialog(_pending_item_use_id, item_def):
+			_set_menu_item_use_locked(true)
+			result = await _special_item_use_handler.play_special_use_dialog(item_def, target)
+			_set_menu_item_use_locked(false)
 		_apply_world_item(_pending_item_use_id, _pending_item_effect, _pending_item_amount, target)
 		var after_count = int(InventorySync.get_item_by_id(_pending_item_use_id).get("count", 0))
 		if bool(result.get("handled", false)) and after_count < before_count and GlobalState and GlobalState.has_method("set_flag"):
 			GlobalState.set_flag(_special_item_use_handler.get_read_flag(_pending_item_use_id), true)
-		_set_menu_item_use_locked(false)
 	if not handled_special_use:
 		_apply_world_item(_pending_item_use_id, _pending_item_effect, _pending_item_amount, target)
 
