@@ -1833,37 +1833,13 @@ func _on_use_pressed() -> void:
 		return
 
 func _play_walnut_fail_dialog() -> void:
-	var lines = [
-		{
-			"text": "面紅耳赤的捏著胡桃，但即使雙手通紅，胡桃仍然無動於衷。",
-			"speaker": 0,
-			"portrait": "res://assets/sprites/empty.png",
-		}
-	]
-	await _play_foreground_dialog_sequence(lines)
-
-func _play_foreground_dialog_sequence(lines: Array) -> void:
+	if _special_item_use_handler == null:
+		return
+	var lines = _special_item_use_handler.get_walnut_fail_dialog_lines()
 	if lines.is_empty():
 		return
-	var tree = Engine.get_main_loop() as SceneTree
-	if tree == null:
-		return
-	var dialog_manager = tree.root.get_node_or_null("GameRoot/DialogManager")
-	if dialog_manager == null or not dialog_manager.has_method("show_dialog_sequence"):
-		return
 	_set_menu_item_use_locked(true)
-	var prev_mode = dialog_manager.process_mode
-	var had_layer = false
-	var prev_layer = 0
-	if dialog_manager is CanvasLayer:
-		had_layer = true
-		prev_layer = int((dialog_manager as CanvasLayer).layer)
-		(dialog_manager as CanvasLayer).layer = 500
-	dialog_manager.process_mode = Node.PROCESS_MODE_ALWAYS
-	await dialog_manager.show_dialog_sequence(lines)
-	dialog_manager.process_mode = prev_mode
-	if had_layer:
-		(dialog_manager as CanvasLayer).layer = prev_layer
+	await _special_item_use_handler.play_foreground_sequence(lines)
 	_set_menu_item_use_locked(false)
 
 func _update_use_button(item_id: String) -> void:

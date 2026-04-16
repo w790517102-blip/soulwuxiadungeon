@@ -30,6 +30,20 @@ func play_special_use_dialog(item_def: Dictionary, target) -> Dictionary:
 		"event_id": event_id,
 	}
 
+func play_foreground_sequence(lines: Array) -> void:
+	if lines.is_empty():
+		return
+	await _play_dialog_now(lines)
+
+func get_walnut_fail_dialog_lines() -> Array:
+	return [
+		{
+			"text": "面紅耳赤的捏著胡桃，但即使雙手通紅，胡桃仍然無動於衷。",
+			"speaker": 0,
+			"portrait": "res://assets/sprites/empty.png",
+		}
+	]
+
 func _play_dialog_now(lines: Array) -> void:
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
