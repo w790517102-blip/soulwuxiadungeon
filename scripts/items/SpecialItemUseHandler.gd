@@ -2,7 +2,7 @@ extends RefCounted
 class_name SpecialItemUseHandler
 
 const LIU_YU_BOOK_PORTRAIT = "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
-const SHU_MIAN_BOOK_PORTRAIT = "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot1.png"
+const SHU_MIAN_BOOK_PORTRAIT = "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png"
 
 const BOOK_EVENT_BY_ITEM_ID = {
 	"book_poem_a_int": "book_reading_lamp_whisper",
@@ -162,12 +162,12 @@ func _build_book_reading_lamp_whisper(actor_key: String) -> Array:
 	match actor_key:
 		"shumian":
 			return [
-				{ "text": "書眠翻開《燈後微聲》，紙頁輕薄得像是會被呼吸驚動。", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠翻開《燈後微聲》，紙頁輕薄得像是會被呼吸驚動。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "《燈後微聲》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   燈後人未睡，影薄貼窗紗。\n   欲把心頭事，收成指上沙。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   一語若能出，未必驚天下。\n   只怕無人問，輕輕也作啞。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "書眠：（輕聲）「原來有些句子，不是寫給旁人看的……\n而是怕自己有一日，再也聽不見心裡那點聲音。」", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
-				{ "text": "她把書頁闔上時，神色比方才更安定了些。", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：（輕聲）「原來有些句子，不是寫給旁人看的……\n而是怕自己有一日，再也聽不見心裡那點聲音。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "她把書頁闔上時，神色比方才更安定了些。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "你對那些難以言明的細微情緒，似乎看得更清楚了一些。\n【智慧 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		_:
@@ -188,12 +188,12 @@ func _build_book_reading_eaves_echo(actor_key: String) -> Array:
 	match actor_key:
 		"shumian":
 			return [
-				{ "text": "書眠翻開《簷聲未盡》，頁角微卷，像被舊雨聲輕輕沾過。", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠翻開《簷聲未盡》，頁角微卷，像被舊雨聲輕輕沾過。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "《簷聲未盡》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   簷前一滴遲，未落已成音。\n   人行街角外，燈在水痕深。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   若問微光處，原來早可尋。\n   只是心太急，不曾側耳聽。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "書眠：「我總怕自己寫得太滿，便替旁人把那一瞬的回音\n也說死了。」", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
-				{ "text": "書眠：「幸好，雨聲還在。人若肯慢一點，還是能聽見。」", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「我總怕自己寫得太滿，便替旁人把那一瞬的回音\n也說死了。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「幸好，雨聲還在。人若肯慢一點，還是能聽見。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "你對細微徵兆與偶然相逢的感知，似乎靈敏了些。\n【幸運 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		_:
@@ -214,12 +214,12 @@ func _build_book_reading_ink_unfallen(actor_key: String) -> Array:
 	match actor_key:
 		"shumian":
 			return [
-				{ "text": "書眠翻開《未落之墨》，目光停在那段她最熟悉的句子上。", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠翻開《未落之墨》，目光停在那段她最熟悉的句子上。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "《未落之墨》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "人多看重落筆之後的形，卻少有人停在落筆之前。\n筆尖將觸未觸之時，字尚未生，意卻已滿。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "那一瞬若有遲疑，字便散；若有決意，紙未受墨，\n氣先入骨。真正有力的，不在寫成之後，而在不肯\n草率落下的那一刻。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "書眠：（低聲）「寫字是這樣，出手也是。真正會傷人的，\n從來都不是聲勢最大的一筆。」", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
-				{ "text": "她輕輕收指，像把將落未落的筆意重新穩住。", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：（低聲）「寫字是這樣，出手也是。真正會傷人的，\n從來都不是聲勢最大的一筆。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "她輕輕收指，像把將落未落的筆意重新穩住。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "你對筆術式出手前的收束與決意，有了更深一層的領會。\n【筆類型傷害提升】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		_:
@@ -239,13 +239,13 @@ func _build_book_reading_breath_beyond_words(actor_key: String) -> Array:
 	match actor_key:
 		"shumian":
 			return [
-				{ "text": "書眠翻開《字外有息》，這一頁的空白仍像當初那樣安靜。", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠翻開《字外有息》，這一頁的空白仍像當初那樣安靜。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "《字外有息》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "人以為字能盡意，故見鋒便懼，見重便傷。\n其實字有盡處，意亦有息。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "若只盯著紙上墨痕，便容易忘了：寫字之人，總有未寫之處；", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "讀字之人，也該有不必全然承受的地方。能在字外替自己\n留一口氣，便不至於被他人的筆意全數帶走。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "書眠：「若我寫下的字曾讓人窒息……那麼至少，\n我希望它也能留下一道能呼吸的縫。」", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
-				{ "text": "她指尖在空白處輕點一下，像替誰留了一步退路。", "speaker": 1, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「若我寫下的字曾讓人窒息……那麼至少，\n我希望它也能留下一道能呼吸的縫。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "她指尖在空白處輕點一下，像替誰留了一步退路。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
 				{ "text": "你對筆術式侵襲的承受方式，似乎穩住了幾分。\n【筆類型招式抗性提升】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		_:
