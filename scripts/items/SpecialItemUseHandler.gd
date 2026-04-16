@@ -69,7 +69,7 @@ func _build_dialog_lines(event_id: String, target) -> Array:
 			return [
 				{ "text": "你翻開《簷聲未盡》，頁角還留著淡淡潮氣，像是剛從\n一場雨裡收回來。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "書頁中夾著一首小詩：", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "《簷聲未盡》｜書眠著", "speaker": 1, "portrait": "" },
+				{ "text": "《簷聲未盡》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   簷前一滴遲，未落已成音。\n   人行街角外，燈在水痕深。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   若問微光處，原來早可尋。\n   只是心太急，不曾側耳聽。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "(你望著最後一句，目光停了停。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
