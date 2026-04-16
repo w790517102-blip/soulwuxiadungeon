@@ -108,6 +108,17 @@ func _resolve_actor_dialog_key(target) -> String:
 
 func _build_tea_tasting_drunk_moon_qingkui(actor_key: String) -> Array:
 	match actor_key:
+		"shumian":
+			return [
+				{ "text": "你端起《醉月青魁》，茶湯仍舊清亮，映著杯壁時，像月色被人安安靜靜地捧在掌心。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "《醉月青魁》\n   回甘不苦澀，提神不擾眠。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你低頭啜了一口，茶氣先清，回甘卻慢，像熟人沒有立刻出聲，只先輕輕坐到你身旁。)", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「……還是這樣啊。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「明明入口很靜，偏偏回甘總比人預想的還久一點。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「若不是泡茶的人懂得收手，製茶的人也肯把火候留白，它就不會停得這麼剛好。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你將杯中餘茶慢慢飲盡，忽然覺得胸口那股原本細碎的思緒，也被這點回甘一縷一縷理順了。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你在熟悉的茶韻之中，再次穩住了心神。\n【回復內力】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		_:
 			return [
 				{ "text": "你端起《醉月青魁》，茶湯清亮，月色似乎也在杯中輕輕晃了一下。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
@@ -121,6 +132,16 @@ func _build_tea_tasting_drunk_moon_qingkui(actor_key: String) -> Array:
 
 func _build_tea_tasting_brush_mist_newbud(actor_key: String) -> Array:
 	match actor_key:
+		"shumian":
+			return [
+				{ "text": "你揭開《拂霧新芽》的茶蓋，清氣輕輕浮起，像一小段久違的晨色先一步落在眼前。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "《拂霧新芽》\n   茶氣清揚，如晨風拂霧。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你飲下一口，只覺那股輕意不是浮，而是很細地把身上的遲滯一點點拂開。)", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「這茶總讓人想起，原來有些沉重不是非得硬扛……也可以慢慢散。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「像清晨一到，霧沒有被誰打碎，只是自己退開了。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你把茶盞捧在掌中，肩背間那股原本貼得太緊的悶意，似乎也跟著鬆開了些。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你覺得身心都比方才輕快了些。\n【敏捷 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		_:
 			return [
 				{ "text": "你揭開《拂霧新芽》的茶蓋，清氣先一步浮了起來，\n像晨間山道尚未散盡的薄霧。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
@@ -134,6 +155,16 @@ func _build_tea_tasting_brush_mist_newbud(actor_key: String) -> Array:
 
 func _build_tea_tasting_deep_roast_chenxiang(actor_key: String) -> Array:
 	match actor_key:
+		"shumian":
+			return [
+				{ "text": "你捧起《深焙沉香》，茶色厚而不沉，尚未入口時，便有一縷暖意先自杯口慢慢落了下來。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "《深焙沉香》\n   火候沉穩，餘香不散。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你飲下一口，起初只覺得安靜，待茶湯真正落進胸腹，才發現那股暖意已經悄悄墊住了整個人。)", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「……它不急著討人喜歡。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「可是只要肯慢一點喝，就會明白，有些厚實本來就不是一入口就能讓人發覺的。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你將茶盞放下時，只覺原本浮在身上的那層虛氣，似乎被這份沉厚穩穩接住了。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你在溫厚的茶氣之中，把將散未散的底氣重新養了回來。\n【體能 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		_:
 			return [
 				{ "text": "你捧起《深焙沉香》，茶色較深，未入口前，先有一股\n暖厚的氣息沉沉落了下來。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
@@ -147,6 +178,16 @@ func _build_tea_tasting_deep_roast_chenxiang(actor_key: String) -> Array:
 
 func _build_tea_snack_delicate_su(actor_key: String) -> Array:
 	match actor_key:
+		"shumian":
+			return [
+				{ "text": "你取出一枚《玲瓏酥》，酥皮做得細，小小一口，卻像把茶席最後那點未說盡的心意留在了手上。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "《玲瓏酥》\n   一口大小，最宜收拾將散未散的心神。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你輕輕咬下一口，甜香不膩，碎屑落得很輕，倒像在替人把那些散掉的氣力一點點攏回來。)", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「點心若做得太滿，反而留不住人。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "書眠：「這樣剛好……不會一下把空缺填平，卻能讓原本漏風的地方慢慢收住。」", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你把最後一點酥屑拂去，只覺疲乏沒有立刻消散，卻也不再像方才那樣鬆散得四處見縫。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
+				{ "text": "你重新攏住了幾分將散的氣力。\n【回復生命】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		_:
 			return [
 				{ "text": "你取出一枚《玲瓏酥》，點心不大，邊角卻做得很細，\n像是專為茶席留住餘韻而生。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
