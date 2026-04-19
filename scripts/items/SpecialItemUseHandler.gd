@@ -3,6 +3,7 @@ class_name SpecialItemUseHandler
 
 const LIU_YU_BOOK_PORTRAIT = "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 const SHU_MIAN_BOOK_PORTRAIT = "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png"
+const LIE_XIAO_BOOK_PORTRAIT = "res://assets/sprites/NPC/LieFong/LieShao_battle.png"
 
 const BOOK_EVENT_BY_ITEM_ID = {
 	"book_poem_a_int": "book_reading_lamp_whisper",
@@ -201,6 +202,18 @@ func _build_tea_snack_delicate_su(actor_key: String) -> Array:
 
 func _build_book_reading_lamp_whisper(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "你把《燈後微聲》翻開，才看兩行，眉頭便先皺了一下。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《燈後微聲》｜書眠著\n   燈後人未睡，影薄貼窗紗。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "   欲把心頭事，收成指上沙。\n   一語若能出，未必驚天下。\n   只怕無人問，輕輕也作啞。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你盯著最後一句，半晌沒翻頁。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……寫得倒不吵。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「可越是這種輕的東西，越容易叫人避不開。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「說不出口的，未必是因為不夠重。有時候偏偏是因為它太貼身，一開口就像在承認什麼。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "你把書闔上，動作不重，卻比方才多停了一會。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "你對那些藏得太近、反而最難說出口的情緒，似乎看清了一些。\n【智慧 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠翻開《燈後微聲》，紙頁輕薄得像是會被呼吸驚動。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
@@ -227,6 +240,18 @@ func _build_book_reading_lamp_whisper(actor_key: String) -> Array:
 
 func _build_book_reading_eaves_echo(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "你翻開《簷聲未盡》，紙頁微涼，像真沾過一場還沒退乾淨的夜雨。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《簷聲未盡》｜書眠著\n   簷前一滴遲，未落已成音。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "   人行街角外，燈在水痕深。\n   若問微光處，原來早可尋。\n   只是心太急，不曾側耳聽。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你讀到「只是心太急」，唇角動了動，像是想嗤一聲，最後卻沒出聲。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……哼，倒像是在說教。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「可人一旦走快了，確實什麼都懶得細看。等真錯過了，又只會怪路不對、怪時運不好。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「若真能多停一步，也許有些本來要漏掉的東西，還能來得及收回來。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "你把書收起時，目光不自覺往四周多掃了一眼。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "你對那些細微徵兆與稍縱即逝的機會，似乎更敏銳了。\n【幸運 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠翻開《簷聲未盡》，頁角微卷，像被舊雨聲輕輕沾過。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
@@ -253,6 +278,19 @@ func _build_book_reading_eaves_echo(actor_key: String) -> Array:
 
 func _build_book_reading_ink_unfallen(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "你翻開《未落之墨》，才掃過幾行，眼神便沉了下來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《未落之墨》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "人多看重落筆之後的形，卻少有人停在落筆之前。\n筆尖將觸未觸之時，字尚未生，意卻已滿。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "那一瞬若有遲疑，字便散；若有決意，紙未受墨，氣先入骨。\n真正有力的，不在寫成之後，而在不肯草率落下的那一刻。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你看著「不肯草率落下」那一句，手指下意識收緊。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……這句倒像回事。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「出手若只是圖個快，力道一下就散了。真正能傷人的，往往不是那一下砸出去的狠，而是砸出去之前，心裡已經不退了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「原來筆也一樣。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "你把書闔上時，胸口那股原本外放的勁，反而收得比方才更穩。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "你對筆類型招式出手前的收束與決意，有了更深一層的把握。\n【筆類型傷害提升】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠翻開《未落之墨》，目光停在那段她最熟悉的句子上。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
@@ -278,6 +316,19 @@ func _build_book_reading_ink_unfallen(actor_key: String) -> Array:
 
 func _build_book_reading_breath_beyond_words(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "你翻開《字外有息》，才看見那大片空白，便先皺了皺眉。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《字外有息》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "人以為字能盡意，故見鋒便懼，見重便傷。\n其實字有盡處，意亦有息。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "若只盯著紙上墨痕，便容易忘了：寫字之人，總有未寫之處；\n讀字之人，也該有不必全然承受的地方。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "能在字外替自己留一口氣，便不至於被他人的筆意全數帶走。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(你看完最後一句，沉默了一會。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……說得倒輕巧。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「可真把什麼都往心口收，最後先垮的只會是自己。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「若懂得留一步，不是示弱，是免得旁人的字還沒傷完，你自己先把自己耗乾了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "你把書頁闔上，呼吸也比方才沉了一些，像是替自己守住了那條不必退讓太多的邊界。\n【筆類型招式抗性提升】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠翻開《字外有息》，這一頁的空白仍像當初那樣安靜。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
