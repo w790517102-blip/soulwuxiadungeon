@@ -109,6 +109,17 @@ func _resolve_actor_dialog_key(target) -> String:
 
 func _build_tea_tasting_drunk_moon_qingkui(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "列肖端起《醉月青魁》，先沒急著喝，只低頭看了一眼那過分清亮的茶色。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《醉月青魁》\n   回甘不苦澀，提神不擾眠。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(列肖啜了一口，眉頭原本還壓著，過了片刻，卻沒立刻放下茶盞。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……本來以為這種名字，多半只是好聽。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「倒是沒想到它不搶味，卻能在後勁上慢慢纏住人。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「不像那些硬把人提起來的藥茶……這種，反倒像是在列肖亂的時候，逼列肖自己把氣重新收回來。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖把茶飲盡時，胸口那股原本微亂的氣息，似乎已被這點清苦後的回甘慢慢理順。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖在茶湯餘韻之中穩住了心神。\n【回復內力】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠端起《醉月青魁》，茶湯仍舊清亮，映著杯壁時，\n像月色被人安安靜靜地捧在掌心。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
@@ -133,6 +144,17 @@ func _build_tea_tasting_drunk_moon_qingkui(actor_key: String) -> Array:
 
 func _build_tea_tasting_brush_mist_newbud(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "列肖揭開《拂霧新芽》的茶蓋，清氣一下逸出來，輕得幾乎讓人覺得沒什麼分量。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《拂霧新芽》\n   茶氣清揚，如晨風拂霧。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(列肖喝下一口，舌尖先覺得淡，等那股清氣真正散開，肩背卻比方才鬆了許多。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……還真是輕。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「輕得像沒下手，偏偏等列肖回過神時，那點沉悶已經被它掀走了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「哼，這種東西要是真拿去趕路，大概比那些只會嗆喉嚨的烈茶有用得多。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖放下茶盞，原本略顯滯重的身子似乎輕快了些，連呼吸都比方才俐落。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖覺得身法似乎變得更輕快了。\n【敏捷 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠揭開《拂霧新芽》的茶蓋，清氣輕輕浮起，\n像一小段久違的晨色先一步落在眼前。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
@@ -156,6 +178,17 @@ func _build_tea_tasting_brush_mist_newbud(actor_key: String) -> Array:
 
 func _build_tea_tasting_deep_roast_chenxiang(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "列肖捧起《深焙沉香》，茶色厚，香氣也沉，還沒入口，便先有一股穩重的暖意壓了下來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《深焙沉香》\n   火候沉穩，餘香不散。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(列肖喝下一口，起初只覺得它不急不躁，待茶湯落進胸腹，那股厚實才慢慢顯出來。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「這倒像樣。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「不花俏，也不討巧，可只要喝進去，整個人就像被它從裡頭墊住了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「比起那些只求入口討喜的東西，這種慢慢壓下去的勁，反而更禁得住。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖把茶盞放下時，只覺原本有些浮散的勁道，似乎被這股溫厚穩穩收了回來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖在溫厚茶氣之中，把底氣重新養了回來。\n【體能 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠捧起《深焙沉香》，茶色厚而不沉，尚未入口時，\n便有一縷暖意先自杯口慢慢落了下來。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
@@ -179,6 +212,17 @@ func _build_tea_tasting_deep_roast_chenxiang(actor_key: String) -> Array:
 
 func _build_tea_snack_delicate_su(actor_key: String) -> Array:
 	match actor_key:
+		"lieshao", "liexiao":
+			return [
+				{ "text": "列肖拈起一枚《玲瓏酥》，先看了兩眼，像是有些懷疑這種小東西到底能有多少份量。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "《玲瓏酥》\n   一口大小，最宜收拾將散未散的心神。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "(列肖咬下一口，酥皮一碎，甜香卻不膩，意外地沒有那種會讓人心煩的黏滯感。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……倒比看起來強。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「本來以為這種點心只中看，沒想到還真能把快散掉的氣力兜住一點。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「也好，至少不是那種只會塞飽肚子、卻半點用也沒有的花架子。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖將最後一點酥屑拂去，原本有些發空的身子似乎也被這一口甜香稍稍補了回來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖重新攏住了幾分將散的氣力。\n【回復生命】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			]
 		"shumian":
 			return [
 				{ "text": "書眠取出一枚《玲瓏酥》，酥皮做得細，小小一口，\n卻像把茶席最後那點未說盡的心意留在了手上。", "speaker": 2, "portrait": SHU_MIAN_BOOK_PORTRAIT },
