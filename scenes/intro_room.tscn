@@ -4988,7 +4988,8 @@ theme_override_fonts/font = ExtResource("5_u4nxo")
 theme_override_font_sizes/font_size = 28
 
 [node name="LiuYu_headshot" type="Sprite2D" parent="DialogueUI"]
-position = Vector2(134.095, 588.015)
+position = Vector2(139.32, 515.61)
+scale = Vector2(1.25, 1.25)
 texture = ExtResource("5_7kjoh")
 
 [node name="BlackOverlay" type="ColorRect" parent="."]

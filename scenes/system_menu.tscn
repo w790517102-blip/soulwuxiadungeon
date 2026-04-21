@@ -1,8 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://k246e8anybvw"]
+[gd_scene load_steps=6 format=3 uid="uid://k246e8anybvw"]
 
 [ext_resource type="Script" uid="uid://c5e50y2xf5ds" path="res://scripts/system_menu.gd" id="1_pg0ij"]
 [ext_resource type="Script" uid="uid://46t5oe861h3o" path="res://scripts/SavePopup.gd" id="2_epd1p"]
 [ext_resource type="Script" uid="uid://nkfjksrxgivn" path="res://scripts/SaveSlotUI.gd" id="2_rrc1h"]
+[ext_resource type="Texture2D" uid="uid://deugx3hi254ki" path="res://assets/UI/system_menu/sytem_menu.jpg" id="5_20wrr"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ymoqc"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
 
 [node name="SystemMenu" type="Panel"]
 z_index = 1024
@@ -11,10 +15,12 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -577.499
-offset_top = -326.5
-offset_right = 577.499
-offset_bottom = 326.5
+offset_left = -577.0
+offset_top = -326.0
+offset_right = -575.0
+offset_bottom = -324.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_pg0ij")
 
 [node name="EquipPopup" type="PopupMenu" parent="."]
@@ -27,7 +33,8 @@ offset_left = 61.0
 offset_top = 18.0
 offset_right = 1113.0
 offset_bottom = 631.0
-current_tab = 5
+theme_override_styles/panel = SubResource("StyleBoxFlat_ymoqc")
+current_tab = 1
 
 [node name="狀態" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
@@ -107,7 +114,6 @@ layout_mode = 2
 text = "空位"
 
 [node name="道具" type="VBoxContainer" parent="VBoxContainer"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
@@ -116,11 +122,11 @@ layout_mode = 2
 text = "💰 盤纏：0文"
 
 [node name="ItemList" type="ItemList" parent="VBoxContainer/道具"]
-custom_minimum_size = Vector2(10, 200)
+custom_minimum_size = Vector2(10, 260)
 layout_mode = 2
 
 [node name="RichTextLabel" type="RichTextLabel" parent="VBoxContainer/道具"]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 230)
 layout_mode = 2
 
 [node name="UseButton" type="Button" parent="VBoxContainer/道具"]
@@ -358,6 +364,7 @@ metadata/_tab_index = 4
 layout_mode = 2
 
 [node name="系統" type="VBoxContainer" parent="VBoxContainer"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 5
 
@@ -452,5 +459,22 @@ offset_top = 515.0
 offset_right = 249.0
 offset_bottom = 562.0
 text = "讀取"
+
+[node name="Control" type="Control" parent="."]
+z_index = -90
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="assets" type="TextureRect" parent="Control"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 3.0
+offset_right = 5620.0
+offset_bottom = 3179.0
+scale = Vector2(0.205, 0.205)
+mouse_filter = 2
+texture = ExtResource("5_20wrr")
 
 [connection signal="pressed" from="VBoxContainer/系統/SavePopup/VBoxContainer/SaveSlot1/SelectButton" to="VBoxContainer/系統/SavePopup/VBoxContainer/SaveSlot1" method="_on_select_button_pressed"]

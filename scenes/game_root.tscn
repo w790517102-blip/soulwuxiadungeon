@@ -60,7 +60,8 @@ theme_override_fonts/font = ExtResource("4_jb3nc")
 theme_override_font_sizes/font_size = 28
 
 [node name="HeadShot2" type="Sprite2D" parent="DialogManager/DialogBox2"]
-position = Vector2(101.265, 171.26)
+position = Vector2(108.35, 102.345)
+scale = Vector2(1.25, 1.25)
 
 [node name="ChoiceBox" type="VBoxContainer" parent="DialogManager"]
 z_index = 5

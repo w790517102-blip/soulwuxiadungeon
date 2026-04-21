@@ -14,7 +14,7 @@ var can_move := true
 const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 const ZONE_CONFIG := {
 	"yuheng_bamboo_outskirts": {
-		"distance_threshold": 280.0,
+		"distance_threshold": 540.0,
 		"chance": 0.25,
 		"cooldown_distance": 320.0,
 		"intro_key": "yuheng_bamboo_outskirts_random"

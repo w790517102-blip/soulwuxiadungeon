@@ -2,8 +2,8 @@ extends RefCounted
 class_name SpecialItemUseHandler
 
 const LIU_YU_BOOK_PORTRAIT = "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
-const SHU_MIAN_BOOK_PORTRAIT = "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png"
-const LIE_XIAO_BOOK_PORTRAIT = "res://assets/sprites/NPC/LieFong/LieShao_battle.png"
+const SHU_MIAN_BOOK_PORTRAIT = "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot2.png"
+const LIE_XIAO_BOOK_PORTRAIT = "res://assets/sprites/NPC/LieFong/LieShao_headshot2.png"
 
 const BOOK_EVENT_BY_ITEM_ID = {
 	"book_poem_a_int": "book_reading_lamp_whisper",
@@ -111,13 +111,13 @@ func _build_tea_tasting_drunk_moon_qingkui(actor_key: String) -> Array:
 	match actor_key:
 		"lieshao", "liexiao":
 			return [
-				{ "text": "列肖端起《醉月青魁》，先沒急著喝，只低頭看了一眼那過分清亮的茶色。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖端起《醉月青魁》，先沒急著喝，只低頭看了一眼那過分\n清亮的茶色。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "《醉月青魁》\n   回甘不苦澀，提神不擾眠。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "(列肖啜了一口，眉頭原本還壓著，過了片刻，卻沒立刻放下茶盞。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖：「……本來以為這種名字，多半只是好聽。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖：「倒是沒想到它不搶味，卻能在後勁上慢慢纏住人。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「不像那些硬把人提起來的藥茶……這種，反倒像是在列肖亂的時候，逼列肖自己把氣重新收回來。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖把茶飲盡時，胸口那股原本微亂的氣息，似乎已被這點清苦後的回甘慢慢理順。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「不像那些硬把人提起來的藥茶……這種，反倒像是在\n你亂的時候，逼你自己把氣重新收回來。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖把茶飲盡時，胸口那股原本微亂的氣息，似乎已被這點\n清苦後的回甘慢慢理順。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖在茶湯餘韻之中穩住了心神。\n【回復內力】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		"shumian":
@@ -133,7 +133,7 @@ func _build_tea_tasting_drunk_moon_qingkui(actor_key: String) -> Array:
 			]
 		_:
 			return [
-				{ "text": "你端起《醉月青魁》，茶湯清亮，月色似乎也在杯中輕輕晃了一下。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "你端起《醉月青魁》，茶湯清亮，月色似乎也在杯中\n輕輕晃了一下。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "《醉月青魁》\n   回甘不苦澀，提神不擾眠。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "(你先啜了一口，茶氣清而不薄，滑過喉間後，\n竟還留著一縷安靜的甜。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "劉語塵：「……這茶不急著把人叫醒，倒像是在等你\n自己慢慢清明過來。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
@@ -146,13 +146,13 @@ func _build_tea_tasting_brush_mist_newbud(actor_key: String) -> Array:
 	match actor_key:
 		"lieshao", "liexiao":
 			return [
-				{ "text": "列肖揭開《拂霧新芽》的茶蓋，清氣一下逸出來，輕得幾乎讓人覺得沒什麼分量。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖揭開《拂霧新芽》的茶蓋，清氣一下逸出來，輕得\n幾乎讓人覺得沒什麼分量。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "《拂霧新芽》\n   茶氣清揚，如晨風拂霧。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "(列肖喝下一口，舌尖先覺得淡，等那股清氣真正散開，肩背卻比方才鬆了許多。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "(列肖喝下一口，舌尖先覺得淡，等那股清氣真正散開，\n肩背卻比方才鬆了許多。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖：「……還真是輕。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「輕得像沒下手，偏偏等列肖回過神時，那點沉悶已經被它掀走了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「哼，這種東西要是真拿去趕路，大概比那些只會嗆喉嚨的烈茶有用得多。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖放下茶盞，原本略顯滯重的身子似乎輕快了些，連呼吸都比方才俐落。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「輕得像沒下手，偏偏等列肖回過神時，那點沉悶\n已經被它掀走了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「哼，這種東西要是真拿去趕路，大概比那些只會\n嗆喉嚨的烈茶有用得多。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖放下茶盞，原本略顯滯重的身子似乎輕快了些，\n連呼吸都比方才俐落。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖覺得身法似乎變得更輕快了。\n【敏捷 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		"shumian":
@@ -180,13 +180,13 @@ func _build_tea_tasting_deep_roast_chenxiang(actor_key: String) -> Array:
 	match actor_key:
 		"lieshao", "liexiao":
 			return [
-				{ "text": "列肖捧起《深焙沉香》，茶色厚，香氣也沉，還沒入口，便先有一股穩重的暖意壓了下來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖捧起《深焙沉香》，茶色厚，香氣也沉，還沒入口，\n便先有一股穩重的暖意壓了下來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "《深焙沉香》\n   火候沉穩，餘香不散。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "(列肖喝下一口，起初只覺得它不急不躁，待茶湯落進胸腹，那股厚實才慢慢顯出來。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "(列肖喝下一口，起初只覺得它不急不躁，待茶湯落進胸腹，\n那股厚實才慢慢顯出來。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖：「這倒像樣。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「不花俏，也不討巧，可只要喝進去，整個人就像被它從裡頭墊住了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「比起那些只求入口討喜的東西，這種慢慢壓下去的勁，反而更禁得住。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖把茶盞放下時，只覺原本有些浮散的勁道，似乎被這股溫厚穩穩收了回來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「不花俏，也不討巧，可只要喝進去，整個人就像\n被它從裡頭墊住了。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「比起那些只求入口討喜的東西，這種慢慢壓下去的勁，\n反而更禁得住。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖把茶盞放下時，只覺原本有些浮散的勁道，似乎被這股溫厚\n穩穩收了回來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖在溫厚茶氣之中，把底氣重新養了回來。\n【體能 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		"shumian":
@@ -214,13 +214,13 @@ func _build_tea_snack_delicate_su(actor_key: String) -> Array:
 	match actor_key:
 		"lieshao", "liexiao":
 			return [
-				{ "text": "列肖拈起一枚《玲瓏酥》，先看了兩眼，像是有些懷疑這種小東西到底能有多少份量。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖拈起一枚《玲瓏酥》，先看了兩眼，像是有些懷疑\n這種小東西到底能有多少份量。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "《玲瓏酥》\n   一口大小，最宜收拾將散未散的心神。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "(列肖咬下一口，酥皮一碎，甜香卻不膩，意外地沒有那種會讓人心煩的黏滯感。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "(列肖咬下一口，酥皮一碎，甜香卻不膩，意外地沒有\n那種會讓人心煩的黏滯感。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖：「……倒比看起來強。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「本來以為這種點心只中看，沒想到還真能把快散掉的氣力兜住一點。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「也好，至少不是那種只會塞飽肚子、卻半點用也沒有的花架子。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖將最後一點酥屑拂去，原本有些發空的身子似乎也被這一口甜香稍稍補了回來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「本來以為這種點心只中看，沒想到還真能把\n快散掉的氣力兜住一點。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「也好，至少不是那種只會塞飽肚子、卻半點\n用也沒有的花架子。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖將最後一點酥屑拂去，原本有些發空的身子似乎\n也被這一口甜香稍稍補了回來。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖重新攏住了幾分將散的氣力。\n【回復生命】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
 		"shumian":
@@ -253,9 +253,9 @@ func _build_book_reading_lamp_whisper(actor_key: String) -> Array:
 				{ "text": "   燈後人未睡，影薄貼窗紗。\n   欲把心頭事，收成指上沙。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   一語若能出，未必驚天下。\n   只怕無人問，輕輕也作啞。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "(列肖盯著最後一句，半晌沒翻頁。)", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「……寫得倒不吵。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「……寫得倒是挺秀氣。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖：「可越是這種輕的東西，越容易叫人避不開。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
-				{ "text": "列肖：「說不出口的，未必是因為不夠重。有時候偏偏是因為它\n太貼身，一開口就像在承認什麼。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖：「說不出口的，未必是因為話太重。有時候偏偏是因為它\n太貼身，一開口就像在承認什麼。」", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖把書闔上，動作不重，卻比方才多停了一會。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "列肖對那些藏得太近、反而最難說出口的情緒，似乎看清了一些。\n【智慧 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]
@@ -287,7 +287,7 @@ func _build_book_reading_eaves_echo(actor_key: String) -> Array:
 	match actor_key:
 		"lieshao", "liexiao":
 			return [
-				{ "text": "列肖翻開《簷聲未盡》，紙頁微涼，像真沾過一場還沒退乾淨的夜雨。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
+				{ "text": "列肖翻開《簷聲未盡》，紙頁微涼，像真沾過一場還沒\n退乾淨的夜雨。", "speaker": 2, "portrait": LIE_XIAO_BOOK_PORTRAIT },
 				{ "text": "《簷聲未盡》｜書眠著", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   簷前一滴遲，未落已成音。\n   人行街角外，燈在水痕深", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "   若問微光處，原來早可尋。\n   只是心太急，不曾側耳聽。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },

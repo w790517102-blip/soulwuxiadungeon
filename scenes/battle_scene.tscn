@@ -1038,6 +1038,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="FxHit" type="AnimatedSprite2D" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_1"]
+z_index = 10
 position = Vector2(52, 90)
 scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
@@ -1101,6 +1102,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="FxHit" type="AnimatedSprite2D" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_2"]
+z_index = 10
 position = Vector2(52, 90)
 scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
@@ -1164,6 +1166,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="FxHit" type="AnimatedSprite2D" parent="BattleUILayer/BattleUI/EnemyPanel/Enemy_3"]
+z_index = 10
 position = Vector2(52, 90)
 scale = Vector2(0.37, 0.37)
 sprite_frames = SubResource("SpriteFrames_porms")
@@ -1285,6 +1288,7 @@ expand_mode = 1
 [node name="BGMPlayer" type="AudioStreamPlayer" parent="BattleAudio"]
 
 [node name="SEPlayer" type="AudioStreamPlayer" parent="BattleAudio"]
+volume_db = -5.302
 
 [node name="FXManager" type="Node2D" parent="."]
 
