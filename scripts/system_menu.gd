@@ -74,6 +74,11 @@ const WEAPON_RULES = {
 }
 
 func _ready():
+	_align_to_viewport()
+	var viewport := get_viewport()
+	if viewport and not viewport.size_changed.is_connected(_on_viewport_size_changed):
+		viewport.size_changed.connect(_on_viewport_size_changed)
+
 	# ✅ Godot 4 正確用法，Control 沒有 pause_mode，這裡不能設！
 	# 所以這行我們移除：pause_mode = Node.PAUSE_MODE_PROCESS ❌
 
@@ -145,6 +150,16 @@ func _ready():
 	_refresh_status_tab()
 	_refresh_martial_tabs()
 	_update_use_button("")
+
+func _on_viewport_size_changed() -> void:
+	_align_to_viewport()
+
+func _align_to_viewport() -> void:
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	offset_left = 0.0
+	offset_top = 0.0
+	offset_right = 0.0
+	offset_bottom = 0.0
 
 func _exit_tree() -> void:
 	_set_menu_item_use_locked(false)
