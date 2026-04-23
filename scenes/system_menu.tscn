@@ -38,37 +38,37 @@ theme_override_constants/separation = 0
 [node name="TabStatus" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(92, 42)
 layout_mode = 2
-stretch_mode = 3
+stretch_mode = 0
 ignore_texture_size = true
 
 [node name="TabItem" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(92, 42)
 layout_mode = 2
-stretch_mode = 3
+stretch_mode = 0
 ignore_texture_size = true
 
 [node name="TabEquip" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 3
+stretch_mode = 0
 ignore_texture_size = true
 
 [node name="TabSkill" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 3
+stretch_mode = 0
 ignore_texture_size = true
 
 [node name="TabQuest" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 3
+stretch_mode = 0
 ignore_texture_size = true
 
 [node name="TabSystem" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 3
+stretch_mode = 0
 ignore_texture_size = true
 
 [node name="VBoxContainer" type="TabContainer" parent="."]
