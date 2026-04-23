@@ -29,36 +29,36 @@ layout_mode = 0
 offset_left = 61.0
 offset_top = 18.0
 offset_right = 816.0
-offset_bottom = 74.0
-theme_override_constants/separation = 8
+offset_bottom = 60.0
+theme_override_constants/separation = 3
 
 [node name="TabStatus" type="TextureButton" parent="CustomTabBar"]
-custom_minimum_size = Vector2(123, 56)
+custom_minimum_size = Vector2(92, 42)
 layout_mode = 2
 stretch_mode = 3
 
 [node name="TabItem" type="TextureButton" parent="CustomTabBar"]
-custom_minimum_size = Vector2(123, 56)
+custom_minimum_size = Vector2(92, 42)
 layout_mode = 2
 stretch_mode = 3
 
 [node name="TabEquip" type="TextureButton" parent="CustomTabBar"]
-custom_minimum_size = Vector2(120, 56)
+custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
 stretch_mode = 3
 
 [node name="TabSkill" type="TextureButton" parent="CustomTabBar"]
-custom_minimum_size = Vector2(120, 56)
+custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
 stretch_mode = 3
 
 [node name="TabQuest" type="TextureButton" parent="CustomTabBar"]
-custom_minimum_size = Vector2(120, 56)
+custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
 stretch_mode = 3
 
 [node name="TabSystem" type="TextureButton" parent="CustomTabBar"]
-custom_minimum_size = Vector2(120, 56)
+custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
 stretch_mode = 3
 
