@@ -65,6 +65,7 @@ const TAB_QUEST_NORMAL = preload("res://assets/UI/system_menu/tab_quest.png")
 const TAB_QUEST_SELECTED = preload("res://assets/UI/system_menu/tab_quest_selected.png")
 const TAB_SYSTEM_NORMAL = preload("res://assets/UI/system_menu/tab_system.png")
 const TAB_SYSTEM_SELECTED = preload("res://assets/UI/system_menu/tab_system_selected.png")
+const STATUS_MEMBER_CARD_BG = preload("res://assets/UI/system_menu/status_member_1.jpg")
 var _skill_db: Node = CharacterSkillDB.new()
 var _skill_data_db: Node = SkillDBScript.new()
 var _special_item_use_handler: SpecialItemUseHandler = SpecialItemUseHandlerScript.new()
@@ -1266,6 +1267,22 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	for child in member.get_children():
 		member.remove_child(child)
 		child.queue_free()
+
+	var card_bg := TextureRect.new()
+	card_bg.name = "CardBG"
+	card_bg.texture = STATUS_MEMBER_CARD_BG
+	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_bg.z_index = -1
+	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	card_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	card_bg.ignore_texture_size = true
+	card_bg.custom_minimum_size = Vector2.ZERO
+	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	card_bg.offset_left = 0.0
+	card_bg.offset_top = 0.0
+	card_bg.offset_right = 0.0
+	card_bg.offset_bottom = 0.0
+	member.add_child(card_bg)
 
 	var header_row := HBoxContainer.new()
 	header_row.name = "HeaderRow"
