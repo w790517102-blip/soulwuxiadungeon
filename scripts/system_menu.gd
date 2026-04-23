@@ -53,9 +53,22 @@ var _pending_status_hover_actor_id: String = ""
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const TAB_STATUS_NORMAL = preload("res://assets/UI/system_menu/tab_status.png")
+const TAB_STATUS_SELECTED = preload("res://assets/UI/system_menu/tab_status_selected.png")
+const TAB_ITEM_NORMAL = preload("res://assets/UI/system_menu/tab_item.png")
+const TAB_ITEM_SELECTED = preload("res://assets/UI/system_menu/tab_item_selected.png")
+const TAB_EQUIP_NORMAL = preload("res://assets/UI/system_menu/tab_equip.png")
+const TAB_EQUIP_SELECTED = preload("res://assets/UI/system_menu/tab_equip_selected.png")
+const TAB_SKILL_NORMAL = preload("res://assets/UI/system_menu/tab_skill.png")
+const TAB_SKILL_SELECTED = preload("res://assets/UI/system_menu/tab_skill_selected.png")
+const TAB_QUEST_NORMAL = preload("res://assets/UI/system_menu/tab_quest.png")
+const TAB_QUEST_SELECTED = preload("res://assets/UI/system_menu/tab_quest_selected.png")
+const TAB_SYSTEM_NORMAL = preload("res://assets/UI/system_menu/tab_system.png")
+const TAB_SYSTEM_SELECTED = preload("res://assets/UI/system_menu/tab_system_selected.png")
 var _skill_db: Node = CharacterSkillDB.new()
 var _skill_data_db: Node = SkillDBScript.new()
 var _special_item_use_handler: SpecialItemUseHandler = SpecialItemUseHandlerScript.new()
+var _custom_tab_entries: Array = []
 
 const DEFAULT_UNARMED_NAME = "空手"
 const WEAPON_RULES = {
@@ -103,6 +116,7 @@ func _ready():
 		use_button.pressed.connect(_on_use_pressed)
 	if tabs:
 		tabs.tab_changed.connect(_on_tab_changed)
+	_setup_custom_tab_bar()
 	if InventorySync:
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
@@ -150,6 +164,8 @@ func _ready():
 	_refresh_status_tab()
 	_refresh_martial_tabs()
 	_update_use_button("")
+	if tabs:
+		_sync_custom_tab_visuals(tabs.current_tab)
 
 func _on_viewport_size_changed() -> void:
 	_align_to_viewport()
@@ -189,12 +205,99 @@ func _unhandled_input(event):
 func _on_tab_changed(tab_index: int) -> void:
 	if tabs == null:
 		return
+	_sync_custom_tab_visuals(tab_index)
 	var item_tab_index = $VBoxContainer/道具.get_index()
 	var martial_tab_index = $VBoxContainer/武術.get_index()
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == martial_tab_index:
 		_refresh_martial_tabs()
+
+func _setup_custom_tab_bar() -> void:
+	_custom_tab_entries.clear()
+	if tabs == null:
+		return
+
+	var entries := [
+		{
+			"button": get_node_or_null("CustomTabBar/TabStatus"),
+			"tab_node": get_node_or_null("VBoxContainer/狀態"),
+			"normal": TAB_STATUS_NORMAL,
+			"selected": TAB_STATUS_SELECTED
+		},
+		{
+			"button": get_node_or_null("CustomTabBar/TabItem"),
+			"tab_node": get_node_or_null("VBoxContainer/道具"),
+			"normal": TAB_ITEM_NORMAL,
+			"selected": TAB_ITEM_SELECTED
+		},
+		{
+			"button": get_node_or_null("CustomTabBar/TabEquip"),
+			"tab_node": get_node_or_null("VBoxContainer/裝備"),
+			"normal": TAB_EQUIP_NORMAL,
+			"selected": TAB_EQUIP_SELECTED
+		},
+		{
+			"button": get_node_or_null("CustomTabBar/TabSkill"),
+			"tab_node": get_node_or_null("VBoxContainer/武術"),
+			"normal": TAB_SKILL_NORMAL,
+			"selected": TAB_SKILL_SELECTED
+		},
+		{
+			"button": get_node_or_null("CustomTabBar/TabQuest"),
+			"tab_node": get_node_or_null("VBoxContainer/任務"),
+			"normal": TAB_QUEST_NORMAL,
+			"selected": TAB_QUEST_SELECTED
+		},
+		{
+			"button": get_node_or_null("CustomTabBar/TabSystem"),
+			"tab_node": get_node_or_null("VBoxContainer/系統"),
+			"normal": TAB_SYSTEM_NORMAL,
+			"selected": TAB_SYSTEM_SELECTED
+		},
+	]
+
+	for entry in entries:
+		var button: TextureButton = entry.get("button")
+		var tab_node: Control = entry.get("tab_node")
+		if button == null or tab_node == null:
+			continue
+
+		var tab_index := tab_node.get_index()
+		button.focus_mode = Control.FOCUS_NONE
+		if not button.pressed.is_connected(_on_custom_tab_button_pressed):
+			button.pressed.connect(_on_custom_tab_button_pressed.bind(tab_index))
+
+		_custom_tab_entries.append({
+			"button": button,
+			"tab_index": tab_index,
+			"normal": entry.get("normal"),
+			"selected": entry.get("selected"),
+		})
+
+func _on_custom_tab_button_pressed(tab_index: int) -> void:
+	if tabs == null:
+		return
+	if tab_index < 0 or tab_index >= tabs.get_tab_count():
+		return
+	tabs.current_tab = tab_index
+
+func _sync_custom_tab_visuals(active_tab_index: int) -> void:
+	for entry in _custom_tab_entries:
+		var button: TextureButton = entry.get("button")
+		var tab_index: int = int(entry.get("tab_index", -1))
+		var normal_texture: Texture2D = entry.get("normal")
+		var selected_texture: Texture2D = entry.get("selected")
+		if button == null:
+			continue
+
+		var is_selected := tab_index == active_tab_index
+		var display_texture: Texture2D = selected_texture if is_selected else normal_texture
+		button.texture_normal = display_texture
+		button.texture_hover = display_texture
+		button.texture_pressed = display_texture
+		button.texture_disabled = display_texture
+		button.disabled = is_selected
 
 func _refresh_item_tab() -> void:
 	if item_list == null or item_desc == null:
