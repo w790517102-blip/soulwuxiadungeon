@@ -1260,6 +1260,7 @@ func _setup_status_member_slots() -> void:
 			"con": member.get_node_or_null("BaseStatsBox/ConLabel") as Label,
 			"luck": member.get_node_or_null("BaseStatsBox/LuckLabel") as Label,
 		})
+		_setup_status_hover_for_slot(_status_member_slots[_status_member_slots.size() - 1])
 
 func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	for child in member.get_children():
@@ -1420,36 +1421,47 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 		mp_label.text = "內力：%d/%d (+%d)" % [base_mp, base_max_mp + bonus_max_mp, bonus_max_mp]
 	var atk_label := slot_data.get("atk") as Label
 	if atk_label:
+		atk_label.set_meta("actor_id", actor_id)
 		atk_label.text = "攻擊：%d" % (base_atk + bonus_atk)
 	var def_label := slot_data.get("def") as Label
 	if def_label:
+		def_label.set_meta("actor_id", actor_id)
 		def_label.text = "防禦：%d" % (base_def + bonus_def)
 	var agi_move_label := slot_data.get("agi_move") as Label
 	if agi_move_label:
+		agi_move_label.set_meta("actor_id", actor_id)
 		agi_move_label.text = "身法：%d" % (base_speed + bonus_speed)
 	var hit_label := slot_data.get("hit") as Label
 	if hit_label:
+		hit_label.set_meta("actor_id", actor_id)
 		hit_label.text = "命中：%d" % hit_power
 	var crit_label := slot_data.get("crit") as Label
 	if crit_label:
+		crit_label.set_meta("actor_id", actor_id)
 		crit_label.text = "暴擊：%.1f%%" % crit_rate_pct
 	var evade_label := slot_data.get("evade") as Label
 	if evade_label:
+		evade_label.set_meta("actor_id", actor_id)
 		evade_label.text = "閃避：%d" % evade_power
 	var str_label := slot_data.get("str") as Label
 	if str_label:
+		str_label.set_meta("actor_id", actor_id)
 		str_label.text = "力量：%d" % (base_str + bonus_str)
 	var dex_label := slot_data.get("dex") as Label
 	if dex_label:
+		dex_label.set_meta("actor_id", actor_id)
 		dex_label.text = "敏捷：%d" % (base_agi + bonus_agi)
 	var int_label := slot_data.get("int") as Label
 	if int_label:
+		int_label.set_meta("actor_id", actor_id)
 		int_label.text = "智力：%d" % (base_int + bonus_int)
 	var con_label := slot_data.get("con") as Label
 	if con_label:
+		con_label.set_meta("actor_id", actor_id)
 		con_label.text = "體魄：%d" % (base_con + bonus_con)
 	var luck_label := slot_data.get("luck") as Label
 	if luck_label:
+		luck_label.set_meta("actor_id", actor_id)
 		luck_label.text = "幸運：%d" % (base_luck + bonus_luck)
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
@@ -1662,6 +1674,44 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 				"con": field_name = "體魄"
 				"luck": field_name = "幸運"
 			lbl.text = "%s：—" % field_name
+			lbl.remove_meta("actor_id")
+
+func _setup_status_hover_for_slot(slot_data: Dictionary) -> void:
+	var hover_key_map := {
+		"atk": "atk",
+		"def": "def",
+		"agi_move": "speed",
+		"hit": "hit_power",
+		"crit": "crit",
+		"evade": "evade_power",
+		"str": "str",
+		"dex": "agi",
+		"int": "int",
+		"con": "con",
+		"luck": "luck",
+	}
+	for slot_key in hover_key_map.keys():
+		var stat_label := slot_data.get(slot_key) as Label
+		if stat_label == null:
+			continue
+		stat_label.mouse_filter = Control.MOUSE_FILTER_STOP
+		var stat_key := str(hover_key_map[slot_key])
+		if not stat_label.mouse_entered.is_connected(_on_status_stat_label_mouse_entered):
+			stat_label.mouse_entered.connect(_on_status_stat_label_mouse_entered.bind(stat_label, stat_key))
+		if not stat_label.mouse_exited.is_connected(_hide_status_hover_popup):
+			stat_label.mouse_exited.connect(_hide_status_hover_popup)
+
+func _on_status_stat_label_mouse_entered(stat_label: Label, stat_key: String) -> void:
+	var actor_id := String(stat_label.get_meta("actor_id", ""))
+	if actor_id == "":
+		return
+	_ensure_status_hover_popup()
+	_ensure_status_hover_timer()
+	if _status_hover_popup == null or _status_hover_label == null or _status_hover_timer == null:
+		return
+	_pending_status_hover_meta = stat_key
+	_pending_status_hover_actor_id = actor_id
+	_status_hover_timer.start(0.5)
 
 func _get_actor_portrait(actor) -> Texture2D:
 	var portrait_path := str(_get_actor_value(actor, "portrait_path", ""))
