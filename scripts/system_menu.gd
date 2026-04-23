@@ -1241,24 +1241,24 @@ func _setup_status_member_slots() -> void:
 			continue
 		_rebuild_status_member_layout(member)
 		_status_member_slots.append({
-			"name": member.get_node_or_null("NameBrushLabel") as Label,
-			"job_class": member.get_node_or_null("JobClassLabel") as Label,
+			"name": member.get_node_or_null("HeaderRow/NameBrushLabel") as Label,
+			"job_class": member.get_node_or_null("HeaderRow/JobClassLabel") as Label,
 			"portrait": member.get_node_or_null("TopSection/PortraitFrame/Portrait") as TextureRect,
 			"level": member.get_node_or_null("TopSection/BasicInfoBox/LevelLabel") as Label,
 			"exp": member.get_node_or_null("TopSection/BasicInfoBox/ExpLabel") as Label,
 			"hp": member.get_node_or_null("TopSection/BasicInfoBox/HPLabel") as Label,
 			"mp": member.get_node_or_null("TopSection/BasicInfoBox/MPLabel") as Label,
-			"atk": member.get_node_or_null("CombatStatsBox/AtkLabel") as Label,
-			"def": member.get_node_or_null("CombatStatsBox/DefLabel") as Label,
-			"agi_move": member.get_node_or_null("CombatStatsBox/AgiMoveLabel") as Label,
-			"hit": member.get_node_or_null("CombatStatsBox/HitLabel") as Label,
-			"crit": member.get_node_or_null("CombatStatsBox/CritLabel") as Label,
-			"evade": member.get_node_or_null("CombatStatsBox/EvadeLabel") as Label,
-			"str": member.get_node_or_null("BaseStatsBox/StrLabel") as Label,
-			"dex": member.get_node_or_null("BaseStatsBox/DexLabel") as Label,
-			"int": member.get_node_or_null("BaseStatsBox/IntLabel") as Label,
-			"con": member.get_node_or_null("BaseStatsBox/ConLabel") as Label,
-			"luck": member.get_node_or_null("BaseStatsBox/LuckLabel") as Label,
+			"atk": member.get_node_or_null("LowerSection/CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("LowerSection/CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("LowerSection/CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("LowerSection/CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("LowerSection/CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("LowerSection/BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("LowerSection/BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("LowerSection/BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("LowerSection/BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("LowerSection/BaseStatsBox/LuckLabel") as Label,
 		})
 		_setup_status_hover_for_slot(_status_member_slots[_status_member_slots.size() - 1])
 
@@ -1267,14 +1267,26 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 		member.remove_child(child)
 		child.queue_free()
 
+	var header_row := HBoxContainer.new()
+	header_row.name = "HeaderRow"
+	header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	member.add_child(header_row)
+
 	var name_label := Label.new()
 	name_label.name = "NameBrushLabel"
 	name_label.text = "—"
-	member.add_child(name_label)
+	header_row.add_child(name_label)
+
+	var header_spacer := Control.new()
+	header_spacer.name = "HeaderSpacer"
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(header_spacer)
 
 	var job_label := Label.new()
 	job_label.name = "JobClassLabel"
-	member.add_child(job_label)
+	job_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	job_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	header_row.add_child(job_label)
 
 	var top_section := HBoxContainer.new()
 	top_section.name = "TopSection"
@@ -1309,9 +1321,13 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 		lbl.text = pair[1]
 		basic_info.add_child(lbl)
 
+	var lower_section := VBoxContainer.new()
+	lower_section.name = "LowerSection"
+	member.add_child(lower_section)
+
 	var combat_box := VBoxContainer.new()
 	combat_box.name = "CombatStatsBox"
-	member.add_child(combat_box)
+	lower_section.add_child(combat_box)
 	for pair in [
 		["AtkLabel", "攻擊：—"],
 		["DefLabel", "防禦：—"],
@@ -1327,7 +1343,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 
 	var base_box := VBoxContainer.new()
 	base_box.name = "BaseStatsBox"
-	member.add_child(base_box)
+	lower_section.add_child(base_box)
 	for pair in [
 		["StrLabel", "力量：—"],
 		["DexLabel", "敏捷：—"],
@@ -1656,7 +1672,7 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	for key in ["level", "exp", "hp", "mp", "atk", "def", "agi_move", "hit", "crit", "evade", "str", "dex", "int", "con", "luck"]:
 		var lbl := slot_data.get(key) as Label
 		if lbl:
-			var field_name := key
+			var field_name = key
 			match key:
 				"level": field_name = "等級"
 				"exp": field_name = "經驗"
