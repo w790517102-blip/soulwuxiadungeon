@@ -1239,54 +1239,107 @@ func _setup_status_member_slots() -> void:
 		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
 		if member == null:
 			continue
-		var raw_stats_node := member.get_node_or_null("Stats")
-		var stats_rich: RichTextLabel = null
-		if raw_stats_node is RichTextLabel:
-			stats_rich = raw_stats_node as RichTextLabel
-		elif raw_stats_node is Label:
-			var old_label := raw_stats_node as Label
-			stats_rich = RichTextLabel.new()
-			stats_rich.name = "Stats"
-			stats_rich.custom_minimum_size = old_label.custom_minimum_size
-			stats_rich.size_flags_horizontal = old_label.size_flags_horizontal
-			stats_rich.size_flags_vertical = old_label.size_flags_vertical
-			stats_rich.bbcode_enabled = true
-			stats_rich.fit_content = true
-			stats_rich.scroll_active = false
-			stats_rich.mouse_filter = Control.MOUSE_FILTER_STOP
-			var parent_node := old_label.get_parent()
-			var idx := old_label.get_index()
-			parent_node.add_child(stats_rich)
-			parent_node.move_child(stats_rich, idx)
-			old_label.queue_free()
-		if stats_rich:
-			if not stats_rich.meta_hover_started.is_connected(_on_status_meta_hover_started):
-				stats_rich.meta_hover_started.connect(_on_status_meta_hover_started.bind(stats_rich))
-			if not stats_rich.meta_hover_ended.is_connected(_on_status_meta_hover_ended):
-				stats_rich.meta_hover_ended.connect(_on_status_meta_hover_ended)
-			if not stats_rich.mouse_exited.is_connected(_hide_status_hover_popup):
-				stats_rich.mouse_exited.connect(_hide_status_hover_popup)
+		_rebuild_status_member_layout(member)
 		_status_member_slots.append({
-			"name": member.get_node_or_null("Name") as Label,
-			"job_class": member.get_node_or_null("JobClass") as Label,
-			"portrait": member.get_node_or_null("Portrait") as TextureRect,
-			"stats": stats_rich,
+			"name": member.get_node_or_null("NameBrushLabel") as Label,
+			"job_class": member.get_node_or_null("JobClassLabel") as Label,
+			"portrait": member.get_node_or_null("TopSection/PortraitFrame/Portrait") as TextureRect,
+			"level": member.get_node_or_null("TopSection/BasicInfoBox/LevelLabel") as Label,
+			"exp": member.get_node_or_null("TopSection/BasicInfoBox/ExpLabel") as Label,
+			"hp": member.get_node_or_null("TopSection/BasicInfoBox/HPLabel") as Label,
+			"mp": member.get_node_or_null("TopSection/BasicInfoBox/MPLabel") as Label,
+			"atk": member.get_node_or_null("CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("BaseStatsBox/LuckLabel") as Label,
 		})
-		var stats_label := stats_rich
-		if stats_label:
-			stats_label.add_theme_font_override("normal_font", MenuUIFont)
-			stats_label.add_theme_font_size_override("normal_font_size", 18)
-			stats_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-			stats_label.add_theme_constant_override("outline_size", 4)
-			stats_label.add_theme_font_size_override("font_size", 18)
-		var portrait := member.get_node_or_null("Portrait") as TextureRect
-		if portrait:
-			var base_size: Vector2 = portrait.custom_minimum_size
-			if base_size == Vector2.ZERO:
-				base_size = Vector2(96, 96)
-			portrait.custom_minimum_size = base_size * 1.5
-			portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-			portrait.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+
+func _rebuild_status_member_layout(member: VBoxContainer) -> void:
+	for child in member.get_children():
+		member.remove_child(child)
+		child.queue_free()
+
+	var name_label := Label.new()
+	name_label.name = "NameBrushLabel"
+	name_label.text = "—"
+	member.add_child(name_label)
+
+	var job_label := Label.new()
+	job_label.name = "JobClassLabel"
+	member.add_child(job_label)
+
+	var top_section := HBoxContainer.new()
+	top_section.name = "TopSection"
+	top_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_section.add_theme_constant_override("separation", 8)
+	member.add_child(top_section)
+
+	var portrait_frame := PanelContainer.new()
+	portrait_frame.name = "PortraitFrame"
+	top_section.add_child(portrait_frame)
+
+	var portrait := TextureRect.new()
+	portrait.name = "Portrait"
+	portrait.custom_minimum_size = Vector2(128, 128)
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait_frame.add_child(portrait)
+
+	var basic_info := VBoxContainer.new()
+	basic_info.name = "BasicInfoBox"
+	basic_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_section.add_child(basic_info)
+
+	for pair in [
+		["LevelLabel", "等級：—"],
+		["ExpLabel", "經驗：—"],
+		["HPLabel", "氣血：—"],
+		["MPLabel", "內力：—"],
+	]:
+		var lbl := Label.new()
+		lbl.name = pair[0]
+		lbl.text = pair[1]
+		basic_info.add_child(lbl)
+
+	var combat_box := VBoxContainer.new()
+	combat_box.name = "CombatStatsBox"
+	member.add_child(combat_box)
+	for pair in [
+		["AtkLabel", "攻擊：—"],
+		["DefLabel", "防禦：—"],
+		["AgiMoveLabel", "身法：—"],
+		["HitLabel", "命中：—"],
+		["CritLabel", "暴擊：—"],
+		["EvadeLabel", "閃避：—"],
+	]:
+		var lbl := Label.new()
+		lbl.name = pair[0]
+		lbl.text = pair[1]
+		combat_box.add_child(lbl)
+
+	var base_box := VBoxContainer.new()
+	base_box.name = "BaseStatsBox"
+	member.add_child(base_box)
+	for pair in [
+		["StrLabel", "力量：—"],
+		["DexLabel", "敏捷：—"],
+		["IntLabel", "智力：—"],
+		["ConLabel", "體魄：—"],
+		["LuckLabel", "幸運：—"],
+	]:
+		var lbl := Label.new()
+		lbl.name = pair[0]
+		lbl.text = pair[1]
+		base_box.add_child(lbl)
+
+	_apply_menu_font_style(member)
 
 func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var actor_id := _get_actor_id_from_entry(actor)
@@ -1353,28 +1406,51 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 		portrait.texture = _get_actor_portrait(actor)
 		portrait.modulate = Color(1, 1, 1, 1)
 
-	var stats_label := slot_data.get("stats") as RichTextLabel
-	if stats_label:
-		stats_label.set_meta("actor_id", actor_id)
-		var stat_str := "%s  %s  %s  %s  %s" % [
-			_status_metric_token("str", "力", base_str + bonus_str),
-			_status_metric_token("agi", "敏", base_agi + bonus_agi),
-			_status_metric_token("int", "智", base_int + bonus_int),
-			_status_metric_token("con", "體", base_con + bonus_con),
-			_status_metric_token("luck", "幸", base_luck + bonus_luck),
-		]
-		stats_label.bbcode_text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n%s  %s  %s\n%s  %s  %s\n%s" % [
-			actor_level, actor_exp, next_exp,
-			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
-			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
-			_status_metric_token("atk", "攻", base_atk + bonus_atk),
-			_status_metric_token("def", "防", base_def + bonus_def),
-			_status_metric_token("speed", "身法", base_speed + bonus_speed),
-			_status_metric_token("hit_power", "命中", hit_power),
-			_status_metric_token("crit", "暴擊", "%.1f%%" % crit_rate_pct),
-			_status_metric_token("evade_power", "閃避", evade_power),
-			stat_str,
-		]
+	var level_label := slot_data.get("level") as Label
+	if level_label:
+		level_label.text = "等級：%d" % actor_level
+	var exp_label := slot_data.get("exp") as Label
+	if exp_label:
+		exp_label.text = "經驗：%d/%d" % [actor_exp, next_exp]
+	var hp_label := slot_data.get("hp") as Label
+	if hp_label:
+		hp_label.text = "氣血：%d/%d (+%d)" % [base_hp, base_max_hp + bonus_max_hp, bonus_max_hp]
+	var mp_label := slot_data.get("mp") as Label
+	if mp_label:
+		mp_label.text = "內力：%d/%d (+%d)" % [base_mp, base_max_mp + bonus_max_mp, bonus_max_mp]
+	var atk_label := slot_data.get("atk") as Label
+	if atk_label:
+		atk_label.text = "攻擊：%d" % (base_atk + bonus_atk)
+	var def_label := slot_data.get("def") as Label
+	if def_label:
+		def_label.text = "防禦：%d" % (base_def + bonus_def)
+	var agi_move_label := slot_data.get("agi_move") as Label
+	if agi_move_label:
+		agi_move_label.text = "身法：%d" % (base_speed + bonus_speed)
+	var hit_label := slot_data.get("hit") as Label
+	if hit_label:
+		hit_label.text = "命中：%d" % hit_power
+	var crit_label := slot_data.get("crit") as Label
+	if crit_label:
+		crit_label.text = "暴擊：%.1f%%" % crit_rate_pct
+	var evade_label := slot_data.get("evade") as Label
+	if evade_label:
+		evade_label.text = "閃避：%d" % evade_power
+	var str_label := slot_data.get("str") as Label
+	if str_label:
+		str_label.text = "力量：%d" % (base_str + bonus_str)
+	var dex_label := slot_data.get("dex") as Label
+	if dex_label:
+		dex_label.text = "敏捷：%d" % (base_agi + bonus_agi)
+	var int_label := slot_data.get("int") as Label
+	if int_label:
+		int_label.text = "智力：%d" % (base_int + bonus_int)
+	var con_label := slot_data.get("con") as Label
+	if con_label:
+		con_label.text = "體魄：%d" % (base_con + bonus_con)
+	var luck_label := slot_data.get("luck") as Label
+	if luck_label:
+		luck_label.text = "幸運：%d" % (base_luck + bonus_luck)
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
 	var luck_stat = int(_get_actor_value(actor, "luck", 0))
@@ -1565,9 +1641,27 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	if portrait:
 		portrait.texture = null
 		portrait.modulate = Color(0.4, 0.4, 0.4, 1)
-	var stats_label := slot_data.get("stats") as RichTextLabel
-	if stats_label:
-		stats_label.bbcode_text = "空位"
+	for key in ["level", "exp", "hp", "mp", "atk", "def", "agi_move", "hit", "crit", "evade", "str", "dex", "int", "con", "luck"]:
+		var lbl := slot_data.get(key) as Label
+		if lbl:
+			var field_name := key
+			match key:
+				"level": field_name = "等級"
+				"exp": field_name = "經驗"
+				"hp": field_name = "氣血"
+				"mp": field_name = "內力"
+				"atk": field_name = "攻擊"
+				"def": field_name = "防禦"
+				"agi_move": field_name = "身法"
+				"hit": field_name = "命中"
+				"crit": field_name = "暴擊"
+				"evade": field_name = "閃避"
+				"str": field_name = "力量"
+				"dex": field_name = "敏捷"
+				"int": field_name = "智力"
+				"con": field_name = "體魄"
+				"luck": field_name = "幸運"
+			lbl.text = "%s：—" % field_name
 
 func _get_actor_portrait(actor) -> Texture2D:
 	var portrait_path := str(_get_actor_value(actor, "portrait_path", ""))
