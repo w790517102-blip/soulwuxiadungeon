@@ -30,7 +30,7 @@ func _open_system_menu():
 	var parent := _resolve_ui_parent()
 	parent.add_child(system_menu_instance)
 	await get_tree().process_frame
-	_center_menu_on_viewport(system_menu_instance)
+	_align_menu_to_viewport(system_menu_instance)
 	system_menu_instance.set_process_unhandled_input(true)
 	system_menu_instance.grab_focus()
 
@@ -56,16 +56,12 @@ func _resolve_ui_parent() -> Node:
 		return ui_root
 	return get_tree().root
 
-func _center_menu_on_viewport(menu: Control) -> void:
+func _align_menu_to_viewport(menu: Control) -> void:
 	if menu == null:
 		return
 
 	menu.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
-	if menu.size == Vector2.ZERO:
-		menu.size = menu.get_combined_minimum_size()
-
-	var vp_size: Vector2 = get_viewport().get_visible_rect().size
-	menu.position = (vp_size - menu.size) * 0.5
+	menu.position = Vector2.ZERO
 
 func close_menu_if_open() -> void:
 	_close_system_menu()
