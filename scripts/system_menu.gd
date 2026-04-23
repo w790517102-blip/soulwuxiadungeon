@@ -1242,24 +1242,24 @@ func _setup_status_member_slots() -> void:
 			continue
 		_rebuild_status_member_layout(member)
 		_status_member_slots.append({
-			"name": member.get_node_or_null("HeaderRow/NameBrushLabel") as Label,
-			"job_class": member.get_node_or_null("HeaderRow/JobClassLabel") as Label,
-			"portrait": member.get_node_or_null("TopSection/PortraitFrame/Portrait") as TextureRect,
-			"level": member.get_node_or_null("TopSection/BasicInfoBox/LevelLabel") as Label,
-			"exp": member.get_node_or_null("TopSection/BasicInfoBox/ExpLabel") as Label,
-			"hp": member.get_node_or_null("TopSection/BasicInfoBox/HPLabel") as Label,
-			"mp": member.get_node_or_null("TopSection/BasicInfoBox/MPLabel") as Label,
-			"atk": member.get_node_or_null("LowerSection/CombatStatsBox/AtkLabel") as Label,
-			"def": member.get_node_or_null("LowerSection/CombatStatsBox/DefLabel") as Label,
-			"agi_move": member.get_node_or_null("LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
-			"hit": member.get_node_or_null("LowerSection/CombatStatsBox/HitLabel") as Label,
-			"crit": member.get_node_or_null("LowerSection/CombatStatsBox/CritLabel") as Label,
-			"evade": member.get_node_or_null("LowerSection/CombatStatsBox/EvadeLabel") as Label,
-			"str": member.get_node_or_null("LowerSection/BaseStatsBox/StrLabel") as Label,
-			"dex": member.get_node_or_null("LowerSection/BaseStatsBox/DexLabel") as Label,
-			"int": member.get_node_or_null("LowerSection/BaseStatsBox/IntLabel") as Label,
-			"con": member.get_node_or_null("LowerSection/BaseStatsBox/ConLabel") as Label,
-			"luck": member.get_node_or_null("LowerSection/BaseStatsBox/LuckLabel") as Label,
+			"name": member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label,
+			"job_class": member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label,
+			"portrait": member.get_node_or_null("CardBG/CardContent/TopSection/PortraitFrame/Portrait") as TextureRect,
+			"level": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/LevelLabel") as Label,
+			"exp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
+			"hp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
+			"mp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
+			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/LuckLabel") as Label,
 		})
 		_setup_status_hover_for_slot(_status_member_slots[_status_member_slots.size() - 1])
 
@@ -1268,26 +1268,28 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 		member.remove_child(child)
 		child.queue_free()
 
-	var card_bg := TextureRect.new()
+	var card_bg := PanelContainer.new()
 	card_bg.name = "CardBG"
-	card_bg.texture = STATUS_MEMBER_CARD_BG
 	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card_bg.z_index = -1
-	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	card_bg.stretch_mode = TextureRect.STRETCH_SCALE
-	card_bg.ignore_texture_size = true
-	card_bg.custom_minimum_size = Vector2.ZERO
-	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	card_bg.offset_left = 0.0
-	card_bg.offset_top = 0.0
-	card_bg.offset_right = 0.0
-	card_bg.offset_bottom = 0.0
+	card_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var card_style := StyleBoxTexture.new()
+	card_style.texture = STATUS_MEMBER_CARD_BG
+	card_style.texture_margin_left = 0.0
+	card_style.texture_margin_top = 0.0
+	card_style.texture_margin_right = 0.0
+	card_style.texture_margin_bottom = 0.0
+	card_bg.add_theme_stylebox_override("panel", card_style)
 	member.add_child(card_bg)
+
+	var card_content := VBoxContainer.new()
+	card_content.name = "CardContent"
+	card_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_bg.add_child(card_content)
 
 	var header_row := HBoxContainer.new()
 	header_row.name = "HeaderRow"
 	header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	member.add_child(header_row)
+	card_content.add_child(header_row)
 
 	var name_label := Label.new()
 	name_label.name = "NameBrushLabel"
@@ -1309,7 +1311,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	top_section.name = "TopSection"
 	top_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_section.add_theme_constant_override("separation", 8)
-	member.add_child(top_section)
+	card_content.add_child(top_section)
 
 	var portrait_frame := PanelContainer.new()
 	portrait_frame.name = "PortraitFrame"
@@ -1340,7 +1342,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 
 	var lower_section := VBoxContainer.new()
 	lower_section.name = "LowerSection"
-	member.add_child(lower_section)
+	card_content.add_child(lower_section)
 
 	var combat_box := VBoxContainer.new()
 	combat_box.name = "CombatStatsBox"
