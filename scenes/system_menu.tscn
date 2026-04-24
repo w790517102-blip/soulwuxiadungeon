@@ -25,7 +25,7 @@ script = ExtResource("1_pg0ij")
 layout_mode = 0
 offset_left = 61.0
 offset_top = 18.0
-offset_right = 624.0
+offset_right = 900.0
 offset_bottom = 60.0
 theme_override_constants/separation = 0
 
@@ -48,6 +48,18 @@ stretch_mode = 0
 ignore_texture_size = true
 
 [node name="TabSkill" type="TextureButton" parent="CustomTabBar"]
+custom_minimum_size = Vector2(90, 42)
+layout_mode = 2
+stretch_mode = 0
+ignore_texture_size = true
+
+[node name="TabParty" type="TextureButton" parent="CustomTabBar"]
+custom_minimum_size = Vector2(90, 42)
+layout_mode = 2
+stretch_mode = 0
+ignore_texture_size = true
+
+[node name="TabLore" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
 stretch_mode = 0
@@ -397,15 +409,136 @@ text = "切換心法"
 [node name="任務" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
-metadata/_tab_index = 4
+metadata/_tab_index = 6
 
 [node name="Tree" type="Tree" parent="VBoxContainer/任務"]
 layout_mode = 2
 
-[node name="系統" type="VBoxContainer" parent="VBoxContainer"]
+[node name="隊伍" type="VBoxContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="PartyLayout" type="HBoxContainer" parent="VBoxContainer/隊伍"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ActivePartyBox" type="VBoxContainer" parent="VBoxContainer/隊伍/PartyLayout"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="VBoxContainer/隊伍/PartyLayout/ActivePartyBox"]
+layout_mode = 2
+text = "上陣隊伍"
+
+[node name="ActivePartyList" type="ItemList" parent="VBoxContainer/隊伍/PartyLayout/ActivePartyBox"]
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+allow_reselect = true
+select_mode = 0
+
+[node name="PartyActionBox" type="VBoxContainer" parent="VBoxContainer/隊伍/PartyLayout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="MoveInButton" type="Button" parent="VBoxContainer/隊伍/PartyLayout/PartyActionBox"]
+custom_minimum_size = Vector2(64, 46)
+layout_mode = 2
+text = "<<"
+
+[node name="MoveOutButton" type="Button" parent="VBoxContainer/隊伍/PartyLayout/PartyActionBox"]
+custom_minimum_size = Vector2(64, 46)
+layout_mode = 2
+text = ">>"
+
+[node name="ReservePane" type="VBoxContainer" parent="VBoxContainer/隊伍/PartyLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ReserveTitle" type="Label" parent="VBoxContainer/隊伍/PartyLayout/ReservePane"]
+layout_mode = 2
+text = "候補隊友"
+
+[node name="ReserveList" type="ItemList" parent="VBoxContainer/隊伍/PartyLayout/ReservePane"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+allow_reselect = true
+select_mode = 0
+
+[node name="DetailTitle" type="Label" parent="VBoxContainer/隊伍/PartyLayout/ReservePane"]
+layout_mode = 2
+text = "隊友詳情（預留）"
+
+[node name="ReserveDetail" type="RichTextLabel" parent="VBoxContainer/隊伍/PartyLayout/ReservePane"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+bbcode_enabled = true
+text = "姓名：—\n職業：—\n等級：—\n\n（後續沿用狀態頁資訊結構）"
+
+[node name="見聞" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 5
+
+[node name="LoreLayout" type="HBoxContainer" parent="VBoxContainer/見聞"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LoreLeftPane" type="VBoxContainer" parent="VBoxContainer/見聞/LoreLayout"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+
+[node name="LoreCategoryTabs" type="TabContainer" parent="VBoxContainer/見聞/LoreLayout/LoreLeftPane"]
+layout_mode = 2
+current_tab = 0
+
+[node name="奇物" type="VBoxContainer" parent="VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="ItemList" type="ItemList" parent="VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/奇物"]
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+
+[node name="豪傑" type="VBoxContainer" parent="VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="CharacterList" type="ItemList" parent="VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/豪傑"]
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+
+[node name="神怪" type="VBoxContainer" parent="VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="EnemyList" type="ItemList" parent="VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/神怪"]
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+
+[node name="LoreRightPane" type="VBoxContainer" parent="VBoxContainer/見聞/LoreLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LoreDetailTitle" type="Label" parent="VBoxContainer/見聞/LoreLayout/LoreRightPane"]
+layout_mode = 2
+text = "見聞詳情"
+
+[node name="LoreDetail" type="RichTextLabel" parent="VBoxContainer/見聞/LoreLayout/LoreRightPane"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+bbcode_enabled = true
+text = "請從左側選擇條目。\n\n（奇物 / 豪傑 / 神怪 詳細資料預留）"
+
+[node name="系統" type="VBoxContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 7
 
 [node name="SavePopup" type="Panel" parent="VBoxContainer/系統"]
 custom_minimum_size = Vector2(0, 500)

@@ -61,15 +61,21 @@ const TAB_EQUIP_NORMAL = preload("res://assets/UI/system_menu/tab_equip.png")
 const TAB_EQUIP_SELECTED = preload("res://assets/UI/system_menu/tab_equip_selected.png")
 const TAB_SKILL_NORMAL = preload("res://assets/UI/system_menu/tab_skill.png")
 const TAB_SKILL_SELECTED = preload("res://assets/UI/system_menu/tab_skill_selected.png")
+const TAB_PARTY_NORMAL = preload("res://assets/UI/system_menu/tab_party.png")
+const TAB_PARTY_SELECTED = preload("res://assets/UI/system_menu/tab_party_selected.png")
 const TAB_QUEST_NORMAL = preload("res://assets/UI/system_menu/tab_quest.png")
 const TAB_QUEST_SELECTED = preload("res://assets/UI/system_menu/tab_quest_selected.png")
 const TAB_SYSTEM_NORMAL = preload("res://assets/UI/system_menu/tab_system.png")
 const TAB_SYSTEM_SELECTED = preload("res://assets/UI/system_menu/tab_system_selected.png")
 const STATUS_MEMBER_CARD_BG = preload("res://assets/UI/system_menu/status_member_1.jpg")
+const TAB_LORE_NORMAL_PATH = "res://assets/UI/system_menu/tab_lore.png"
+const TAB_LORE_SELECTED_PATH = "res://assets/UI/system_menu/tab_lore_selected.png"
 var _skill_db: Node = CharacterSkillDB.new()
 var _skill_data_db: Node = SkillDBScript.new()
 var _special_item_use_handler: SpecialItemUseHandler = SpecialItemUseHandlerScript.new()
 var _custom_tab_entries: Array = []
+var _tab_lore_normal: Texture2D = null
+var _tab_lore_selected: Texture2D = null
 
 const DEFAULT_UNARMED_NAME = "空手"
 const WEAPON_RULES = {
@@ -92,6 +98,8 @@ func _ready():
 	var viewport := get_viewport()
 	if viewport and not viewport.size_changed.is_connected(_on_viewport_size_changed):
 		viewport.size_changed.connect(_on_viewport_size_changed)
+	_tab_lore_normal = _load_optional_tab_texture(TAB_LORE_NORMAL_PATH, TAB_QUEST_NORMAL)
+	_tab_lore_selected = _load_optional_tab_texture(TAB_LORE_SELECTED_PATH, TAB_QUEST_SELECTED)
 
 	# ✅ Godot 4 正確用法，Control 沒有 pause_mode，這裡不能設！
 	# 所以這行我們移除：pause_mode = Node.PAUSE_MODE_PROCESS ❌
@@ -224,6 +232,8 @@ func _setup_custom_tab_bar() -> void:
 		{"button": get_node_or_null("CustomTabBar/TabItem"), "tab_node": get_node_or_null("VBoxContainer/道具"), "normal": TAB_ITEM_NORMAL, "selected": TAB_ITEM_SELECTED},
 		{"button": get_node_or_null("CustomTabBar/TabEquip"), "tab_node": get_node_or_null("VBoxContainer/裝備"), "normal": TAB_EQUIP_NORMAL, "selected": TAB_EQUIP_SELECTED},
 		{"button": get_node_or_null("CustomTabBar/TabSkill"), "tab_node": get_node_or_null("VBoxContainer/武術"), "normal": TAB_SKILL_NORMAL, "selected": TAB_SKILL_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabParty"), "tab_node": get_node_or_null("VBoxContainer/隊伍"), "normal": TAB_PARTY_NORMAL, "selected": TAB_PARTY_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabLore"), "tab_node": get_node_or_null("VBoxContainer/見聞"), "normal": _tab_lore_normal, "selected": _tab_lore_selected},
 		{"button": get_node_or_null("CustomTabBar/TabQuest"), "tab_node": get_node_or_null("VBoxContainer/任務"), "normal": TAB_QUEST_NORMAL, "selected": TAB_QUEST_SELECTED},
 		{"button": get_node_or_null("CustomTabBar/TabSystem"), "tab_node": get_node_or_null("VBoxContainer/系統"), "normal": TAB_SYSTEM_NORMAL, "selected": TAB_SYSTEM_SELECTED},
 	]
@@ -250,6 +260,13 @@ func _on_custom_tab_button_pressed(tab_index: int) -> void:
 	if tab_index < 0 or tab_index >= tabs.get_tab_count():
 		return
 	tabs.current_tab = tab_index
+
+func _load_optional_tab_texture(path: String, fallback: Texture2D) -> Texture2D:
+	if ResourceLoader.exists(path):
+		var loaded = load(path)
+		if loaded is Texture2D:
+			return loaded
+	return fallback
 
 func _sync_custom_tab_visuals(active_tab_index: int) -> void:
 	for entry in _custom_tab_entries:
