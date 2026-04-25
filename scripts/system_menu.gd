@@ -388,11 +388,18 @@ func _on_reserve_actor_selected(index: int) -> void:
 
 func _on_party_move_in_pressed() -> void:
 	var team_ids := _get_canonical_team_ids()
-	if _selected_party_slot_index < 1 or _selected_party_slot_index > 2:
-		return
 	if _selected_reserve_actor_id == "":
 		return
 	var target_idx := _selected_party_slot_index
+	if target_idx < 1 or target_idx > 2:
+		target_idx = -1
+		for i in [1, 2]:
+			var current_id := String(team_ids[i]) if i < team_ids.size() else ""
+			if current_id == "":
+				target_idx = i
+				break
+		if target_idx == -1:
+			return
 	while team_ids.size() <= target_idx:
 		team_ids.append("")
 	var current_id := String(team_ids[target_idx])
