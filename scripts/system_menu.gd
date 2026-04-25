@@ -1896,7 +1896,7 @@ func _deferred_restore_selector(selector_path: NodePath, selected_index: int, ta
 		return
 	var safe_index := clampi(selected_index, 0, selector.item_count - 1)
 	selector.select(safe_index)
-	selector.minimum_size_changed()
+	selector.queue_redraw()
 	var selected_text := selector.get_item_text(safe_index)
 	print("[SelectorRestoreDeferred:%s] selected_index=%d selected_text=%s" % [tag, safe_index, selected_text])
 
