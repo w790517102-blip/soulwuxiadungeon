@@ -294,7 +294,7 @@ func _refresh_party_tab() -> void:
 	var team_ids := _get_canonical_team_ids()
 	active_party_list.clear()
 	for i in range(3):
-		var actor_id := team_ids[i] if i < team_ids.size() else ""
+		var actor_id = team_ids[i] if i < team_ids.size() else ""
 		var label := "隊伍位 %d：空位" % (i + 1)
 		if actor_id != "":
 			var actor := TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else {}
