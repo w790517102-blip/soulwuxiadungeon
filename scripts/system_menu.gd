@@ -1714,11 +1714,14 @@ func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, r
 	if row == null:
 		row = HBoxContainer.new()
 		row.name = row_name
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var label := Label.new()
 		label.text = "角色："
 		row.add_child(label)
 		var selector := OptionButton.new()
 		selector.name = selector_name
+		selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		selector.custom_minimum_size = Vector2(220, 0)
 		row.add_child(selector)
 		right_pane.add_child(row)
 
@@ -1798,6 +1801,7 @@ func _setup_item_character_select() -> void:
 		selector = row.get_node_or_null("ItemCharacterSelect") as OptionButton
 	if selector == null:
 		return
+	_ensure_selector_layout(selector, "item_setup_begin")
 	var all_ids := _get_all_character_ids()
 	if all_ids.is_empty() and TeamData and TeamData.has_method("get_active_party"):
 		for actor in TeamData.get_active_party():
@@ -1845,6 +1849,7 @@ func _setup_equipment_character_select() -> void:
 		selector = row.get_node_or_null("EquipmentCharacterSelect") as OptionButton
 	if selector == null:
 		return
+	_ensure_selector_layout(selector, "equipment_setup_begin")
 	_apply_menu_font_style(row)
 	var all_ids := _get_all_character_ids()
 	if all_ids.is_empty() and TeamData and TeamData.has_method("get_active_party"):
@@ -1894,11 +1899,24 @@ func _deferred_restore_selector(selector_path: NodePath, selected_index: int, ta
 	var selector := get_node_or_null(selector_path) as OptionButton
 	if selector == null or selector.item_count <= 0:
 		return
+	_ensure_selector_layout(selector, "%s_deferred_before_select" % tag)
 	var safe_index := clampi(selected_index, 0, selector.item_count - 1)
 	selector.select(safe_index)
 	selector.queue_redraw()
 	var selected_text := selector.get_item_text(safe_index)
-	print("[SelectorRestoreDeferred:%s] selected_index=%d selected_text=%s" % [tag, safe_index, selected_text])
+	print("[SelectorRestoreDeferred:%s] selected_index=%d selected_text=%s size_x=%.1f min_x=%.1f" % [
+		tag, safe_index, selected_text, selector.size.x, selector.custom_minimum_size.x
+	])
+
+func _ensure_selector_layout(selector: OptionButton, tag: String) -> void:
+	if selector == null:
+		return
+	selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if selector.custom_minimum_size.x < 220.0:
+		selector.custom_minimum_size.x = 220.0
+	print("[SelectorLayout:%s] size_x=%.1f min_x=%.1f flags_h=%d" % [
+		tag, selector.size.x, selector.custom_minimum_size.x, selector.size_flags_horizontal
+	])
 
 func _on_equipment_character_selected(index: int) -> void:
 	var selector: OptionButton = null
