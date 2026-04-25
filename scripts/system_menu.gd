@@ -1676,7 +1676,7 @@ func _setup_item_character_select() -> void:
 	var all_ids := _get_all_character_ids()
 	for actor_id in all_ids:
 		var actor = _get_actor_by_id(actor_id)
-		var display_name := _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
+		var display_name = _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
 		selector.add_item(display_name)
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
@@ -1730,7 +1730,7 @@ func _setup_equipment_character_select() -> void:
 	var all_ids := _get_all_character_ids()
 	for actor_id in all_ids:
 		var actor = _get_actor_by_id(actor_id)
-		var display_name := _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
+		var display_name = _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
 		selector.add_item(display_name)
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
