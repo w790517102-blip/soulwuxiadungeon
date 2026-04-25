@@ -12,6 +12,7 @@ var stage := 0
 var is_talking: bool = false
 var has_recently_talked: bool = false
 var just_advanced := false
+var _mark_lore_flag_after_close := false
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -24,6 +25,9 @@ func _ready():
 			"stage": 0,
 			"is_finished": false
 		})
+	var inn_quest = SideQuestManager.get_quest("talk_to_yuheng_inn_boss")
+	if int(inn_quest.get("stage", 0)) > 0:
+		_mark_inn_boss_lore_flags()
 
 func _process(_delta):
 	z_index = int(global_position.y + z_index_offset)
@@ -79,6 +83,9 @@ func _unhandled_input(event):
 		_on_interact()
 
 func reset_dialog_state():
+	if _mark_lore_flag_after_close:
+		_mark_inn_boss_lore_flags()
+		_mark_lore_flag_after_close = false
 	is_talking = false
 	has_recently_talked = false
 	just_advanced = false
@@ -87,6 +94,7 @@ func _on_interact():
 	var quest = SideQuestManager.get_quest("talk_to_yuheng_inn_boss")
 	var stage = int(quest.get("stage", 0))
 	if stage == 0:
+		_mark_lore_flag_after_close = true
 		show_dialog_sequence([
 			{ "text": "這位客倌,住得還滿意嗎? 如果還有甚麼需要的儘管吩咐啊", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "(嗯…或許可以問問這位客棧老闆關於左飲的消息?)", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -99,6 +107,7 @@ func _on_interact():
 			{ "text": "沒事了", "callback": Callable(self, "_end_conversation") },
 		])
 	elif stage == 2:
+		_mark_lore_flag_after_close = true
 		show_dialog_sequence([
 			{ "text": "（微笑）要是真的能見到左飲，也替我問他一句：\n　『還記得當年醉月樓的桂花酒不？』", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "——就說是我，還在這間店守著他說過的那句話：\n　『江湖冷，給人一口熱湯，勝過一劍天下。』", "speaker": speaker_id, "portrait": portrait_path },
@@ -106,6 +115,7 @@ func _on_interact():
 
 func _talk_about_zuoyin():
 	dialog_manager.choice_box.hide_choices()
+	_mark_lore_flag_after_close = true
 	show_dialog_sequence([
 		{ "text": "劉語塵：「老闆，我是從外鄉來的，聽說這玉衡鎮有位左飲大哥，\n曾經行走江湖、見多識廣……敝人有些事情想請教他。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「但我一介凡夫, 不知是否能入足飲月山莊… 」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -128,6 +138,12 @@ func _talk_about_zuoyin():
 	])
 	SideQuestManager.advance_quest("talk_to_yuheng_inn_boss", 2)
 	just_advanced = true
+
+func _mark_inn_boss_lore_flags() -> void:
+	if GlobalState == null or not GlobalState.has_method("set_flag"):
+		return
+	GlobalState.set_flag("met_yuheng_inn_boss", true)
+	GlobalState.set_flag("met_yuheng_teahouse_boss", true)
 
 func _end_conversation():
 	dialog_manager.choice_box.hide_choices()
