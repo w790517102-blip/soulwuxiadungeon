@@ -1814,7 +1814,9 @@ func _setup_item_character_select() -> void:
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
 		var remembered_id := _get_tab_actor("item")
-		var selected_id := _restore_selector_selection(selector, remembered_id, all_ids, "item")
+		var restore_info := _restore_selector_selection(selector, remembered_id, all_ids, "item")
+		var selected_id := str(restore_info.get("id", ""))
+		call_deferred("_deferred_restore_selector", selector.get_path(), int(restore_info.get("index", 0)), "item")
 		_remember_tab_actor("item", selected_id)
 		if tabs and tabs.current_tab == $VBoxContainer/道具.get_index():
 			_selected_actor_id = selected_id
@@ -1860,7 +1862,9 @@ func _setup_equipment_character_select() -> void:
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
 		var remembered_id := _get_tab_actor("equipment")
-		var selected_id := _restore_selector_selection(selector, remembered_id, all_ids, "equipment")
+		var restore_info := _restore_selector_selection(selector, remembered_id, all_ids, "equipment")
+		var selected_id := str(restore_info.get("id", ""))
+		call_deferred("_deferred_restore_selector", selector.get_path(), int(restore_info.get("index", 0)), "equipment")
 		_remember_tab_actor("equipment", selected_id)
 		if tabs and tabs.current_tab == $VBoxContainer/裝備.get_index():
 			_selected_actor_id = selected_id
@@ -1868,10 +1872,10 @@ func _setup_equipment_character_select() -> void:
 		selector.item_selected.connect(_on_equipment_character_selected)
 	_refresh_equipment_status_preview()
 
-func _restore_selector_selection(selector: OptionButton, remembered_id: String, all_ids: Array, tag: String) -> String:
+func _restore_selector_selection(selector: OptionButton, remembered_id: String, all_ids: Array, tag: String) -> Dictionary:
 	if selector == null or selector.item_count <= 0:
 		print("[SelectorRestore:%s] selector empty. ids=%s remembered=%s" % [tag, str(all_ids), remembered_id])
-		return ""
+		return {"id": "", "index": -1, "text": ""}
 	var selected_index := 0
 	if remembered_id != "":
 		for i in range(selector.item_count):
@@ -1880,12 +1884,21 @@ func _restore_selector_selection(selector: OptionButton, remembered_id: String, 
 				break
 	selector.select(selected_index)
 	var selected_text := selector.get_item_text(selected_index)
-	selector.text = selected_text
 	var selected_id := str(selector.get_item_metadata(selected_index))
 	print("[SelectorRestore:%s] ids=%s remembered=%s selected_index=%d selected_id=%s selected_text=%s" % [
 		tag, str(all_ids), remembered_id, selected_index, selected_id, selected_text
 	])
-	return selected_id
+	return {"id": selected_id, "index": selected_index, "text": selected_text}
+
+func _deferred_restore_selector(selector_path: NodePath, selected_index: int, tag: String) -> void:
+	var selector := get_node_or_null(selector_path) as OptionButton
+	if selector == null or selector.item_count <= 0:
+		return
+	var safe_index := clampi(selected_index, 0, selector.item_count - 1)
+	selector.select(safe_index)
+	selector.minimum_size_changed()
+	var selected_text := selector.get_item_text(safe_index)
+	print("[SelectorRestoreDeferred:%s] selected_index=%d selected_text=%s" % [tag, safe_index, selected_text])
 
 func _on_equipment_character_selected(index: int) -> void:
 	var selector: OptionButton = null
