@@ -67,11 +67,12 @@ var _selected_party_slot_index: int = -1
 var _selected_reserve_actor_id: String = ""
 var _selected_lore_category: String = "奇物"
 var _tab_actor_memory: Dictionary = {
-	"status": "",
 	"item": "",
 	"equipment": "",
 	"martial": "",
 }
+var _item_status_preview_slots: Array = []
+var _equipment_status_preview_slots: Array = []
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -207,7 +208,8 @@ func _ready():
 		skill_target_popup.index_pressed.connect(_on_skill_target_selected)
 	_setup_status_member_slots()
 	_ensure_status_hover_popup()
-	_setup_status_character_select()
+	_setup_item_status_preview_layout()
+	_setup_equipment_status_preview_layout()
 	_setup_item_character_select()
 	_setup_equipment_character_select()
 	_refresh_item_tab()
@@ -657,6 +659,7 @@ func _sync_custom_tab_visuals(active_tab_index: int) -> void:
 func _refresh_item_tab() -> void:
 	if item_list == null or item_desc == null:
 		return
+	_refresh_item_status_preview()
 	var selected_index = item_list.get_selected_items()
 	var selected_id = ""
 	if selected_index.size() > 0:
@@ -720,6 +723,8 @@ func _on_inventory_changed() -> void:
 func _on_equipment_changed() -> void:
 	_refresh_item_tab()
 	_refresh_equipment_tab()
+	_refresh_item_status_preview()
+	_refresh_equipment_status_preview()
 	_refresh_status_tab()
 	if tabs and tabs.current_tab == $VBoxContainer/武術.get_index():
 		_refresh_weapon_tab_lists()
@@ -735,6 +740,24 @@ func _refresh_gold() -> void:
 		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
 		status_gold_label.text = "💰 盤纏：%d文" % gold
+
+func _refresh_item_status_preview() -> void:
+	if _item_status_preview_slots.is_empty():
+		return
+	var actor = _get_actor_by_id(_get_tab_actor("item"))
+	if actor == null:
+		_fill_status_member_slot_empty(_item_status_preview_slots[0])
+		return
+	_fill_status_member_slot(_item_status_preview_slots[0], actor)
+
+func _refresh_equipment_status_preview() -> void:
+	if _equipment_status_preview_slots.is_empty():
+		return
+	var actor = _get_actor_by_id(_get_tab_actor("equipment"))
+	if actor == null:
+		_fill_status_member_slot_empty(_equipment_status_preview_slots[0])
+		return
+	_fill_status_member_slot(_equipment_status_preview_slots[0], actor)
 
 func _refresh_martial_tabs() -> void:
 	_refresh_skill_tabs()
@@ -1436,14 +1459,15 @@ func _get_actor_by_id(actor_id: String):
 func _refresh_status_tab() -> void:
 	if _status_member_slots.is_empty():
 		return
-	var actor = _get_actor_by_id(_get_active_character_id())
+	var party: Array = TeamData.get_active_party() if TeamData and TeamData.has_method("get_active_party") else []
 	for i in range(_status_member_slots.size()):
-		if i == 0 and actor != null:
-			_fill_status_member_slot(_status_member_slots[i], actor)
+		if i < party.size():
+			_fill_status_member_slot(_status_member_slots[i], party[i])
 		else:
 			_fill_status_member_slot_empty(_status_member_slots[i])
 
 func _refresh_equipment_tab() -> void:
+	_refresh_equipment_status_preview()
 	var equipped = InventorySync.get_equipped(_get_active_character_id())
 	_set_equipment_button(weapon1_button, "主武器", str(equipped.get("weapon_1", "")), "weapon_1")
 	_set_equipment_button(weapon2_button, "副武器", str(equipped.get("weapon_2", "")), "weapon_2")
@@ -1557,10 +1581,7 @@ func _apply_tab_actor_context(tab_index: int) -> void:
 	if tabs == null or tab_index < 0:
 		return
 	var tab_key := ""
-	if tab_index == $VBoxContainer/狀態.get_index():
-		tab_key = "status"
-		_setup_status_character_select()
-	elif tab_index == $VBoxContainer/道具.get_index():
+	if tab_index == $VBoxContainer/道具.get_index():
 		tab_key = "item"
 		_setup_item_character_select()
 	elif tab_index == $VBoxContainer/裝備.get_index():
@@ -1599,76 +1620,117 @@ func _get_active_actor():
 			return party[0]
 	return null
 
-func _setup_status_character_select() -> void:
-	if status_tab == null or TeamData == null:
-		return
-	var row := status_tab.get_node_or_null("StatusCharacterRow") as HBoxContainer
-	var selector: OptionButton = null
+func _setup_item_status_preview_layout() -> void:
+	_item_status_preview_slots = _setup_tab_status_preview_layout(item_tab, "ItemStatusLayout", "ItemCharacterRow", "ItemCharacterSelect", "ItemContentPane")
+
+func _setup_equipment_status_preview_layout() -> void:
+	_equipment_status_preview_slots = _setup_tab_status_preview_layout(equipment_tab, "EquipmentStatusLayout", "EquipmentCharacterRow", "EquipmentCharacterSelect", "EquipmentContentPane")
+
+func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, row_name: String, selector_name: String, content_name: String) -> Array:
+	var slots: Array = []
+	if tab == null:
+		return slots
+	var layout := tab.get_node_or_null(layout_name) as HBoxContainer
+	if layout == null:
+		layout = HBoxContainer.new()
+		layout.name = layout_name
+		layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		layout.add_theme_constant_override("separation", 12)
+		tab.add_child(layout)
+		tab.move_child(layout, 0)
+
+	var left_pane := layout.get_node_or_null("StatusPane") as VBoxContainer
+	if left_pane == null:
+		left_pane = VBoxContainer.new()
+		left_pane.name = "StatusPane"
+		left_pane.custom_minimum_size = Vector2(360, 0)
+		layout.add_child(left_pane)
+
+	var row := left_pane.get_node_or_null(row_name) as HBoxContainer
 	if row == null:
 		row = HBoxContainer.new()
-		row.name = "StatusCharacterRow"
+		row.name = row_name
 		var label := Label.new()
 		label.text = "角色："
 		row.add_child(label)
-		selector = OptionButton.new()
-		selector.name = "StatusCharacterSelect"
+		var selector := OptionButton.new()
+		selector.name = selector_name
 		row.add_child(selector)
-		status_tab.add_child(row)
-		status_tab.move_child(row, 0)
-	else:
-		selector = row.get_node_or_null("StatusCharacterSelect") as OptionButton
-	if selector == null:
-		return
-	selector.clear()
-	var all_ids := _get_all_character_ids()
-	for actor_id in all_ids:
-		var actor = _get_actor_by_id(actor_id)
-		var display_name = _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
-		selector.add_item(display_name)
-		selector.set_item_metadata(selector.item_count - 1, actor_id)
-	if selector.item_count > 0:
-		var selected_index := 0
-		var remembered_id := _get_tab_actor("status")
-		for i in range(selector.item_count):
-			if str(selector.get_item_metadata(i)) == remembered_id:
-				selected_index = i
-				break
-		selector.select(selected_index)
-		var selected_id := str(selector.get_item_metadata(selected_index))
-		_remember_tab_actor("status", selected_id)
-		if tabs and tabs.current_tab == $VBoxContainer/狀態.get_index():
-			_selected_actor_id = selected_id
-	if not selector.item_selected.is_connected(_on_status_character_selected):
-		selector.item_selected.connect(_on_status_character_selected)
+		left_pane.add_child(row)
 
-func _on_status_character_selected(index: int) -> void:
-	var selector: OptionButton = null
-	if status_tab:
-		selector = status_tab.get_node_or_null("StatusCharacterRow/StatusCharacterSelect") as OptionButton
-	if selector == null or index < 0 or index >= selector.item_count:
-		return
-	var actor_id := str(selector.get_item_metadata(index))
-	_remember_tab_actor("status", actor_id)
-	_selected_actor_id = actor_id
-	_refresh_status_tab()
+	var preview_row := left_pane.get_node_or_null("PartyStatusRow") as HBoxContainer
+	if preview_row == null:
+		preview_row = HBoxContainer.new()
+		preview_row.name = "PartyStatusRow"
+		preview_row.add_theme_constant_override("separation", 14)
+		left_pane.add_child(preview_row)
+	var preview_member := preview_row.get_node_or_null("Member1") as VBoxContainer
+	if preview_member == null:
+		preview_member = VBoxContainer.new()
+		preview_member.name = "Member1"
+		preview_member.custom_minimum_size = Vector2(350, 280)
+		preview_row.add_child(preview_member)
+		_rebuild_status_member_layout(preview_member)
+
+	var content := layout.get_node_or_null(content_name) as VBoxContainer
+	if content == null:
+		content = VBoxContainer.new()
+		content.name = content_name
+		content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		layout.add_child(content)
+		var move_children: Array = []
+		for child in tab.get_children():
+			if child != layout:
+				move_children.append(child)
+		for child in move_children:
+			tab.remove_child(child)
+			content.add_child(child)
+
+	_apply_menu_font_style(row)
+	slots = _build_status_slots_from_row(preview_row)
+	if not slots.is_empty():
+		_setup_status_hover_for_slot(slots[0])
+	return slots
+
+func _build_status_slots_from_row(row: HBoxContainer) -> Array:
+	var slots: Array = []
+	if row == null:
+		return slots
+	for i in range(3):
+		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
+		if member == null:
+			continue
+		_rebuild_status_member_layout(member)
+		slots.append({
+			"name": member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label,
+			"job_class": member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label,
+			"portrait": member.get_node_or_null("CardBG/CardContent/TopSection/PortraitFrame/Portrait") as TextureRect,
+			"level": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/LevelLabel") as Label,
+			"exp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
+			"hp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
+			"mp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
+			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/LuckLabel") as Label,
+		})
+	return slots
 
 func _setup_item_character_select() -> void:
 	if item_tab == null or TeamData == null:
 		return
-	var row := item_tab.get_node_or_null("ItemCharacterRow") as HBoxContainer
+	var row := item_tab.get_node_or_null("ItemStatusLayout/StatusPane/ItemCharacterRow") as HBoxContainer
 	var selector: OptionButton = null
-	if row == null:
-		row = HBoxContainer.new()
-		row.name = "ItemCharacterRow"
-		var label := Label.new()
-		label.text = "角色："
-		row.add_child(label)
-		selector = OptionButton.new()
-		selector.name = "ItemCharacterSelect"
-		row.add_child(selector)
-		item_tab.add_child(row)
-		item_tab.move_child(row, 2)
-	else:
+	if row:
 		selector = row.get_node_or_null("ItemCharacterSelect") as OptionButton
 	if selector == null:
 		return
@@ -1693,35 +1755,26 @@ func _setup_item_character_select() -> void:
 			_selected_actor_id = selected_id
 	if not selector.item_selected.is_connected(_on_item_character_selected):
 		selector.item_selected.connect(_on_item_character_selected)
+	_refresh_item_status_preview()
 
 func _on_item_character_selected(index: int) -> void:
 	var selector: OptionButton = null
 	if item_tab:
-		selector = item_tab.get_node_or_null("ItemCharacterRow/ItemCharacterSelect") as OptionButton
+		selector = item_tab.get_node_or_null("ItemStatusLayout/StatusPane/ItemCharacterRow/ItemCharacterSelect") as OptionButton
 	if selector == null or index < 0 or index >= selector.item_count:
 		return
 	var actor_id := str(selector.get_item_metadata(index))
 	_remember_tab_actor("item", actor_id)
 	_selected_actor_id = actor_id
 	_refresh_item_tab()
+	_refresh_item_status_preview()
 
 func _setup_equipment_character_select() -> void:
 	if equipment_tab == null or TeamData == null:
 		return
-	var row = equipment_tab.get_node_or_null("EquipmentCharacterRow") as HBoxContainer
+	var row = equipment_tab.get_node_or_null("EquipmentStatusLayout/StatusPane/EquipmentCharacterRow") as HBoxContainer
 	var selector: OptionButton = null
-	if row == null:
-		row = HBoxContainer.new()
-		row.name = "EquipmentCharacterRow"
-		var label = Label.new()
-		label.text = "角色："
-		row.add_child(label)
-		selector = OptionButton.new()
-		selector.name = "EquipmentCharacterSelect"
-		row.add_child(selector)
-		equipment_tab.add_child(row)
-		equipment_tab.move_child(row, 0)
-	else:
+	if row:
 		selector = row.get_node_or_null("EquipmentCharacterSelect") as OptionButton
 	if selector == null:
 		return
@@ -1747,17 +1800,19 @@ func _setup_equipment_character_select() -> void:
 			_selected_actor_id = selected_id
 	if not selector.item_selected.is_connected(_on_equipment_character_selected):
 		selector.item_selected.connect(_on_equipment_character_selected)
+	_refresh_equipment_status_preview()
 
 func _on_equipment_character_selected(index: int) -> void:
 	var selector: OptionButton = null
 	if equipment_tab:
-		selector = equipment_tab.get_node_or_null("EquipmentCharacterRow/EquipmentCharacterSelect") as OptionButton
+		selector = equipment_tab.get_node_or_null("EquipmentStatusLayout/StatusPane/EquipmentCharacterRow/EquipmentCharacterSelect") as OptionButton
 	if selector == null or index < 0 or index >= selector.item_count:
 		return
 	var actor_id := str(selector.get_item_metadata(index))
 	_remember_tab_actor("equipment", actor_id)
 	_selected_actor_id = actor_id
 	_refresh_equipment_tab()
+	_refresh_equipment_status_preview()
 
 func _refresh_martial_character_select() -> void:
 	if martial_character_select == null or TeamData == null:
