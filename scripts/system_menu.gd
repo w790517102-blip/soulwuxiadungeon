@@ -19,6 +19,12 @@ const SpecialItemUseHandlerScript = preload("res://scripts/items/SpecialItemUseH
 @onready var inner_force_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceTabs")
 @onready var inner_force_detail: RichTextLabel = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceDetail")
 @onready var switch_inner_force_button: Button = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/SwitchInnerForceButton")
+@onready var party_tab: VBoxContainer = get_node_or_null("VBoxContainer/隊伍")
+@onready var active_party_list: ItemList = get_node_or_null("VBoxContainer/隊伍/PartyLayout/ActivePartyBox/ActivePartyList")
+@onready var reserve_list: ItemList = get_node_or_null("VBoxContainer/隊伍/PartyLayout/ReservePane/ReserveList")
+@onready var reserve_detail: RichTextLabel = get_node_or_null("VBoxContainer/隊伍/PartyLayout/ReservePane/ReserveDetail")
+@onready var move_in_button: Button = get_node_or_null("VBoxContainer/隊伍/PartyLayout/PartyActionBox/MoveInButton")
+@onready var move_out_button: Button = get_node_or_null("VBoxContainer/隊伍/PartyLayout/PartyActionBox/MoveOutButton")
 @onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
 @onready var armor_head_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHeadButton")
@@ -49,6 +55,8 @@ var _status_hover_label: RichTextLabel = null
 var _status_hover_timer: Timer = null
 var _pending_status_hover_meta: String = ""
 var _pending_status_hover_actor_id: String = ""
+var _selected_party_slot_index: int = -1
+var _selected_reserve_actor_id: String = ""
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -126,6 +134,14 @@ func _ready():
 	if tabs:
 		tabs.tab_changed.connect(_on_tab_changed)
 	_setup_custom_tab_bar()
+	if active_party_list and not active_party_list.item_selected.is_connected(_on_active_party_slot_selected):
+		active_party_list.item_selected.connect(_on_active_party_slot_selected)
+	if reserve_list and not reserve_list.item_selected.is_connected(_on_reserve_actor_selected):
+		reserve_list.item_selected.connect(_on_reserve_actor_selected)
+	if move_in_button and not move_in_button.pressed.is_connected(_on_party_move_in_pressed):
+		move_in_button.pressed.connect(_on_party_move_in_pressed)
+	if move_out_button and not move_out_button.pressed.is_connected(_on_party_move_out_pressed):
+		move_out_button.pressed.connect(_on_party_move_out_pressed)
 	if InventorySync:
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
@@ -172,6 +188,7 @@ func _ready():
 	_refresh_equipment_tab()
 	_refresh_status_tab()
 	_refresh_martial_tabs()
+	_refresh_party_tab()
 	_update_use_button("")
 	if tabs:
 		_sync_custom_tab_visuals(tabs.current_tab)
@@ -217,10 +234,13 @@ func _on_tab_changed(tab_index: int) -> void:
 	_sync_custom_tab_visuals(tab_index)
 	var item_tab_index = $VBoxContainer/道具.get_index()
 	var martial_tab_index = $VBoxContainer/武術.get_index()
+	var party_tab_index = $VBoxContainer/隊伍.get_index()
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == martial_tab_index:
 		_refresh_martial_tabs()
+	elif tab_index == party_tab_index:
+		_refresh_party_tab()
 
 func _setup_custom_tab_bar() -> void:
 	_custom_tab_entries.clear()
@@ -267,6 +287,142 @@ func _load_optional_tab_texture(path: String, fallback: Texture2D) -> Texture2D:
 		if loaded is Texture2D:
 			return loaded
 	return fallback
+
+func _refresh_party_tab() -> void:
+	if active_party_list == null or reserve_list == null:
+		return
+	var team_ids := _get_canonical_team_ids()
+	active_party_list.clear()
+	for i in range(3):
+		var actor_id := team_ids[i] if i < team_ids.size() else ""
+		var label := "隊伍位 %d：空位" % (i + 1)
+		if actor_id != "":
+			var actor := TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else {}
+			var display_name := _get_actor_name_from_entry(actor, actor_id)
+			label = "隊伍位 %d：%s" % [i + 1, display_name]
+			if i == 0:
+				label += "（固定）"
+		active_party_list.add_item(label)
+		active_party_list.set_item_metadata(i, i)
+
+	if _selected_party_slot_index >= 0 and _selected_party_slot_index < active_party_list.item_count:
+		active_party_list.select(_selected_party_slot_index)
+
+	reserve_list.clear()
+	var reserve_ids := _get_reserve_actor_ids(team_ids)
+	for actor_id in reserve_ids:
+		var actor := TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else {}
+		var display_name := _get_actor_name_from_entry(actor, actor_id)
+		reserve_list.add_item(display_name)
+		reserve_list.set_item_metadata(reserve_list.item_count - 1, actor_id)
+
+	var selected_idx := -1
+	if _selected_reserve_actor_id != "":
+		for i in range(reserve_list.item_count):
+			if str(reserve_list.get_item_metadata(i)) == _selected_reserve_actor_id:
+				selected_idx = i
+				break
+	if selected_idx >= 0:
+		reserve_list.select(selected_idx)
+		_refresh_reserve_detail(_selected_reserve_actor_id)
+	else:
+		_selected_reserve_actor_id = ""
+		_refresh_reserve_detail("")
+
+func _get_canonical_team_ids() -> Array:
+	var ids: Array = []
+	if TeamData and typeof(TeamData.current_team_ids) == TYPE_ARRAY:
+		for raw in TeamData.current_team_ids:
+			var actor_id := String(raw)
+			if actor_id == "" or ids.has(actor_id):
+				continue
+			ids.append(actor_id)
+	if ids.is_empty() or ids[0] != "liuyu":
+		ids.erase("liuyu")
+		ids.push_front("liuyu")
+	while ids.size() > 3:
+		ids.pop_back()
+	return ids
+
+func _get_reserve_actor_ids(team_ids: Array) -> Array:
+	var reserves: Array = []
+	if TeamData == null:
+		return reserves
+	var all_ids: Array = []
+	if typeof(TeamData.all_characters) == TYPE_DICTIONARY:
+		for key in TeamData.all_characters.keys():
+			all_ids.append(String(key))
+	for actor_id in all_ids:
+		if actor_id == "" or team_ids.has(actor_id):
+			continue
+		reserves.append(actor_id)
+	return reserves
+
+func _refresh_reserve_detail(actor_id: String) -> void:
+	if reserve_detail == null:
+		return
+	if actor_id == "":
+		reserve_detail.text = "姓名：—\n職業：—\n等級：—\n\n（後續沿用狀態頁資訊結構）"
+		return
+	var actor := TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else {}
+	if actor.is_empty():
+		reserve_detail.text = "姓名：—\n職業：—\n等級：—"
+		return
+	var name := _get_actor_name_from_entry(actor, actor_id)
+	var job := str(actor.get("job", actor.get("subclass", "—")))
+	var level := int(actor.get("level", 1))
+	var hp := int(actor.get("hp", 0))
+	var max_hp := int(actor.get("max_hp", hp))
+	var mp := int(actor.get("mp", 0))
+	var max_mp := int(actor.get("max_mp", mp))
+	reserve_detail.text = "姓名：%s\n職業：%s\n等級：%d\n氣血：%d/%d\n內力：%d/%d" % [name, job, level, hp, max_hp, mp, max_mp]
+
+func _on_active_party_slot_selected(index: int) -> void:
+	_selected_party_slot_index = index
+
+func _on_reserve_actor_selected(index: int) -> void:
+	if reserve_list == null:
+		return
+	_selected_reserve_actor_id = str(reserve_list.get_item_metadata(index))
+	_refresh_reserve_detail(_selected_reserve_actor_id)
+
+func _on_party_move_in_pressed() -> void:
+	var team_ids := _get_canonical_team_ids()
+	if _selected_party_slot_index < 1 or _selected_party_slot_index > 2:
+		return
+	if _selected_reserve_actor_id == "":
+		return
+	var target_idx := _selected_party_slot_index
+	while team_ids.size() <= target_idx:
+		team_ids.append("")
+	var current_id := String(team_ids[target_idx])
+	team_ids[target_idx] = _selected_reserve_actor_id
+	_selected_reserve_actor_id = current_id
+	_apply_party_ids(team_ids)
+
+func _on_party_move_out_pressed() -> void:
+	var team_ids := _get_canonical_team_ids()
+	if _selected_party_slot_index < 1 or _selected_party_slot_index > 2:
+		return
+	if _selected_party_slot_index >= team_ids.size():
+		return
+	var outgoing := String(team_ids[_selected_party_slot_index])
+	if outgoing == "":
+		return
+	team_ids[_selected_party_slot_index] = ""
+	while team_ids.size() > 1 and String(team_ids[team_ids.size() - 1]) == "":
+		team_ids.pop_back()
+	_selected_reserve_actor_id = outgoing
+	_apply_party_ids(team_ids)
+
+func _apply_party_ids(ids: Array) -> void:
+	if TeamData == null:
+		return
+	TeamData.current_team_ids = ids.duplicate()
+	_refresh_party_tab()
+	_refresh_status_tab()
+	_refresh_equipment_tab()
+	_refresh_martial_tabs()
 
 func _sync_custom_tab_visuals(active_tab_index: int) -> void:
 	for entry in _custom_tab_entries:
