@@ -1714,9 +1714,9 @@ func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, r
 	if row == null:
 		row = HBoxContainer.new()
 		row.name = row_name
-		var spacer := Control.new()
-		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(spacer)
+		var label := Label.new()
+		label.text = "角色："
+		row.add_child(label)
 		var selector := OptionButton.new()
 		selector.name = selector_name
 		row.add_child(selector)
@@ -1751,6 +1751,7 @@ func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, r
 			tab.remove_child(child)
 			content.add_child(child)
 
+	_apply_menu_font_style(status_gold)
 	_apply_menu_font_style(row)
 	slots = _build_status_slots_from_row(preview_row)
 	if not slots.is_empty():
@@ -1797,8 +1798,15 @@ func _setup_item_character_select() -> void:
 		selector = row.get_node_or_null("ItemCharacterSelect") as OptionButton
 	if selector == null:
 		return
-	selector.clear()
 	var all_ids := _get_all_character_ids()
+	if all_ids.is_empty() and TeamData and TeamData.has_method("get_active_party"):
+		for actor in TeamData.get_active_party():
+			var actor_id := _get_actor_id_from_entry(actor)
+			if actor_id != "" and not all_ids.has(actor_id):
+				all_ids.append(actor_id)
+	if all_ids.is_empty():
+		return
+	selector.clear()
 	for actor_id in all_ids:
 		var actor = _get_actor_by_id(actor_id)
 		var display_name = _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
@@ -1842,8 +1850,15 @@ func _setup_equipment_character_select() -> void:
 	if selector == null:
 		return
 	_apply_menu_font_style(row)
-	selector.clear()
 	var all_ids := _get_all_character_ids()
+	if all_ids.is_empty() and TeamData and TeamData.has_method("get_active_party"):
+		for actor in TeamData.get_active_party():
+			var actor_id := _get_actor_id_from_entry(actor)
+			if actor_id != "" and not all_ids.has(actor_id):
+				all_ids.append(actor_id)
+	if all_ids.is_empty():
+		return
+	selector.clear()
 	for actor_id in all_ids:
 		var actor = _get_actor_by_id(actor_id)
 		var display_name = _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
