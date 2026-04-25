@@ -1813,14 +1813,8 @@ func _setup_item_character_select() -> void:
 		selector.add_item(display_name)
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
-		var selected_index := 0
 		var remembered_id := _get_tab_actor("item")
-		for i in range(selector.item_count):
-			if str(selector.get_item_metadata(i)) == remembered_id:
-				selected_index = i
-				break
-		selector.select(selected_index)
-		var selected_id := str(selector.get_item_metadata(selected_index))
+		var selected_id := _restore_selector_selection(selector, remembered_id, all_ids, "item")
 		_remember_tab_actor("item", selected_id)
 		if tabs and tabs.current_tab == $VBoxContainer/道具.get_index():
 			_selected_actor_id = selected_id
@@ -1865,20 +1859,33 @@ func _setup_equipment_character_select() -> void:
 		selector.add_item(display_name)
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
-		var selected_index := 0
 		var remembered_id := _get_tab_actor("equipment")
-		for i in range(selector.item_count):
-			if str(selector.get_item_metadata(i)) == remembered_id:
-				selected_index = i
-				break
-		selector.select(selected_index)
-		var selected_id := str(selector.get_item_metadata(selected_index))
+		var selected_id := _restore_selector_selection(selector, remembered_id, all_ids, "equipment")
 		_remember_tab_actor("equipment", selected_id)
 		if tabs and tabs.current_tab == $VBoxContainer/裝備.get_index():
 			_selected_actor_id = selected_id
 	if not selector.item_selected.is_connected(_on_equipment_character_selected):
 		selector.item_selected.connect(_on_equipment_character_selected)
 	_refresh_equipment_status_preview()
+
+func _restore_selector_selection(selector: OptionButton, remembered_id: String, all_ids: Array, tag: String) -> String:
+	if selector == null or selector.item_count <= 0:
+		print("[SelectorRestore:%s] selector empty. ids=%s remembered=%s" % [tag, str(all_ids), remembered_id])
+		return ""
+	var selected_index := 0
+	if remembered_id != "":
+		for i in range(selector.item_count):
+			if str(selector.get_item_metadata(i)) == remembered_id:
+				selected_index = i
+				break
+	selector.select(selected_index)
+	var selected_text := selector.get_item_text(selected_index)
+	selector.text = selected_text
+	var selected_id := str(selector.get_item_metadata(selected_index))
+	print("[SelectorRestore:%s] ids=%s remembered=%s selected_index=%d selected_id=%s selected_text=%s" % [
+		tag, str(all_ids), remembered_id, selected_index, selected_id, selected_text
+	])
+	return selected_id
 
 func _on_equipment_character_selected(index: int) -> void:
 	var selector: OptionButton = null
