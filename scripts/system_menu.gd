@@ -66,6 +66,7 @@ var _pending_status_hover_actor_id: String = ""
 var _selected_party_slot_index: int = -1
 var _selected_reserve_actor_id: String = ""
 var _selected_lore_category: String = "奇物"
+var _shared_view_actor_id: String = ""
 var _tab_actor_memory: Dictionary = {
 	"item": "",
 	"equipment": "",
@@ -73,6 +74,9 @@ var _tab_actor_memory: Dictionary = {
 }
 var _item_status_preview_slots: Array = []
 var _equipment_status_preview_slots: Array = []
+var _equipment_gold_label: Label = null
+var _pending_equip_item_id: String = ""
+var _pending_equip_slot: String = ""
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -740,6 +744,8 @@ func _refresh_gold() -> void:
 		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
 		status_gold_label.text = "💰 盤纏：%d文" % gold
+	if _equipment_gold_label:
+		_equipment_gold_label.text = "💰 盤纏：%d文" % gold
 
 func _refresh_item_status_preview() -> void:
 	if _item_status_preview_slots.is_empty():
@@ -981,6 +987,8 @@ func _on_use_skill_pressed() -> void:
 func _open_skill_target_popup() -> void:
 	if skill_target_popup == null:
 		return
+	_pending_equip_item_id = ""
+	_pending_equip_slot = ""
 	skill_target_popup.clear()
 	var party = TeamData.get_active_party()
 	for actor in party:
@@ -1008,6 +1016,13 @@ func _on_skill_target_selected(index: int) -> void:
 	var target = _get_actor_by_id(actor_id)
 	if target == null:
 		print("[MartialUse] target not found")
+		return
+	if _pending_equip_item_id != "":
+		var equip_item_id := _pending_equip_item_id
+		var equip_slot := _pending_equip_slot
+		_pending_equip_item_id = ""
+		_pending_equip_slot = ""
+		_apply_equip_item_to_actor(equip_item_id, equip_slot, actor_id)
 		return
 	if _pending_item_use_id != "":
 		await _apply_pending_item_use_with_sequence(target)
@@ -1525,7 +1540,7 @@ func _open_equip_popup(slot: String) -> void:
 				continue
 		elif item_equip_slot != slot:
 			continue
-		if not _is_weapon_type_allowed(item_def, slot):
+		if not _is_weapon_type_allowed_for_actor(item_def, slot, _get_active_character_id()):
 			continue
 		var name = str(item_def.get("name", item_id))
 		equip_popup.add_item(name)
@@ -1534,9 +1549,12 @@ func _open_equip_popup(slot: String) -> void:
 	equip_popup.popup()
 
 func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
+	return _is_weapon_type_allowed_for_actor(item_def, slot, _get_active_character_id())
+
+func _is_weapon_type_allowed_for_actor(item_def: Dictionary, slot: String, actor_id: String) -> bool:
 	if not slot.begins_with("weapon"):
 		return true
-	var rules = WEAPON_RULES.get(_get_active_character_id(), {})
+	var rules = WEAPON_RULES.get(actor_id, {})
 	var weapon_type = str(item_def.get("weapon_type", ""))
 	var slot_rule = rules.get(slot, [])
 
@@ -1572,10 +1590,33 @@ func _get_all_character_ids() -> Array:
 func _remember_tab_actor(tab_key: String, actor_id: String) -> void:
 	if tab_key == "" or actor_id == "":
 		return
+	if tab_key == "item" or tab_key == "equipment":
+		_tab_actor_memory["item"] = actor_id
+		_tab_actor_memory["equipment"] = actor_id
+		_shared_view_actor_id = actor_id
+		if _is_actor_in_active_party(actor_id):
+			_tab_actor_memory["martial"] = actor_id
+		return
+	if tab_key == "martial":
+		_tab_actor_memory["martial"] = actor_id
+		_tab_actor_memory["item"] = actor_id
+		_tab_actor_memory["equipment"] = actor_id
+		_shared_view_actor_id = actor_id
+		return
 	_tab_actor_memory[tab_key] = actor_id
 
 func _get_tab_actor(tab_key: String) -> String:
+	if (tab_key == "item" or tab_key == "equipment") and _shared_view_actor_id != "":
+		return _shared_view_actor_id
 	return str(_tab_actor_memory.get(tab_key, ""))
+
+func _is_actor_in_active_party(actor_id: String) -> bool:
+	if actor_id == "" or TeamData == null or not TeamData.has_method("get_active_party"):
+		return false
+	for actor in TeamData.get_active_party():
+		if _get_actor_id_from_entry(actor) == actor_id:
+			return true
+	return false
 
 func _apply_tab_actor_context(tab_index: int) -> void:
 	if tabs == null or tab_index < 0:
@@ -1647,17 +1688,39 @@ func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, r
 		left_pane.custom_minimum_size = Vector2(360, 0)
 		layout.add_child(left_pane)
 
-	var row := left_pane.get_node_or_null(row_name) as HBoxContainer
+	var status_gold := left_pane.get_node_or_null("StatusGoldLabel") as Label
+	if status_gold == null:
+		status_gold = Label.new()
+		status_gold.name = "StatusGoldLabel"
+		status_gold.text = "💰 盤纏：0文"
+		left_pane.add_child(status_gold)
+	if tab == item_tab:
+		var old_item_gold := tab.get_node_or_null("GoldLabel") as Label
+		if old_item_gold and old_item_gold != status_gold:
+			old_item_gold.queue_free()
+		gold_label = status_gold
+	elif tab == equipment_tab:
+		_equipment_gold_label = status_gold
+
+	var right_pane := layout.get_node_or_null("RightPane") as VBoxContainer
+	if right_pane == null:
+		right_pane = VBoxContainer.new()
+		right_pane.name = "RightPane"
+		right_pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		right_pane.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		layout.add_child(right_pane)
+
+	var row := right_pane.get_node_or_null(row_name) as HBoxContainer
 	if row == null:
 		row = HBoxContainer.new()
 		row.name = row_name
-		var label := Label.new()
-		label.text = "角色："
-		row.add_child(label)
+		var spacer := Control.new()
+		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(spacer)
 		var selector := OptionButton.new()
 		selector.name = selector_name
 		row.add_child(selector)
-		left_pane.add_child(row)
+		right_pane.add_child(row)
 
 	var preview_row := left_pane.get_node_or_null("PartyStatusRow") as HBoxContainer
 	if preview_row == null:
@@ -1673,13 +1736,13 @@ func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, r
 		preview_row.add_child(preview_member)
 		_rebuild_status_member_layout(preview_member)
 
-	var content := layout.get_node_or_null(content_name) as VBoxContainer
+	var content := right_pane.get_node_or_null(content_name) as VBoxContainer
 	if content == null:
 		content = VBoxContainer.new()
 		content.name = content_name
 		content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		layout.add_child(content)
+		right_pane.add_child(content)
 		var move_children: Array = []
 		for child in tab.get_children():
 			if child != layout:
@@ -1728,7 +1791,7 @@ func _build_status_slots_from_row(row: HBoxContainer) -> Array:
 func _setup_item_character_select() -> void:
 	if item_tab == null or TeamData == null:
 		return
-	var row := item_tab.get_node_or_null("ItemStatusLayout/StatusPane/ItemCharacterRow") as HBoxContainer
+	var row := item_tab.get_node_or_null("ItemStatusLayout/RightPane/ItemCharacterRow") as HBoxContainer
 	var selector: OptionButton = null
 	if row:
 		selector = row.get_node_or_null("ItemCharacterSelect") as OptionButton
@@ -1760,7 +1823,7 @@ func _setup_item_character_select() -> void:
 func _on_item_character_selected(index: int) -> void:
 	var selector: OptionButton = null
 	if item_tab:
-		selector = item_tab.get_node_or_null("ItemStatusLayout/StatusPane/ItemCharacterRow/ItemCharacterSelect") as OptionButton
+		selector = item_tab.get_node_or_null("ItemStatusLayout/RightPane/ItemCharacterRow/ItemCharacterSelect") as OptionButton
 	if selector == null or index < 0 or index >= selector.item_count:
 		return
 	var actor_id := str(selector.get_item_metadata(index))
@@ -1772,7 +1835,7 @@ func _on_item_character_selected(index: int) -> void:
 func _setup_equipment_character_select() -> void:
 	if equipment_tab == null or TeamData == null:
 		return
-	var row = equipment_tab.get_node_or_null("EquipmentStatusLayout/StatusPane/EquipmentCharacterRow") as HBoxContainer
+	var row = equipment_tab.get_node_or_null("EquipmentStatusLayout/RightPane/EquipmentCharacterRow") as HBoxContainer
 	var selector: OptionButton = null
 	if row:
 		selector = row.get_node_or_null("EquipmentCharacterSelect") as OptionButton
@@ -1805,7 +1868,7 @@ func _setup_equipment_character_select() -> void:
 func _on_equipment_character_selected(index: int) -> void:
 	var selector: OptionButton = null
 	if equipment_tab:
-		selector = equipment_tab.get_node_or_null("EquipmentStatusLayout/StatusPane/EquipmentCharacterRow/EquipmentCharacterSelect") as OptionButton
+		selector = equipment_tab.get_node_or_null("EquipmentStatusLayout/RightPane/EquipmentCharacterRow/EquipmentCharacterSelect") as OptionButton
 	if selector == null or index < 0 or index >= selector.item_count:
 		return
 	var actor_id := str(selector.get_item_metadata(index))
@@ -2399,6 +2462,8 @@ func _party_can_use_walnut() -> bool:
 func _open_party_target_popup() -> void:
 	if skill_target_popup == null:
 		return
+	_pending_equip_item_id = ""
+	_pending_equip_slot = ""
 	skill_target_popup.clear()
 	for actor in TeamData.get_active_party():
 		var actor_id = _get_actor_id_from_entry(actor)
@@ -2407,6 +2472,59 @@ func _open_party_target_popup() -> void:
 		skill_target_popup.add_item(_get_actor_name_from_entry(actor, actor_id))
 		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
 	skill_target_popup.popup()
+
+func _open_equip_target_popup(item_id: String, item_def: Dictionary) -> void:
+	if skill_target_popup == null:
+		return
+	var slot := str(item_def.get("equip_slot", ""))
+	if slot == "":
+		return
+	skill_target_popup.clear()
+	var candidate_ids := _get_all_character_ids()
+	for actor_id in candidate_ids:
+		if not _can_actor_equip_item(actor_id, item_def, slot):
+			continue
+		var actor = _get_actor_by_id(actor_id)
+		var actor_name := _get_actor_name_from_entry(actor, actor_id)
+		skill_target_popup.add_item(actor_name)
+		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
+	if skill_target_popup.item_count <= 0:
+		if item_desc:
+			item_desc.text = "目前沒有符合裝備條件的角色。"
+		return
+	_pending_equip_item_id = item_id
+	_pending_equip_slot = slot
+	skill_target_popup.popup()
+
+func _can_actor_equip_item(actor_id: String, item_def: Dictionary, slot: String) -> bool:
+	if actor_id == "" or item_def.is_empty() or slot == "":
+		return false
+	var use_action := str(item_def.get("use_action", "none"))
+	if use_action != "equip":
+		return false
+	var item_slot := str(item_def.get("equip_slot", ""))
+	if slot.begins_with("weapon"):
+		if not item_slot.begins_with("weapon"):
+			return false
+	else:
+		if item_slot != slot:
+			return false
+	if actor_id == "shumian" and slot == "weapon_2":
+		return false
+	return _is_weapon_type_allowed_for_actor(item_def, slot, actor_id)
+
+func _apply_equip_item_to_actor(item_id: String, slot: String, actor_id: String) -> void:
+	if item_id == "" or slot == "" or actor_id == "":
+		return
+	var item_def := ItemDB.get_def(item_id)
+	if item_def.is_empty():
+		return
+	if not _can_actor_equip_item(actor_id, item_def, slot):
+		return
+	if InventorySync.has_method("equip_item_to_slot"):
+		InventorySync.equip_item_to_slot(item_id, slot, actor_id)
+	else:
+		InventorySync.equip_item(item_id, actor_id)
 
 
 func _status_name_zh(status_id: String) -> String:
@@ -2714,12 +2832,12 @@ func _on_use_pressed() -> void:
 		var slot = str(item_def.get("equip_slot", ""))
 		if slot == "":
 			return
-		if InventorySync.is_equipped(item_id, _get_active_character_id()):
-			InventorySync.unequip(slot, _get_active_character_id())
+		var selected_actor_id := _get_active_character_id()
+		if InventorySync.is_equipped(item_id, selected_actor_id):
+			InventorySync.unequip(slot, selected_actor_id)
 			print("[Unequip] slot=%s" % slot)
 		else:
-			InventorySync.equip_item(item_id, _get_active_character_id())
-			print("[Equip] slot=%s id=%s" % [slot, item_id])
+			_open_equip_target_popup(item_id, item_def)
 		return
 
 func _play_walnut_fail_dialog() -> void:
