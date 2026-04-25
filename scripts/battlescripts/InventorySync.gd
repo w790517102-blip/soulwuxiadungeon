@@ -30,6 +30,7 @@ var party_inventory: Array = [
 const NEW_GAME_START_GOLD: int = 1000
 var party_gold: int = NEW_GAME_START_GOLD
 var equipped_by_actor: Dictionary = {}
+var ever_owned_item_ids: Dictionary = {}
 const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed", "accuracy", "evasion", "crit_rate_bonus"]
 const EQUIP_SLOTS := [
 	"weapon_1",
@@ -42,11 +43,15 @@ const EQUIP_SLOTS := [
 	"accessory_2",
 ]
 
+func _ready() -> void:
+	_rebuild_ever_owned_from_inventory()
+
 func export_inventory_state() -> Dictionary:
 	return {
 		"party_inventory": party_inventory.duplicate(true),
 		"party_gold": party_gold,
 		"equipped_by_actor": equipped_by_actor.duplicate(true),
+		"ever_owned_item_ids": ever_owned_item_ids.duplicate(true),
 	}
 
 func import_inventory_state(data: Dictionary) -> void:
@@ -59,9 +64,16 @@ func import_inventory_state(data: Dictionary) -> void:
 	if typeof(data.get("equipped_by_actor", null)) == TYPE_DICTIONARY:
 		equipped_by_actor = (data.get("equipped_by_actor", {}) as Dictionary).duplicate(true)
 		_migrate_equipped_data()
+	if typeof(data.get("ever_owned_item_ids", null)) == TYPE_DICTIONARY:
+		ever_owned_item_ids = (data.get("ever_owned_item_ids", {}) as Dictionary).duplicate(true)
+	else:
+		_rebuild_ever_owned_from_inventory()
 	inventory_changed.emit()
 	gold_changed.emit(party_gold)
 	equipment_changed.emit()
+
+func has_ever_owned(item_id: String) -> bool:
+	return item_id != "" and bool(ever_owned_item_ids.get(item_id, false))
 
 func get_gold() -> int:
 	return party_gold
@@ -239,12 +251,23 @@ func _resolve_actor_id(actor_id: String) -> String:
 func _add_item_stack_internal(id: String, amount: int) -> bool:
 	if id == "" or amount <= 0:
 		return false
+	ever_owned_item_ids[id] = true
 	for entry in party_inventory:
 		if entry.get("id") == id:
 			entry["count"] = int(entry.get("count", 0)) + amount
 			return true
 	party_inventory.append({"id": id, "count": amount})
 	return true
+
+func _rebuild_ever_owned_from_inventory() -> void:
+	ever_owned_item_ids.clear()
+	for entry in party_inventory:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var item_id := str(entry.get("id", ""))
+		if item_id == "":
+			continue
+		ever_owned_item_ids[item_id] = true
 
 func apply_battle_result(battle_result: Dictionary) -> void:
 	if battle_result.is_empty():

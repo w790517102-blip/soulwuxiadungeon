@@ -2,6 +2,7 @@
 extends Panel
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const SpecialItemUseHandlerScript = preload("res://scripts/items/SpecialItemUseHandler.gd")
+const LoreDB = preload("res://scripts/db/LoreDB.gd")
 
 @onready var tabs: TabContainer = $VBoxContainer
 @onready var item_list: ItemList = $VBoxContainer/道具/ItemList
@@ -25,6 +26,12 @@ const SpecialItemUseHandlerScript = preload("res://scripts/items/SpecialItemUseH
 @onready var reserve_detail: RichTextLabel = get_node_or_null("VBoxContainer/隊伍/PartyLayout/ReservePane/ReserveDetail")
 @onready var move_in_button: Button = get_node_or_null("VBoxContainer/隊伍/PartyLayout/PartyActionBox/MoveInButton")
 @onready var move_out_button: Button = get_node_or_null("VBoxContainer/隊伍/PartyLayout/PartyActionBox/MoveOutButton")
+@onready var lore_category_tabs: TabContainer = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs")
+@onready var lore_item_list: ItemList = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/奇物/ItemList")
+@onready var lore_character_list: ItemList = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/豪傑/CharacterList")
+@onready var lore_enemy_list: ItemList = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/神怪/EnemyList")
+@onready var lore_detail_title: Label = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreRightPane/LoreDetailTitle")
+@onready var lore_detail: RichTextLabel = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreRightPane/LoreDetail")
 @onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
 @onready var armor_head_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHeadButton")
@@ -57,6 +64,7 @@ var _pending_status_hover_meta: String = ""
 var _pending_status_hover_actor_id: String = ""
 var _selected_party_slot_index: int = -1
 var _selected_reserve_actor_id: String = ""
+var _selected_lore_category: String = "奇物"
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -126,6 +134,8 @@ func _ready():
 		inner_force_detail.bbcode_enabled = true
 	if item_desc:
 		item_desc.bbcode_enabled = true
+	if lore_detail:
+		lore_detail.bbcode_enabled = true
 
 	if item_list:
 		item_list.item_selected.connect(_on_item_selected)
@@ -142,6 +152,14 @@ func _ready():
 		move_in_button.pressed.connect(_on_party_move_in_pressed)
 	if move_out_button and not move_out_button.pressed.is_connected(_on_party_move_out_pressed):
 		move_out_button.pressed.connect(_on_party_move_out_pressed)
+	if lore_category_tabs and not lore_category_tabs.tab_changed.is_connected(_on_lore_category_tab_changed):
+		lore_category_tabs.tab_changed.connect(_on_lore_category_tab_changed)
+	if lore_item_list and not lore_item_list.item_selected.is_connected(_on_lore_item_selected):
+		lore_item_list.item_selected.connect(_on_lore_item_selected)
+	if lore_character_list and not lore_character_list.item_selected.is_connected(_on_lore_character_selected):
+		lore_character_list.item_selected.connect(_on_lore_character_selected)
+	if lore_enemy_list and not lore_enemy_list.item_selected.is_connected(_on_lore_enemy_selected):
+		lore_enemy_list.item_selected.connect(_on_lore_enemy_selected)
 	if InventorySync:
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
@@ -189,6 +207,7 @@ func _ready():
 	_refresh_status_tab()
 	_refresh_martial_tabs()
 	_refresh_party_tab()
+	_refresh_lore_tab()
 	_update_use_button("")
 	if tabs:
 		_sync_custom_tab_visuals(tabs.current_tab)
@@ -235,12 +254,15 @@ func _on_tab_changed(tab_index: int) -> void:
 	var item_tab_index = $VBoxContainer/道具.get_index()
 	var martial_tab_index = $VBoxContainer/武術.get_index()
 	var party_tab_index = $VBoxContainer/隊伍.get_index()
+	var lore_tab_index = $VBoxContainer/見聞.get_index()
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == martial_tab_index:
 		_refresh_martial_tabs()
 	elif tab_index == party_tab_index:
 		_refresh_party_tab()
+	elif tab_index == lore_tab_index:
+		_refresh_lore_tab()
 
 func _setup_custom_tab_bar() -> void:
 	_custom_tab_entries.clear()
@@ -431,6 +453,179 @@ func _apply_party_ids(ids: Array) -> void:
 	_refresh_equipment_tab()
 	_refresh_martial_tabs()
 
+func _refresh_lore_tab() -> void:
+	if lore_category_tabs == null:
+		return
+	var category_idx := lore_category_tabs.current_tab
+	if category_idx < 0 or category_idx >= lore_category_tabs.get_tab_count():
+		category_idx = 0
+		lore_category_tabs.current_tab = category_idx
+	var category_name := String(lore_category_tabs.get_child(category_idx).name)
+	_selected_lore_category = category_name
+	match category_name:
+		"奇物":
+			_refresh_lore_items()
+		"豪傑":
+			_refresh_lore_heroes()
+		"神怪":
+			_refresh_lore_monsters()
+		_:
+			_set_lore_empty_state("此分類尚未開放。")
+
+func _on_lore_category_tab_changed(_idx: int) -> void:
+	_refresh_lore_tab()
+
+func _refresh_lore_items() -> void:
+	if lore_item_list == null:
+		return
+	lore_item_list.clear()
+	var unlocked_ids: Array = []
+	var all_items := ItemDB.ITEM_DEFS
+	if typeof(all_items) == TYPE_DICTIONARY:
+		for item_id_any in all_items.keys():
+			var item_id := String(item_id_any)
+			if item_id == "":
+				continue
+			if InventorySync and InventorySync.has_method("has_ever_owned") and InventorySync.has_ever_owned(item_id):
+				unlocked_ids.append(item_id)
+	unlocked_ids.sort()
+	for item_id in unlocked_ids:
+		var info := LoreDB.get_item_lore_detail(item_id)
+		if info.is_empty():
+			continue
+		lore_item_list.add_item(str(info.get("name", item_id)))
+		lore_item_list.set_item_metadata(lore_item_list.item_count - 1, item_id)
+	if lore_item_list.item_count <= 0:
+		_set_lore_empty_state("尚未記錄任何奇物。\n（曾經擁有過的物品會記錄在此）")
+		return
+	lore_item_list.select(0)
+	_on_lore_item_selected(0)
+
+func _refresh_lore_heroes() -> void:
+	if lore_character_list == null:
+		return
+	lore_character_list.clear()
+	for hero_id_any in LoreDB.get_hero_ids():
+		var hero_id := String(hero_id_any)
+		if hero_id == "" or not LoreDB.is_hero_unlocked(hero_id):
+			continue
+		var hero := LoreDB.get_hero_def(hero_id)
+		if hero.is_empty():
+			continue
+		lore_character_list.add_item(str(hero.get("name", hero_id)))
+		lore_character_list.set_item_metadata(lore_character_list.item_count - 1, hero_id)
+	if lore_character_list.item_count <= 0:
+		_set_lore_empty_state("尚未記錄任何豪傑。\n（與關鍵人物對話或劇情觸發後會收錄）")
+		return
+	lore_character_list.select(0)
+	_on_lore_character_selected(0)
+
+func _refresh_lore_monsters() -> void:
+	if lore_enemy_list == null:
+		return
+	lore_enemy_list.clear()
+	var all_defs := EnemyDB.ENEMY_DEFS
+	if typeof(all_defs) == TYPE_DICTIONARY:
+		for enemy_id_any in all_defs.keys():
+			var enemy_id := String(enemy_id_any)
+			if enemy_id == "":
+				continue
+			var unlocked := GlobalState and GlobalState.has_method("get_flag") and bool(GlobalState.get_flag("lore_enemy_%s" % enemy_id))
+			if not unlocked:
+				continue
+			lore_enemy_list.add_item(LoreDB.get_enemy_display_name(enemy_id))
+			lore_enemy_list.set_item_metadata(lore_enemy_list.item_count - 1, enemy_id)
+	if lore_enemy_list.item_count <= 0:
+		_set_lore_empty_state("尚未記錄任何神怪。\n（完成遭遇戰後會收錄）")
+		return
+	lore_enemy_list.select(0)
+	_on_lore_enemy_selected(0)
+
+func _on_lore_item_selected(index: int) -> void:
+	if lore_item_list == null or index < 0 or index >= lore_item_list.item_count:
+		return
+	var item_id := str(lore_item_list.get_item_metadata(index))
+	var item := LoreDB.get_item_lore_detail(item_id)
+	if item.is_empty():
+		_set_lore_empty_state("找不到奇物資料。")
+		return
+	if lore_detail_title:
+		lore_detail_title.text = "奇物：%s" % str(item.get("name", item_id))
+	if lore_detail:
+		var lines := [
+			"[b]%s[/b]" % str(item.get("name", item_id)),
+			"類型：%s" % str(item.get("type", "—")),
+			"描述：%s" % str(item.get("description", "—")),
+		]
+		lore_detail.text = "\n".join(lines)
+
+func _on_lore_character_selected(index: int) -> void:
+	if lore_character_list == null or index < 0 or index >= lore_character_list.item_count:
+		return
+	var hero_id := str(lore_character_list.get_item_metadata(index))
+	var hero := LoreDB.get_hero_def(hero_id)
+	if hero.is_empty():
+		_set_lore_empty_state("找不到豪傑資料。")
+		return
+	if lore_detail_title:
+		lore_detail_title.text = "豪傑：%s" % str(hero.get("name", hero_id))
+	if lore_detail:
+		var lines: Array = []
+		var portrait_path := str(hero.get("portrait_path", ""))
+		if portrait_path != "":
+			lines.append("[img]%s[/img]" % portrait_path)
+		lines.append("[b]%s[/b]" % str(hero.get("name", hero_id)))
+		lines.append(str(hero.get("bio", "尚無人物誌內容。")))
+		lore_detail.text = "\n".join(lines)
+
+func _on_lore_enemy_selected(index: int) -> void:
+	if lore_enemy_list == null or index < 0 or index >= lore_enemy_list.item_count:
+		return
+	var enemy_id := str(lore_enemy_list.get_item_metadata(index))
+	var enemy := LoreDB.get_enemy_lore_detail(enemy_id)
+	if enemy.is_empty():
+		_set_lore_empty_state("找不到神怪資料。")
+		return
+	if lore_detail_title:
+		lore_detail_title.text = "神怪：%s" % str(enemy.get("name", enemy_id))
+	if lore_detail:
+		var drop_lines: Array = []
+		var drops_any = enemy.get("drops", [])
+		if typeof(drops_any) == TYPE_ARRAY:
+			for drop_any in drops_any:
+				if typeof(drop_any) != TYPE_DICTIONARY:
+					continue
+				var drop_id := str((drop_any as Dictionary).get("id", ""))
+				if drop_id == "":
+					continue
+				var drop_def := ItemDB.get_def(drop_id)
+				var drop_name := str(drop_def.get("name", drop_id)) if typeof(drop_def) == TYPE_DICTIONARY else drop_id
+				drop_lines.append("• %s" % drop_name)
+		var skills_any = enemy.get("skills", [])
+		var skill_lines: Array = []
+		if typeof(skills_any) == TYPE_ARRAY:
+			for skill_any in skills_any:
+				if typeof(skill_any) != TYPE_DICTIONARY:
+					continue
+				skill_lines.append("• %s" % str((skill_any as Dictionary).get("skill_id", "???")))
+		var lines := [
+			"[b]%s[/b]" % str(enemy.get("name", enemy_id)),
+			"經驗值：%d" % int(enemy.get("exp", 0)),
+			"血量：%d" % int(enemy.get("max_hp", enemy.get("hp", 0))),
+			"攻擊力：%d" % int(enemy.get("atk", 0)),
+			"初始屬性：%s" % str(enemy.get("element", "—")),
+			"異常抗性：—",
+			"掉落物：%s" % ("無" if drop_lines.is_empty() else "\n" + "\n".join(drop_lines)),
+			"技能：%s" % ("無" if skill_lines.is_empty() else "\n" + "\n".join(skill_lines)),
+		]
+		lore_detail.text = "\n".join(lines)
+
+func _set_lore_empty_state(message: String) -> void:
+	if lore_detail_title:
+		lore_detail_title.text = "見聞詳情"
+	if lore_detail:
+		lore_detail.text = message
+
 func _sync_custom_tab_visuals(active_tab_index: int) -> void:
 	for entry in _custom_tab_entries:
 		var button: TextureButton = entry.get("button")
@@ -504,8 +699,11 @@ func _on_inventory_changed() -> void:
 	if tabs == null:
 		return
 	var item_tab_index = $VBoxContainer/道具.get_index()
+	var lore_tab_index = $VBoxContainer/見聞.get_index()
 	if tabs.current_tab == item_tab_index:
 		_refresh_item_tab()
+	if tabs.current_tab == lore_tab_index:
+		_refresh_lore_tab()
 
 func _on_equipment_changed() -> void:
 	_refresh_item_tab()

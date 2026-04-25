@@ -231,6 +231,7 @@ func start_battle(context: Dictionary) -> void:
 		e["is_enemy"] = true
 		if not e.has("ui_index"):
 			e["ui_index"] = i
+		_mark_enemy_lore_encounter(e)
 		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 
 	if enemy_ai and enemy_ai.has_method("begin_battle"):
@@ -246,6 +247,14 @@ func start_battle(context: Dictionary) -> void:
 
 	await _run_battle_opening_sequence(context)
 	turn_manager.start_battle(player_party, enemy_party)
+
+func _mark_enemy_lore_encounter(enemy: Dictionary) -> void:
+	if enemy.is_empty() or GlobalState == null or not GlobalState.has_method("set_flag"):
+		return
+	var enemy_id := String(enemy.get("id", "")).strip_edges()
+	if enemy_id == "":
+		return
+	GlobalState.set_flag("lore_enemy_%s" % enemy_id, true)
 
 func _play_battle_bgm_from_context(context: Dictionary) -> void:
 	if battle_bgm_player == null:
