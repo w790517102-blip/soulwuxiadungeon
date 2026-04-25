@@ -8,6 +8,7 @@ const LoreDB = preload("res://scripts/db/LoreDB.gd")
 @onready var item_list: ItemList = $VBoxContainer/道具/ItemList
 @onready var item_desc: RichTextLabel = $VBoxContainer/道具/RichTextLabel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
+@onready var item_tab: VBoxContainer = get_node_or_null("VBoxContainer/道具")
 @onready var status_tab: VBoxContainer = get_node_or_null("VBoxContainer/狀態")
 @onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
 @onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
@@ -65,6 +66,12 @@ var _pending_status_hover_actor_id: String = ""
 var _selected_party_slot_index: int = -1
 var _selected_reserve_actor_id: String = ""
 var _selected_lore_category: String = "奇物"
+var _tab_actor_memory: Dictionary = {
+	"status": "",
+	"item": "",
+	"equipment": "",
+	"martial": "",
+}
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
@@ -200,6 +207,8 @@ func _ready():
 		skill_target_popup.index_pressed.connect(_on_skill_target_selected)
 	_setup_status_member_slots()
 	_ensure_status_hover_popup()
+	_setup_status_character_select()
+	_setup_item_character_select()
 	_setup_equipment_character_select()
 	_refresh_item_tab()
 	_refresh_gold()
@@ -208,6 +217,7 @@ func _ready():
 	_refresh_martial_tabs()
 	_refresh_party_tab()
 	_refresh_lore_tab()
+	_apply_tab_actor_context(tabs.current_tab if tabs else -1)
 	_update_use_button("")
 	if tabs:
 		_sync_custom_tab_visuals(tabs.current_tab)
@@ -251,6 +261,7 @@ func _on_tab_changed(tab_index: int) -> void:
 	if tabs == null:
 		return
 	_sync_custom_tab_visuals(tab_index)
+	_apply_tab_actor_context(tab_index)
 	var item_tab_index = $VBoxContainer/道具.get_index()
 	var martial_tab_index = $VBoxContainer/武術.get_index()
 	var party_tab_index = $VBoxContainer/隊伍.get_index()
@@ -1412,6 +1423,10 @@ func _get_effective_max_mp(actor, actor_id: String = "") -> int:
 func _get_actor_by_id(actor_id: String):
 	if TeamData == null:
 		return null
+	if TeamData.has_method("get_character_by_id"):
+		var actor_entry = TeamData.get_character_by_id(actor_id)
+		if typeof(actor_entry) == TYPE_DICTIONARY and not (actor_entry as Dictionary).is_empty():
+			return actor_entry
 	for actor in TeamData.get_active_party():
 		var entry_id = _get_actor_id_from_entry(actor)
 		if entry_id == actor_id:
@@ -1421,13 +1436,10 @@ func _get_actor_by_id(actor_id: String):
 func _refresh_status_tab() -> void:
 	if _status_member_slots.is_empty():
 		return
-	var party: Array = []
-	if TeamData and TeamData.has_method("get_active_party"):
-		party = TeamData.get_active_party()
-
+	var actor = _get_actor_by_id(_get_active_character_id())
 	for i in range(_status_member_slots.size()):
-		if i < party.size():
-			_fill_status_member_slot(_status_member_slots[i], party[i])
+		if i == 0 and actor != null:
+			_fill_status_member_slot(_status_member_slots[i], actor)
 		else:
 			_fill_status_member_slot_empty(_status_member_slots[i])
 
@@ -1518,6 +1530,58 @@ func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
 		return true
 	return allowed_types.has(weapon_type)
 
+func _get_all_character_ids() -> Array:
+	var ids: Array = []
+	if TeamData == null:
+		return ids
+	if typeof(TeamData.all_characters) == TYPE_DICTIONARY:
+		for key_any in TeamData.all_characters.keys():
+			var actor_id := String(key_any)
+			if actor_id == "" or ids.has(actor_id):
+				continue
+			ids.append(actor_id)
+	if ids.has("liuyu"):
+		ids.erase("liuyu")
+		ids.push_front("liuyu")
+	return ids
+
+func _remember_tab_actor(tab_key: String, actor_id: String) -> void:
+	if tab_key == "" or actor_id == "":
+		return
+	_tab_actor_memory[tab_key] = actor_id
+
+func _get_tab_actor(tab_key: String) -> String:
+	return str(_tab_actor_memory.get(tab_key, ""))
+
+func _apply_tab_actor_context(tab_index: int) -> void:
+	if tabs == null or tab_index < 0:
+		return
+	var tab_key := ""
+	if tab_index == $VBoxContainer/狀態.get_index():
+		tab_key = "status"
+		_setup_status_character_select()
+	elif tab_index == $VBoxContainer/道具.get_index():
+		tab_key = "item"
+		_setup_item_character_select()
+	elif tab_index == $VBoxContainer/裝備.get_index():
+		tab_key = "equipment"
+		_setup_equipment_character_select()
+	elif tab_index == $VBoxContainer/武術.get_index():
+		tab_key = "martial"
+	if tab_key == "":
+		return
+	var remembered_id := _get_tab_actor(tab_key)
+	if remembered_id == "":
+		var seed_ids: Array = _get_canonical_team_ids() if tab_key == "martial" else _get_all_character_ids()
+		if not seed_ids.is_empty():
+			remembered_id = str(seed_ids[0])
+		elif TeamData and TeamData.current_team_ids.size() > 0:
+			remembered_id = str(TeamData.current_team_ids[0])
+		else:
+			remembered_id = "liuyu"
+		_remember_tab_actor(tab_key, remembered_id)
+	_selected_actor_id = remembered_id
+
 func _get_active_character_id() -> String:
 	if _selected_actor_id != "":
 		return _selected_actor_id
@@ -1534,6 +1598,112 @@ func _get_active_actor():
 		if party.size() > 0:
 			return party[0]
 	return null
+
+func _setup_status_character_select() -> void:
+	if status_tab == null or TeamData == null:
+		return
+	var row := status_tab.get_node_or_null("StatusCharacterRow") as HBoxContainer
+	var selector: OptionButton = null
+	if row == null:
+		row = HBoxContainer.new()
+		row.name = "StatusCharacterRow"
+		var label := Label.new()
+		label.text = "角色："
+		row.add_child(label)
+		selector = OptionButton.new()
+		selector.name = "StatusCharacterSelect"
+		row.add_child(selector)
+		status_tab.add_child(row)
+		status_tab.move_child(row, 0)
+	else:
+		selector = row.get_node_or_null("StatusCharacterSelect") as OptionButton
+	if selector == null:
+		return
+	selector.clear()
+	var all_ids := _get_all_character_ids()
+	for actor_id in all_ids:
+		var actor = _get_actor_by_id(actor_id)
+		var display_name := _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
+		selector.add_item(display_name)
+		selector.set_item_metadata(selector.item_count - 1, actor_id)
+	if selector.item_count > 0:
+		var selected_index := 0
+		var remembered_id := _get_tab_actor("status")
+		for i in range(selector.item_count):
+			if str(selector.get_item_metadata(i)) == remembered_id:
+				selected_index = i
+				break
+		selector.select(selected_index)
+		var selected_id := str(selector.get_item_metadata(selected_index))
+		_remember_tab_actor("status", selected_id)
+		if tabs and tabs.current_tab == $VBoxContainer/狀態.get_index():
+			_selected_actor_id = selected_id
+	if not selector.item_selected.is_connected(_on_status_character_selected):
+		selector.item_selected.connect(_on_status_character_selected)
+
+func _on_status_character_selected(index: int) -> void:
+	var selector: OptionButton = null
+	if status_tab:
+		selector = status_tab.get_node_or_null("StatusCharacterRow/StatusCharacterSelect") as OptionButton
+	if selector == null or index < 0 or index >= selector.item_count:
+		return
+	var actor_id := str(selector.get_item_metadata(index))
+	_remember_tab_actor("status", actor_id)
+	_selected_actor_id = actor_id
+	_refresh_status_tab()
+
+func _setup_item_character_select() -> void:
+	if item_tab == null or TeamData == null:
+		return
+	var row := item_tab.get_node_or_null("ItemCharacterRow") as HBoxContainer
+	var selector: OptionButton = null
+	if row == null:
+		row = HBoxContainer.new()
+		row.name = "ItemCharacterRow"
+		var label := Label.new()
+		label.text = "角色："
+		row.add_child(label)
+		selector = OptionButton.new()
+		selector.name = "ItemCharacterSelect"
+		row.add_child(selector)
+		item_tab.add_child(row)
+		item_tab.move_child(row, 2)
+	else:
+		selector = row.get_node_or_null("ItemCharacterSelect") as OptionButton
+	if selector == null:
+		return
+	selector.clear()
+	var all_ids := _get_all_character_ids()
+	for actor_id in all_ids:
+		var actor = _get_actor_by_id(actor_id)
+		var display_name := _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
+		selector.add_item(display_name)
+		selector.set_item_metadata(selector.item_count - 1, actor_id)
+	if selector.item_count > 0:
+		var selected_index := 0
+		var remembered_id := _get_tab_actor("item")
+		for i in range(selector.item_count):
+			if str(selector.get_item_metadata(i)) == remembered_id:
+				selected_index = i
+				break
+		selector.select(selected_index)
+		var selected_id := str(selector.get_item_metadata(selected_index))
+		_remember_tab_actor("item", selected_id)
+		if tabs and tabs.current_tab == $VBoxContainer/道具.get_index():
+			_selected_actor_id = selected_id
+	if not selector.item_selected.is_connected(_on_item_character_selected):
+		selector.item_selected.connect(_on_item_character_selected)
+
+func _on_item_character_selected(index: int) -> void:
+	var selector: OptionButton = null
+	if item_tab:
+		selector = item_tab.get_node_or_null("ItemCharacterRow/ItemCharacterSelect") as OptionButton
+	if selector == null or index < 0 or index >= selector.item_count:
+		return
+	var actor_id := str(selector.get_item_metadata(index))
+	_remember_tab_actor("item", actor_id)
+	_selected_actor_id = actor_id
+	_refresh_item_tab()
 
 func _setup_equipment_character_select() -> void:
 	if equipment_tab == null or TeamData == null:
@@ -1556,27 +1726,43 @@ func _setup_equipment_character_select() -> void:
 	if selector == null:
 		return
 	_apply_menu_font_style(row)
-
-	for actor in TeamData.get_active_party():
-		var actor_id = _get_actor_id_from_entry(actor)
-		if actor_id == "":
-			continue
-		selector.add_item(_get_actor_name_from_entry(actor, actor_id))
+	selector.clear()
+	var all_ids := _get_all_character_ids()
+	for actor_id in all_ids:
+		var actor = _get_actor_by_id(actor_id)
+		var display_name := _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
+		selector.add_item(display_name)
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
-		selector.select(0)
-		_selected_actor_id = str(selector.get_item_metadata(0))
-	selector.item_selected.connect(func(index: int):
-		_selected_actor_id = str(selector.get_item_metadata(index))
-		_refresh_equipment_tab()
-		_refresh_weapon_tab_lists()
-		_update_skill_detail(_selected_skill)
-	)
+		var selected_index := 0
+		var remembered_id := _get_tab_actor("equipment")
+		for i in range(selector.item_count):
+			if str(selector.get_item_metadata(i)) == remembered_id:
+				selected_index = i
+				break
+		selector.select(selected_index)
+		var selected_id := str(selector.get_item_metadata(selected_index))
+		_remember_tab_actor("equipment", selected_id)
+		if tabs and tabs.current_tab == $VBoxContainer/裝備.get_index():
+			_selected_actor_id = selected_id
+	if not selector.item_selected.is_connected(_on_equipment_character_selected):
+		selector.item_selected.connect(_on_equipment_character_selected)
+
+func _on_equipment_character_selected(index: int) -> void:
+	var selector: OptionButton = null
+	if equipment_tab:
+		selector = equipment_tab.get_node_or_null("EquipmentCharacterRow/EquipmentCharacterSelect") as OptionButton
+	if selector == null or index < 0 or index >= selector.item_count:
+		return
+	var actor_id := str(selector.get_item_metadata(index))
+	_remember_tab_actor("equipment", actor_id)
+	_selected_actor_id = actor_id
+	_refresh_equipment_tab()
 
 func _refresh_martial_character_select() -> void:
 	if martial_character_select == null or TeamData == null:
 		return
-	var prev_id = _selected_actor_id
+	var prev_id = _get_tab_actor("martial")
 	if martial_character_select.item_count > 0:
 		var prev_index := martial_character_select.get_selected()
 		if prev_index >= 0 and prev_index < martial_character_select.item_count:
@@ -1597,14 +1783,18 @@ func _refresh_martial_character_select() -> void:
 			selected_index = i
 			break
 	martial_character_select.select(selected_index)
-	_selected_actor_id = str(martial_character_select.get_item_metadata(selected_index))
+	var selected_id := str(martial_character_select.get_item_metadata(selected_index))
+	_remember_tab_actor("martial", selected_id)
+	_selected_actor_id = selected_id
 	if not martial_character_select.item_selected.is_connected(_on_martial_character_selected):
 		martial_character_select.item_selected.connect(_on_martial_character_selected)
 
 func _on_martial_character_selected(index: int) -> void:
 	if martial_character_select == null:
 		return
-	_selected_actor_id = str(martial_character_select.get_item_metadata(index))
+	var actor_id := str(martial_character_select.get_item_metadata(index))
+	_remember_tab_actor("martial", actor_id)
+	_selected_actor_id = actor_id
 	_refresh_weapon_tab_lists()
 	_update_skill_detail(_selected_skill)
 
