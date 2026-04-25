@@ -791,14 +791,6 @@ func _debug_layout_node(label: String, node: Node) -> void:
 func show_actor_line(actor_id: String, text: String) -> void:
 	if actor_id == "" or text == "":
 		return
-	if not _actor_bubble_labels.has(actor_id):
-		_setup_actor_bubble_labels()
-	if not _actor_bubble_labels.has(actor_id) or not _actor_bubble_boxes.has(actor_id):
-		return
-	var bubble = _actor_bubble_labels[actor_id] as Label
-	var bubble_box = _actor_bubble_boxes[actor_id] as PanelContainer
-	if bubble == null or bubble_box == null:
-		return
 	var slot: Control = _find_ally_slot_by_actor_id(actor_id)
 	if slot == null:
 		slot = _find_enemy_slot_by_actor_id(actor_id)
@@ -807,26 +799,60 @@ func show_actor_line(actor_id: String, text: String) -> void:
 		slot = _find_ally_slot_by_actor_id(actor_id)
 		if slot == null:
 			slot = _find_enemy_slot_by_actor_id(actor_id)
-	if slot:
-		_position_bubble_on_portrait(slot, bubble_box)
-	else:
+	if slot == null:
 		return
-	var token := int(_actor_bubble_tokens.get(actor_id, 0)) + 1
-	_actor_bubble_tokens[actor_id] = token
+	_show_actor_line_on_slot(text, slot)
+
+func show_actor_line_for_actor(actor: Dictionary, text: String) -> void:
+	if actor.is_empty() or text == "":
+		return
+	var actor_id := str(actor.get("id", ""))
+	var slot: Control = null
+	if bool(actor.get("is_enemy", false)):
+		var enemy_idx := _find_enemy_slot_index(actor)
+		if enemy_idx >= 0 and enemy_idx < enemy_slots.size():
+			slot = enemy_slots[enemy_idx] as Control
+	else:
+		var ally_idx := allies.find(actor)
+		if ally_idx >= 0 and ally_idx < ally_slots.size():
+			slot = ally_slots[ally_idx] as Control
+	if slot == null and actor_id != "":
+		show_actor_line(actor_id, text)
+		return
+	if slot == null:
+		return
+	_show_actor_line_on_slot(text, slot)
+
+func _show_actor_line_on_slot(text: String, slot: Control) -> void:
+	var bubble_key := _get_bubble_key_for_slot(slot)
+	if bubble_key == "":
+		_setup_actor_bubble_labels()
+		bubble_key = _get_bubble_key_for_slot(slot)
+	if bubble_key == "":
+		return
+	if not _actor_bubble_labels.has(bubble_key) or not _actor_bubble_boxes.has(bubble_key):
+		return
+	var bubble = _actor_bubble_labels[bubble_key] as Label
+	var bubble_box = _actor_bubble_boxes[bubble_key] as PanelContainer
+	if bubble == null or bubble_box == null:
+		return
+	_position_bubble_on_portrait(slot, bubble_box)
+	var token := int(_actor_bubble_tokens.get(bubble_key, 0)) + 1
+	_actor_bubble_tokens[bubble_key] = token
 	var full_text := text
 	var total_duration := randf_range(2.0, 4.0)
 	var type_step := 0.03
 	bubble.text = ""
 	bubble_box.visible = true
 	for i in range(full_text.length()):
-		if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
+		if int(_actor_bubble_tokens.get(bubble_key, -1)) != token:
 			return
 		bubble.text = full_text.substr(0, i + 1)
 		await get_tree().create_timer(type_step).timeout
 	var typing_duration := float(full_text.length()) * type_step
 	var hold_duration: float = maxf(0.2, total_duration - typing_duration)
 	await get_tree().create_timer(hold_duration).timeout
-	if int(_actor_bubble_tokens.get(actor_id, -1)) != token:
+	if int(_actor_bubble_tokens.get(bubble_key, -1)) != token:
 		return
 	bubble_box.visible = false
 
@@ -1117,10 +1143,10 @@ func _setup_actor_bubble_labels() -> void:
 	_actor_bubble_labels.clear()
 	_actor_bubble_boxes.clear()
 	_actor_bubble_tokens.clear()
-	_setup_actor_bubbles_for_side(allies, ally_slots)
-	_setup_actor_bubbles_for_side(enemies, enemy_slots)
+	_setup_actor_bubbles_for_side(allies, ally_slots, false)
+	_setup_actor_bubbles_for_side(enemies, enemy_slots, true)
 
-func _setup_actor_bubbles_for_side(actor_list: Array, slots: Array) -> void:
+func _setup_actor_bubbles_for_side(actor_list: Array, slots: Array, is_enemy_side: bool) -> void:
 	for i in range(actor_list.size()):
 		if i >= slots.size():
 			continue
@@ -1131,7 +1157,9 @@ func _setup_actor_bubbles_for_side(actor_list: Array, slots: Array) -> void:
 		var slot := slots[i] as Control
 		if slot == null:
 			continue
-		var bubble_name := "OSBubble_%s" % actor_id
+		var side_tag := "enemy" if is_enemy_side else "ally"
+		var bubble_key := "%s:%d:%s" % [side_tag, i, actor_id]
+		var bubble_name := "OSBubble_%s_%d_%s" % [side_tag, i, actor_id]
 		var bubble_box := get_node_or_null(bubble_name) as PanelContainer
 		var bubble: Label = null
 		if bubble_box == null:
@@ -1170,8 +1198,14 @@ func _setup_actor_bubbles_for_side(actor_list: Array, slots: Array) -> void:
 				bubble.name = "Text"
 				bubble_box.add_child(bubble)
 		_position_bubble_on_portrait(slot, bubble_box)
-		_actor_bubble_labels[actor_id] = bubble
-		_actor_bubble_boxes[actor_id] = bubble_box
+		slot.set_meta("bubble_actor_key", bubble_key)
+		_actor_bubble_labels[bubble_key] = bubble
+		_actor_bubble_boxes[bubble_key] = bubble_box
+
+func _get_bubble_key_for_slot(slot: Control) -> String:
+	if slot == null:
+		return ""
+	return str(slot.get_meta("bubble_actor_key", ""))
 
 func _position_bubble_on_portrait(slot: Control, bubble_box: PanelContainer) -> void:
 	var portrait := slot.get_node_or_null("Portrait") as Control

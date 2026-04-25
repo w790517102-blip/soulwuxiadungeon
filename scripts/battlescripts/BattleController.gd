@@ -664,7 +664,9 @@ func _emit_enemy_spoken_line(enemy: Dictionary, text: String) -> void:
 	if text == "":
 		return
 	var enemy_id := String(enemy.get("id", ""))
-	if battle_ui != null and battle_ui.has_method("show_actor_line") and enemy_id != "":
+	if battle_ui != null and battle_ui.has_method("show_actor_line_for_actor"):
+		battle_ui.show_actor_line_for_actor(enemy, text)
+	elif battle_ui != null and battle_ui.has_method("show_actor_line") and enemy_id != "":
 		battle_ui.show_actor_line(enemy_id, text)
 	else:
 		_log(text)
