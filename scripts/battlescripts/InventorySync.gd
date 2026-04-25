@@ -66,6 +66,7 @@ func import_inventory_state(data: Dictionary) -> void:
 		_migrate_equipped_data()
 	if typeof(data.get("ever_owned_item_ids", null)) == TYPE_DICTIONARY:
 		ever_owned_item_ids = (data.get("ever_owned_item_ids", {}) as Dictionary).duplicate(true)
+		_merge_ever_owned_from_runtime_data()
 	else:
 		_rebuild_ever_owned_from_inventory()
 	inventory_changed.emit()
@@ -261,6 +262,9 @@ func _add_item_stack_internal(id: String, amount: int) -> bool:
 
 func _rebuild_ever_owned_from_inventory() -> void:
 	ever_owned_item_ids.clear()
+	_merge_ever_owned_from_runtime_data()
+
+func _merge_ever_owned_from_runtime_data() -> void:
 	for entry in party_inventory:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
@@ -268,6 +272,16 @@ func _rebuild_ever_owned_from_inventory() -> void:
 		if item_id == "":
 			continue
 		ever_owned_item_ids[item_id] = true
+	for actor_id_any in equipped_by_actor.keys():
+		var equipped_any = equipped_by_actor[actor_id_any]
+		if typeof(equipped_any) != TYPE_DICTIONARY:
+			continue
+		var equipped: Dictionary = equipped_any
+		for slot in equipped.keys():
+			var equipped_id := str(equipped.get(slot, ""))
+			if equipped_id == "":
+				continue
+			ever_owned_item_ids[equipped_id] = true
 
 func apply_battle_result(battle_result: Dictionary) -> void:
 	if battle_result.is_empty():

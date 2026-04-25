@@ -22,21 +22,21 @@ const HERO_DEFS := {
 	},
 	"hong_huei_yin": {
 		"name": "紅徽音",
-		"portrait_path": "",
+		"portrait_path": "res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin_headshot.png",
 		"bio": "琴聲清遠，神情若定若離。表面從容，實則每一句都像在試探人心。",
 		"default_unlocked": false,
 		"unlock_flags": ["event_tea_house_first_met"],
 	},
 	"zhe_yen_won": {
 		"name": "折簷翁",
-		"portrait_path": "",
+		"portrait_path": "res://assets/sprites/NPC/Yuheng/Zhe_yen_won_headshot.png",
 		"bio": "行跡飄忽的說書人，常在章節地圖現身，似觀局者又似布局者。",
 		"default_unlocked": false,
 		"unlock_flags": ["met_zhe_yen_won"],
 	},
 	"xan_bu_lay": {
 		"name": "單步雷",
-		"portrait_path": "",
+		"portrait_path": "res://assets/sprites/NPC/YinHuo/Xan_Bu_Lay_headshot.png",
 		"bio": "出手乾淨俐落，談笑間自有鋒芒。與其交手更像一場試心。",
 		"default_unlocked": false,
 		"unlock_flags": ["met_yuheng_teahouse_guard"],
@@ -98,3 +98,22 @@ static func get_item_lore_detail(item_id: String) -> Dictionary:
 	out["name"] = str(out.get("name", item_id))
 	out["description"] = str(out.get("desc", out.get("description", "")))
 	return out
+
+static func item_type_display_name(item_type: String) -> String:
+	match item_type:
+		"equipment":
+			return "裝備"
+		"consumable":
+			return "消耗"
+		"material":
+			return "材料"
+		"tool":
+			return "器具"
+		"food":
+			return "食物"
+		"misc":
+			return "雜項"
+		"quest":
+			return "任務"
+		_:
+			return item_type

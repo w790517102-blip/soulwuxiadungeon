@@ -552,9 +552,10 @@ func _on_lore_item_selected(index: int) -> void:
 	if lore_detail_title:
 		lore_detail_title.text = "奇物：%s" % str(item.get("name", item_id))
 	if lore_detail:
+		var type_text := LoreDB.item_type_display_name(str(item.get("type", "—")))
 		var lines := [
 			"[b]%s[/b]" % str(item.get("name", item_id)),
-			"類型：%s" % str(item.get("type", "—")),
+			"類型：%s" % type_text,
 			"描述：%s" % str(item.get("description", "—")),
 		]
 		lore_detail.text = "\n".join(lines)
