@@ -98,7 +98,6 @@ const TAB_SYSTEM_SELECTED = preload("res://assets/UI/system_menu/tab_system_sele
 const STATUS_MEMBER_CARD_BG = preload("res://assets/UI/system_menu/status_member_1.jpg")
 const STATUS_MEMBER_CARD_SIZE := Vector2(348, 549)
 const STATUS_VALUE_OFFSET_PREFIX := "　　　"
-const STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE := "　　　　"
 const TAB_LORE_NORMAL_PATH = "res://assets/UI/system_menu/tab_lore.png"
 const TAB_LORE_SELECTED_PATH = "res://assets/UI/system_menu/tab_lore_selected.png"
 var _skill_db: Node = CharacterSkillDB.new()
@@ -1806,17 +1805,17 @@ func _build_status_slots_from_row(row: HBoxContainer) -> Array:
 			"exp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
 			"hp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
 			"mp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
-			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AtkLabel") as Label,
-			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/DefLabel") as Label,
-			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
-			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/HitLabel") as Label,
-			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/CritLabel") as Label,
-			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/EvadeLabel") as Label,
-			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/StrLabel") as Label,
-			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/DexLabel") as Label,
-			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/IntLabel") as Label,
-			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/ConLabel") as Label,
-			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/LuckLabel") as Label,
+			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/LuckLabel") as Label,
 		})
 	return slots
 
@@ -2020,17 +2019,17 @@ func _setup_status_member_slots() -> void:
 			"exp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
 			"hp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
 			"mp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
-			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AtkLabel") as Label,
-			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/DefLabel") as Label,
-			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
-			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/HitLabel") as Label,
-			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/CritLabel") as Label,
-			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/EvadeLabel") as Label,
-			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/StrLabel") as Label,
-			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/DexLabel") as Label,
-			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/IntLabel") as Label,
-			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/ConLabel") as Label,
-			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/LuckLabel") as Label,
+			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/LuckLabel") as Label,
 		})
 		_setup_status_hover_for_slot(_status_member_slots[_status_member_slots.size() - 1])
 
@@ -2151,20 +2150,27 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	lower_section.name = "LowerSection"
 	card_content.add_child(lower_section)
 
+	var combat_row := HBoxContainer.new()
+	combat_row.name = "CombatStatsRow"
+	lower_section.add_child(combat_row)
+	var combat_offset_x := Control.new()
+	combat_offset_x.name = "CombatStatsOffsetX"
+	combat_offset_x.custom_minimum_size = Vector2(50, 0)
+	combat_row.add_child(combat_offset_x)
 	var combat_box := VBoxContainer.new()
 	combat_box.name = "CombatStatsBox"
-	lower_section.add_child(combat_box)
+	combat_row.add_child(combat_box)
 	var combat_offset_y := Control.new()
 	combat_offset_y.name = "CombatStatsOffsetY"
-	combat_offset_y.custom_minimum_size = Vector2(0, 30)
+	combat_offset_y.custom_minimum_size = Vector2(0, 35)
 	combat_box.add_child(combat_offset_y)
 	for pair in [
-		["AtkLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["DefLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["AgiMoveLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["HitLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["CritLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["EvadeLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
+		["AtkLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["DefLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["AgiMoveLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["HitLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["CritLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["EvadeLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
 	]:
 		var lbl := Label.new()
 		lbl.name = pair[0]
@@ -2172,19 +2178,26 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 		_apply_status_card_label_size(lbl, false)
 		combat_box.add_child(lbl)
 
+	var base_row := HBoxContainer.new()
+	base_row.name = "BaseStatsRow"
+	lower_section.add_child(base_row)
+	var base_offset_x := Control.new()
+	base_offset_x.name = "BaseStatsOffsetX"
+	base_offset_x.custom_minimum_size = Vector2(50, 0)
+	base_row.add_child(base_offset_x)
 	var base_box := VBoxContainer.new()
 	base_box.name = "BaseStatsBox"
-	lower_section.add_child(base_box)
+	base_row.add_child(base_box)
 	var base_offset_y := Control.new()
 	base_offset_y.name = "BaseStatsOffsetY"
-	base_offset_y.custom_minimum_size = Vector2(0, 30)
+	base_offset_y.custom_minimum_size = Vector2(0, 35)
 	base_box.add_child(base_offset_y)
 	for pair in [
-		["StrLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["DexLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["IntLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["ConLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
-		["LuckLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE],
+		["StrLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["DexLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["IntLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["ConLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["LuckLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
 	]:
 		var lbl := Label.new()
 		lbl.name = pair[0]
@@ -2222,17 +2235,17 @@ func _enforce_status_card_font_sizes(member: VBoxContainer) -> void:
 		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
 		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
 		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AtkLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/DefLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/HitLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/CritLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/EvadeLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/StrLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/DexLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/IntLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/ConLabel") as Label,
-		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/LuckLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AtkLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/DefLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AgiMoveLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/HitLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/CritLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/EvadeLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/StrLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/DexLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/IntLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/ConLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/LuckLabel") as Label,
 	]
 	for label_any in all_labels:
 		var lbl := label_any as Label
@@ -2319,47 +2332,47 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var atk_label := slot_data.get("atk") as Label
 	if atk_label:
 		atk_label.set_meta("actor_id", actor_id)
-		atk_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_atk + bonus_atk)]
+		atk_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_atk + bonus_atk)]
 	var def_label := slot_data.get("def") as Label
 	if def_label:
 		def_label.set_meta("actor_id", actor_id)
-		def_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_def + bonus_def)]
+		def_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_def + bonus_def)]
 	var agi_move_label := slot_data.get("agi_move") as Label
 	if agi_move_label:
 		agi_move_label.set_meta("actor_id", actor_id)
-		agi_move_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_speed + bonus_speed)]
+		agi_move_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_speed + bonus_speed)]
 	var hit_label := slot_data.get("hit") as Label
 	if hit_label:
 		hit_label.set_meta("actor_id", actor_id)
-		hit_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, hit_power]
+		hit_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, hit_power]
 	var crit_label := slot_data.get("crit") as Label
 	if crit_label:
 		crit_label.set_meta("actor_id", actor_id)
-		crit_label.text = "%s%.1f%%" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, crit_rate_pct]
+		crit_label.text = "%s%.1f%%" % [STATUS_VALUE_OFFSET_PREFIX, crit_rate_pct]
 	var evade_label := slot_data.get("evade") as Label
 	if evade_label:
 		evade_label.set_meta("actor_id", actor_id)
-		evade_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, evade_power]
+		evade_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, evade_power]
 	var str_label := slot_data.get("str") as Label
 	if str_label:
 		str_label.set_meta("actor_id", actor_id)
-		str_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_str + bonus_str)]
+		str_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_str + bonus_str)]
 	var dex_label := slot_data.get("dex") as Label
 	if dex_label:
 		dex_label.set_meta("actor_id", actor_id)
-		dex_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_agi + bonus_agi)]
+		dex_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_agi + bonus_agi)]
 	var int_label := slot_data.get("int") as Label
 	if int_label:
 		int_label.set_meta("actor_id", actor_id)
-		int_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_int + bonus_int)]
+		int_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_int + bonus_int)]
 	var con_label := slot_data.get("con") as Label
 	if con_label:
 		con_label.set_meta("actor_id", actor_id)
-		con_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_con + bonus_con)]
+		con_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_con + bonus_con)]
 	var luck_label := slot_data.get("luck") as Label
 	if luck_label:
 		luck_label.set_meta("actor_id", actor_id)
-		luck_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE, (base_luck + bonus_luck)]
+		luck_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_luck + bonus_luck)]
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
 	var luck_stat = int(_get_actor_value(actor, "luck", 0))
@@ -2553,8 +2566,7 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	for key in ["level", "exp", "hp", "mp", "atk", "def", "agi_move", "hit", "crit", "evade", "str", "dex", "int", "con", "luck"]:
 		var lbl := slot_data.get(key) as Label
 		if lbl:
-			var prefix := STATUS_VALUE_OFFSET_PREFIX if key in ["level", "exp", "hp", "mp"] else STATUS_VALUE_OFFSET_PREFIX_COMBAT_BASE
-			lbl.text = "%s—" % prefix
+			lbl.text = "%s—" % STATUS_VALUE_OFFSET_PREFIX
 			lbl.remove_meta("actor_id")
 
 func _setup_status_hover_for_slot(slot_data: Dictionary) -> void:
