@@ -522,9 +522,7 @@ func _build_quest_entries() -> Array:
 			if bool(mq.get("is_finished", false)):
 				main_status = "已完成"
 			var note_lines: Array = mq.get("notes", [])
-			var note_text := ""
-			if typeof(note_lines) == TYPE_ARRAY and not (note_lines as Array).is_empty():
-				note_text = "\n".join(note_lines)
+			var note_text := _format_notes_for_display(note_lines)
 			entries.append({
 				"id": String(mq.get("id", "main_quest")),
 				"title": String(mq.get("chapter_title", mq.get("title", mq.get("id", "主線任務")))),
@@ -543,9 +541,7 @@ func _build_quest_entries() -> Array:
 				continue
 			var sq_finished := bool(sq.get("is_finished", false))
 			var sq_note_lines: Array = sq.get("notes", [])
-			var sq_note_text := ""
-			if typeof(sq_note_lines) == TYPE_ARRAY and not (sq_note_lines as Array).is_empty():
-				sq_note_text = "\n".join(sq_note_lines)
+			var sq_note_text := _format_notes_for_display(sq_note_lines)
 			entries.append({
 				"id": quest_id,
 				"title": String(sq.get("title", quest_id)),
@@ -564,6 +560,19 @@ func _build_quest_entries() -> Array:
 		return String(a.get("id", "")) < String(b.get("id", ""))
 	)
 	return entries
+
+func _format_notes_for_display(note_lines: Array) -> String:
+	if typeof(note_lines) != TYPE_ARRAY or (note_lines as Array).is_empty():
+		return ""
+	var formatted: Array[String] = []
+	var idx := 1
+	for line_any in note_lines:
+		var line := String(line_any).strip_edges()
+		if line == "":
+			continue
+		formatted.append("%d. %s" % [idx, line])
+		idx += 1
+	return "\n".join(formatted)
 
 func _refresh_quest_list_for_category(category: String) -> void:
 	if quest_list == null:
