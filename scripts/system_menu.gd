@@ -631,11 +631,23 @@ func _on_lore_enemy_selected(index: int) -> void:
 				if typeof(skill_any) != TYPE_DICTIONARY:
 					continue
 				skill_lines.append("• %s" % str((skill_any as Dictionary).get("skill_id", "???")))
+		var enemy_species := str(enemy.get("species", enemy.get("archetype", "江湖人士")))
+		if enemy_species.strip_edges() == "":
+			enemy_species = "江湖人士"
+		var hit_delta := int(enemy.get("accuracy", 100)) - 100
+		var crit_base := 0.05 + floor(float(int(enemy.get("luck", 0))) / 5.0) * 0.01
+		var crit_total := clampf((crit_base + float(enemy.get("crit_rate_bonus", 0.0))) * 100.0, 0.0, 95.0)
 		var lines := [
 			"[b]%s[/b]" % str(enemy.get("name", enemy_id)),
+			"種族：%s" % enemy_species,
 			"經驗值：%d" % int(enemy.get("exp", 0)),
 			"血量：%d" % int(enemy.get("max_hp", enemy.get("hp", 0))),
 			"攻擊力：%d" % int(enemy.get("atk", 0)),
+			"防禦力：%d" % int(enemy.get("def", 0)),
+			"速度：%d" % int(enemy.get("speed", 0)),
+			"命中：%+d" % hit_delta,
+			"閃避：%d" % int(enemy.get("evasion", 0)),
+			"暴擊率：%.1f%%" % crit_total,
 			"初始屬性：%s" % str(enemy.get("element", "—")),
 			"異常抗性：—",
 			"掉落物：%s" % ("無" if drop_lines.is_empty() else "\n" + "\n".join(drop_lines)),
