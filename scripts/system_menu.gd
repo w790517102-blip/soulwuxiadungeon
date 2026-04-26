@@ -2155,14 +2155,14 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	lower_section.add_child(combat_row)
 	var combat_offset_x := Control.new()
 	combat_offset_x.name = "CombatStatsOffsetX"
-	combat_offset_x.custom_minimum_size = Vector2(75, 0)
+	combat_offset_x.custom_minimum_size = Vector2(85, 0)
 	combat_row.add_child(combat_offset_x)
 	var combat_box := VBoxContainer.new()
 	combat_box.name = "CombatStatsBox"
 	combat_row.add_child(combat_box)
 	var combat_offset_y := Control.new()
 	combat_offset_y.name = "CombatStatsOffsetY"
-	combat_offset_y.custom_minimum_size = Vector2(0, 37)
+	combat_offset_y.custom_minimum_size = Vector2(0, 36)
 	combat_box.add_child(combat_offset_y)
 	for pair in [
 		["AtkLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
@@ -2183,14 +2183,14 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	lower_section.add_child(base_row)
 	var base_offset_x := Control.new()
 	base_offset_x.name = "BaseStatsOffsetX"
-	base_offset_x.custom_minimum_size = Vector2(75, 0)
+	base_offset_x.custom_minimum_size = Vector2(85, 0)
 	base_row.add_child(base_offset_x)
 	var base_box := VBoxContainer.new()
 	base_box.name = "BaseStatsBox"
 	base_row.add_child(base_box)
 	var base_offset_y := Control.new()
 	base_offset_y.name = "BaseStatsOffsetY"
-	base_offset_y.custom_minimum_size = Vector2(0, 37)
+	base_offset_y.custom_minimum_size = Vector2(0, 40)
 	base_box.add_child(base_offset_y)
 	for pair in [
 		["StrLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
