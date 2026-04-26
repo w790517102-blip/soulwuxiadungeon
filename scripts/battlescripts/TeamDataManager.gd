@@ -11,6 +11,11 @@ var _inner_force_db: Node = InnerForceDBScript.new()
 var _skill_db: Node = SkillDBScript.new()
 var _character_db: Node = CharacterDBScript.new()
 var _job_db: Node = JobDBScript.new()
+const LEVEL_BASE_HP_GAIN := 10
+const LEVEL_BASE_MP_GAIN := 5
+const LEVEL_ACCURACY_GAIN := 3
+const LEVEL_EVASION_GAIN := 3
+const LEVEL_MAIN_STAT_GAIN := 3
 
 # === 所有可用角色（包含未上場） ===
 var all_characters: Dictionary = {
@@ -478,8 +483,8 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 	if _job_db != null and _job_db.has_method("get_job_def"):
 		job_def = _job_db.get_job_def(job_name)
 
-	var hp_gain = int(job_def.get("hp_per_level", 16))
-	var mp_gain = int(job_def.get("mp_per_level", 8))
+	var hp_gain = LEVEL_BASE_HP_GAIN
+	var mp_gain = LEVEL_BASE_MP_GAIN
 	var atk_gain = int(job_def.get("atk_per_level", 1))
 	var def_gain = int(job_def.get("def_per_level", 1))
 
@@ -488,6 +493,8 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + mp_gain
 	actor["atk"] = int(actor.get("atk", 0)) + atk_gain
 	actor["def"] = int(actor.get("def", 0)) + def_gain
+	actor["accuracy"] = int(actor.get("accuracy", 100)) + LEVEL_ACCURACY_GAIN
+	actor["evasion"] = int(actor.get("evasion", 0)) + LEVEL_EVASION_GAIN
 	actor["hp"] = min(int(actor.get("hp", 0)) + hp_gain, int(actor.get("max_hp", 0)))
 	actor["mp"] = min(int(actor.get("mp", 0)) + mp_gain, int(actor.get("max_mp", 0)))
 
@@ -500,7 +507,7 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 	var cycle_index = int(actor.get("stat_cycle_index", 0))
 	var stat_key = String(stat_cycle[cycle_index % stat_cycle.size()])
 	actor["stat_cycle_index"] = cycle_index + 1
-	actor[stat_key] = int(actor.get(stat_key, 0)) + 1
+	actor[stat_key] = int(actor.get(stat_key, 0)) + LEVEL_MAIN_STAT_GAIN
 
 	var stat_to_atk: Dictionary = {}
 	if typeof(job_def.get("stat_to_atk", null)) == TYPE_DICTIONARY:

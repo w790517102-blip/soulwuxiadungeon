@@ -31,7 +31,7 @@ const NEW_GAME_START_GOLD: int = 1000
 var party_gold: int = NEW_GAME_START_GOLD
 var equipped_by_actor: Dictionary = {}
 var ever_owned_item_ids: Dictionary = {}
-const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed", "accuracy", "evasion", "crit_rate_bonus"]
+const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "accuracy", "evasion", "crit_rate_bonus"]
 const EQUIP_SLOTS := [
 	"weapon_1",
 	"weapon_2",
@@ -199,7 +199,7 @@ func get_equipment_stat_bonus(actor_id: String = "") -> Dictionary:
 		var stats: Dictionary = item_def.get("stats", {})
 		for key in STAT_KEYS:
 			if stats.has(key):
-				if key == "crit_rate_bonus":
+				if key in ["crit_rate_bonus", "max_hp_pct", "max_mp_pct"]:
 					bonus[key] = float(bonus.get(key, 0.0)) + float(stats.get(key, 0.0))
 				else:
 					bonus[key] = int(bonus.get(key, 0)) + int(stats.get(key, 0))

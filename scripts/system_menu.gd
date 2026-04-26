@@ -1441,7 +1441,7 @@ func _get_inner_force_bonus(actor) -> Dictionary:
 		"luck": int(_get_actor_value(actor, "luck", 0)),
 	}
 	var runtime_effects: Dictionary = InnerForceDB.get_runtime_effects(inner_force, actor_snapshot)
-	for stat_key in ["str", "con", "agi", "accuracy", "def", "max_hp", "max_mp", "speed", "evasion", "crit_rate_bonus"]:
+	for stat_key in ["str", "con", "agi", "accuracy", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "evasion", "crit_rate_bonus"]:
 		if not runtime_effects.has(stat_key):
 			continue
 		var incoming = runtime_effects.get(stat_key, 0)
@@ -1461,7 +1461,9 @@ func _get_effective_max_hp(actor, actor_id: String = "") -> int:
 	if InventorySync and InventorySync.has_method("get_equipment_stat_bonus"):
 		equip_bonus = InventorySync.get_equipment_stat_bonus(actual_actor_id)
 	var inner_bonus := _get_inner_force_bonus(actor)
-	var effective := base_max_hp + int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
+	var flat_bonus := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
+	var mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
+	var effective := int(round(float(base_max_hp + flat_bonus) * mult))
 	return max(effective, 1)
 
 func _get_effective_max_mp(actor, actor_id: String = "") -> int:
@@ -1472,8 +1474,36 @@ func _get_effective_max_mp(actor, actor_id: String = "") -> int:
 	if InventorySync and InventorySync.has_method("get_equipment_stat_bonus"):
 		equip_bonus = InventorySync.get_equipment_stat_bonus(actual_actor_id)
 	var inner_bonus := _get_inner_force_bonus(actor)
-	var effective := base_max_mp + int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	var flat_bonus := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	var mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
+	var effective := int(round(float(base_max_mp + flat_bonus) * mult))
 	return max(effective, 0)
+
+func _get_first_numeric_value(actor, keys: Array, default_value: float = 0.0) -> float:
+	var total := 0.0
+	var found := false
+	for key_any in keys:
+		var v = _get_actor_value(actor, String(key_any), null)
+		if typeof(v) in [TYPE_INT, TYPE_FLOAT]:
+			total += float(v)
+			found = true
+	return total if found else default_value
+
+func _get_actor_resource_multiplier(actor, equip_bonus: Dictionary, inner_bonus: Dictionary, resource_key: String) -> float:
+	var actor_pct := 0.0
+	if resource_key == "hp":
+		actor_pct += float(max(0, int(_get_actor_value(actor, "con", 0)))) * 0.01
+		actor_pct += _get_first_numeric_value(actor, ["max_hp_pct_bonus", "hp_pct_bonus", "max_hp_multiplier_bonus", "hp_multiplier_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["item_max_hp_pct_bonus", "item_hp_pct_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["inner_force_max_hp_pct_bonus", "inner_max_hp_pct_bonus"], 0.0)
+	elif resource_key == "mp":
+		actor_pct += float(max(0, int(_get_actor_value(actor, "int", 0)))) * 0.01
+		actor_pct += _get_first_numeric_value(actor, ["max_mp_pct_bonus", "mp_pct_bonus", "max_mp_multiplier_bonus", "mp_multiplier_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["item_max_mp_pct_bonus", "item_mp_pct_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["inner_force_max_mp_pct_bonus", "inner_max_mp_pct_bonus"], 0.0)
+	var equip_pct := float(equip_bonus.get("max_%s_pct" % resource_key, 0.0))
+	var inner_pct := float(inner_bonus.get("max_%s_pct" % resource_key, 0.0))
+	return max(0.1, 1.0 + actor_pct + equip_pct + inner_pct)
 
 func _get_actor_by_id(actor_id: String):
 	if TeamData == null:
@@ -2285,6 +2315,10 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var bonus_def := int(equip_bonus.get("def", 0)) + int(inner_bonus.get("def", 0))
 	var bonus_max_hp := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
 	var bonus_max_mp := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
+	var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
+	var total_max_hp := int(round(float(base_max_hp + bonus_max_hp) * hp_mult))
+	var total_max_mp := int(round(float(base_max_mp + bonus_max_mp) * mp_mult))
 	var bonus_speed := int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0))
 	var base_str := int(_get_actor_value(actor, "str", 5))
 	var base_agi := int(_get_actor_value(actor, "agi", 5))
@@ -2338,11 +2372,11 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var hp_label := slot_data.get("hp") as Label
 	if hp_label:
 		hp_label.set_meta("actor_id", actor_id)
-		hp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_hp, base_max_hp + bonus_max_hp]
+		hp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_hp, max(total_max_hp, 1)]
 	var mp_label := slot_data.get("mp") as Label
 	if mp_label:
 		mp_label.set_meta("actor_id", actor_id)
-		mp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_mp, base_max_mp + bonus_max_mp]
+		mp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_mp, max(total_max_mp, 0)]
 	var atk_label := slot_data.get("atk") as Label
 	if atk_label:
 		atk_label.set_meta("actor_id", actor_id)
@@ -2516,9 +2550,10 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var hp_equip := int(equip_bonus.get("max_hp", 0))
 			var hp_inner := int(inner_bonus.get("max_hp", 0))
 			var hp_stat := _get_actor_resource_stat_bonus(actor, "hp")
-			var hp_total_max := hp_base_max + hp_equip + hp_inner
-			return "[b]氣血[/b]\n目前：%d/%d\n上限計算：基礎 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d" % [
-				hp_now, hp_total_max, hp_equip, hp_inner, hp_stat
+			var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
+			var hp_total_max := int(round(float(hp_base_max + hp_equip + hp_inner) * hp_mult))
+			return "[b]氣血[/b]\n目前：%d/%d\n上限計算：(基礎 + 裝備 + 內功) × 倍率\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
+				hp_now, hp_total_max, hp_equip, hp_inner, hp_stat, hp_mult
 			]
 		"mp_breakdown":
 			var mp_now := int(_get_actor_value(actor, "mp", 0))
@@ -2526,9 +2561,10 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var mp_equip := int(equip_bonus.get("max_mp", 0))
 			var mp_inner := int(inner_bonus.get("max_mp", 0))
 			var mp_stat := _get_actor_resource_stat_bonus(actor, "mp")
-			var mp_total_max := mp_base_max + mp_equip + mp_inner
-			return "[b]內力[/b]\n目前：%d/%d\n上限計算：基礎 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d" % [
-				mp_now, mp_total_max, mp_equip, mp_inner, mp_stat
+			var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
+			var mp_total_max := int(round(float(mp_base_max + mp_equip + mp_inner) * mp_mult))
+			return "[b]內力[/b]\n目前：%d/%d\n上限計算：(基礎 + 裝備 + 內功) × 倍率\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
+				mp_now, mp_total_max, mp_equip, mp_inner, mp_stat, mp_mult
 			]
 		"hit_power":
 			var acc_total := int(_get_actor_value(actor, "accuracy", 100)) + int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
