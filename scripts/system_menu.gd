@@ -1492,12 +1492,14 @@ func _get_first_numeric_value(actor, keys: Array, default_value: float = 0.0) ->
 func _get_actor_resource_multiplier(actor, equip_bonus: Dictionary, inner_bonus: Dictionary, resource_key: String) -> float:
 	var actor_pct := 0.0
 	if resource_key == "hp":
-		actor_pct += float(max(0, int(_get_actor_value(actor, "con", 0)))) * 0.01
+		var effective_con := int(_get_actor_value(actor, "con", 0)) + int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0))
+		actor_pct += float(max(0, effective_con)) * 0.01
 		actor_pct += _get_first_numeric_value(actor, ["max_hp_pct_bonus", "hp_pct_bonus", "max_hp_multiplier_bonus", "hp_multiplier_bonus"], 0.0)
 		actor_pct += _get_first_numeric_value(actor, ["item_max_hp_pct_bonus", "item_hp_pct_bonus"], 0.0)
 		actor_pct += _get_first_numeric_value(actor, ["inner_force_max_hp_pct_bonus", "inner_max_hp_pct_bonus"], 0.0)
 	elif resource_key == "mp":
-		actor_pct += float(max(0, int(_get_actor_value(actor, "int", 0)))) * 0.01
+		var effective_int := int(_get_actor_value(actor, "int", 0)) + int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0))
+		actor_pct += float(max(0, effective_int)) * 0.01
 		actor_pct += _get_first_numeric_value(actor, ["max_mp_pct_bonus", "mp_pct_bonus", "max_mp_multiplier_bonus", "mp_multiplier_bonus"], 0.0)
 		actor_pct += _get_first_numeric_value(actor, ["item_max_mp_pct_bonus", "item_mp_pct_bonus"], 0.0)
 		actor_pct += _get_first_numeric_value(actor, ["inner_force_max_mp_pct_bonus", "inner_max_mp_pct_bonus"], 0.0)

@@ -517,9 +517,11 @@ func _apply_equipment_bonuses() -> void:
 func _resource_multiplier_for_actor(actor: Dictionary, equip_bonus: Dictionary, force_bonus: Dictionary, resource_key: String) -> float:
 	var attr_pct := 0.0
 	if resource_key == "hp":
-		attr_pct = float(max(0, int(actor.get("con", 0)))) * 0.01
+		var effective_con := int(actor.get("con", 0)) + int(equip_bonus.get("con", 0)) + int(force_bonus.get("con", 0))
+		attr_pct = float(max(0, effective_con)) * 0.01
 	else:
-		attr_pct = float(max(0, int(actor.get("int", 0)))) * 0.01
+		var effective_int := int(actor.get("int", 0)) + int(equip_bonus.get("int", 0)) + int(force_bonus.get("int", 0))
+		attr_pct = float(max(0, effective_int)) * 0.01
 	var equip_pct := float(equip_bonus.get("max_%s_pct" % resource_key, 0.0))
 	var force_pct := float(force_bonus.get("max_%s_pct" % resource_key, 0.0))
 	var actor_pct := _resource_pct_from_actor(actor, resource_key)
