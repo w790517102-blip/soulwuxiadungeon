@@ -96,6 +96,7 @@ const TAB_QUEST_SELECTED = preload("res://assets/UI/system_menu/tab_quest_select
 const TAB_SYSTEM_NORMAL = preload("res://assets/UI/system_menu/tab_system.png")
 const TAB_SYSTEM_SELECTED = preload("res://assets/UI/system_menu/tab_system_selected.png")
 const STATUS_MEMBER_CARD_BG = preload("res://assets/UI/system_menu/status_member_1.jpg")
+const STATUS_MEMBER_CARD_SIZE := Vector2(348, 549)
 const TAB_LORE_NORMAL_PATH = "res://assets/UI/system_menu/tab_lore.png"
 const TAB_LORE_SELECTED_PATH = "res://assets/UI/system_menu/tab_lore_selected.png"
 var _skill_db: Node = CharacterSkillDB.new()
@@ -1759,9 +1760,9 @@ func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, r
 	if preview_member == null:
 		preview_member = VBoxContainer.new()
 		preview_member.name = "Member1"
-		preview_member.custom_minimum_size = Vector2(350, 280)
 		preview_row.add_child(preview_member)
-		_rebuild_status_member_layout(preview_member)
+	_configure_status_member_container(preview_member)
+	_rebuild_status_member_layout(preview_member)
 
 	var content := right_pane.get_node_or_null(content_name) as VBoxContainer
 	if content == null:
@@ -1793,6 +1794,7 @@ func _build_status_slots_from_row(row: HBoxContainer) -> Array:
 		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
 		if member == null:
 			continue
+		_configure_status_member_container(member)
 		_rebuild_status_member_layout(member)
 		slots.append({
 			"name": member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label,
@@ -2006,6 +2008,7 @@ func _setup_status_member_slots() -> void:
 		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
 		if member == null:
 			continue
+		_configure_status_member_container(member)
 		_rebuild_status_member_layout(member)
 		_status_member_slots.append({
 			"name": member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label,
@@ -2038,6 +2041,8 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	card_bg.name = "CardBG"
 	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_bg.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card_bg.custom_minimum_size = STATUS_MEMBER_CARD_SIZE
 	var card_style := StyleBoxTexture.new()
 	card_style.texture = STATUS_MEMBER_CARD_BG
 	card_style.texture_margin_left = 0.0
@@ -2148,6 +2153,13 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 
 	_apply_menu_font_style(member)
 	_enforce_status_card_font_sizes(member)
+
+func _configure_status_member_container(member: VBoxContainer) -> void:
+	if member == null:
+		return
+	member.custom_minimum_size = STATUS_MEMBER_CARD_SIZE
+	member.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	member.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 func _apply_status_card_label_size(label: Label, is_name: bool) -> void:
 	if label == null:
