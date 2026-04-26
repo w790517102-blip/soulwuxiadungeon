@@ -515,20 +515,24 @@ func _refresh_quest_tab() -> void:
 
 func _build_quest_entries() -> Array:
 	var entries: Array = []
-	if QuestManager and QuestManager.has_method("get_main_quest_state"):
-		var mq: Dictionary = QuestManager.get_main_quest_state()
+	if QuestManager and (QuestManager.has_method("get_main_quest_display") or QuestManager.has_method("get_main_quest_state")):
+		var mq: Dictionary = QuestManager.get_main_quest_display() if QuestManager.has_method("get_main_quest_display") else QuestManager.get_main_quest_state()
 		if not mq.is_empty():
 			var main_status := "進行中"
 			if bool(mq.get("is_finished", false)):
 				main_status = "已完成"
+			var note_lines: Array = mq.get("notes", [])
+			var note_text := ""
+			if typeof(note_lines) == TYPE_ARRAY and not (note_lines as Array).is_empty():
+				note_text = "\n".join(note_lines)
 			entries.append({
 				"id": String(mq.get("id", "main_quest")),
-				"title": String(mq.get("title", mq.get("id", "主線任務"))),
+				"title": String(mq.get("chapter_title", mq.get("title", mq.get("id", "主線任務")))),
 				"type": "主線",
 				"status": main_status,
 				"description": String(mq.get("description", "尚無任務描述。")),
-				"objective": String(mq.get("objective", mq.get("description", "請推進主線。"))),
-				"note": String(mq.get("note", mq.get("liuyu_note", mq.get("observation", "")))),
+				"objective": String(mq.get("current_objective", mq.get("objective", mq.get("description", "請推進主線。")))),
+				"note": note_text if note_text != "" else String(mq.get("note", mq.get("liuyu_note", mq.get("observation", "")))),
 				"stage": int(mq.get("stage", 0)),
 			})
 	if SideQuestManager and typeof(SideQuestManager.side_quests) == TYPE_DICTIONARY:
