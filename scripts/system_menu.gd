@@ -2122,7 +2122,16 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	var basic_info := VBoxContainer.new()
 	basic_info.name = "BasicInfoBox"
 	basic_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var basic_info_offset := Control.new()
+	basic_info_offset.name = "BasicInfoOffsetX"
+	basic_info_offset.custom_minimum_size = Vector2(50, 0)
+	top_section.add_child(basic_info_offset)
 	top_section.add_child(basic_info)
+
+	var basic_info_offset_y := Control.new()
+	basic_info_offset_y.name = "BasicInfoOffsetY"
+	basic_info_offset_y.custom_minimum_size = Vector2(0, 30)
+	basic_info.add_child(basic_info_offset_y)
 
 	for pair in [
 		["LevelLabel", "等級：—"],
