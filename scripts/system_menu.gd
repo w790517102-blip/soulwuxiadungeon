@@ -33,6 +33,10 @@ const LoreDB = preload("res://scripts/db/LoreDB.gd")
 @onready var lore_enemy_list: ItemList = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/神怪/EnemyList")
 @onready var lore_detail_title: Label = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreRightPane/LoreDetailTitle")
 @onready var lore_detail: RichTextLabel = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreRightPane/LoreDetail")
+@onready var quest_category_option: OptionButton = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestLeftPane/QuestCategory")
+@onready var quest_list: ItemList = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestLeftPane/QuestList")
+@onready var quest_detail_title: Label = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestRightPane/QuestDetailTitle")
+@onready var quest_detail_body: RichTextLabel = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestRightPane/QuestDetailBody")
 @onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
 @onready var armor_head_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHeadButton")
@@ -66,6 +70,9 @@ var _pending_status_hover_actor_id: String = ""
 var _selected_party_slot_index: int = -1
 var _selected_reserve_actor_id: String = ""
 var _selected_lore_category: String = "奇物"
+var _selected_quest_category: String = "主線"
+var _selected_quest_id: String = ""
+var _quest_entries: Array = []
 var _shared_view_actor_id: String = ""
 var _tab_actor_memory: Dictionary = {
 	"item": "",
@@ -150,6 +157,8 @@ func _ready():
 		item_desc.bbcode_enabled = true
 	if lore_detail:
 		lore_detail.bbcode_enabled = true
+	if quest_detail_body:
+		quest_detail_body.bbcode_enabled = true
 
 	if item_list:
 		item_list.item_selected.connect(_on_item_selected)
@@ -174,6 +183,10 @@ func _ready():
 		lore_character_list.item_selected.connect(_on_lore_character_selected)
 	if lore_enemy_list and not lore_enemy_list.item_selected.is_connected(_on_lore_enemy_selected):
 		lore_enemy_list.item_selected.connect(_on_lore_enemy_selected)
+	if quest_category_option and not quest_category_option.item_selected.is_connected(_on_quest_category_selected):
+		quest_category_option.item_selected.connect(_on_quest_category_selected)
+	if quest_list and not quest_list.item_selected.is_connected(_on_quest_item_selected):
+		quest_list.item_selected.connect(_on_quest_item_selected)
 	if InventorySync:
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
@@ -225,6 +238,7 @@ func _ready():
 	_refresh_martial_tabs()
 	_refresh_party_tab()
 	_refresh_lore_tab()
+	_refresh_quest_tab()
 	_apply_tab_actor_context(tabs.current_tab if tabs else -1)
 	_update_use_button("")
 	if tabs:
@@ -275,6 +289,7 @@ func _on_tab_changed(tab_index: int) -> void:
 	var martial_tab_index = $VBoxContainer/武術.get_index()
 	var party_tab_index = $VBoxContainer/隊伍.get_index()
 	var lore_tab_index = $VBoxContainer/見聞.get_index()
+	var quest_tab_index = $VBoxContainer/任務.get_index()
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == equipment_tab_index:
@@ -285,6 +300,8 @@ func _on_tab_changed(tab_index: int) -> void:
 		_refresh_party_tab()
 	elif tab_index == lore_tab_index:
 		_refresh_lore_tab()
+	elif tab_index == quest_tab_index:
+		_refresh_quest_tab()
 
 func _setup_custom_tab_bar() -> void:
 	_custom_tab_entries.clear()
@@ -474,6 +491,159 @@ func _apply_party_ids(ids: Array) -> void:
 	_refresh_status_tab()
 	_refresh_equipment_tab()
 	_refresh_martial_tabs()
+
+func _refresh_quest_tab() -> void:
+	if quest_category_option == null or quest_list == null:
+		return
+	if quest_category_option.item_count == 0:
+		quest_category_option.add_item("主線")
+		quest_category_option.add_item("支線")
+		quest_category_option.add_item("已完成")
+	var target_category_idx := 0
+	match _selected_quest_category:
+		"主線":
+			target_category_idx = 0
+		"支線":
+			target_category_idx = 1
+		"已完成":
+			target_category_idx = 2
+	if quest_category_option.selected != target_category_idx:
+		quest_category_option.select(target_category_idx)
+	_selected_quest_category = quest_category_option.get_item_text(target_category_idx)
+	_quest_entries = _build_quest_entries()
+	_refresh_quest_list_for_category(_selected_quest_category)
+
+func _build_quest_entries() -> Array:
+	var entries: Array = []
+	if QuestManager and QuestManager.has_method("get_main_quest_state"):
+		var mq: Dictionary = QuestManager.get_main_quest_state()
+		if not mq.is_empty():
+			var main_status := "進行中"
+			if bool(mq.get("is_finished", false)):
+				main_status = "已完成"
+			entries.append({
+				"id": String(mq.get("id", "main_quest")),
+				"title": String(mq.get("title", mq.get("id", "主線任務"))),
+				"type": "主線",
+				"status": main_status,
+				"description": String(mq.get("description", "尚無任務描述。")),
+				"objective": String(mq.get("objective", mq.get("description", "請推進主線。"))),
+				"note": String(mq.get("note", mq.get("liuyu_note", mq.get("observation", "")))),
+				"stage": int(mq.get("stage", 0)),
+			})
+	if SideQuestManager and typeof(SideQuestManager.side_quests) == TYPE_DICTIONARY:
+		for quest_id_any in SideQuestManager.side_quests.keys():
+			var quest_id := String(quest_id_any)
+			var sq: Dictionary = SideQuestManager.side_quests.get(quest_id, {})
+			if sq.is_empty():
+				continue
+			var sq_finished := bool(sq.get("is_finished", false))
+			entries.append({
+				"id": quest_id,
+				"title": String(sq.get("title", quest_id)),
+				"type": "支線",
+				"status": "已完成" if sq_finished else "進行中",
+				"description": String(sq.get("description", "尚無支線描述。")),
+				"objective": String(sq.get("objective", sq.get("current_goal", sq.get("description", "請追蹤線索。")))),
+				"note": String(sq.get("note", sq.get("liuyu_note", sq.get("observation", "")))),
+				"stage": int(sq.get("stage", 0)),
+			})
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var a_finished := String(a.get("status", "")) == "已完成"
+		var b_finished := String(b.get("status", "")) == "已完成"
+		if a_finished != b_finished:
+			return not a_finished
+		return String(a.get("id", "")) < String(b.get("id", ""))
+	)
+	return entries
+
+func _refresh_quest_list_for_category(category: String) -> void:
+	if quest_list == null:
+		return
+	quest_list.clear()
+	var filtered: Array = []
+	for entry_any in _quest_entries:
+		var entry: Dictionary = entry_any
+		var status := String(entry.get("status", "進行中"))
+		var qtype := String(entry.get("type", "支線"))
+		match category:
+			"主線":
+				if qtype != "主線" or status == "已完成":
+					continue
+			"支線":
+				if qtype != "支線" or status == "已完成":
+					continue
+			"已完成":
+				if status != "已完成":
+					continue
+		filtered.append(entry)
+	for entry in filtered:
+		var stage := int(entry.get("stage", 0))
+		var label := str(entry.get("title", entry.get("id", "???")))
+		if stage > 0:
+			label += "（第%d步）" % stage
+		quest_list.add_item(label)
+		quest_list.set_item_metadata(quest_list.item_count - 1, String(entry.get("id", "")))
+	if filtered.is_empty():
+		_selected_quest_id = ""
+		_set_quest_empty_state("目前此分類沒有任務。")
+		return
+	var selected_index := 0
+	if _selected_quest_id != "":
+		for i in range(quest_list.item_count):
+			if String(quest_list.get_item_metadata(i)) == _selected_quest_id:
+				selected_index = i
+				break
+	quest_list.select(selected_index)
+	_on_quest_item_selected(selected_index)
+
+func _on_quest_category_selected(index: int) -> void:
+	if quest_category_option == null:
+		return
+	_selected_quest_category = quest_category_option.get_item_text(index)
+	_refresh_quest_list_for_category(_selected_quest_category)
+
+func _on_quest_item_selected(index: int) -> void:
+	if quest_list == null or index < 0 or index >= quest_list.item_count:
+		return
+	var quest_id := String(quest_list.get_item_metadata(index))
+	_selected_quest_id = quest_id
+	for entry_any in _quest_entries:
+		var entry: Dictionary = entry_any
+		if String(entry.get("id", "")) != quest_id:
+			continue
+		_fill_quest_detail(entry)
+		return
+	_set_quest_empty_state("找不到任務資料。")
+
+func _fill_quest_detail(entry: Dictionary) -> void:
+	if quest_detail_title:
+		quest_detail_title.text = "任務：%s" % String(entry.get("title", entry.get("id", "???")))
+	if quest_detail_body == null:
+		return
+	var note := String(entry.get("note", "")).strip_edges()
+	if note == "":
+		note = "（尚無）"
+	var lines := [
+		"[b]%s[/b]" % String(entry.get("title", "未命名任務")),
+		"類型：%s　｜　狀態：%s" % [String(entry.get("type", "支線")), String(entry.get("status", "進行中"))],
+		"",
+		"[b]任務描述[/b]",
+		String(entry.get("description", "尚無任務描述。")),
+		"",
+		"[b]當前目標[/b]",
+		String(entry.get("objective", "尚無明確目標。")),
+		"",
+		"[b]劉語塵筆記／異樣觀察[/b]",
+		note,
+	]
+	quest_detail_body.text = "\n".join(lines)
+
+func _set_quest_empty_state(message: String) -> void:
+	if quest_detail_title:
+		quest_detail_title.text = "任務簡報"
+	if quest_detail_body:
+		quest_detail_body.text = message
 
 func _refresh_lore_tab() -> void:
 	if lore_category_tabs == null:

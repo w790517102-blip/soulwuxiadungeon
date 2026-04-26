@@ -411,8 +411,43 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 6
 
-[node name="Tree" type="Tree" parent="VBoxContainer/任務"]
+[node name="QuestLayout" type="HBoxContainer" parent="VBoxContainer/任務"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="QuestLeftPane" type="VBoxContainer" parent="VBoxContainer/任務/QuestLayout"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="QuestCategory" type="OptionButton" parent="VBoxContainer/任務/QuestLayout/QuestLeftPane"]
+layout_mode = 2
+
+[node name="QuestList" type="ItemList" parent="VBoxContainer/任務/QuestLayout/QuestLeftPane"]
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2
+size_flags_vertical = 3
+allow_reselect = true
+select_mode = 0
+
+[node name="QuestRightPane" type="VBoxContainer" parent="VBoxContainer/任務/QuestLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="QuestDetailTitle" type="Label" parent="VBoxContainer/任務/QuestLayout/QuestRightPane"]
+layout_mode = 2
+text = "任務簡報"
+
+[node name="QuestDetailBody" type="RichTextLabel" parent="VBoxContainer/任務/QuestLayout/QuestRightPane"]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "請從左側選擇任務。"
 
 [node name="隊伍" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
