@@ -2106,13 +2106,15 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	top_section.add_theme_constant_override("separation", 8)
 	card_content.add_child(top_section)
 
-	var portrait_frame := PanelContainer.new()
+	var portrait_frame := Control.new()
 	portrait_frame.name = "PortraitFrame"
+	portrait_frame.custom_minimum_size = Vector2(148, 132)
 	top_section.add_child(portrait_frame)
 
 	var portrait := TextureRect.new()
 	portrait.name = "Portrait"
 	portrait.custom_minimum_size = Vector2(128, 128)
+	portrait.position = Vector2(20, 4)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait_frame.add_child(portrait)
