@@ -635,7 +635,7 @@ func _on_lore_enemy_selected(index: int) -> void:
 		if enemy_species.strip_edges() == "":
 			enemy_species = "江湖人士"
 		var hit_delta := int(enemy.get("accuracy", 100)) - 100
-		var crit_base := 0.05 + floor(float(int(enemy.get("luck", 0))) / 5.0) * 0.01
+		var crit_base = 0.05 + floor(float(int(enemy.get("luck", 0))) / 5.0) * 0.01
 		var crit_total := clampf((crit_base + float(enemy.get("crit_rate_bonus", 0.0))) * 100.0, 0.0, 95.0)
 		var lines := [
 			"[b]%s[/b]" % str(enemy.get("name", enemy_id)),
