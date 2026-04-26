@@ -269,11 +269,14 @@ func _on_tab_changed(tab_index: int) -> void:
 	_sync_custom_tab_visuals(tab_index)
 	_apply_tab_actor_context(tab_index)
 	var item_tab_index = $VBoxContainer/道具.get_index()
+	var equipment_tab_index = $VBoxContainer/裝備.get_index()
 	var martial_tab_index = $VBoxContainer/武術.get_index()
 	var party_tab_index = $VBoxContainer/隊伍.get_index()
 	var lore_tab_index = $VBoxContainer/見聞.get_index()
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
+	elif tab_index == equipment_tab_index:
+		_refresh_equipment_tab()
 	elif tab_index == martial_tab_index:
 		_refresh_martial_tabs()
 	elif tab_index == party_tab_index:
@@ -1632,7 +1635,7 @@ func _apply_tab_actor_context(tab_index: int) -> void:
 		tab_key = "martial"
 	if tab_key == "":
 		return
-	var remembered_id := _get_tab_actor(tab_key)
+	var remembered_id := _resolve_tab_final_actor_id(tab_key)
 	if remembered_id == "":
 		var seed_ids: Array = _get_canonical_team_ids() if tab_key == "martial" else _get_all_character_ids()
 		if not seed_ids.is_empty():
@@ -1642,7 +1645,28 @@ func _apply_tab_actor_context(tab_index: int) -> void:
 		else:
 			remembered_id = "liuyu"
 		_remember_tab_actor(tab_key, remembered_id)
+	print("[TabActorContext] tab=%s final_actor=%s shared=%s martial_mem=%s" % [
+		tab_key, remembered_id, _shared_view_actor_id, str(_tab_actor_memory.get("martial", ""))
+	])
 	_selected_actor_id = remembered_id
+
+func _resolve_tab_final_actor_id(tab_key: String) -> String:
+	if tab_key == "martial":
+		if _is_actor_in_active_party(_shared_view_actor_id):
+			return _shared_view_actor_id
+		var martial_id := str(_tab_actor_memory.get("martial", ""))
+		if _is_actor_in_active_party(martial_id):
+			return martial_id
+		if TeamData and TeamData.has_method("get_active_party"):
+			for actor in TeamData.get_active_party():
+				var actor_id := _get_actor_id_from_entry(actor)
+				if actor_id != "":
+					return actor_id
+		return ""
+	if tab_key == "item" or tab_key == "equipment":
+		if _shared_view_actor_id != "":
+			return _shared_view_actor_id
+	return _get_tab_actor(tab_key)
 
 func _get_active_character_id() -> String:
 	if _selected_actor_id != "":
@@ -1933,7 +1957,9 @@ func _on_equipment_character_selected(index: int) -> void:
 func _refresh_martial_character_select() -> void:
 	if martial_character_select == null or TeamData == null:
 		return
-	var prev_id = _get_tab_actor("martial")
+	var prev_id = _get_active_character_id()
+	if not _is_actor_in_active_party(prev_id):
+		prev_id = _get_tab_actor("martial")
 	if martial_character_select.item_count > 0:
 		var prev_index := martial_character_select.get_selected()
 		if prev_index >= 0 and prev_index < martial_character_select.item_count:
