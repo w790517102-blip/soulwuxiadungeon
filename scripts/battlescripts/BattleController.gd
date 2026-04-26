@@ -501,8 +501,10 @@ func _apply_equipment_bonuses() -> void:
 		var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(force_bonus.get("max_mp", 0))
 		var hp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "hp")
 		var mp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "mp")
-		var max_hp := int(round(float(int(p.get("max_hp", p.get("hp", 0))) + bonus_max_hp) * hp_mult))
-		var max_mp := int(round(float(int(p.get("max_mp", p.get("mp", 0))) + bonus_max_mp) * mp_mult))
+		var base_max_hp := int(p.get("max_hp", p.get("hp", 0)))
+		var base_max_mp := int(p.get("max_mp", p.get("mp", 0)))
+		var max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
+		var max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
 		p["atk"] = int(p.get("atk", 0)) + bonus_atk
 		p["def"] = int(p.get("def", 0)) + bonus_def
 		p["speed"] = int(p.get("speed", 0)) + bonus_speed

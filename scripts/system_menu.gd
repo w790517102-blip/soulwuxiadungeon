@@ -1650,7 +1650,7 @@ func _get_effective_max_hp(actor, actor_id: String = "") -> int:
 	var inner_bonus := _get_inner_force_bonus(actor)
 	var flat_bonus := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
 	var mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
-	var effective := int(round(float(base_max_hp + flat_bonus) * mult))
+	var effective := int(round(float(base_max_hp) * mult)) + flat_bonus
 	return max(effective, 1)
 
 func _get_effective_max_mp(actor, actor_id: String = "") -> int:
@@ -1663,7 +1663,7 @@ func _get_effective_max_mp(actor, actor_id: String = "") -> int:
 	var inner_bonus := _get_inner_force_bonus(actor)
 	var flat_bonus := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
 	var mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
-	var effective := int(round(float(base_max_mp + flat_bonus) * mult))
+	var effective := int(round(float(base_max_mp) * mult)) + flat_bonus
 	return max(effective, 0)
 
 func _get_first_numeric_value(actor, keys: Array, default_value: float = 0.0) -> float:
@@ -2506,8 +2506,8 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var bonus_max_mp := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
 	var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
 	var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
-	var total_max_hp := int(round(float(base_max_hp + bonus_max_hp) * hp_mult))
-	var total_max_mp := int(round(float(base_max_mp + bonus_max_mp) * mp_mult))
+	var total_max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
+	var total_max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
 	var bonus_speed := int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0))
 	var base_str := int(_get_actor_value(actor, "str", 5))
 	var base_agi := int(_get_actor_value(actor, "agi", 5))
@@ -2740,8 +2740,9 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var hp_inner := int(inner_bonus.get("max_hp", 0))
 			var hp_stat := _get_actor_resource_stat_bonus(actor, "hp")
 			var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
-			var hp_total_max := int(round(float(hp_base_max + hp_equip + hp_inner) * hp_mult))
-			return "[b]氣血[/b]\n目前：%d/%d\n上限計算：(基礎 + 裝備 + 內功) × 倍率\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
+			var hp_flat_bonus := hp_equip + hp_inner
+			var hp_total_max := int(round(float(hp_base_max) * hp_mult)) + hp_flat_bonus
+			return "[b]氣血[/b]\n目前：%d/%d\n上限計算：基礎 × 倍率 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
 				hp_now, hp_total_max, hp_equip, hp_inner, hp_stat, hp_mult
 			]
 		"mp_breakdown":
@@ -2751,8 +2752,9 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var mp_inner := int(inner_bonus.get("max_mp", 0))
 			var mp_stat := _get_actor_resource_stat_bonus(actor, "mp")
 			var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
-			var mp_total_max := int(round(float(mp_base_max + mp_equip + mp_inner) * mp_mult))
-			return "[b]內力[/b]\n目前：%d/%d\n上限計算：(基礎 + 裝備 + 內功) × 倍率\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
+			var mp_flat_bonus := mp_equip + mp_inner
+			var mp_total_max := int(round(float(mp_base_max) * mp_mult)) + mp_flat_bonus
+			return "[b]內力[/b]\n目前：%d/%d\n上限計算：基礎 × 倍率 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
 				mp_now, mp_total_max, mp_equip, mp_inner, mp_stat, mp_mult
 			]
 		"hit_power":
