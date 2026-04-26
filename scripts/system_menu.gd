@@ -2060,6 +2060,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	var name_label := Label.new()
 	name_label.name = "NameBrushLabel"
 	name_label.text = "—"
+	_apply_status_card_label_size(name_label, true)
 	header_row.add_child(name_label)
 
 	var header_spacer := Control.new()
@@ -2071,6 +2072,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	job_label.name = "JobClassLabel"
 	job_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	job_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_apply_status_card_label_size(job_label, false)
 	header_row.add_child(job_label)
 
 	var top_section := HBoxContainer.new()
@@ -2104,6 +2106,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 		var lbl := Label.new()
 		lbl.name = pair[0]
 		lbl.text = pair[1]
+		_apply_status_card_label_size(lbl, false)
 		basic_info.add_child(lbl)
 
 	var lower_section := VBoxContainer.new()
@@ -2124,6 +2127,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 		var lbl := Label.new()
 		lbl.name = pair[0]
 		lbl.text = pair[1]
+		_apply_status_card_label_size(lbl, false)
 		combat_box.add_child(lbl)
 
 	var base_box := VBoxContainer.new()
@@ -2139,9 +2143,47 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 		var lbl := Label.new()
 		lbl.name = pair[0]
 		lbl.text = pair[1]
+		_apply_status_card_label_size(lbl, false)
 		base_box.add_child(lbl)
 
 	_apply_menu_font_style(member)
+	_enforce_status_card_font_sizes(member)
+
+func _apply_status_card_label_size(label: Label, is_name: bool) -> void:
+	if label == null:
+		return
+	if is_name:
+		label.add_theme_font_size_override("font_size", 20)
+	else:
+		label.add_theme_font_size_override("font_size", 12)
+
+func _enforce_status_card_font_sizes(member: VBoxContainer) -> void:
+	if member == null:
+		return
+	var name_label := member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label
+	_apply_status_card_label_size(name_label, true)
+	var all_labels: Array = [
+		member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/LevelLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AtkLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/DefLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/AgiMoveLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/HitLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/CritLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsBox/EvadeLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/StrLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/DexLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/IntLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/ConLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsBox/LuckLabel") as Label,
+	]
+	for label_any in all_labels:
+		var lbl := label_any as Label
+		if lbl:
+			_apply_status_card_label_size(lbl, false)
 
 func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var actor_id := _get_actor_id_from_entry(actor)
