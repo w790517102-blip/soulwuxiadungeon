@@ -2505,7 +2505,7 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var hp_inner := int(inner_bonus.get("max_hp", 0))
 			var hp_stat := _get_actor_resource_stat_bonus(actor, "hp")
 			var hp_total_max := hp_base_max + hp_equip + hp_inner
-			return "[b]氣血[/b]\n目前：%d/%d\n上限計算：基礎 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜素質紀錄 %+d" % [
+			return "[b]氣血[/b]\n目前：%d/%d\n上限計算：基礎 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d" % [
 				hp_now, hp_total_max, hp_equip, hp_inner, hp_stat
 			]
 		"mp_breakdown":
@@ -2515,7 +2515,7 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			var mp_inner := int(inner_bonus.get("max_mp", 0))
 			var mp_stat := _get_actor_resource_stat_bonus(actor, "mp")
 			var mp_total_max := mp_base_max + mp_equip + mp_inner
-			return "[b]內力[/b]\n目前：%d/%d\n上限計算：基礎 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜素質紀錄 %+d" % [
+			return "[b]內力[/b]\n目前：%d/%d\n上限計算：基礎 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d" % [
 				mp_now, mp_total_max, mp_equip, mp_inner, mp_stat
 			]
 		"hit_power":
