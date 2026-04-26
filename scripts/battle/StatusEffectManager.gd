@@ -455,8 +455,8 @@ func _recalc_primary_stat(target: Dictionary, stat_key: String) -> void:
 func _recalc_max_hp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
 	var base = int(target.get("base_max_hp", target.get("max_hp", target.get("hp", 0))))
-	var base_con := max(0, int(target.get("base_con", target.get("con", 0))))
-	var current_con := max(0, int(target.get("con", base_con)))
+	var base_con: int = max(0, int(target.get("base_con", target.get("con", 0))))
+	var current_con: int = max(0, int(target.get("con", base_con)))
 	var base_mult := 1.0 + float(base_con) * 0.01
 	var current_mult := 1.0 + float(current_con) * 0.01
 	var scaled_base := int(round(float(base) * (current_mult / max(base_mult, 0.01))))
@@ -474,8 +474,8 @@ func _recalc_max_hp(target: Dictionary) -> void:
 func _recalc_max_mp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
 	var base = int(target.get("base_max_mp", target.get("max_mp", target.get("mp", 0))))
-	var base_int := max(0, int(target.get("base_int", target.get("int", 0))))
-	var current_int := max(0, int(target.get("int", base_int)))
+	var base_int: int = max(0, int(target.get("base_int", target.get("int", 0))))
+	var current_int: int = max(0, int(target.get("int", base_int)))
 	var base_mult := 1.0 + float(base_int) * 0.01
 	var current_mult := 1.0 + float(current_int) * 0.01
 	var scaled_base := int(round(float(base) * (current_mult / max(base_mult, 0.01))))
