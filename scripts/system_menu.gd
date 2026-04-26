@@ -2059,13 +2059,18 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 
 	var top_spacer := Control.new()
 	top_spacer.name = "TopOffsetSpacer"
-	top_spacer.custom_minimum_size = Vector2(0, 15)
+	top_spacer.custom_minimum_size = Vector2(0, 10)
 	card_content.add_child(top_spacer)
 
 	var header_row := HBoxContainer.new()
 	header_row.name = "HeaderRow"
 	header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_content.add_child(header_row)
+
+	var post_header_spacer := Control.new()
+	post_header_spacer.name = "PostHeaderSpacer"
+	post_header_spacer.custom_minimum_size = Vector2(0, 5)
+	card_content.add_child(post_header_spacer)
 
 	var name_label := Label.new()
 	name_label.name = "NameBrushLabel"
