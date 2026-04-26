@@ -2057,6 +2057,11 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	card_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_bg.add_child(card_content)
 
+	var top_spacer := Control.new()
+	top_spacer.name = "TopOffsetSpacer"
+	top_spacer.custom_minimum_size = Vector2(0, 15)
+	card_content.add_child(top_spacer)
+
 	var header_row := HBoxContainer.new()
 	header_row.name = "HeaderRow"
 	header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
