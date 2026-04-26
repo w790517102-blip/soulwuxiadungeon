@@ -455,29 +455,39 @@ func _recalc_primary_stat(target: Dictionary, stat_key: String) -> void:
 func _recalc_max_hp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
 	var base = int(target.get("base_max_hp", target.get("max_hp", target.get("hp", 0))))
+	var base_con := max(0, int(target.get("base_con", target.get("con", 0))))
+	var current_con := max(0, int(target.get("con", base_con)))
+	var base_mult := 1.0 + float(base_con) * 0.01
+	var current_mult := 1.0 + float(current_con) * 0.01
+	var scaled_base := int(round(float(base) * (current_mult / max(base_mult, 0.01))))
 	var effects = target.get("status_effects", {})
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("weak"):
 		delta += int(effects["weak"].get("payload", {}).get("max_hp_delta", 0))
-	var new_max = max(1, base + delta)
+	var new_max = max(1, scaled_base + delta)
 	target["max_hp"] = new_max
 	if int(target.get("hp", 0)) > new_max:
 		target["hp"] = new_max
-	target["max_hp_mod"] = delta
+	target["max_hp_mod"] = (scaled_base - base) + delta
 
 
 func _recalc_max_mp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
 	var base = int(target.get("base_max_mp", target.get("max_mp", target.get("mp", 0))))
+	var base_int := max(0, int(target.get("base_int", target.get("int", 0))))
+	var current_int := max(0, int(target.get("int", base_int)))
+	var base_mult := 1.0 + float(base_int) * 0.01
+	var current_mult := 1.0 + float(current_int) * 0.01
+	var scaled_base := int(round(float(base) * (current_mult / max(base_mult, 0.01))))
 	var effects = target.get("status_effects", {})
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("seal_mp"):
 		delta += int(effects["seal_mp"].get("payload", {}).get("max_mp_delta", 0))
-	var new_max = max(0, base + delta)
+	var new_max = max(0, scaled_base + delta)
 	target["max_mp"] = new_max
 	if int(target.get("mp", 0)) > new_max:
 		target["mp"] = new_max
-	target["max_mp_mod"] = delta
+	target["max_mp_mod"] = (scaled_base - base) + delta
 
 
 func _resolve_stat_buff_effect_id(effect_id: String, payload: Dictionary) -> String:
