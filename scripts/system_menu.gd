@@ -2077,7 +2077,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	job_label.name = "JobClassLabel"
 	job_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	job_label.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_apply_status_card_label_size(job_label, false)
+	_apply_status_card_label_size(job_label, true)
 	header_row.add_child(job_label)
 
 	var top_section := HBoxContainer.new()
@@ -2174,8 +2174,9 @@ func _enforce_status_card_font_sizes(member: VBoxContainer) -> void:
 		return
 	var name_label := member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label
 	_apply_status_card_label_size(name_label, true)
+	var job_label := member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label
+	_apply_status_card_label_size(job_label, true)
 	var all_labels: Array = [
-		member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label,
 		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/LevelLabel") as Label,
 		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
 		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
