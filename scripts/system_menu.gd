@@ -97,6 +97,7 @@ const TAB_SYSTEM_NORMAL = preload("res://assets/UI/system_menu/tab_system.png")
 const TAB_SYSTEM_SELECTED = preload("res://assets/UI/system_menu/tab_system_selected.png")
 const STATUS_MEMBER_CARD_BG = preload("res://assets/UI/system_menu/status_member_1.jpg")
 const STATUS_MEMBER_CARD_SIZE := Vector2(348, 549)
+const STATUS_VALUE_OFFSET_PREFIX := "　　　"
 const TAB_LORE_NORMAL_PATH = "res://assets/UI/system_menu/tab_lore.png"
 const TAB_LORE_SELECTED_PATH = "res://assets/UI/system_menu/tab_lore_selected.png"
 var _skill_db: Node = CharacterSkillDB.new()
@@ -2134,10 +2135,10 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	basic_info.add_child(basic_info_offset_y)
 
 	for pair in [
-		["LevelLabel", "等級：—"],
-		["ExpLabel", "經驗：—"],
-		["HPLabel", "氣血：—"],
-		["MPLabel", "內力：—"],
+		["LevelLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["ExpLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["HPLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["MPLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
 	]:
 		var lbl := Label.new()
 		lbl.name = pair[0]
@@ -2153,12 +2154,12 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	combat_box.name = "CombatStatsBox"
 	lower_section.add_child(combat_box)
 	for pair in [
-		["AtkLabel", "攻擊：—"],
-		["DefLabel", "防禦：—"],
-		["AgiMoveLabel", "身法：—"],
-		["HitLabel", "命中：—"],
-		["CritLabel", "暴擊：—"],
-		["EvadeLabel", "閃避：—"],
+		["AtkLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["DefLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["AgiMoveLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["HitLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["CritLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["EvadeLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
 	]:
 		var lbl := Label.new()
 		lbl.name = pair[0]
@@ -2170,11 +2171,11 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	base_box.name = "BaseStatsBox"
 	lower_section.add_child(base_box)
 	for pair in [
-		["StrLabel", "力量：—"],
-		["DexLabel", "敏捷：—"],
-		["IntLabel", "智力：—"],
-		["ConLabel", "體魄：—"],
-		["LuckLabel", "幸運：—"],
+		["StrLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["DexLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["IntLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["ConLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["LuckLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
 	]:
 		var lbl := Label.new()
 		lbl.name = pair[0]
@@ -2296,60 +2297,60 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 
 	var level_label := slot_data.get("level") as Label
 	if level_label:
-		level_label.text = "等級：%d" % actor_level
+		level_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, actor_level]
 	var exp_label := slot_data.get("exp") as Label
 	if exp_label:
-		exp_label.text = "經驗：%d/%d" % [actor_exp, next_exp]
+		exp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, actor_exp, next_exp]
 	var hp_label := slot_data.get("hp") as Label
 	if hp_label:
-		hp_label.text = "氣血：%d/%d (+%d)" % [base_hp, base_max_hp + bonus_max_hp, bonus_max_hp]
+		hp_label.text = "%s%d/%d (+%d)" % [STATUS_VALUE_OFFSET_PREFIX, base_hp, base_max_hp + bonus_max_hp, bonus_max_hp]
 	var mp_label := slot_data.get("mp") as Label
 	if mp_label:
-		mp_label.text = "內力：%d/%d (+%d)" % [base_mp, base_max_mp + bonus_max_mp, bonus_max_mp]
+		mp_label.text = "%s%d/%d (+%d)" % [STATUS_VALUE_OFFSET_PREFIX, base_mp, base_max_mp + bonus_max_mp, bonus_max_mp]
 	var atk_label := slot_data.get("atk") as Label
 	if atk_label:
 		atk_label.set_meta("actor_id", actor_id)
-		atk_label.text = "攻擊：%d" % (base_atk + bonus_atk)
+		atk_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_atk + bonus_atk)]
 	var def_label := slot_data.get("def") as Label
 	if def_label:
 		def_label.set_meta("actor_id", actor_id)
-		def_label.text = "防禦：%d" % (base_def + bonus_def)
+		def_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_def + bonus_def)]
 	var agi_move_label := slot_data.get("agi_move") as Label
 	if agi_move_label:
 		agi_move_label.set_meta("actor_id", actor_id)
-		agi_move_label.text = "身法：%d" % (base_speed + bonus_speed)
+		agi_move_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_speed + bonus_speed)]
 	var hit_label := slot_data.get("hit") as Label
 	if hit_label:
 		hit_label.set_meta("actor_id", actor_id)
-		hit_label.text = "命中：%d" % hit_power
+		hit_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, hit_power]
 	var crit_label := slot_data.get("crit") as Label
 	if crit_label:
 		crit_label.set_meta("actor_id", actor_id)
-		crit_label.text = "暴擊：%.1f%%" % crit_rate_pct
+		crit_label.text = "%s%.1f%%" % [STATUS_VALUE_OFFSET_PREFIX, crit_rate_pct]
 	var evade_label := slot_data.get("evade") as Label
 	if evade_label:
 		evade_label.set_meta("actor_id", actor_id)
-		evade_label.text = "閃避：%d" % evade_power
+		evade_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, evade_power]
 	var str_label := slot_data.get("str") as Label
 	if str_label:
 		str_label.set_meta("actor_id", actor_id)
-		str_label.text = "力量：%d" % (base_str + bonus_str)
+		str_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_str + bonus_str)]
 	var dex_label := slot_data.get("dex") as Label
 	if dex_label:
 		dex_label.set_meta("actor_id", actor_id)
-		dex_label.text = "敏捷：%d" % (base_agi + bonus_agi)
+		dex_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_agi + bonus_agi)]
 	var int_label := slot_data.get("int") as Label
 	if int_label:
 		int_label.set_meta("actor_id", actor_id)
-		int_label.text = "智力：%d" % (base_int + bonus_int)
+		int_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_int + bonus_int)]
 	var con_label := slot_data.get("con") as Label
 	if con_label:
 		con_label.set_meta("actor_id", actor_id)
-		con_label.text = "體魄：%d" % (base_con + bonus_con)
+		con_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_con + bonus_con)]
 	var luck_label := slot_data.get("luck") as Label
 	if luck_label:
 		luck_label.set_meta("actor_id", actor_id)
-		luck_label.text = "幸運：%d" % (base_luck + bonus_luck)
+		luck_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_luck + bonus_luck)]
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
 	var luck_stat = int(_get_actor_value(actor, "luck", 0))
@@ -2543,24 +2544,7 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	for key in ["level", "exp", "hp", "mp", "atk", "def", "agi_move", "hit", "crit", "evade", "str", "dex", "int", "con", "luck"]:
 		var lbl := slot_data.get(key) as Label
 		if lbl:
-			var field_name = key
-			match key:
-				"level": field_name = "等級"
-				"exp": field_name = "經驗"
-				"hp": field_name = "氣血"
-				"mp": field_name = "內力"
-				"atk": field_name = "攻擊"
-				"def": field_name = "防禦"
-				"agi_move": field_name = "身法"
-				"hit": field_name = "命中"
-				"crit": field_name = "暴擊"
-				"evade": field_name = "閃避"
-				"str": field_name = "力量"
-				"dex": field_name = "敏捷"
-				"int": field_name = "智力"
-				"con": field_name = "體魄"
-				"luck": field_name = "幸運"
-			lbl.text = "%s：—" % field_name
+			lbl.text = "%s—" % STATUS_VALUE_OFFSET_PREFIX
 			lbl.remove_meta("actor_id")
 
 func _setup_status_hover_for_slot(slot_data: Dictionary) -> void:
