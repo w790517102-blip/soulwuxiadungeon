@@ -13,19 +13,24 @@ var is_talking: bool = false
 var has_recently_talked: bool = false
 var just_advanced := false
 var _mark_lore_flag_after_close := false
+const INN_BOSS_QUEST_ID := "talk_to_yuheng_inn_boss"
+const INN_BOSS_QUEST_TITLE := "向旅館老闆打聽左飲消息"
+const INN_BOSS_STAGE0_DESCRIPTION := "向旅館老闆打聽左飲消息"
+const INN_BOSS_STAGE0_OBJECTIVE := "向旅館老闆打聽左飲消息"
+const INN_BOSS_STAGE1_DESCRIPTION := "代替老闆向左飲問好"
+const INN_BOSS_STAGE1_OBJECTIVE := "與左飲見面，並向他提及旅館老闆的事情"
+const INN_BOSS_STAGE1_NOTE := "問問看左飲是否還記得『江湖冷，給人一口熱湯，勝過一劍天下。』這句話。"
+# TODO: 與左飲對話「關於旅店老闆的事」完成後，
+# 將此支線標記完成並追加收束筆記：
+# 「原來左飲曾歷經讓內心如此拉扯的過往……」
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
 	if dialog_manager == null:
 		push_warning("[警告] DialogManager 沒抓到！請確認路徑")
 
-	if not SideQuestManager.get_quest("talk_to_yuheng_inn_boss").has("quest_id"):
-		SideQuestManager.register_quest("talk_to_yuheng_inn_boss", {
-			"quest_id": "talk_to_yuheng_inn_boss",
-			"stage": 0,
-			"is_finished": false
-		})
-	var inn_quest = SideQuestManager.get_quest("talk_to_yuheng_inn_boss")
+	_ensure_inn_boss_side_quest()
+	var inn_quest = SideQuestManager.get_quest(INN_BOSS_QUEST_ID)
 	if int(inn_quest.get("stage", 0)) > 0:
 		_mark_inn_boss_lore_flags()
 
@@ -91,22 +96,14 @@ func reset_dialog_state():
 	just_advanced = false
 	get_node("/root/GameRoot/LiuYu").can_move = true
 func _on_interact():
-	var quest = SideQuestManager.get_quest("talk_to_yuheng_inn_boss")
+	var quest = SideQuestManager.get_quest(INN_BOSS_QUEST_ID)
 	var stage = int(quest.get("stage", 0))
 	if stage == 0:
-		_mark_lore_flag_after_close = true
-		show_dialog_sequence([
-			{ "text": "這位客倌,住得還滿意嗎? 如果還有甚麼需要的儘管吩咐啊", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "(嗯…或許可以問問這位客棧老闆關於左飲的消息?)", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		])
-		SideQuestManager.advance_quest("talk_to_yuheng_inn_boss", 1)
-		just_advanced = true
-	elif stage == 1:
 		dialog_manager.show_choice([
-			{ "text": "打聽左飲的事情", "callback": Callable(self, "_talk_about_zuoyin") },
+			{ "text": "打聽左飲消息", "callback": Callable(self, "_talk_about_zuoyin") },
 			{ "text": "沒事了", "callback": Callable(self, "_end_conversation") },
 		])
-	elif stage == 2:
+	elif stage >= 1:
 		_mark_lore_flag_after_close = true
 		show_dialog_sequence([
 			{ "text": "（微笑）要是真的能見到左飲，也替我問他一句：\n　『還記得當年醉月樓的桂花酒不？』", "speaker": speaker_id, "portrait": portrait_path },
@@ -136,8 +133,36 @@ func _talk_about_zuoyin():
 		{ "text": "劉語塵：「(除非讓他信得過我的為人，否則在他眼中我應該也跟\n其他人一樣…)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「(只是以『義氣』之名來跟他稱兄道弟，實際上只是想\n利用他的人脈資源佔他便宜的吧)。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 	])
-	SideQuestManager.advance_quest("talk_to_yuheng_inn_boss", 2)
+	_apply_inn_boss_quest_stage_1()
 	just_advanced = true
+
+func _ensure_inn_boss_side_quest() -> void:
+	if not SideQuestManager.get_quest(INN_BOSS_QUEST_ID).has("quest_id"):
+		SideQuestManager.register_quest(INN_BOSS_QUEST_ID, {
+			"quest_id": INN_BOSS_QUEST_ID
+		})
+	var quest := SideQuestManager.get_quest(INN_BOSS_QUEST_ID)
+	var stage := int(quest.get("stage", 0))
+	quest["quest_id"] = INN_BOSS_QUEST_ID
+	quest["title"] = INN_BOSS_QUEST_TITLE
+	quest["description"] = INN_BOSS_STAGE1_DESCRIPTION if stage >= 1 else INN_BOSS_STAGE0_DESCRIPTION
+	quest["objective"] = INN_BOSS_STAGE1_OBJECTIVE if stage >= 1 else INN_BOSS_STAGE0_OBJECTIVE
+	quest["current_objective"] = quest["objective"]
+	quest["notes"] = [INN_BOSS_STAGE1_NOTE] if stage >= 1 else []
+	quest["note"] = INN_BOSS_STAGE1_NOTE if stage >= 1 else ""
+	# stage>=2 目前預留給未來「與左飲對話完成」收尾實作。
+	SideQuestManager.side_quests[INN_BOSS_QUEST_ID] = quest
+
+func _apply_inn_boss_quest_stage_1() -> void:
+	SideQuestManager.advance_quest(INN_BOSS_QUEST_ID, 1)
+	var quest := SideQuestManager.get_quest(INN_BOSS_QUEST_ID)
+	quest["title"] = INN_BOSS_QUEST_TITLE
+	quest["description"] = INN_BOSS_STAGE1_DESCRIPTION
+	quest["objective"] = INN_BOSS_STAGE1_OBJECTIVE
+	quest["current_objective"] = INN_BOSS_STAGE1_OBJECTIVE
+	quest["notes"] = [INN_BOSS_STAGE1_NOTE]
+	quest["note"] = INN_BOSS_STAGE1_NOTE
+	SideQuestManager.side_quests[INN_BOSS_QUEST_ID] = quest
 
 func _mark_inn_boss_lore_flags() -> void:
 	if GlobalState == null or not GlobalState.has_method("set_flag"):

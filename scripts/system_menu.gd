@@ -542,14 +542,18 @@ func _build_quest_entries() -> Array:
 			if sq.is_empty():
 				continue
 			var sq_finished := bool(sq.get("is_finished", false))
+			var sq_note_lines: Array = sq.get("notes", [])
+			var sq_note_text := ""
+			if typeof(sq_note_lines) == TYPE_ARRAY and not (sq_note_lines as Array).is_empty():
+				sq_note_text = "\n".join(sq_note_lines)
 			entries.append({
 				"id": quest_id,
 				"title": String(sq.get("title", quest_id)),
 				"type": "支線",
 				"status": "已完成" if sq_finished else "進行中",
 				"description": String(sq.get("description", "尚無支線描述。")),
-				"objective": String(sq.get("objective", sq.get("current_goal", sq.get("description", "請追蹤線索。")))),
-				"note": String(sq.get("note", sq.get("liuyu_note", sq.get("observation", "")))),
+				"objective": String(sq.get("current_objective", sq.get("objective", sq.get("current_goal", sq.get("description", "請追蹤線索。"))))),
+				"note": sq_note_text if sq_note_text != "" else String(sq.get("note", sq.get("liuyu_note", sq.get("observation", "")))),
 				"stage": int(sq.get("stage", 0)),
 			})
 	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
