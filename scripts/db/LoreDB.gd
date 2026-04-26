@@ -43,7 +43,7 @@ const HERO_DEFS := {
 	},
 	"shumian": {
 		"name": "書眠",
-		"portrait_path": "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png",
+		"portrait_path": "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot2.png",
 		"bio": "筆意如劍，語氣似水。看似溫和，實則每一步都踩在節奏之上。",
 		"default_unlocked": false,
 		"unlock_flags": ["met_Su_Mien"],
