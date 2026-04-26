@@ -2072,6 +2072,11 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	post_header_spacer.custom_minimum_size = Vector2(0, 5)
 	card_content.add_child(post_header_spacer)
 
+	var name_offset := Control.new()
+	name_offset.name = "NameOffsetSpacer"
+	name_offset.custom_minimum_size = Vector2(40, 0)
+	header_row.add_child(name_offset)
+
 	var name_label := Label.new()
 	name_label.name = "NameBrushLabel"
 	name_label.text = "—"
@@ -2089,6 +2094,11 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	job_label.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_apply_status_card_label_size(job_label, true)
 	header_row.add_child(job_label)
+
+	var job_offset := Control.new()
+	job_offset.name = "JobOffsetSpacer"
+	job_offset.custom_minimum_size = Vector2(40, 0)
+	header_row.add_child(job_offset)
 
 	var top_section := HBoxContainer.new()
 	top_section.name = "TopSection"
