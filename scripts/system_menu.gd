@@ -2155,7 +2155,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	lower_section.add_child(combat_row)
 	var combat_offset_x := Control.new()
 	combat_offset_x.name = "CombatStatsOffsetX"
-	combat_offset_x.custom_minimum_size = Vector2(85, 0)
+	combat_offset_x.custom_minimum_size = Vector2(93, 0)
 	combat_row.add_child(combat_offset_x)
 	var combat_box := VBoxContainer.new()
 	combat_box.name = "CombatStatsBox"
@@ -2183,7 +2183,7 @@ func _rebuild_status_member_layout(member: VBoxContainer) -> void:
 	lower_section.add_child(base_row)
 	var base_offset_x := Control.new()
 	base_offset_x.name = "BaseStatsOffsetX"
-	base_offset_x.custom_minimum_size = Vector2(85, 0)
+	base_offset_x.custom_minimum_size = Vector2(93, 0)
 	base_row.add_child(base_offset_x)
 	var base_box := VBoxContainer.new()
 	base_box.name = "BaseStatsBox"
@@ -2325,10 +2325,12 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 		exp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, actor_exp, next_exp]
 	var hp_label := slot_data.get("hp") as Label
 	if hp_label:
-		hp_label.text = "%s%d/%d (+%d)" % [STATUS_VALUE_OFFSET_PREFIX, base_hp, base_max_hp + bonus_max_hp, bonus_max_hp]
+		hp_label.set_meta("actor_id", actor_id)
+		hp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_hp, base_max_hp + bonus_max_hp]
 	var mp_label := slot_data.get("mp") as Label
 	if mp_label:
-		mp_label.text = "%s%d/%d (+%d)" % [STATUS_VALUE_OFFSET_PREFIX, base_mp, base_max_mp + bonus_max_mp, bonus_max_mp]
+		mp_label.set_meta("actor_id", actor_id)
+		mp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_mp, base_max_mp + bonus_max_mp]
 	var atk_label := slot_data.get("atk") as Label
 	if atk_label:
 		atk_label.set_meta("actor_id", actor_id)
@@ -2496,6 +2498,26 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 	if stat_key in ["str", "agi", "int", "con", "luck", "atk", "def", "speed", "accuracy", "evasion"]:
 		total_value += int(equip_bonus.get(stat_key, 0)) + int(inner_bonus.get(stat_key, 0))
 	match stat_key:
+		"hp_breakdown":
+			var hp_now := int(_get_actor_value(actor, "hp", 0))
+			var hp_base_max := int(_get_actor_value(actor, "max_hp", hp_now))
+			var hp_equip := int(equip_bonus.get("max_hp", 0))
+			var hp_inner := int(inner_bonus.get("max_hp", 0))
+			var hp_stat := _get_actor_resource_stat_bonus(actor, "hp")
+			var hp_total_max := hp_base_max + hp_equip + hp_inner
+			return "[b]氣血[/b]\n目前：%d/%d\n裝備 %+d｜內功 %+d｜素質 %+d" % [
+				hp_now, hp_total_max, hp_equip, hp_inner, hp_stat
+			]
+		"mp_breakdown":
+			var mp_now := int(_get_actor_value(actor, "mp", 0))
+			var mp_base_max := int(_get_actor_value(actor, "max_mp", mp_now))
+			var mp_equip := int(equip_bonus.get("max_mp", 0))
+			var mp_inner := int(inner_bonus.get("max_mp", 0))
+			var mp_stat := _get_actor_resource_stat_bonus(actor, "mp")
+			var mp_total_max := mp_base_max + mp_equip + mp_inner
+			return "[b]內力[/b]\n目前：%d/%d\n裝備 %+d｜內功 %+d｜素質 %+d" % [
+				mp_now, mp_total_max, mp_equip, mp_inner, mp_stat
+			]
 		"hit_power":
 			var acc_total := int(_get_actor_value(actor, "accuracy", 100)) + int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
 			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
@@ -2524,6 +2546,18 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			return "[b]%s[/b]\n目前值：%d\n可逆來源：裝備 %+d、內功 %+d（合計 %+d）" % [
 				_status_key_display_name(stat_key), total_value, equip_delta, inner_delta, reversible
 			]
+
+func _get_actor_resource_stat_bonus(actor, resource_key: String) -> int:
+	var keys: Array = []
+	if resource_key == "hp":
+		keys = ["max_hp_from_con", "hp_from_con", "con_hp_bonus", "max_hp_stat_bonus", "hp_stat_bonus"]
+	elif resource_key == "mp":
+		keys = ["max_mp_from_int", "mp_from_int", "int_mp_bonus", "max_mp_stat_bonus", "mp_stat_bonus"]
+	for key_any in keys:
+		var value := int(_get_actor_value(actor, String(key_any), 0))
+		if value != 0:
+			return value
+	return 0
 
 func _status_key_display_name(stat_key: String) -> String:
 	match stat_key:
@@ -2571,6 +2605,8 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 
 func _setup_status_hover_for_slot(slot_data: Dictionary) -> void:
 	var hover_key_map := {
+		"hp": "hp_breakdown",
+		"mp": "mp_breakdown",
 		"atk": "atk",
 		"def": "def",
 		"agi_move": "speed",
