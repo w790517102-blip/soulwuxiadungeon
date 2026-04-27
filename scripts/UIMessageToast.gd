@@ -15,6 +15,8 @@ var _label: Label = null
 var _skip_typing = false
 var _skip_hold = false
 var _current_full_text = ""
+var _locked_player_before_toast = false
+var _has_player_lock = false
 
 func push_message(text: String) -> void:
 	var msg = text.strip_edges()
@@ -44,6 +46,7 @@ func _try_show_next() -> void:
 		return
 
 	_is_showing = true
+	_acquire_toast_locks()
 	var full_text = _queue.pop_front()
 	_current_full_text = full_text
 	_panel.visible = true
@@ -61,6 +64,7 @@ func _try_show_next() -> void:
 		_panel.visible = false
 	_is_showing = false
 	if _queue.is_empty():
+		_release_toast_locks()
 		queue_drained.emit()
 	_try_show_next()
 
@@ -112,9 +116,6 @@ func _ensure_ui() -> void:
 	_label.add_theme_font_size_override("font_size", 24)
 	_label.add_theme_constant_override("outline_size", 4)
 	_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
-	_label.add_theme_constant_override("shadow_offset_x", 2)
-	_label.add_theme_constant_override("shadow_offset_y", 2)
 	_panel.add_child(_label)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -162,3 +163,23 @@ func wait_until_idle() -> void:
 	if not _is_showing and _queue.is_empty():
 		return
 	await queue_drained
+
+func is_busy() -> bool:
+	return _is_showing or not _queue.is_empty()
+
+func _acquire_toast_locks() -> void:
+	if _has_player_lock:
+		return
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		_locked_player_before_toast = bool(liuyu.get("can_move"))
+		liuyu.can_move = false
+	_has_player_lock = true
+
+func _release_toast_locks() -> void:
+	if not _has_player_lock:
+		return
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = _locked_player_before_toast
+	_has_player_lock = false
