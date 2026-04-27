@@ -20,6 +20,7 @@ const INN_BOSS_STAGE0_OBJECTIVE := "向旅館老闆打聽左飲消息"
 const INN_BOSS_STAGE1_DESCRIPTION := "代替老闆向左飲問好"
 const INN_BOSS_STAGE1_OBJECTIVE := "與左飲見面，並向他提及旅館老闆的事情"
 const INN_BOSS_STAGE1_NOTE := "問問看左飲是否還記得『江湖冷，給人一口熱湯，勝過一劍天下。』這句話。"
+const INN_BOSS_QUEST_GET_FLAG := "got_talk_to_yuheng_inn_boss_quest"
 # TODO: 與左飲對話「關於旅店老闆的事」完成後，
 # 將此支線標記完成並追加收束筆記：
 # 「原來左飲曾歷經讓內心如此拉扯的過往……」
@@ -29,7 +30,10 @@ func _ready():
 	if dialog_manager == null:
 		push_warning("[警告] DialogManager 沒抓到！請確認路徑")
 
-	_ensure_inn_boss_side_quest()
+	var quest_already_registered := SideQuestManager.get_quest(INN_BOSS_QUEST_ID).has("quest_id")
+	var quest_already_got := GlobalState != null and GlobalState.has_method("get_flag") and bool(GlobalState.get_flag(INN_BOSS_QUEST_GET_FLAG))
+	if quest_already_registered or quest_already_got:
+		_ensure_inn_boss_side_quest()
 	var inn_quest = SideQuestManager.get_quest(INN_BOSS_QUEST_ID)
 	if int(inn_quest.get("stage", 0)) > 0:
 		_mark_inn_boss_lore_flags()
@@ -97,6 +101,9 @@ func reset_dialog_state():
 	get_node("/root/GameRoot/LiuYu").can_move = true
 func _on_interact():
 	var quest = SideQuestManager.get_quest(INN_BOSS_QUEST_ID)
+	if not quest.has("quest_id"):
+		_start_inn_boss_quest_intro()
+		return
 	var stage = int(quest.get("stage", 0))
 	if stage == 0:
 		dialog_manager.show_choice([
@@ -135,6 +142,27 @@ func _talk_about_zuoyin():
 	])
 	_apply_inn_boss_quest_stage_1()
 	just_advanced = true
+
+func _start_inn_boss_quest_intro() -> void:
+	_mark_lore_flag_after_close = true
+	show_dialog_sequence([
+		{ "text": "這位客倌,住得還滿意嗎? 如果還有甚麼需要的儘管吩咐啊", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "(嗯…或許可以問問這位客棧老闆關於左飲的消息?)", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+	])
+	if dialog_manager:
+		await dialog_manager.dialog_sequence_finished
+	else:
+		push_warning("[旅館老闆] DialogManager 缺失，直接接取支線以避免卡住流程。")
+	_accept_inn_boss_side_quest()
+
+func _accept_inn_boss_side_quest() -> void:
+	if not SideQuestManager.get_quest(INN_BOSS_QUEST_ID).has("quest_id"):
+		SideQuestManager.register_quest(INN_BOSS_QUEST_ID, {
+			"quest_id": INN_BOSS_QUEST_ID
+		})
+	_ensure_inn_boss_side_quest()
+	if GlobalState and GlobalState.has_method("set_flag"):
+		GlobalState.set_flag(INN_BOSS_QUEST_GET_FLAG, true)
 
 func _ensure_inn_boss_side_quest() -> void:
 	if not SideQuestManager.get_quest(INN_BOSS_QUEST_ID).has("quest_id"):
