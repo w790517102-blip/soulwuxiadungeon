@@ -188,6 +188,7 @@ func _start_green_beans_quest_intro() -> void:
 	_register_green_beans_quest()
 
 func _register_green_beans_quest() -> void:
+	_lock_event_flow()
 	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
 		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID, "title": QUEST_TITLE})
 	var quest := SideQuestManager.get_quest(QUEST_ID)
@@ -204,6 +205,8 @@ func _register_green_beans_quest() -> void:
 		SideQuestManager.notify_objective_updated(QUEST_STAGE_1_DESC)
 	if GlobalState and GlobalState.has_method("set_flag"):
 		GlobalState.set_flag(QUEST_GET_FLAG, true)
+	await _wait_message_toast_done()
+	_unlock_event_flow()
 
 func _report_green_beans_result(quest: Dictionary) -> void:
 	var bean_type := String(quest.get("bean_type", "raw"))
@@ -211,8 +214,10 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 		await _play_sequence_and_wait([
 			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
 		])
+		_lock_event_flow()
 		if InventorySync:
 			InventorySync.consume_item(BEAN_FRIED_ITEM_ID, 1, true)
+		await _wait_message_toast_done()
 		await _play_sequence_and_wait([
 			{ "text": "「哎呀，就是這個！炸過一遍的熟豆，香氣不會騙人。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「年輕人就是有定力。那市集琴聲裊裊的，連我這種老玉衡人都被牽著走，你倒還分得清。」", "speaker": speaker_id, "portrait": portrait_path },
@@ -230,8 +235,10 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 		await _play_sequence_and_wait([
 			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
 		])
+		_lock_event_flow()
 		if InventorySync:
 			InventorySync.consume_item(BEAN_RAW_ITEM_ID, 1, true)
+		await _wait_message_toast_done()
 		await _play_sequence_and_wait([
 			{ "text": "「哎呀，這是生的四季豆。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「……生的？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -251,12 +258,31 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 	quest["objective"] = "把日常過下去，本身就是一種定力。"
 	quest["current_objective"] = quest["objective"]
 	SideQuestManager.side_quests[QUEST_ID] = quest
+	await _wait_message_toast_done()
+	_unlock_event_flow()
 
 func _play_sequence_and_wait(lines: Array) -> void:
 	if dialog_manager == null:
 		return
 	dialog_manager.show_dialog_sequence(lines, self)
 	await dialog_manager.dialog_sequence_finished
+
+func _lock_event_flow() -> void:
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = false
+	is_talking = true
+
+func _unlock_event_flow() -> void:
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
+	is_talking = false
+
+func _wait_message_toast_done() -> void:
+	var toast = get_node_or_null("/root/MessageToast")
+	if toast and toast.has_method("wait_until_idle"):
+		await toast.wait_until_idle()
 
 func _show_post_quest_loop_dialog(quest: Dictionary) -> void:
 	if String(quest.get("ending", "")) == "right":

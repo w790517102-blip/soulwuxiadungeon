@@ -1,4 +1,5 @@
 extends Node
+signal queue_drained
 
 const FADE_IN_SEC := 0.15
 const HOLD_SEC := 3.0
@@ -59,6 +60,8 @@ func _try_show_next() -> void:
 	if is_instance_valid(_panel):
 		_panel.visible = false
 	_is_showing = false
+	if _queue.is_empty():
+		queue_drained.emit()
 	_try_show_next()
 
 func _ensure_ui() -> void:
@@ -154,3 +157,8 @@ func _hold_visible() -> void:
 			break
 		await get_tree().process_frame
 		elapsed += get_process_delta_time()
+
+func wait_until_idle() -> void:
+	if not _is_showing and _queue.is_empty():
+		return
+	await queue_drained
