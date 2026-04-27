@@ -22,6 +22,8 @@ var has_recently_talked: bool = false
 var patrol_progress := 0.0
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
+var _interaction_flow_active := false
+var _unlock_on_next_reset := false
 
 const QUEST_ID := "yuheng_green_beans"
 const QUEST_TITLE := "一把四季豆"
@@ -139,35 +141,43 @@ func _unhandled_input(event):
 	if dialog_manager.dialog_active:
 		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-		get_node("/root/GameRoot/LiuYu").can_move = false
+		_begin_interaction_flow()
 		var player_pos = get_node("/root/GameRoot/LiuYu").global_position
 		face_towards(player_pos)
-		is_talking = true
-		_handle_qiushen_interact()
+		_run_qiushen_interaction()
 
 func reset_dialog_state():
-	get_node("/root/GameRoot/LiuYu").can_move = true
-	is_talking = false
+	if _interaction_flow_active and not _unlock_on_next_reset:
+		is_talking = true
+		return
+	_end_interaction_flow()
+
+func _run_qiushen_interaction() -> void:
+	await _handle_qiushen_interact()
+	if _interaction_flow_active:
+		_end_interaction_flow()
 
 func _handle_qiushen_interact() -> void:
 	var quest := SideQuestManager.get_quest(QUEST_ID)
 	if not quest.has("quest_id"):
-		_start_green_beans_quest_intro()
+		await _start_green_beans_quest_intro()
 		return
 	if bool(quest.get("is_finished", false)):
-		_show_post_quest_loop_dialog(quest)
+		await _show_post_quest_loop_dialog(quest)
 		return
 	var stage := int(quest.get("stage", 0))
 	if stage <= 1:
-		dialog_manager.show_dialog_sequence([
+		_unlock_on_next_reset = true
+		await _play_sequence_and_wait([
 			{ "text": "「少俠，記得啊，是炸過一遍的熟豆。生的可不能直接拿回來下肚。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「唉，明明這句話我在這裡說得清清楚楚，怎麼一到菜鋪前，就像有人把它揉進琴聲裡了呢……」", "speaker": speaker_id, "portrait": portrait_path },
-		], self)
+		])
 		return
-	_report_green_beans_result(quest)
+	await _report_green_beans_result(quest)
 
 func _start_green_beans_quest_intro() -> void:
-	dialog_manager.show_dialog_sequence([
+	_unlock_on_next_reset = true
+	await _play_sequence_and_wait([
 		{ "text": "「四季豆……四季豆……炸過的……還是沒炸的……哎唷，不對不對，我到底要買哪一種來著？」", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "劉語塵：「這位大嬸，你已經在這廣場來回走了好幾趟。可是迷了路？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「迷路？那倒不至於。咱在玉衡鎮住了大半輩子，閉著眼都能摸回灶房。」", "speaker": speaker_id, "portrait": portrait_path },
@@ -182,9 +192,7 @@ func _start_green_beans_quest_intro() -> void:
 		{ "text": "劉語塵：「既然如此，我替你走一趟吧。你要買的是炸過的熟豆，對嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「對對對！就是炸過一遍的熟豆，回去拌點蒜鹽就能上桌。」", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "「少俠，你可真是好心。菜鋪就在市集那頭，阿茂家的攤，四季豆堆得跟小山似的，很好認。」", "speaker": speaker_id, "portrait": portrait_path },
-	], self)
-	if dialog_manager:
-		await dialog_manager.dialog_sequence_finished
+	])
 	_register_green_beans_quest()
 
 func _register_green_beans_quest() -> void:
@@ -206,11 +214,13 @@ func _register_green_beans_quest() -> void:
 func _report_green_beans_result(quest: Dictionary) -> void:
 	var bean_type := String(quest.get("bean_type", "raw"))
 	if bean_type == "fried":
+		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
 			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 		if InventorySync:
 			InventorySync.consume_item(BEAN_FRIED_ITEM_ID, 1, true)
+		_unlock_on_next_reset = true
 		await _play_sequence_and_wait([
 			{ "text": "「哎呀，就是這個！炸過一遍的熟豆，香氣不會騙人。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「年輕人就是有定力。那市集琴聲裊裊的，連我這種老玉衡人都被牽著走，你倒還分得清。」", "speaker": speaker_id, "portrait": portrait_path },
@@ -225,11 +235,13 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 		quest["notes"] = ["豆子買對了，秋嬸總算能安心做晚飯。"]
 		quest["note"] = "豆子買對了，秋嬸總算能安心做晚飯。"
 	else:
+		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
 			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 		if InventorySync:
 			InventorySync.consume_item(BEAN_RAW_ITEM_ID, 1, true)
+		_unlock_on_next_reset = true
 		await _play_sequence_and_wait([
 			{ "text": "「哎呀，這是生的四季豆。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「……生的？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -258,12 +270,30 @@ func _play_sequence_and_wait(lines: Array) -> void:
 
 func _show_post_quest_loop_dialog(quest: Dictionary) -> void:
 	if String(quest.get("ending", "")) == "right":
-		dialog_manager.show_dialog_sequence([
+		_unlock_on_next_reset = true
+		await _play_sequence_and_wait([
 			{ "text": "「那晚的四季豆拌蒜鹽，可香啦。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「多虧少俠幫忙，不然咱家晚飯怕是要從四季豆變成白粥配懊悔了。」", "speaker": speaker_id, "portrait": portrait_path },
-		], self)
+		])
 	else:
-		dialog_manager.show_dialog_sequence([
+		_unlock_on_next_reset = true
+		await _play_sequence_and_wait([
 			{ "text": "「後來我把那把四季豆煮得透透的，沒事，放心。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「不過少俠啊，你也別太自責。這鎮上的琴聲，連鍋鏟聽久了都會發呆。」", "speaker": speaker_id, "portrait": portrait_path },
-		], self)
+		])
+
+func _begin_interaction_flow() -> void:
+	_interaction_flow_active = true
+	_unlock_on_next_reset = false
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = false
+	is_talking = true
+
+func _end_interaction_flow() -> void:
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
+	is_talking = false
+	_interaction_flow_active = false
+	_unlock_on_next_reset = false
