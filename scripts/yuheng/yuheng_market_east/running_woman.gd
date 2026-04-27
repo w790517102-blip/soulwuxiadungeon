@@ -201,8 +201,6 @@ func _register_green_beans_quest() -> void:
 	quest["stage"] = 1
 	quest["is_finished"] = false
 	SideQuestManager.side_quests[QUEST_ID] = quest
-	if SideQuestManager.has_method("notify_objective_updated"):
-		SideQuestManager.notify_objective_updated(QUEST_STAGE_1_DESC)
 	if GlobalState and GlobalState.has_method("set_flag"):
 		GlobalState.set_flag(QUEST_GET_FLAG, true)
 	await _wait_message_toast_done()

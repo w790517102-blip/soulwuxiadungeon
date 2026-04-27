@@ -21,7 +21,7 @@ func register_quest(id: String, data: Dictionary) -> void:
 		print("[支線] 已註冊任務：%s" % id)
 		var quest_title = str(side_quests[id].get("title", "")).strip_edges()
 		if quest_title != "":
-			_toast("已新增支線：%s" % quest_title)
+			_toast("已新增支線任務")
 
 # 推進任務階段
 func advance_quest(id: String, new_stage: int) -> void:
@@ -34,10 +34,7 @@ func complete_quest(id: String) -> void:
 	if side_quests.has(id):
 		side_quests[id]["is_finished"] = true
 		print("[支線] 任務 %s 已完成" % id)
-		var quest_title = str(side_quests[id].get("title", ""))
-		if quest_title == "":
-			quest_title = id
-		_toast("已完成支線：%s" % quest_title)
+		_toast("已完成支線任務")
 
 # 取得任務資料
 func get_quest(id: String) -> Dictionary:
@@ -64,8 +61,5 @@ func load_all(saved_data: Dictionary) -> void:
 func reset_all() -> void:
 	side_quests.clear()
 
-func notify_objective_updated(text: String) -> void:
-	var objective = text.strip_edges()
-	if objective == "":
-		return
-	_toast("當前目標更新：%s" % objective)
+func notify_objective_updated(_text: String) -> void:
+	pass
