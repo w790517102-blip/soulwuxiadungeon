@@ -28,6 +28,8 @@ const QUEST_TITLE := "一把四季豆"
 const QUEST_STAGE_1_DESC := "前往市集菜鋪，替秋嬸買回炸過的熟豆。"
 const QUEST_STAGE_2_DESC := "將四季豆帶回給秋嬸。"
 const QUEST_GET_FLAG := "got_yuheng_green_beans_quest"
+const BEAN_RAW_ITEM_ID := "quest_green_beans_raw"
+const BEAN_FRIED_ITEM_ID := "quest_green_beans_fried"
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -198,6 +200,8 @@ func _register_green_beans_quest() -> void:
 	quest["stage"] = 1
 	quest["is_finished"] = false
 	SideQuestManager.side_quests[QUEST_ID] = quest
+	if SideQuestManager.has_method("notify_objective_updated"):
+		SideQuestManager.notify_objective_updated(QUEST_STAGE_1_DESC)
 	if GlobalState and GlobalState.has_method("set_flag"):
 		GlobalState.set_flag(QUEST_GET_FLAG, true)
 
@@ -213,6 +217,7 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 			{ "text": "「來，這些小意思給你買茶解渴。還有這包草藥，是我在自家後院摘的。」", "speaker": speaker_id, "portrait": portrait_path },
 		], self)
 		if InventorySync:
+			InventorySync.consume_item(BEAN_FRIED_ITEM_ID, 1, true)
 			InventorySync.add_gold(30)
 			InventorySync.add_item_stack("med_trauma_herb", 1)
 		quest["ending"] = "right"
@@ -229,6 +234,7 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 			{ "text": "「來，這些小錢給你買點涼的喝。路上辛苦啦。」", "speaker": speaker_id, "portrait": portrait_path },
 		], self)
 		if InventorySync:
+			InventorySync.consume_item(BEAN_RAW_ITEM_ID, 1, true)
 			InventorySync.add_gold(20)
 		quest["ending"] = "wrong"
 		quest["notes"] = ["豆子買成生的了，但秋嬸仍笑著收下這份好意。"]

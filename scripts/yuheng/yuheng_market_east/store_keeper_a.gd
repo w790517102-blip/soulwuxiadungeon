@@ -208,6 +208,8 @@ func _set_green_beans_quest_purchase(bean_type: String) -> void:
 	quest["notes"] = ["已向阿茂買到四季豆，該回廣場找秋嬸。"]
 	quest["note"] = "已向阿茂買到四季豆，該回廣場找秋嬸。"
 	SideQuestManager.side_quests[QUEST_ID] = quest
+	if SideQuestManager.has_method("notify_objective_updated"):
+		SideQuestManager.notify_objective_updated(QUEST_STAGE_2_DESC)
 
 func _get_main_stage_safely() -> int:
 	var qm := get_node_or_null("/root/QuestManager")

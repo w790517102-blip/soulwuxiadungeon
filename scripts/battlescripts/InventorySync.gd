@@ -102,7 +102,7 @@ func get_item_by_id(id: String) -> Dictionary:
 			return item
 	return {}
 
-func consume_item(id: String, amount: int = 1) -> void:
+func consume_item(id: String, amount: int = 1, show_message: bool = true) -> void:
 	if amount <= 0:
 		return
 	for entry in party_inventory:
@@ -113,11 +113,15 @@ func consume_item(id: String, amount: int = 1) -> void:
 			else:
 				entry["count"] = new_count
 			inventory_changed.emit()
+			if show_message:
+				_notify_item_delta(id, -amount)
 			return
 
-func add_item_stack(id: String, amount: int = 1) -> void:
+func add_item_stack(id: String, amount: int = 1, show_message: bool = true) -> void:
 	if _add_item_stack_internal(id, amount):
 		inventory_changed.emit()
+		if show_message:
+			_notify_item_delta(id, amount)
 
 func equip_item(item_id: String, actor_id: String = "") -> void:
 	var item_def := ItemDB.get_def(item_id)
@@ -157,7 +161,7 @@ func equip_item_to_slot(item_id: String, slot: String, actor_id: String = "") ->
 	if current_id != "":
 		_add_item_stack_internal(current_id, 1)
 	equipped[slot] = item_id
-	consume_item(item_id, 1)
+	consume_item(item_id, 1, false)
 	equipment_changed.emit()
 
 func unequip(slot: String, actor_id: String = "") -> void:
@@ -352,20 +356,24 @@ func _make_item_list(source_inventory: Array) -> Array:
 		items.append(item)
 	return items
 
-func spend_gold(amount: int) -> bool:
+func spend_gold(amount: int, show_message: bool = true) -> bool:
 	if amount <= 0:
 		return true
 	if party_gold < amount:
 		return false
 	party_gold -= amount
 	gold_changed.emit(party_gold)
+	if show_message:
+		_notify_gold_delta(-amount)
 	return true
 
-func add_gold(amount: int) -> void:
+func add_gold(amount: int, show_message: bool = true) -> void:
 	if amount == 0:
 		return
 	party_gold += amount
 	gold_changed.emit(party_gold)
+	if show_message:
+		_notify_gold_delta(amount)
 
 
 func is_item_equipped_anywhere(item_id: String) -> bool:
@@ -379,3 +387,29 @@ func is_item_equipped_anywhere(item_id: String) -> bool:
 			if str((equipped as Dictionary).get(slot, "")) == item_id:
 				return true
 	return false
+
+func _notify_item_delta(item_id: String, delta: int) -> void:
+	if delta == 0 or item_id == "":
+		return
+	var toast = get_node_or_null("/root/MessageToast")
+	if toast == null or not toast.has_method("push_message"):
+		return
+	var item_def = ItemDB.get_def(item_id)
+	var item_name = str(item_def.get("name", item_id))
+	var amount = abs(delta)
+	if delta > 0:
+		toast.push_message("獲得：%s x%d" % [item_name, amount])
+	else:
+		toast.push_message("失去：%s x%d" % [item_name, amount])
+
+func _notify_gold_delta(delta: int) -> void:
+	if delta == 0:
+		return
+	var toast = get_node_or_null("/root/MessageToast")
+	if toast == null or not toast.has_method("push_message"):
+		return
+	var amount = abs(delta)
+	if delta > 0:
+		toast.push_message("獲得：%d 文" % amount)
+	else:
+		toast.push_message("失去：%d 文" % amount)
