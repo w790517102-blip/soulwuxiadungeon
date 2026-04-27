@@ -4,7 +4,6 @@ signal queue_drained
 const FADE_IN_SEC := 0.15
 const HOLD_SEC := 3.0
 const FADE_OUT_SEC := 0.25
-const TYPE_INTERVAL_SEC := 0.04
 const TOAST_FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 
 var _queue: Array[String] = []
@@ -12,9 +11,6 @@ var _is_showing = false
 var _layer: CanvasLayer = null
 var _panel: PanelContainer = null
 var _label: Label = null
-var _skip_typing = false
-var _skip_hold = false
-var _current_full_text = ""
 var _locked_player_before_toast = false
 var _has_player_lock = false
 
@@ -48,15 +44,11 @@ func _try_show_next() -> void:
 	_is_showing = true
 	_acquire_toast_locks()
 	var full_text = _queue.pop_front()
-	_current_full_text = full_text
 	_panel.visible = true
 	_panel.modulate.a = 0.0
-
-	_skip_typing = false
-	_skip_hold = false
+	_label.text = full_text
 
 	await _fade_to(1.0, FADE_IN_SEC)
-	await _type_text(full_text)
 	await _hold_visible()
 	await _fade_to(0.0, FADE_OUT_SEC)
 
@@ -118,21 +110,6 @@ func _ensure_ui() -> void:
 	_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	_panel.add_child(_label)
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not _is_showing:
-		return
-	if not (event is InputEventMouseButton):
-		return
-	var mouse_event: InputEventMouseButton = event
-	if mouse_event.button_index != MOUSE_BUTTON_LEFT or not mouse_event.pressed:
-		return
-	if _label == null:
-		return
-	if _label.text.length() < _current_full_text.length():
-		_skip_typing = true
-	else:
-		_skip_hold = true
-
 func _fade_to(target_alpha: float, duration: float) -> void:
 	if _panel == null:
 		return
@@ -140,24 +117,8 @@ func _fade_to(target_alpha: float, duration: float) -> void:
 	tween.tween_property(_panel, "modulate:a", target_alpha, duration)
 	await tween.finished
 
-func _type_text(full_text: String) -> void:
-	if _label == null:
-		return
-	_label.text = ""
-	for i in full_text.length():
-		if _skip_typing:
-			break
-		_label.text = full_text.substr(0, i + 1)
-		await get_tree().create_timer(TYPE_INTERVAL_SEC).timeout
-	_label.text = full_text
-
 func _hold_visible() -> void:
-	var elapsed = 0.0
-	while elapsed < HOLD_SEC:
-		if _skip_hold:
-			break
-		await get_tree().process_frame
-		elapsed += get_process_delta_time()
+	await get_tree().create_timer(HOLD_SEC).timeout
 
 func wait_until_idle() -> void:
 	if not _is_showing and _queue.is_empty():
