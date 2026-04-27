@@ -12,12 +12,14 @@ var can_interact := false
 var dialog_lines: Array = []
 var is_talking: bool = false
 var _mark_flag_after_close := false
+var _mark_melody_flag_after_close := false
 
 const QUEST_ID := "yuheng_green_beans"
 const QUEST_TITLE := "一把四季豆"
 const QUEST_STAGE_2_DESC := "將四季豆帶回給秋嬸。"
 const BEAN_RAW_ITEM_ID := "quest_green_beans_raw"
 const BEAN_FRIED_ITEM_ID := "quest_green_beans_fried"
+const FLAG_TALKED_MELODY_WITH_AMAO := "talked_melody_with_amao"
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -109,6 +111,10 @@ func _unhandled_input(event):
 		face_towards(liuyu.global_position)
 		_handle_store_keeper_interact()
 		_mark_flag_after_close = not GlobalState.get_flag("met_yuheng_store_keeper_a")
+		var met := GlobalState.get_flag("met_yuheng_store_keeper_a")
+		var event_market_choice_observe := GlobalState.get_flag("event_market_choice_observe")
+		var event_yuheng_market_melody := GlobalState.get_flag("event_yuheng_market_melody")
+		_mark_melody_flag_after_close = (not met) and event_market_choice_observe and event_yuheng_market_melody
 
 func reset_dialog_state():
 	get_node("/root/GameRoot/LiuYu").can_move = true
@@ -116,6 +122,9 @@ func reset_dialog_state():
 	if _mark_flag_after_close:
 		GlobalState.set_flag("met_yuheng_store_keeper_a", true)
 		_mark_flag_after_close = false
+	if _mark_melody_flag_after_close:
+		GlobalState.set_flag(FLAG_TALKED_MELODY_WITH_AMAO, true)
+		_mark_melody_flag_after_close = false
 
 func _handle_store_keeper_interact() -> void:
 	var quest := SideQuestManager.get_quest(QUEST_ID)
@@ -169,12 +178,19 @@ func _buy_raw_green_beans() -> void:
 
 func _buy_fried_green_beans() -> void:
 	dialog_manager.choice_box.hide_choices()
-	dialog_manager.show_dialog_sequence([
+	var talked_melody := GlobalState.get_flag(FLAG_TALKED_MELODY_WITH_AMAO)
+	var lines: Array = [
 		{ "text": "劉語塵：「給我一把炸過一遍的熟豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「好選擇！這豆剛炸好沒多久，回去撒點蒜鹽，再滴兩滴醬油，配飯正香。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "劉語塵：「你也察覺琴聲有異？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「嗐，察覺歸察覺，日子還是要過。菜要賣，飯要吃，客人問價還得笑。」", "speaker": 1, "portrait": portrait_path },
-	], self)
+	]
+	if not talked_melody:
+		lines.append_array([
+			{ "text": "劉語塵：「你也察覺琴聲有異？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「嗐，做買賣的人哪能沒察覺？只是察覺歸察覺，日子還是要過。菜要賣，飯要吃，客人問價還得笑。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「不然呢？難道我對著四季豆嘆氣，它就能自己熟啊？」", "speaker": 1, "portrait": portrait_path },
+		])
+		GlobalState.set_flag(FLAG_TALKED_MELODY_WITH_AMAO, true)
+	dialog_manager.show_dialog_sequence(lines, self)
 	if InventorySync:
 		InventorySync.add_item_stack(BEAN_FRIED_ITEM_ID, 1)
 	_set_green_beans_quest_purchase("fried")
