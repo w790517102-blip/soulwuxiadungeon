@@ -23,6 +23,12 @@ var patrol_progress := 0.0
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
 
+const QUEST_ID := "yuheng_green_beans"
+const QUEST_TITLE := "一把四季豆"
+const QUEST_STAGE_1_DESC := "前往市集菜鋪，替秋嬸買回炸過的熟豆。"
+const QUEST_STAGE_2_DESC := "將四季豆帶回給秋嬸。"
+const QUEST_GET_FLAG := "got_yuheng_green_beans_quest"
+
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
 	if dialog_manager == null:
@@ -48,7 +54,6 @@ func _process(delta):
 		return
 
 	if use_path_patrol and path_ref:
-		# 路徑復視點移動
 		patrol_progress += wander_speed * delta
 		path_ref.progress = patrol_progress
 		var new_position = path_ref.global_position
@@ -57,29 +62,29 @@ func _process(delta):
 		_play_directional_anim(movement_dir)
 		previous_position = new_position
 		return
+
+	wander_timer -= delta
+	if wander_timer <= 0.0:
+		wander_timer = wander_interval
+		wander_target = global_position + Vector2(
+			randi_range(-wander_range, wander_range),
+			randi_range(-wander_range, wander_range)
+		)
+
+	var dir = (wander_target - global_position).normalized()
+	velocity = dir * wander_speed
+
+	if velocity.length() > 1:
+		_play_directional_anim(dir)
 	else:
-		# 隨機移動模式
-		wander_timer -= delta
-		if wander_timer <= 0.0:
-			wander_timer = wander_interval
-			wander_target = global_position + Vector2(
-				randi_range(-wander_range, wander_range),
-				randi_range(-wander_range, wander_range))
+		velocity = Vector2.ZERO
+		if last_direction.distance_to(last_idle_direction) > 0.1:
+			last_idle_direction = last_direction
+		var idle_anim = _get_anim_by_vector(last_idle_direction, "idle")
+		if animated_sprite.sprite_frames.has_animation(idle_anim):
+			animated_sprite.play(idle_anim)
 
-		var dir = (wander_target - global_position).normalized()
-		velocity = dir * wander_speed
-
-		if velocity.length() > 1:
-			_play_directional_anim(dir)
-		else:
-			velocity = Vector2.ZERO
-			if last_direction.distance_to(last_idle_direction) > 0.1:
-				last_idle_direction = last_direction
-			var idle_anim = _get_anim_by_vector(last_idle_direction, "idle")
-			if animated_sprite.sprite_frames.has_animation(idle_anim):
-				animated_sprite.play(idle_anim)
-
-		move_and_slide()
+	move_and_slide()
 
 func _play_directional_anim(dir: Vector2):
 	if dir.length() < 0.1:
@@ -135,10 +140,114 @@ func _unhandled_input(event):
 		get_node("/root/GameRoot/LiuYu").can_move = false
 		var player_pos = get_node("/root/GameRoot/LiuYu").global_position
 		face_towards(player_pos)
-		if dialog_lines.size() > 0:
-			dialog_manager.show_dialog_sequence(dialog_lines, self)
 		is_talking = true
+		_handle_qiushen_interact()
 
 func reset_dialog_state():
 	get_node("/root/GameRoot/LiuYu").can_move = true
 	is_talking = false
+
+func _handle_qiushen_interact() -> void:
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	if not quest.has("quest_id"):
+		_start_green_beans_quest_intro()
+		return
+	if bool(quest.get("is_finished", false)):
+		_show_post_quest_loop_dialog(quest)
+		return
+	var stage := int(quest.get("stage", 0))
+	if stage <= 1:
+		dialog_manager.show_dialog_sequence([
+			{ "text": "「少俠，記得啊，是炸過一遍的熟豆。生的可不能直接拿回來下肚。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「唉，明明這句話我在這裡說得清清楚楚，怎麼一到菜鋪前，就像有人把它揉進琴聲裡了呢……」", "speaker": speaker_id, "portrait": portrait_path },
+		], self)
+		return
+	_report_green_beans_result(quest)
+
+func _start_green_beans_quest_intro() -> void:
+	dialog_manager.show_dialog_sequence([
+		{ "text": "「四季豆……四季豆……炸過的……還是沒炸的……哎唷，不對不對，我到底要買哪一種來著？」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "劉語塵：「這位大嬸，你已經在這廣場來回走了好幾趟。可是迷了路？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「迷路？那倒不至於。咱在玉衡鎮住了大半輩子，閉著眼都能摸回灶房。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "「怪就怪在……我一走到市集菜鋪前，耳邊那琴聲一繞，腦子就像被人輕輕拍了一下，什麼都散了。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "劉語塵：「你的眼睛還好嗎？要不要去藥鋪請大夫看看？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「哎呀，不是眼睛的事。咱眼睛好著呢，連隔壁老王偷夾我醃蘿蔔都看得一清二楚。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "「可到了菜鋪前就不行。心裡倒是平靜得很，偏偏注意力不在眼前。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "「別說分得清生的熟的，咱光是記得自己是來買四季豆，就已經很了不起了。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "劉語塵：「生熟不分可不是小事。四季豆若未熟透，吃下去輕則腹痛嘔吐，重則中毒。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「是啊，所以咱才在這裡繞圈嘛。站在廣場還記得，走到菜鋪又忘了。回到廣場又想起來，走到菜鋪又忘了……」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "「再繞下去，晚飯沒做成，咱倒先把自己繞熟了。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "劉語塵：「既然如此，我替你走一趟吧。你要買的是炸過的熟豆，對嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「對對對！就是炸過一遍的熟豆，回去拌點蒜鹽就能上桌。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "「少俠，你可真是好心。菜鋪就在市集那頭，阿茂家的攤，四季豆堆得跟小山似的，很好認。」", "speaker": speaker_id, "portrait": portrait_path },
+	], self)
+	if dialog_manager:
+		await dialog_manager.dialog_sequence_finished
+	_register_green_beans_quest()
+
+func _register_green_beans_quest() -> void:
+	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
+		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID})
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	quest["title"] = QUEST_TITLE
+	quest["description"] = QUEST_STAGE_1_DESC
+	quest["objective"] = QUEST_STAGE_1_DESC
+	quest["current_objective"] = QUEST_STAGE_1_DESC
+	quest["notes"] = ["秋嬸受琴聲影響，總在菜鋪前分不清生熟。"]
+	quest["note"] = "秋嬸受琴聲影響，總在菜鋪前分不清生熟。"
+	quest["stage"] = 1
+	quest["is_finished"] = false
+	SideQuestManager.side_quests[QUEST_ID] = quest
+	if GlobalState and GlobalState.has_method("set_flag"):
+		GlobalState.set_flag(QUEST_GET_FLAG, true)
+
+func _report_green_beans_result(quest: Dictionary) -> void:
+	var bean_type := String(quest.get("bean_type", "raw"))
+	if bean_type == "fried":
+		dialog_manager.show_dialog_sequence([
+			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「哎呀，就是這個！炸過一遍的熟豆，香氣不會騙人。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「年輕人就是有定力。那市集琴聲裊裊的，連我這種老玉衡人都被牽著走，你倒還分得清。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "劉語塵：「不是我定力好。只是這琴聲的影響，比我想得更深。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「深是深，可日子不能不過啊。飯要煮，菜要買，人再怎麼分神，也得想辦法把晚飯端上桌。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「來，這些小意思給你買茶解渴。還有這包草藥，是我在自家後院摘的。」", "speaker": speaker_id, "portrait": portrait_path },
+		], self)
+		if InventorySync:
+			InventorySync.add_gold(30)
+			InventorySync.add_item_stack("med_trauma_herb", 1)
+		quest["ending"] = "right"
+		quest["notes"] = ["豆子買對了，秋嬸總算能安心做晚飯。"]
+		quest["note"] = "豆子買對了，秋嬸總算能安心做晚飯。"
+	else:
+		dialog_manager.show_dialog_sequence([
+			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「哎呀，這是生的四季豆。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "劉語塵：「……生的？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「嗯，還沒炸過。看來那市集前的琴聲，連你這樣的年輕人也能分神。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "劉語塵：「抱歉，是我疏忽了。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「別這麼說。至少我站在這廣場，還分得出它是生是熟。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「來，這些小錢給你買點涼的喝。路上辛苦啦。」", "speaker": speaker_id, "portrait": portrait_path },
+		], self)
+		if InventorySync:
+			InventorySync.add_gold(20)
+		quest["ending"] = "wrong"
+		quest["notes"] = ["豆子買成生的了，但秋嬸仍笑著收下這份好意。"]
+		quest["note"] = "豆子買成生的了，但秋嬸仍笑著收下這份好意。"
+
+	SideQuestManager.complete_quest(QUEST_ID)
+	quest["description"] = "已完成：一把四季豆"
+	quest["objective"] = "把日常過下去，本身就是一種定力。"
+	quest["current_objective"] = quest["objective"]
+	SideQuestManager.side_quests[QUEST_ID] = quest
+
+func _show_post_quest_loop_dialog(quest: Dictionary) -> void:
+	if String(quest.get("ending", "")) == "right":
+		dialog_manager.show_dialog_sequence([
+			{ "text": "「那晚的四季豆拌蒜鹽，可香啦。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「多虧少俠幫忙，不然咱家晚飯怕是要從四季豆變成白粥配懊悔了。」", "speaker": speaker_id, "portrait": portrait_path },
+		], self)
+	else:
+		dialog_manager.show_dialog_sequence([
+			{ "text": "「後來我把那把四季豆煮得透透的，沒事，放心。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "「不過少俠啊，你也別太自責。這鎮上的琴聲，連鍋鏟聽久了都會發呆。」", "speaker": speaker_id, "portrait": portrait_path },
+		], self)
