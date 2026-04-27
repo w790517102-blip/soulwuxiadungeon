@@ -182,6 +182,7 @@ func _buy_fried_green_beans() -> void:
 	var lines: Array = [
 		{ "text": "劉語塵：「給我一把炸過一遍的熟豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「好選擇！這豆剛炸好沒多久，回去撒點蒜鹽，再滴兩滴醬油，配飯正香。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「來，少俠拿好，別讓琴聲把香味都吹散了。」", "speaker": 1, "portrait": portrait_path },
 	]
 	if not talked_melody:
 		lines.append_array([
