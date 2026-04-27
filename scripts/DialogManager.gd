@@ -123,9 +123,6 @@ func _wait_for_continue():
 	waiting_for_close = false
 
 func _unhandled_input(event):
-	var toast = get_node_or_null("/root/MessageToast")
-	if toast and toast.has_method("is_busy") and toast.is_busy():
-		return
 	var proceed = false
 	if event.is_action_pressed("ui_accept"):
 		proceed = true

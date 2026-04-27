@@ -1,5 +1,4 @@
 extends Node
-signal queue_drained
 
 const FADE_IN_SEC := 0.15
 const HOLD_SEC := 3.0
@@ -11,8 +10,6 @@ var _is_showing = false
 var _layer: CanvasLayer = null
 var _panel: PanelContainer = null
 var _label: Label = null
-var _locked_player_before_toast = false
-var _has_player_lock = false
 
 func push_message(text: String) -> void:
 	var msg = text.strip_edges()
@@ -42,7 +39,6 @@ func _try_show_next() -> void:
 		return
 
 	_is_showing = true
-	_acquire_toast_locks()
 	var full_text = _queue.pop_front()
 	_panel.visible = true
 	_panel.modulate.a = 0.0
@@ -55,9 +51,6 @@ func _try_show_next() -> void:
 	if is_instance_valid(_panel):
 		_panel.visible = false
 	_is_showing = false
-	if _queue.is_empty():
-		_release_toast_locks()
-		queue_drained.emit()
 	_try_show_next()
 
 func _ensure_ui() -> void:
@@ -119,28 +112,3 @@ func _fade_to(target_alpha: float, duration: float) -> void:
 
 func _hold_visible() -> void:
 	await get_tree().create_timer(HOLD_SEC).timeout
-
-func wait_until_idle() -> void:
-	if not _is_showing and _queue.is_empty():
-		return
-	await queue_drained
-
-func is_busy() -> bool:
-	return _is_showing or not _queue.is_empty()
-
-func _acquire_toast_locks() -> void:
-	if _has_player_lock:
-		return
-	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
-	if liuyu:
-		_locked_player_before_toast = bool(liuyu.get("can_move"))
-		liuyu.can_move = false
-	_has_player_lock = true
-
-func _release_toast_locks() -> void:
-	if not _has_player_lock:
-		return
-	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
-	if liuyu:
-		liuyu.can_move = _locked_player_before_toast
-	_has_player_lock = false
