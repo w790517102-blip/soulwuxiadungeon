@@ -158,7 +158,8 @@ func _start_inn_boss_quest_intro() -> void:
 func _accept_inn_boss_side_quest() -> void:
 	if not SideQuestManager.get_quest(INN_BOSS_QUEST_ID).has("quest_id"):
 		SideQuestManager.register_quest(INN_BOSS_QUEST_ID, {
-			"quest_id": INN_BOSS_QUEST_ID
+			"quest_id": INN_BOSS_QUEST_ID,
+			"title": INN_BOSS_QUEST_TITLE
 		})
 	_ensure_inn_boss_side_quest()
 	if GlobalState and GlobalState.has_method("set_flag"):
@@ -167,7 +168,8 @@ func _accept_inn_boss_side_quest() -> void:
 func _ensure_inn_boss_side_quest() -> void:
 	if not SideQuestManager.get_quest(INN_BOSS_QUEST_ID).has("quest_id"):
 		SideQuestManager.register_quest(INN_BOSS_QUEST_ID, {
-			"quest_id": INN_BOSS_QUEST_ID
+			"quest_id": INN_BOSS_QUEST_ID,
+			"title": INN_BOSS_QUEST_TITLE
 		})
 	var quest := SideQuestManager.get_quest(INN_BOSS_QUEST_ID)
 	var stage := int(quest.get("stage", 0))

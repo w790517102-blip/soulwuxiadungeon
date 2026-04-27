@@ -189,7 +189,7 @@ func _start_green_beans_quest_intro() -> void:
 
 func _register_green_beans_quest() -> void:
 	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
-		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID})
+		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID, "title": QUEST_TITLE})
 	var quest := SideQuestManager.get_quest(QUEST_ID)
 	quest["title"] = QUEST_TITLE
 	quest["description"] = QUEST_STAGE_1_DESC
@@ -208,33 +208,39 @@ func _register_green_beans_quest() -> void:
 func _report_green_beans_result(quest: Dictionary) -> void:
 	var bean_type := String(quest.get("bean_type", "raw"))
 	if bean_type == "fried":
-		dialog_manager.show_dialog_sequence([
+		await _play_sequence_and_wait([
 			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
+		])
+		if InventorySync:
+			InventorySync.consume_item(BEAN_FRIED_ITEM_ID, 1, true)
+		await _play_sequence_and_wait([
 			{ "text": "「哎呀，就是這個！炸過一遍的熟豆，香氣不會騙人。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「年輕人就是有定力。那市集琴聲裊裊的，連我這種老玉衡人都被牽著走，你倒還分得清。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「不是我定力好。只是這琴聲的影響，比我想得更深。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "「深是深，可日子不能不過啊。飯要煮，菜要買，人再怎麼分神，也得想辦法把晚飯端上桌。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「來，這些小意思給你買茶解渴。還有這包草藥，是我在自家後院摘的。」", "speaker": speaker_id, "portrait": portrait_path },
-		], self)
+		])
 		if InventorySync:
-			InventorySync.consume_item(BEAN_FRIED_ITEM_ID, 1, true)
 			InventorySync.add_gold(30)
 			InventorySync.add_item_stack("med_trauma_herb", 1)
 		quest["ending"] = "right"
 		quest["notes"] = ["豆子買對了，秋嬸總算能安心做晚飯。"]
 		quest["note"] = "豆子買對了，秋嬸總算能安心做晚飯。"
 	else:
-		dialog_manager.show_dialog_sequence([
+		await _play_sequence_and_wait([
 			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
+		])
+		if InventorySync:
+			InventorySync.consume_item(BEAN_RAW_ITEM_ID, 1, true)
+		await _play_sequence_and_wait([
 			{ "text": "「哎呀，這是生的四季豆。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「……生的？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "「嗯，還沒炸過。看來那市集前的琴聲，連你這樣的年輕人也能分神。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「抱歉，是我疏忽了。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "「別這麼說。至少我站在這廣場，還分得出它是生是熟。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "「來，這些小錢給你買點涼的喝。路上辛苦啦。」", "speaker": speaker_id, "portrait": portrait_path },
-		], self)
+		])
 		if InventorySync:
-			InventorySync.consume_item(BEAN_RAW_ITEM_ID, 1, true)
 			InventorySync.add_gold(20)
 		quest["ending"] = "wrong"
 		quest["notes"] = ["豆子買成生的了，但秋嬸仍笑著收下這份好意。"]
@@ -245,6 +251,12 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 	quest["objective"] = "把日常過下去，本身就是一種定力。"
 	quest["current_objective"] = quest["objective"]
 	SideQuestManager.side_quests[QUEST_ID] = quest
+
+func _play_sequence_and_wait(lines: Array) -> void:
+	if dialog_manager == null:
+		return
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_sequence_finished
 
 func _show_post_quest_loop_dialog(quest: Dictionary) -> void:
 	if String(quest.get("ending", "")) == "right":

@@ -19,10 +19,9 @@ func register_quest(id: String, data: Dictionary) -> void:
 		side_quests[id]["stage"] = 0
 		side_quests[id]["is_finished"] = false
 		print("[支線] 已註冊任務：%s" % id)
-		var quest_title = str(side_quests[id].get("title", ""))
-		if quest_title == "":
-			quest_title = id
-		_toast("已新增支線：%s" % quest_title)
+		var quest_title = str(side_quests[id].get("title", "")).strip_edges()
+		if quest_title != "":
+			_toast("已新增支線：%s" % quest_title)
 
 # 推進任務階段
 func advance_quest(id: String, new_stage: int) -> void:
