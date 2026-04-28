@@ -5,6 +5,7 @@ var system_menu_instance: Control = null
 
 const GAME_ROOT_PATH := "/root/GameRoot"
 const UI_ROOT_NAME := "UIRoot"
+const UI_ROOT_LAYER := 1000
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -52,7 +53,10 @@ func _resolve_ui_parent() -> Node:
 		if ui_root == null:
 			ui_root = CanvasLayer.new()
 			ui_root.name = UI_ROOT_NAME
+			(ui_root as CanvasLayer).layer = UI_ROOT_LAYER
 			game_root.add_child(ui_root)
+		elif ui_root is CanvasLayer:
+			(ui_root as CanvasLayer).layer = UI_ROOT_LAYER
 		return ui_root
 	return get_tree().root
 
