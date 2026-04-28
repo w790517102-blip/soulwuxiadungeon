@@ -22,6 +22,7 @@ const QUEST_STAGE_2_DESC := "將四季豆帶回給秋嬸。"
 const BEAN_RAW_ITEM_ID := "quest_green_beans_raw"
 const BEAN_FRIED_ITEM_ID := "quest_green_beans_fried"
 const FLAG_TALKED_MELODY_WITH_AMAO := "talked_melody_with_amao"
+signal bean_purchase_flow_finished
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -146,7 +147,7 @@ func _handle_store_keeper_interact() -> void:
 	if stage <= 1:
 		await _start_green_beans_purchase_flow()
 		return
-	_unlock_on_next_reset = true
+	_unlock_on_next_reset = false
 	await _play_sequence_and_wait([
 		{ "text": "「少俠，豆子帶回去給秋嬸了嗎？她剛剛還在廣場邊打轉呢。」", "speaker": 1, "portrait": portrait_path },
 	])
@@ -160,7 +161,7 @@ func _show_normal_dialog(with_quest_epilogue: bool) -> void:
 			"speaker": 1,
 			"portrait": portrait_path,
 		})
-	_unlock_on_next_reset = true
+	_unlock_on_next_reset = false
 	await _play_sequence_and_wait(lines)
 
 func _start_green_beans_purchase_flow() -> void:
@@ -175,21 +176,23 @@ func _start_green_beans_purchase_flow() -> void:
 		{ "text": "買生的四季豆", "callback": Callable(self, "_buy_raw_green_beans") },
 		{ "text": "買炸過一遍的熟豆", "callback": Callable(self, "_buy_fried_green_beans") },
 	])
+	await bean_purchase_flow_finished
 
 func _buy_raw_green_beans() -> void:
 	dialog_manager.choice_box.hide_choices()
-	_unlock_on_next_reset = true
-	dialog_manager.show_dialog_sequence([
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
 		{ "text": "劉語塵：「給我一把生的四季豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「好嘞！生的最青脆，回去記得煮熟，別貪那一口爽脆。來，少俠拿好。」", "speaker": 1, "portrait": portrait_path },
-	], self)
+	])
 	if InventorySync:
 		InventorySync.add_item_stack(BEAN_RAW_ITEM_ID, 1)
 	_set_green_beans_quest_purchase("raw")
+	bean_purchase_flow_finished.emit()
 
 func _buy_fried_green_beans() -> void:
 	dialog_manager.choice_box.hide_choices()
-	_unlock_on_next_reset = true
+	_unlock_on_next_reset = false
 	var talked_melody := GlobalState.get_flag(FLAG_TALKED_MELODY_WITH_AMAO)
 	var lines: Array = [
 		{ "text": "劉語塵：「給我一把炸過一遍的熟豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -203,10 +206,11 @@ func _buy_fried_green_beans() -> void:
 			{ "text": "「不然呢？難道我對著四季豆嘆氣，它就能自己熟啊？」", "speaker": 1, "portrait": portrait_path },
 		])
 		GlobalState.set_flag(FLAG_TALKED_MELODY_WITH_AMAO, true)
-	dialog_manager.show_dialog_sequence(lines, self)
+	await _play_sequence_and_wait(lines)
 	if InventorySync:
 		InventorySync.add_item_stack(BEAN_FRIED_ITEM_ID, 1)
 	_set_green_beans_quest_purchase("fried")
+	bean_purchase_flow_finished.emit()
 
 func _play_sequence_and_wait(lines: Array) -> void:
 	if dialog_manager == null:
