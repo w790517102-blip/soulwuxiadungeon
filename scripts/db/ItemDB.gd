@@ -48,7 +48,7 @@ const ITEM_DEFS := {
 	"cloth_gloves": {"name": "布手套", "desc": "柔軟布製手套，提供基礎保護。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 1}},
 	"leather_gloves": {"name": "皮手套", "desc": "耐磨皮革手套，強化手部防護。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "armor_hands", "stats": {"def": 3}},
 	"misc_tinderbox": {"name": "火折子", "desc": "可點火的雜貨。", "type": "misc", "use_scope": "none", "use_action": "none"},
-	"misc_hemp_twine": {"name": "麻線", "desc": "耐用麻線。", "type": "material", "use_scope": "none", "use_action": "none"},
+	"misc_hemp_twine": {"name": "細線", "desc": "輕巧耐用、用途廣的細繩，能拿來翻花繩、打陀螺等童玩，因此深受孩子喜愛。", "type": "material", "use_scope": "none", "use_action": "none"},
 	"misc_small_rope": {"name": "麻繩", "desc": "簡易麻繩。", "type": "material", "use_scope": "none", "use_action": "none"},
 	"misc_sachet": {"name": "香包", "desc": "留香小包。", "type": "misc", "use_scope": "none", "use_action": "none"},
 	"misc_empty_bottle": {"name": "空瓶", "desc": "可盛裝液體。", "type": "material", "use_scope": "none", "use_action": "none"},
