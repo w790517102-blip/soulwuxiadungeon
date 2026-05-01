@@ -23,7 +23,16 @@ var has_recently_talked: bool = false
 var patrol_progress := 0.0
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
-var _mark_flag_after_close := false  # 對話結束時才落旗
+var _interaction_flow_active := false
+var _unlock_on_next_reset := false
+
+const QUEST_ID := "yh_side_dabao_01"
+const QUEST_TITLE := "大寶的不能說"
+const QUEST_STAGE_1_DESC := "找來一條細繩，交給大寶。"
+const QUEST_STAGE_2_DESC := "前往井旁，調查大寶所指的石塊。"
+const ITEM_FINE_THREAD := "misc_hemp_twine"
+const FLAG_COIN_HINT := "yh_side_dabao_01_coin_hint"
+const FLAG_COIN_TAKEN := "yh_side_dabao_01_coin_taken"
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -39,40 +48,11 @@ func _ready():
 	var main_stage := _get_main_stage_safely()
 	dialog_lines = _build_lines_for_stage(main_stage)
 
-func _build_lines_for_stage(main_stage: int) -> Array:
-	var met := GlobalState.get_flag("met_yuheng_dreaming_kid")
-	# ❶ 主線前期：首輪完整版 / 其後走精簡循環
-
-	if not met:
-		return [
-				{ "text": "「大哥哥，我昨晚夢到井裡有條魚跟我說話耶！」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「牠說『快撐不住語魅了、情緒會反噬整個鎮』，我也不知道是什麼意思……」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「後來聽到醉月茶坊的姐姐在彈琴，我就醒了。媽媽還叫我別亂講夢話……」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「可是那魚兒看起來好像真的好急喔……」", "speaker": 1, "portrait": portrait_path },
-			]
-	else:
-		return [
-				{ "text": "「不知道夢裡的那條魚兒過得怎樣了?」", "speaker": 1, "portrait": portrait_path },
-		]
-	if main_stage >= 2:
-		return [
-				{ "text": "「大哥哥，我又夢到井裡的魚了!!」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「他說‘已經沒事了…‘然後看上去心情很好呢!」", "speaker": 1, "portrait": portrait_path },
-			]
-
-	# ❷ 主線中期：對琴音的觀感（循環）
-	elif main_stage <= 6:
-		return [
-			{ "text": "琴聲善，善亦有度。善若過度，亦成執。", "speaker": 1, "portrait": portrait_path },
-			{ "text": "此地群情雖平，卻像風停於谷，久之易悶。", "speaker": 1, "portrait": portrait_path },
-		]
-
-	# ❸ 主線後期：拿到白鳶橫天之後（循環）
-	else:
-		return [
-			{ "text": "白鳶橫天，像給谷口開了一道風眼。", "speaker": 1, "portrait": portrait_path },
-			{ "text": "願君持衡，弦不傷人，心不傷己。", "speaker": 1, "portrait": portrait_path },
-		]
+func _build_lines_for_stage(_main_stage: int) -> Array:
+	return [
+		{ "text": "「哥哥，等你到井邊的時候，記得看看石頭底下。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「有些話說不出口，只能讓繩子和石頭幫我說。」", "speaker": 1, "portrait": portrait_path },
+	]
 
 func _process(delta):
 	z_index = int(global_position.y + z_index_offset)
@@ -130,25 +110,124 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
 		if is_talking:
 			return
-		is_talking = true
+		_begin_interaction_flow()
 		var liuyu := get_node("/root/GameRoot/LiuYu")
-		liuyu.can_move = false
 		face_towards(liuyu.global_position)
-
-		# ✅ 這行是關鍵：在互動瞬間依目前旗標/主線重新組台詞
-		var main_stage := _get_main_stage_safely()
-		dialog_lines = _build_lines_for_stage(main_stage)
-
-		dialog_manager.show_dialog_sequence(dialog_lines, self)
-		_mark_flag_after_close = not GlobalState.get_flag("met_yuheng_dreaming_kid")
+		_run_dabao_interaction()
 func reset_dialog_state():
-	get_node("/root/GameRoot/LiuYu").can_move = true
+	if _interaction_flow_active and not _unlock_on_next_reset:
+		is_talking = true
+		return
+	_end_interaction_flow()
+
+func _run_dabao_interaction() -> void:
+	await _handle_dabao_interact()
+	if _interaction_flow_active:
+		_end_interaction_flow()
+
+func _handle_dabao_interact() -> void:
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	if not quest.has("quest_id"):
+		await _start_dabao_quest_intro()
+		return
+	if bool(quest.get("is_finished", false)):
+		_unlock_on_next_reset = false
+		await _play_sequence_and_wait(_build_lines_for_stage(_get_main_stage_safely()))
+		return
+	var stage := int(quest.get("stage", 0))
+	if stage <= 1:
+		await _handle_need_thread()
+		return
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
+		{ "text": "「哥哥，井邊石頭那裡……你到了就會懂。」", "speaker": 1, "portrait": portrait_path },
+	])
+
+func _start_dabao_quest_intro() -> void:
+	_unlock_on_next_reset = false
+	var lines: Array = [
+		{ "text": "劉語塵心想：「這孩子……似乎和其他孩子不同。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵心想：「一個人站在市集邊上若有所思，未免安靜過了頭。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "大寶：「大哥哥，你是不是在擔心我？」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶：「我叫大寶。我沒事，只是最近朋友們都說不出話。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶：「井裡的鯉魚先生最著急……可是我一說井在哪，嘴巴就像被琴聲打結。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「那你用別的方式告訴我。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "大寶：「我可以用繩子！你幫我找一條細繩，我就能把夢裡的路排給你看。」", "speaker": 1, "portrait": portrait_path },
+	]
+	if GlobalState.get_flag("event_market_choice_observe"):
+		lines.insert(2, { "text": "劉語塵心想：「連孩子的不安都像被琴聲壓住了……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" })
+	await _play_sequence_and_wait(lines)
+	_register_dabao_quest()
+
+func _handle_need_thread() -> void:
+	if InventorySync and InventorySync.has_item(ITEM_FINE_THREAD, 1):
+		if InventorySync:
+			InventorySync.consume_item(ITEM_FINE_THREAD, 1, true)
+		_unlock_on_next_reset = false
+		await _play_sequence_and_wait([
+			{ "text": "大寶接過細繩，蹲在地上繞出彎曲的路。", "speaker": 1, "portrait": portrait_path },
+			{ "text": "大寶：「這裡是市集……這裡是水聲……這裡是井。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "大寶：「井旁邊有塊石頭，下面壓著亮亮的東西。那會幫上你的忙。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "大寶把細繩還給你。", "speaker": 1, "portrait": portrait_path },
+		])
+		if InventorySync:
+			InventorySync.add_item_stack(ITEM_FINE_THREAD, 1)
+		_update_dabao_quest_to_hint_stage()
+		return
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
+		{ "text": "大寶：「哥哥，還差一條細繩。沒有繩子，我就排不出夢裡的路。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「雜貨舖常有賣，帶一條來就好。」", "speaker": 1, "portrait": portrait_path },
+	])
+
+func _register_dabao_quest() -> void:
+	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
+		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID, "title": QUEST_TITLE})
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	quest["title"] = QUEST_TITLE
+	quest["description"] = QUEST_STAGE_1_DESC
+	quest["objective"] = QUEST_STAGE_1_DESC
+	quest["current_objective"] = QUEST_STAGE_1_DESC
+	quest["stage"] = 1
+	quest["is_finished"] = false
+	quest["notes"] = ["大寶說不出口井的位置，請你帶一條細繩給他排出方向。"]
+	quest["note"] = "大寶說不出口井的位置，請你帶一條細繩給他排出方向。"
+	SideQuestManager.side_quests[QUEST_ID] = quest
+
+func _update_dabao_quest_to_hint_stage() -> void:
+	if GlobalState and GlobalState.has_method("set_flag"):
+		GlobalState.set_flag(FLAG_COIN_HINT, true)
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	quest["title"] = QUEST_TITLE
+	quest["description"] = QUEST_STAGE_2_DESC
+	quest["objective"] = QUEST_STAGE_2_DESC
+	quest["current_objective"] = QUEST_STAGE_2_DESC
+	quest["stage"] = 2
+	quest["notes"] = ["大寶用繩索指向井旁石塊，去那裡調查看看。"]
+	quest["note"] = "大寶用繩索指向井旁石塊，去那裡調查看看。"
+	SideQuestManager.side_quests[QUEST_ID] = quest
+
+func _play_sequence_and_wait(lines: Array) -> void:
+	if dialog_manager == null:
+		return
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_sequence_finished
+
+func _begin_interaction_flow() -> void:
+	_interaction_flow_active = true
+	_unlock_on_next_reset = false
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = false
+	is_talking = true
+
+func _end_interaction_flow() -> void:
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
 	is_talking = false
-	if _mark_flag_after_close:
-		GlobalState.set_flag("met_yuheng_dreaming_kid", true)
-		_mark_flag_after_close = false
-		# 旗標落地後，重建成「精簡循環版」
-		dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
+	_interaction_flow_active = false
+	_unlock_on_next_reset = false
 
 func _get_main_stage_safely() -> int:
 	var qm := get_node_or_null("/root/QuestManager")
