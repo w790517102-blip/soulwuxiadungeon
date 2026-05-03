@@ -193,7 +193,7 @@ func _handle_need_thread() -> void:
 		if InventorySync:
 			InventorySync.consume_item(ITEM_FINE_THREAD, 1, true)
 		_unlock_on_next_reset = false
-			await _play_sequence_and_wait([
+		await _play_sequence_and_wait([
 				{ "text": "大寶接過細繩，蹲在地上，小心地把繩子繞成彎彎曲曲的路。", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「這裡是市集……這裡是水聲……這裡是井。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「夢裡的你不是現在下去的。還不到時候。」", "speaker": 1, "portrait": portrait_path },
@@ -207,7 +207,7 @@ func _handle_need_thread() -> void:
 				{ "text": "大寶把細繩收回來，遞還給劉語塵。", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「繩子說完了，還給你。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「剩下的，要哥哥自己去看。」", "speaker": 1, "portrait": portrait_path },
-			])
+		])
 		if InventorySync:
 			InventorySync.add_item_stack(ITEM_FINE_THREAD, 1)
 		_update_dabao_quest_to_hint_stage()
