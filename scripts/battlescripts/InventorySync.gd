@@ -102,6 +102,20 @@ func get_item_by_id(id: String) -> Dictionary:
 			return item
 	return {}
 
+func get_item_count(id: String) -> int:
+	if id == "":
+		return 0
+	for entry in party_inventory:
+		if str(entry.get("id", "")) == id:
+			return int(entry.get("count", 0))
+	return 0
+
+func has_item(item_id: String, amount: int = 1) -> bool:
+	return get_item_count(item_id) >= max(amount, 1)
+
+func has_item_stack(item_id: String, amount: int = 1) -> bool:
+	return has_item(item_id, amount)
+
 func consume_item(id: String, amount: int = 1, show_message: bool = true) -> void:
 	if amount <= 0:
 		return
