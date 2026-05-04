@@ -713,7 +713,7 @@ func _execute_buy_cart(cart_entries: Dictionary) -> void:
 	if InventorySync.get_gold() < total_cost:
 		_show_notice("盤纏不足。")
 		return
-	if not InventorySync.spend_gold(total_cost):
+	if not InventorySync.spend_gold(total_cost, false):
 		_show_notice("盤纏不足。")
 		return
 	for item_id in cart_entries.keys():
@@ -727,7 +727,7 @@ func _execute_buy_cart(cart_entries: Dictionary) -> void:
 			qty = min(qty, runtime_stock)
 		if qty <= 0:
 			continue
-		InventorySync.add_item_stack(item_id, qty)
+		InventorySync.add_item_stack(item_id, qty, false)
 		if runtime_stock > 0:
 			_set_runtime_stock(item_id, runtime_stock - qty)
 		_buy_cart[item_id] = 0
@@ -751,11 +751,11 @@ func _execute_buy(entry: Dictionary) -> void:
 	if qty <= 0:
 		_show_notice("盤纏不足。")
 		return
-	if not InventorySync.spend_gold(price * qty):
+	if not InventorySync.spend_gold(price * qty, false):
 		_show_notice("盤纏不足。")
 		return
 
-	InventorySync.add_item_stack(item_id, qty)
+	InventorySync.add_item_stack(item_id, qty, false)
 	if runtime_stock > 0:
 		_set_runtime_stock(item_id, runtime_stock - qty)
 
@@ -779,8 +779,8 @@ func _execute_sell(entry: Dictionary) -> void:
 		_show_notice("物品不足。")
 		return
 	qty = min(qty, count)
-	InventorySync.consume_item(item_id, qty)
-	InventorySync.add_gold(sell_price * qty)
+	InventorySync.consume_item(item_id, qty, false)
+	InventorySync.add_gold(sell_price * qty, false)
 	_refresh_gold()
 	_refresh_items()
 
@@ -816,8 +816,8 @@ func _execute_sell_cart(cart_entries: Dictionary) -> void:
 		qty = min(qty, owned)
 		if qty <= 0:
 			continue
-		InventorySync.consume_item(item_id, qty)
-		InventorySync.add_gold(int(d.get("sell_price", 0)) * qty)
+		InventorySync.consume_item(item_id, qty, false)
+		InventorySync.add_gold(int(d.get("sell_price", 0)) * qty, false)
 		_sell_cart[item_id] = 0
 	_refresh_gold()
 	_refresh_items()
