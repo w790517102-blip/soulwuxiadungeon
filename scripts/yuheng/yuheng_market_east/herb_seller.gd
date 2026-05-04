@@ -23,7 +23,13 @@ var has_recently_talked: bool = false
 var patrol_progress := 0.0
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
-var _mark_flag_after_close := false # ✅ 首輪對話結束時才落旗並切換成循環台詞
+var _interaction_flow_active := false
+var _unlock_on_next_reset := false
+
+const QUEST_ID := "yuheng_valley_herb"
+const QUEST_TITLE := "谷影入藥"
+const ITEM_VALLEY_GRASS := "quest_valley_shadow_grass"
+const ITEM_AWAKEN_TONIC := "med_awaken_tonic"
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -98,31 +104,84 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
 		if is_talking:
 			return
-		is_talking = true
+		_begin_interaction_flow()
 		var liuyu := get_node("/root/GameRoot/LiuYu")
-		liuyu.can_move = false
 		face_towards(liuyu.global_position)
-
-		# ✅ 這行是關鍵：在互動瞬間依目前旗標/主線重新組台詞
-		var main_stage := _get_main_stage_safely()
-		dialog_lines = _build_lines_for_stage(main_stage)
-
-		dialog_manager.show_dialog_sequence(dialog_lines, self)
-		_mark_flag_after_close = not GlobalState.get_flag("met_apothecary_intro")
+		_run_herb_seller_interaction()
 
 func reset_dialog_state():
-	# Dialog 結束回呼
-	var liuyu := get_node("/root/GameRoot/LiuYu")
-	if liuyu:
-		liuyu.can_move = true
-	is_talking = false
+	if _interaction_flow_active and not _unlock_on_next_reset:
+		is_talking = true
+		return
+	_end_interaction_flow()
 
-	# ✅ 首輪剛結束 → 落旗＆重建循環台詞（無須出場再進場）
-	if _mark_flag_after_close:
-		GlobalState.set_flag("met_apothecary_intro", true)
-		_mark_flag_after_close = false
-		var main_stage := _get_main_stage_safely()
-		dialog_lines = _build_lines_for_stage(main_stage)
+func _run_herb_seller_interaction() -> void:
+	await _handle_herb_seller_interact()
+	if _interaction_flow_active:
+		_end_interaction_flow()
+
+func _handle_herb_seller_interact() -> void:
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	if not quest.has("quest_id"):
+		await _start_valley_herb_quest_intro()
+		return
+	if bool(quest.get("is_finished", false)):
+		_unlock_on_next_reset = false
+		await _play_sequence_and_wait([
+			{ "text": "「谷影草性子清冷，能把神思從昏沉裡拉回來。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「少俠若再遇頭昏眼花、神思不清之症，記得備上一帖醒神湯。」", "speaker": 1, "portrait": portrait_path },
+		])
+		return
+	var stage := int(quest.get("stage", 0))
+	if stage <= 1:
+		_unlock_on_next_reset = false
+		await _play_sequence_and_wait([
+			{ "text": "「谷影草要三朵才夠用。廣場邊緣陰影重的地方，最容易找到。」", "speaker": 1, "portrait": portrait_path },
+		])
+		return
+	await _turn_in_valley_herb_quest()
+
+func _start_valley_herb_quest_intro() -> void:
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
+		{ "text": "「少俠來得正好。我想調一帖安神不滯的藥，偏偏還缺三朵谷影草。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「若你願意幫忙，就去玉衡鎮廣場邊緣看看，陰影處常有它。」", "speaker": 1, "portrait": portrait_path },
+	])
+	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
+		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID, "title": QUEST_TITLE})
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	quest["title"] = QUEST_TITLE
+	quest["description"] = "賣藥翁想調一帖安神不滯的藥，還缺三朵谷影草。"
+	quest["objective"] = "在玉衡鎮廣場邊緣採集三朵谷影草。"
+	quest["current_objective"] = quest["objective"]
+	quest["stage"] = 1
+	quest["is_finished"] = false
+	quest["notes"] = ["去玉衡鎮廣場邊緣採集三朵谷影草。"]
+	quest["note"] = "去玉衡鎮廣場邊緣採集三朵谷影草。"
+	SideQuestManager.side_quests[QUEST_ID] = quest
+	GlobalState.set_flag("met_apothecary_intro", true)
+
+func _turn_in_valley_herb_quest() -> void:
+	if not InventorySync or not InventorySync.has_item(ITEM_VALLEY_GRASS, 3):
+		_unlock_on_next_reset = false
+		await _play_sequence_and_wait([
+			{ "text": "「還差些谷影草。要三朵，藥性才穩。」", "speaker": 1, "portrait": portrait_path },
+		])
+		return
+	InventorySync.consume_item(ITEM_VALLEY_GRASS, 3, true)
+	InventorySync.add_item_stack(ITEM_AWAKEN_TONIC, 1, true)
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
+		{ "text": "「好，三朵齊了。這帖醒神湯你收著，遇暈眩正好能用。」", "speaker": 1, "portrait": portrait_path },
+	])
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	quest["description"] = "已完成：谷影入藥"
+	quest["objective"] = "賣藥翁以三朵谷影草調成醒神湯。"
+	quest["current_objective"] = quest["objective"]
+	quest["notes"] = ["賣藥翁以三朵谷影草調成醒神湯，日後可備不時之需。"]
+	quest["note"] = "賣藥翁以三朵谷影草調成醒神湯，日後可備不時之需。"
+	SideQuestManager.side_quests[QUEST_ID] = quest
+	SideQuestManager.complete_quest(QUEST_ID)
 
 # ---------------- 台詞組裝（沿用苦行僧模板的分段） ----------------
 func _build_lines_for_stage(main_stage: int) -> Array:
@@ -225,3 +284,25 @@ func face_towards(target_position: Vector2) -> void:
 	var anim_name = _get_anim_by_vector(direction, "idle")
 	if animated_sprite.sprite_frames.has_animation(anim_name):
 		animated_sprite.play(anim_name)
+
+func _play_sequence_and_wait(lines: Array) -> void:
+	if dialog_manager == null:
+		return
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_sequence_finished
+
+func _begin_interaction_flow() -> void:
+	_interaction_flow_active = true
+	_unlock_on_next_reset = false
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = false
+	is_talking = true
+
+func _end_interaction_flow() -> void:
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
+	is_talking = false
+	_interaction_flow_active = false
+	_unlock_on_next_reset = false

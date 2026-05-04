@@ -33,6 +33,7 @@ const ITEM_DEFS := {
 	"med_trauma_herb": {"name": "跌打草藥", "desc": "可外敷的跌打草藥。回復90點HP。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "heal", "amount": 90, "target_scope": "ally_single"},
 	"quest_green_beans_raw": {"name": "生四季豆", "desc": "阿茂菜攤買來的生四季豆。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"quest_green_beans_fried": {"name": "炸熟四季豆", "desc": "炸過一遍、可直接再料理上桌的四季豆。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
+	"quest_valley_shadow_grass": {"name": "谷影草", "desc": "生於谷邊陰影與濕氣交界的藥草。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"wep_wood_sword": {"name": "木劍", "desc": "入門木劍。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 1}},
 	"wep_short_blade": {"name": "短刀", "desc": "短柄單刀。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_2", "weapon_type": "刀", "stats": {"atk": 2}},
 	"wep_qingfeng_sword": {"name": "青鋒劍", "desc": "均衡劍器。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 3}},
