@@ -143,10 +143,20 @@ func _handle_herb_seller_interact() -> void:
 
 func _start_valley_herb_quest_intro() -> void:
 	_unlock_on_next_reset = false
-	await _play_sequence_and_wait([
-		{ "text": "「少俠來得正好。我想調一帖安神不滯的藥，偏偏還缺三朵谷影草。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「若你願意幫忙，就去玉衡鎮廣場邊緣看看，陰影處常有它。」", "speaker": 1, "portrait": portrait_path },
-	])
+	var intro_lines: Array = []
+	var event_market_choice_observe := GlobalState.get_flag("event_market_choice_observe")
+	var event_yuheng_market_melody := GlobalState.get_flag("event_yuheng_market_melody")
+	if event_market_choice_observe and event_yuheng_market_melody:
+		intro_lines = _build_lines_for_stage(_get_main_stage_safely())
+	else:
+		intro_lines = [
+			{ "text": "「藥要慢熬，氣要順著走。光靠壓，壓久了，一爆就收不回來。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「河流本該流海去，你硬是築堤堵它，哪天潰堤了，後果難料。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵:「這位賣藥翁似乎話中有話……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「少俠若方便，幫我採三朵谷影草吧。我想調一帖安神不滯的藥，正缺這味。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵:「採草不難。我去廣場邊緣找找看。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		]
+	await _play_sequence_and_wait(intro_lines)
 	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
 		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID, "title": QUEST_TITLE})
 	var quest := SideQuestManager.get_quest(QUEST_ID)
@@ -159,7 +169,8 @@ func _start_valley_herb_quest_intro() -> void:
 	quest["notes"] = ["去玉衡鎮廣場邊緣採集三朵谷影草。"]
 	quest["note"] = "去玉衡鎮廣場邊緣採集三朵谷影草。"
 	SideQuestManager.side_quests[QUEST_ID] = quest
-	GlobalState.set_flag("met_apothecary_intro", true)
+	if GlobalState and GlobalState.has_method("set_flag"):
+		GlobalState.set_flag("met_apothecary_intro", true)
 
 func _turn_in_valley_herb_quest() -> void:
 	if not InventorySync or not InventorySync.has_item(ITEM_VALLEY_GRASS, 3):
