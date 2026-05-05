@@ -188,13 +188,6 @@ func _choose_spar() -> void:
 	await _start_oldfighter_sparring_battle()
 
 func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
-	var equip := InventorySync.get_equipped("liuyu")
-	var has_weapon := String(equip.get("weapon_1", "")) != "" or String(equip.get("weapon_2", "")) != ""
-	var has_armor_or_acc := false
-	for slot in ["armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2"]:
-		if String(equip.get(slot, "")) != "":
-			has_armor_or_acc = true
-			break
 	_unlock_on_next_reset = false
 	if not has_weapon and not has_armor_or_acc:
 		await _play_sequence_and_wait([
