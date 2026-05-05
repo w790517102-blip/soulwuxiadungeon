@@ -1,5 +1,6 @@
 # 客棧用路人 NPC 通用腳本模板 (支援 Gossip Flag)
 extends CharacterBody2D
+const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/empty.png"
@@ -34,6 +35,7 @@ func _ready():
 			{ "text": "「嗯？你說左飲啊？我年輕時候和他們也總是在這練演武呢。」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "「唉，希望可以再看到一次他的燕行破風斬...」", "speaker": 1, "portrait": portrait_path },
 		]
+	call_deferred("_try_resolve_oldfighter_battle_return")
 
 func _process(_delta):
 	z_index = int(global_position.y + z_index_offset)
@@ -183,9 +185,9 @@ func _choose_decline() -> void:
 
 func _choose_spar() -> void:
 	dialog_manager.choice_box.hide_choices()
-	await _resolve_spar_result()
+	await _start_oldfighter_sparring_battle()
 
-func _resolve_spar_result() -> void:
+func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
 	var equip := InventorySync.get_equipped("liuyu")
 	var has_weapon := String(equip.get("weapon_1", "")) != "" or String(equip.get("weapon_2", "")) != ""
 	var has_armor_or_acc := false
@@ -223,6 +225,67 @@ func _resolve_spar_result() -> void:
 	quest2["objective"] = "卸下武器、防具與飾品，再與老翁比試。"
 	quest2["current_objective"] = quest2["objective"]
 	SideQuestManager.side_quests[QUEST_ID] = quest2
+
+func _start_oldfighter_sparring_battle() -> void:
+	var equip := InventorySync.get_equipped("liuyu")
+	var has_weapon := String(equip.get("weapon_1", "")) != "" or String(equip.get("weapon_2", "")) != ""
+	var has_armor_or_acc := false
+	for slot in ["armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2"]:
+		if String(equip.get(slot, "")) != "":
+			has_armor_or_acc = true
+			break
+	if not has_weapon and not has_armor_or_acc:
+		await _play_sequence_and_wait([
+			{ "text": "「咦？你……你連兵器甲飾都未帶，便敢上演武台？」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「前輩不是說比劃筋骨嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「好，好一個比劃筋骨！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「年輕人，你倒是比那些滿身行頭的江湖客乾脆多了。」", "speaker": 1, "portrait": portrait_path },
+		])
+	GlobalState.set_meta("oldfighter_spar_pending", true)
+	GlobalState.set_meta("oldfighter_spar_has_weapon", has_weapon)
+	GlobalState.set_meta("oldfighter_spar_has_armor_or_acc", has_armor_or_acc)
+	var game_root = get_node_or_null("/root/GameRoot")
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if game_root == null or liuyu == null:
+		return
+	GlobalState.set_meta("return_player_pos", liuyu.global_position)
+	var enemy := EnemyDB.make_enemy("yuheng_old_fighter")
+	enemy["ui_index"] = 0
+	var context = {
+		"player_party": TeamData.get_active_party(),
+		"enemy_party": [enemy],
+		"ruleset": {"id": "sparring"},
+		"battle_tag": "yuheng_old_fighter_spar",
+		"zone_id": "yuheng_old_fighter_spar",
+	}
+	GlobalState.set_meta("pending_battle_context", context)
+	liuyu.can_move = false
+	game_root.change_map_to("res://scenes/battle_scene.tscn")
+
+func _try_resolve_oldfighter_battle_return() -> void:
+	if not GlobalState.get_meta("oldfighter_spar_pending", false):
+		return
+	var result_meta = GlobalState.get_meta("pending_battle_result", {})
+	if typeof(result_meta) != TYPE_DICTIONARY:
+		return
+	GlobalState.remove_meta("oldfighter_spar_pending")
+	var result := String((result_meta as Dictionary).get("result", ""))
+	var has_weapon := bool(GlobalState.get_meta("oldfighter_spar_has_weapon", true))
+	var has_armor_or_acc := bool(GlobalState.get_meta("oldfighter_spar_has_armor_or_acc", true))
+	GlobalState.remove_meta("oldfighter_spar_has_weapon")
+	GlobalState.remove_meta("oldfighter_spar_has_armor_or_acc")
+	if result != "victory":
+		_begin_interaction_flow()
+		await _play_sequence_and_wait([
+			{ "text": "「哼哼，年輕人，江湖飯可不是靠臉吃的。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「回去調調氣，想清楚身上哪些東西是本事，哪些東西只是重量，再來找老夫。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "你在比試中落敗。這場比試不會造成死亡，稍作整備後可再次挑戰。", "speaker": 1, "portrait": portrait_path },
+		])
+		_end_interaction_flow()
+		return
+	_begin_interaction_flow()
+	await _resolve_spar_result(has_weapon, has_armor_or_acc)
+	_end_interaction_flow()
 
 func _complete_oldfighter_quest() -> void:
 	await _play_sequence_and_wait([
