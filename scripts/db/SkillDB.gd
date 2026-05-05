@@ -614,6 +614,45 @@ const SKILLS := {
 		"effects": [{"type": "damage", "power": 0.76}, {"type": "root", "amount": 20, "turns": 2}],
 		"available": {"mode": "all"},
 	},
+	"skill_enemy_old_fighter_probe_palm": {
+		"id": "skill_enemy_old_fighter_probe_palm",
+		"name": "探掌試勁",
+		"category": "單體攻擊",
+		"description": "老翁以掌探勢，力道不重，卻專挑破綻而來。",
+		"weapon_type": "拳",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.85}],
+		"available": {"mode": "all"},
+	},
+	"skill_enemy_old_fighter_sweep_step": {
+		"id": "skill_enemy_old_fighter_sweep_step",
+		"name": "掃步亂息",
+		"category": "單體削弱",
+		"description": "老翁腳下一掃，逼得對手重心微亂。",
+		"weapon_type": "拳",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.55}, {"type": "root", "amount": 5, "turns": 2}],
+		"available": {"mode": "all"},
+	},
+	"skill_enemy_old_fighter_stubborn_fist": {
+		"id": "skill_enemy_old_fighter_stubborn_fist",
+		"name": "嘴硬老拳",
+		"category": "單體攻擊",
+		"description": "老翁一邊不服氣，一邊揮出頗有章法的一拳。",
+		"weapon_type": "拳",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 1.05}],
+		"available": {"mode": "all"},
+	},
 }
 
 const LEGACY_NAME_TO_ID := {
@@ -658,6 +697,9 @@ const LEGACY_NAME_TO_ID := {
 	"迷砂掩目": "skill_enemy_blind_sand",
 	"纏地勁": "skill_enemy_root_bind",
 	"掌試": "skill_enemy_sparring_palm",
+	"探掌試勁": "skill_enemy_old_fighter_probe_palm",
+	"掃步亂息": "skill_enemy_old_fighter_sweep_step",
+	"嘴硬老拳": "skill_enemy_old_fighter_stubborn_fist",
 }
 
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
