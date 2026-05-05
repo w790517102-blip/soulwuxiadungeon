@@ -36,7 +36,7 @@ var all_characters: Dictionary = {
 		"defense_value": 0,
 		"portrait_path": "res://assets/sprites/Liu_Yu/LiuYu_battle.png",
 		"inner_force_id": "qingfeng_jue",
-		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "shipo_xinfa", "tiancan_jue"],
+		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "tiancan_jue"],
 		"inner_force_used_prefixes": [],
 		"str": 5,
 		"agi": 5,
@@ -102,7 +102,7 @@ var all_characters: Dictionary = {
 # === 目前出戰隊伍（用角色 ID 陣列） ===
 var current_team_ids: Array = ["liuyu",]# "shumian", "lieshao"]
 var known_skill_ids_by_actor: Dictionary = {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_tianjingquan", "skill_hawkeye_focus", "skill_zhengxinquan"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus", "skill_zhengxinquan"],
 	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus"],
 }
@@ -271,6 +271,23 @@ func set_inner_force(actor_id: String, force_id: String) -> bool:
 	_apply_inner_force_to_actor(actor)
 	all_characters[actor_id] = actor
 	_sync_inner_force_to_global_state(actor_id, force_id)
+	return true
+
+func learn_inner_force(actor_id: String, force_id: String) -> bool:
+	if actor_id == "" or force_id == "":
+		return false
+	if not all_characters.has(actor_id):
+		return false
+	if not _inner_force_db.is_available_to_actor(force_id, actor_id):
+		return false
+	var actor: Dictionary = all_characters[actor_id]
+	_normalize_character(actor)
+	var known_ids: Array = actor.get("known_inner_force_ids", [])
+	if known_ids.has(force_id):
+		return false
+	known_ids.append(force_id)
+	actor["known_inner_force_ids"] = known_ids
+	all_characters[actor_id] = actor
 	return true
 
 func export_team_state() -> Dictionary:
@@ -558,7 +575,7 @@ func _resolve_known_force_ids_from_legacy(actor_id: String, legacy_forces: Array
 func _default_known_force_ids(actor_id: String) -> Array:
 	match actor_id:
 		"liuyu":
-			return ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "shipo_xinfa"]
+			return ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue"]
 		"lieshao":
 			return ["chi_yang_zhenjing", "po_jun_zhenjing"]
 		"shumian":
