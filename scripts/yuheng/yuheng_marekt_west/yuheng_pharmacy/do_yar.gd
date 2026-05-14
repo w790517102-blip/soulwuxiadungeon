@@ -24,6 +24,15 @@ var patrol_progress := 0.0
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
 var _mark_flag_after_close := false # ✅ 首輪對話結束時才落旗並切換成循環台詞
+var _interaction_flow_active := false
+var _unlock_on_next_reset := false
+
+const QUEST_ID := "yh_side_charcoal_01"
+const QUEST_TITLE := "炭火裡的紙灰"
+const ITEM_CLEAN_CHARCOAL := "item_clean_charcoal"
+const ITEM_REWARD_ANTIDOTE := "item_antidote_herb"
+const QUEST_DESC := "藥鋪的豆芽察覺近日煮藥用的炭火帶有紙灰味，懷疑沾染邪典灰燼，請劉語塵前往雜貨舖購買乾淨木炭。"
+const QUEST_OBJECTIVE := "前往雜貨舖，替豆芽買回乾淨木炭。"
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -118,10 +127,10 @@ func _unhandled_input(event):
 		liuyu.can_move = false
 		face_towards(liuyu.global_position)
 
-		var main_stage := _get_main_stage_safely()
-		dialog_lines = _build_lines_for_stage(main_stage)
-		dialog_manager.show_dialog_sequence(dialog_lines, self)
-		_mark_flag_after_close = not GlobalState.get_flag("met_Do_yar")
+		_begin_interaction_flow()
+		await _run_charcoal_interaction()
+		if _interaction_flow_active:
+			_end_interaction_flow()
 
 # ✅ 並確保 reset_dialog_state 一定會把 is_talking 設為 false
 func reset_dialog_state():
@@ -223,3 +232,79 @@ func face_towards(target_position: Vector2) -> void:
 	var anim_name = _get_anim_by_vector(direction, "idle")
 	if animated_sprite.sprite_frames.has_animation(anim_name):
 		animated_sprite.play(anim_name)
+
+
+func _begin_interaction_flow() -> void:
+	_interaction_flow_active = true
+	_unlock_on_next_reset = false
+	is_talking = true
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = false
+
+func _end_interaction_flow() -> void:
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
+	is_talking = false
+	_interaction_flow_active = false
+	_unlock_on_next_reset = false
+
+func _run_charcoal_interaction() -> void:
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	if not quest.has("quest_id"):
+		if GlobalState.get_flag("met_Do_yar"):
+			await _start_charcoal_quest()
+			return
+		var main_stage := _get_main_stage_safely()
+		dialog_lines = _build_lines_for_stage(main_stage)
+		dialog_manager.show_dialog_sequence(dialog_lines, self)
+		await dialog_manager.dialog_sequence_finished
+		GlobalState.set_flag("met_Do_yar", true)
+		return
+	if bool(quest.get("is_finished", false)):
+		await _play_lines([{"text":"豆芽：「那天你帶回來的木炭很乾淨，爺爺說火氣也穩。藥要入口，髒不得。人心也是一樣，髒東西進去了，就很難熬出清味了。」","speaker":1,"portrait":portrait_path}])
+		return
+	if InventorySync and InventorySync.has_item(ITEM_CLEAN_CHARCOAL, 1):
+		InventorySync.consume_item(ITEM_CLEAN_CHARCOAL, 1, true)
+		InventorySync.add_item_stack(ITEM_REWARD_ANTIDOTE, 1, true)
+		await _play_lines([
+			{"text":"豆芽：「大哥哥，你回來啦！讓我聞聞看……」","speaker":1,"portrait":portrait_path},
+			{"text":"豆芽接過木炭，小心湊近聞了聞。","speaker":1,"portrait":portrait_path},
+			{"text":"豆芽：「嗯！這塊可以，沒有那股嗆嗆的紙灰味。」","speaker":1,"portrait":portrait_path},
+			{"text":"豆芽：「這是我剛剛整理藥材時分出來的，對蛇毒、瘴氣都有點用喔。」","speaker":1,"portrait":portrait_path},
+		])
+		var q := SideQuestManager.get_quest(QUEST_ID)
+		q["description"] = "已完成：%s" % QUEST_TITLE
+		q["objective"] = "已交付乾淨木炭，獲得解毒草。"
+		q["current_objective"] = q["objective"]
+		SideQuestManager.side_quests[QUEST_ID] = q
+		SideQuestManager.complete_quest(QUEST_ID)
+		GlobalState.set_flag("yh_side_charcoal_completed", true)
+		return
+	await _play_lines([
+		{"text":"豆芽：「大哥哥，記得是乾淨木炭喔。如果聞起來有紙灰味，就不能拿來煮藥。」","speaker":1,"portrait":portrait_path}
+	])
+
+func _start_charcoal_quest() -> void:
+	await _play_lines([
+		{"text":"豆芽：「大哥哥，我有件事想拜託你……我們藥鋪最近用來煮藥的炭火，聞起來有一點紙灰味。」","speaker":1,"portrait":portrait_path},
+		{"text":"劉語塵：「紙灰味？炭火本來不就有灰味嗎？」","speaker":2,"portrait":"res://assets/sprites/Liu_Yu/LiuYu_headshot.png"},
+		{"text":"豆芽：「不是那種灰啦。鎮上處理邪典，都是先燒掉，再把灰埋起來。」","speaker":1,"portrait":portrait_path},
+		{"text":"劉語塵：「好，我替你走一趟。」","speaker":2,"portrait":"res://assets/sprites/Liu_Yu/LiuYu_headshot.png"},
+	])
+	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
+		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID, "title": QUEST_TITLE})
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	quest["title"] = QUEST_TITLE
+	quest["description"] = QUEST_DESC
+	quest["objective"] = QUEST_OBJECTIVE
+	quest["current_objective"] = QUEST_OBJECTIVE
+	quest["stage"] = 1
+	quest["is_finished"] = false
+	SideQuestManager.side_quests[QUEST_ID] = quest
+	GlobalState.set_flag("yh_side_charcoal_started", true)
+
+func _play_lines(lines: Array) -> void:
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_sequence_finished
