@@ -2,11 +2,13 @@
 extends Panel
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const SpecialItemUseHandlerScript = preload("res://scripts/items/SpecialItemUseHandler.gd")
+const LoreDB = preload("res://scripts/db/LoreDB.gd")
 
 @onready var tabs: TabContainer = $VBoxContainer
 @onready var item_list: ItemList = $VBoxContainer/道具/ItemList
 @onready var item_desc: RichTextLabel = $VBoxContainer/道具/RichTextLabel
 @onready var gold_label: Label = $VBoxContainer/道具/GoldLabel
+@onready var item_tab: VBoxContainer = get_node_or_null("VBoxContainer/道具")
 @onready var status_tab: VBoxContainer = get_node_or_null("VBoxContainer/狀態")
 @onready var status_gold_label: Label = get_node_or_null("VBoxContainer/狀態/GoldLabel")
 @onready var use_button: Button = get_node_or_null("VBoxContainer/道具/UseButton")
@@ -19,6 +21,22 @@ const SpecialItemUseHandlerScript = preload("res://scripts/items/SpecialItemUseH
 @onready var inner_force_tabs: TabContainer = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceTabs")
 @onready var inner_force_detail: RichTextLabel = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/InnerForceDetail")
 @onready var switch_inner_force_button: Button = get_node_or_null("VBoxContainer/武術/MartialTabs/內功/SwitchInnerForceButton")
+@onready var party_tab: VBoxContainer = get_node_or_null("VBoxContainer/隊伍")
+@onready var active_party_list: ItemList = get_node_or_null("VBoxContainer/隊伍/PartyLayout/ActivePartyBox/ActivePartyList")
+@onready var reserve_list: ItemList = get_node_or_null("VBoxContainer/隊伍/PartyLayout/ReservePane/ReserveList")
+@onready var reserve_detail: RichTextLabel = get_node_or_null("VBoxContainer/隊伍/PartyLayout/ReservePane/ReserveDetail")
+@onready var move_in_button: Button = get_node_or_null("VBoxContainer/隊伍/PartyLayout/PartyActionBox/MoveInButton")
+@onready var move_out_button: Button = get_node_or_null("VBoxContainer/隊伍/PartyLayout/PartyActionBox/MoveOutButton")
+@onready var lore_category_tabs: TabContainer = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs")
+@onready var lore_item_list: ItemList = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/奇物/ItemList")
+@onready var lore_character_list: ItemList = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/豪傑/CharacterList")
+@onready var lore_enemy_list: ItemList = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreLeftPane/LoreCategoryTabs/神怪/EnemyList")
+@onready var lore_detail_title: Label = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreRightPane/LoreDetailTitle")
+@onready var lore_detail: RichTextLabel = get_node_or_null("VBoxContainer/見聞/LoreLayout/LoreRightPane/LoreDetail")
+@onready var quest_category_option: OptionButton = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestLeftPane/QuestCategory")
+@onready var quest_list: ItemList = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestLeftPane/QuestList")
+@onready var quest_detail_title: Label = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestRightPane/QuestDetailTitle")
+@onready var quest_detail_body: RichTextLabel = get_node_or_null("VBoxContainer/任務/QuestLayout/QuestRightPane/QuestDetailBody")
 @onready var weapon1_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon1Button")
 @onready var weapon2_button: Button = get_node_or_null("VBoxContainer/裝備/Weapon2Button")
 @onready var armor_head_button: Button = get_node_or_null("VBoxContainer/裝備/ArmorHeadButton")
@@ -49,13 +67,52 @@ var _status_hover_label: RichTextLabel = null
 var _status_hover_timer: Timer = null
 var _pending_status_hover_meta: String = ""
 var _pending_status_hover_actor_id: String = ""
+var _selected_party_slot_index: int = -1
+var _selected_reserve_actor_id: String = ""
+var _selected_lore_category: String = "奇物"
+var _selected_quest_category: String = "主線"
+var _selected_quest_id: String = ""
+var _quest_entries: Array = []
+var _shared_view_actor_id: String = ""
+var _tab_actor_memory: Dictionary = {
+	"item": "",
+	"equipment": "",
+	"martial": "",
+}
+var _item_status_preview_slots: Array = []
+var _equipment_status_preview_slots: Array = []
+var _equipment_gold_label: Label = null
+var _pending_equip_item_id: String = ""
+var _pending_equip_slot: String = ""
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const TAB_STATUS_NORMAL = preload("res://assets/UI/system_menu/tab_status.png")
+const TAB_STATUS_SELECTED = preload("res://assets/UI/system_menu/tab_status_selected.png")
+const TAB_ITEM_NORMAL = preload("res://assets/UI/system_menu/tab_item.png")
+const TAB_ITEM_SELECTED = preload("res://assets/UI/system_menu/tab_item_selected.png")
+const TAB_EQUIP_NORMAL = preload("res://assets/UI/system_menu/tab_equip.png")
+const TAB_EQUIP_SELECTED = preload("res://assets/UI/system_menu/tab_equip_selected.png")
+const TAB_SKILL_NORMAL = preload("res://assets/UI/system_menu/tab_skill.png")
+const TAB_SKILL_SELECTED = preload("res://assets/UI/system_menu/tab_skill_selected.png")
+const TAB_PARTY_NORMAL = preload("res://assets/UI/system_menu/tab_party.png")
+const TAB_PARTY_SELECTED = preload("res://assets/UI/system_menu/tab_party_selected.png")
+const TAB_QUEST_NORMAL = preload("res://assets/UI/system_menu/tab_quest.png")
+const TAB_QUEST_SELECTED = preload("res://assets/UI/system_menu/tab_quest_selected.png")
+const TAB_SYSTEM_NORMAL = preload("res://assets/UI/system_menu/tab_system.png")
+const TAB_SYSTEM_SELECTED = preload("res://assets/UI/system_menu/tab_system_selected.png")
+const STATUS_MEMBER_CARD_BG = preload("res://assets/UI/system_menu/status_member_1.jpg")
+const STATUS_MEMBER_CARD_SIZE := Vector2(348, 549)
+const STATUS_VALUE_OFFSET_PREFIX := "　　　"
+const TAB_LORE_NORMAL_PATH = "res://assets/UI/system_menu/tab_lore.png"
+const TAB_LORE_SELECTED_PATH = "res://assets/UI/system_menu/tab_lore_selected.png"
 var _skill_db: Node = CharacterSkillDB.new()
 var _skill_data_db: Node = SkillDBScript.new()
 var _special_item_use_handler: SpecialItemUseHandler = SpecialItemUseHandlerScript.new()
+var _custom_tab_entries: Array = []
+var _tab_lore_normal: Texture2D = null
+var _tab_lore_selected: Texture2D = null
 
 const DEFAULT_UNARMED_NAME = "空手"
 const WEAPON_RULES = {
@@ -74,6 +131,13 @@ const WEAPON_RULES = {
 }
 
 func _ready():
+	_align_to_viewport()
+	var viewport := get_viewport()
+	if viewport and not viewport.size_changed.is_connected(_on_viewport_size_changed):
+		viewport.size_changed.connect(_on_viewport_size_changed)
+	_tab_lore_normal = _load_optional_tab_texture(TAB_LORE_NORMAL_PATH, TAB_QUEST_NORMAL)
+	_tab_lore_selected = _load_optional_tab_texture(TAB_LORE_SELECTED_PATH, TAB_QUEST_SELECTED)
+
 	# ✅ Godot 4 正確用法，Control 沒有 pause_mode，這裡不能設！
 	# 所以這行我們移除：pause_mode = Node.PAUSE_MODE_PROCESS ❌
 
@@ -91,6 +155,10 @@ func _ready():
 		inner_force_detail.bbcode_enabled = true
 	if item_desc:
 		item_desc.bbcode_enabled = true
+	if lore_detail:
+		lore_detail.bbcode_enabled = true
+	if quest_detail_body:
+		quest_detail_body.bbcode_enabled = true
 
 	if item_list:
 		item_list.item_selected.connect(_on_item_selected)
@@ -98,6 +166,27 @@ func _ready():
 		use_button.pressed.connect(_on_use_pressed)
 	if tabs:
 		tabs.tab_changed.connect(_on_tab_changed)
+	_setup_custom_tab_bar()
+	if active_party_list and not active_party_list.item_selected.is_connected(_on_active_party_slot_selected):
+		active_party_list.item_selected.connect(_on_active_party_slot_selected)
+	if reserve_list and not reserve_list.item_selected.is_connected(_on_reserve_actor_selected):
+		reserve_list.item_selected.connect(_on_reserve_actor_selected)
+	if move_in_button and not move_in_button.pressed.is_connected(_on_party_move_in_pressed):
+		move_in_button.pressed.connect(_on_party_move_in_pressed)
+	if move_out_button and not move_out_button.pressed.is_connected(_on_party_move_out_pressed):
+		move_out_button.pressed.connect(_on_party_move_out_pressed)
+	if lore_category_tabs and not lore_category_tabs.tab_changed.is_connected(_on_lore_category_tab_changed):
+		lore_category_tabs.tab_changed.connect(_on_lore_category_tab_changed)
+	if lore_item_list and not lore_item_list.item_selected.is_connected(_on_lore_item_selected):
+		lore_item_list.item_selected.connect(_on_lore_item_selected)
+	if lore_character_list and not lore_character_list.item_selected.is_connected(_on_lore_character_selected):
+		lore_character_list.item_selected.connect(_on_lore_character_selected)
+	if lore_enemy_list and not lore_enemy_list.item_selected.is_connected(_on_lore_enemy_selected):
+		lore_enemy_list.item_selected.connect(_on_lore_enemy_selected)
+	if quest_category_option and not quest_category_option.item_selected.is_connected(_on_quest_category_selected):
+		quest_category_option.item_selected.connect(_on_quest_category_selected)
+	if quest_list and not quest_list.item_selected.is_connected(_on_quest_item_selected):
+		quest_list.item_selected.connect(_on_quest_item_selected)
 	if InventorySync:
 		InventorySync.inventory_changed.connect(_on_inventory_changed)
 		InventorySync.gold_changed.connect(_on_gold_changed)
@@ -138,13 +227,32 @@ func _ready():
 		skill_target_popup.index_pressed.connect(_on_skill_target_selected)
 	_setup_status_member_slots()
 	_ensure_status_hover_popup()
+	_setup_item_status_preview_layout()
+	_setup_equipment_status_preview_layout()
+	_setup_item_character_select()
 	_setup_equipment_character_select()
 	_refresh_item_tab()
 	_refresh_gold()
 	_refresh_equipment_tab()
 	_refresh_status_tab()
 	_refresh_martial_tabs()
+	_refresh_party_tab()
+	_refresh_lore_tab()
+	_refresh_quest_tab()
+	_apply_tab_actor_context(tabs.current_tab if tabs else -1)
 	_update_use_button("")
+	if tabs:
+		_sync_custom_tab_visuals(tabs.current_tab)
+
+func _on_viewport_size_changed() -> void:
+	_align_to_viewport()
+
+func _align_to_viewport() -> void:
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	offset_left = 0.0
+	offset_top = 0.0
+	offset_right = 0.0
+	offset_bottom = 0.0
 
 func _exit_tree() -> void:
 	_set_menu_item_use_locked(false)
@@ -174,16 +282,592 @@ func _unhandled_input(event):
 func _on_tab_changed(tab_index: int) -> void:
 	if tabs == null:
 		return
+	_sync_custom_tab_visuals(tab_index)
+	_apply_tab_actor_context(tab_index)
 	var item_tab_index = $VBoxContainer/道具.get_index()
+	var equipment_tab_index = $VBoxContainer/裝備.get_index()
 	var martial_tab_index = $VBoxContainer/武術.get_index()
+	var party_tab_index = $VBoxContainer/隊伍.get_index()
+	var lore_tab_index = $VBoxContainer/見聞.get_index()
+	var quest_tab_index = $VBoxContainer/任務.get_index()
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
+	elif tab_index == equipment_tab_index:
+		_refresh_equipment_tab()
 	elif tab_index == martial_tab_index:
 		_refresh_martial_tabs()
+	elif tab_index == party_tab_index:
+		_refresh_party_tab()
+	elif tab_index == lore_tab_index:
+		_refresh_lore_tab()
+	elif tab_index == quest_tab_index:
+		_refresh_quest_tab()
+
+func _setup_custom_tab_bar() -> void:
+	_custom_tab_entries.clear()
+	if tabs == null:
+		return
+
+	var entries := [
+		{"button": get_node_or_null("CustomTabBar/TabStatus"), "tab_node": get_node_or_null("VBoxContainer/狀態"), "normal": TAB_STATUS_NORMAL, "selected": TAB_STATUS_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabItem"), "tab_node": get_node_or_null("VBoxContainer/道具"), "normal": TAB_ITEM_NORMAL, "selected": TAB_ITEM_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabEquip"), "tab_node": get_node_or_null("VBoxContainer/裝備"), "normal": TAB_EQUIP_NORMAL, "selected": TAB_EQUIP_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabSkill"), "tab_node": get_node_or_null("VBoxContainer/武術"), "normal": TAB_SKILL_NORMAL, "selected": TAB_SKILL_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabParty"), "tab_node": get_node_or_null("VBoxContainer/隊伍"), "normal": TAB_PARTY_NORMAL, "selected": TAB_PARTY_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabLore"), "tab_node": get_node_or_null("VBoxContainer/見聞"), "normal": _tab_lore_normal, "selected": _tab_lore_selected},
+		{"button": get_node_or_null("CustomTabBar/TabQuest"), "tab_node": get_node_or_null("VBoxContainer/任務"), "normal": TAB_QUEST_NORMAL, "selected": TAB_QUEST_SELECTED},
+		{"button": get_node_or_null("CustomTabBar/TabSystem"), "tab_node": get_node_or_null("VBoxContainer/系統"), "normal": TAB_SYSTEM_NORMAL, "selected": TAB_SYSTEM_SELECTED},
+	]
+
+	for entry in entries:
+		var button: TextureButton = entry.get("button")
+		var tab_node: Control = entry.get("tab_node")
+		if button == null or tab_node == null:
+			continue
+		var tab_index := tab_node.get_index()
+		button.focus_mode = Control.FOCUS_NONE
+		if not button.pressed.is_connected(_on_custom_tab_button_pressed):
+			button.pressed.connect(_on_custom_tab_button_pressed.bind(tab_index))
+		_custom_tab_entries.append({
+			"button": button,
+			"tab_index": tab_index,
+			"normal": entry.get("normal"),
+			"selected": entry.get("selected"),
+		})
+
+func _on_custom_tab_button_pressed(tab_index: int) -> void:
+	if tabs == null:
+		return
+	if tab_index < 0 or tab_index >= tabs.get_tab_count():
+		return
+	tabs.current_tab = tab_index
+
+func _load_optional_tab_texture(path: String, fallback: Texture2D) -> Texture2D:
+	if ResourceLoader.exists(path):
+		var loaded = load(path)
+		if loaded is Texture2D:
+			return loaded
+	return fallback
+
+func _refresh_party_tab() -> void:
+	if active_party_list == null or reserve_list == null:
+		return
+	var team_ids := _get_canonical_team_ids()
+	active_party_list.clear()
+	for i in range(3):
+		var actor_id = team_ids[i] if i < team_ids.size() else ""
+		var label := "隊伍位 %d：空位" % (i + 1)
+		if actor_id != "":
+			var actor := TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else {}
+			var display_name := _get_actor_name_from_entry(actor, actor_id)
+			label = "隊伍位 %d：%s" % [i + 1, display_name]
+			if i == 0:
+				label += "（固定）"
+		active_party_list.add_item(label)
+		active_party_list.set_item_metadata(i, i)
+
+	if _selected_party_slot_index >= 0 and _selected_party_slot_index < active_party_list.item_count:
+		active_party_list.select(_selected_party_slot_index)
+
+	reserve_list.clear()
+	var reserve_ids := _get_reserve_actor_ids(team_ids)
+	for actor_id in reserve_ids:
+		var actor := TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else {}
+		var display_name := _get_actor_name_from_entry(actor, actor_id)
+		reserve_list.add_item(display_name)
+		reserve_list.set_item_metadata(reserve_list.item_count - 1, actor_id)
+
+	var selected_idx := -1
+	if _selected_reserve_actor_id != "":
+		for i in range(reserve_list.item_count):
+			if str(reserve_list.get_item_metadata(i)) == _selected_reserve_actor_id:
+				selected_idx = i
+				break
+	if selected_idx >= 0:
+		reserve_list.select(selected_idx)
+		_refresh_reserve_detail(_selected_reserve_actor_id)
+	else:
+		_selected_reserve_actor_id = ""
+		_refresh_reserve_detail("")
+
+func _get_canonical_team_ids() -> Array:
+	var ids: Array = []
+	if TeamData and typeof(TeamData.current_team_ids) == TYPE_ARRAY:
+		for raw in TeamData.current_team_ids:
+			var actor_id := String(raw)
+			if actor_id == "" or ids.has(actor_id):
+				continue
+			ids.append(actor_id)
+	if ids.is_empty() or ids[0] != "liuyu":
+		ids.erase("liuyu")
+		ids.push_front("liuyu")
+	while ids.size() > 3:
+		ids.pop_back()
+	return ids
+
+func _get_reserve_actor_ids(team_ids: Array) -> Array:
+	var reserves: Array = []
+	if TeamData == null:
+		return reserves
+	var all_ids: Array = []
+	if typeof(TeamData.all_characters) == TYPE_DICTIONARY:
+		for key in TeamData.all_characters.keys():
+			all_ids.append(String(key))
+	for actor_id in all_ids:
+		if actor_id == "" or team_ids.has(actor_id):
+			continue
+		reserves.append(actor_id)
+	return reserves
+
+func _refresh_reserve_detail(actor_id: String) -> void:
+	if reserve_detail == null:
+		return
+	if actor_id == "":
+		reserve_detail.text = "姓名：—\n職業：—\n等級：—\n\n（後續沿用狀態頁資訊結構）"
+		return
+	var actor := TeamData.get_character_by_id(actor_id) if TeamData and TeamData.has_method("get_character_by_id") else {}
+	if actor.is_empty():
+		reserve_detail.text = "姓名：—\n職業：—\n等級：—"
+		return
+	var name := _get_actor_name_from_entry(actor, actor_id)
+	var job := str(actor.get("job", actor.get("subclass", "—")))
+	var level := int(actor.get("level", 1))
+	var hp := int(actor.get("hp", 0))
+	var max_hp := int(actor.get("max_hp", hp))
+	var mp := int(actor.get("mp", 0))
+	var max_mp := int(actor.get("max_mp", mp))
+	reserve_detail.text = "姓名：%s\n職業：%s\n等級：%d\n氣血：%d/%d\n內力：%d/%d" % [name, job, level, hp, max_hp, mp, max_mp]
+
+func _on_active_party_slot_selected(index: int) -> void:
+	_selected_party_slot_index = index
+
+func _on_reserve_actor_selected(index: int) -> void:
+	if reserve_list == null:
+		return
+	_selected_reserve_actor_id = str(reserve_list.get_item_metadata(index))
+	_refresh_reserve_detail(_selected_reserve_actor_id)
+
+func _on_party_move_in_pressed() -> void:
+	var team_ids := _get_canonical_team_ids()
+	if _selected_reserve_actor_id == "":
+		return
+	var target_idx := _selected_party_slot_index
+	if target_idx < 1 or target_idx > 2:
+		target_idx = -1
+		for i in [1, 2]:
+			var current_id := String(team_ids[i]) if i < team_ids.size() else ""
+			if current_id == "":
+				target_idx = i
+				break
+		if target_idx == -1:
+			return
+	while team_ids.size() <= target_idx:
+		team_ids.append("")
+	var current_id := String(team_ids[target_idx])
+	team_ids[target_idx] = _selected_reserve_actor_id
+	_selected_reserve_actor_id = current_id
+	_apply_party_ids(team_ids)
+
+func _on_party_move_out_pressed() -> void:
+	var team_ids := _get_canonical_team_ids()
+	if _selected_party_slot_index < 1 or _selected_party_slot_index > 2:
+		return
+	if _selected_party_slot_index >= team_ids.size():
+		return
+	var outgoing := String(team_ids[_selected_party_slot_index])
+	if outgoing == "":
+		return
+	team_ids[_selected_party_slot_index] = ""
+	while team_ids.size() > 1 and String(team_ids[team_ids.size() - 1]) == "":
+		team_ids.pop_back()
+	_selected_reserve_actor_id = outgoing
+	_apply_party_ids(team_ids)
+
+func _apply_party_ids(ids: Array) -> void:
+	if TeamData == null:
+		return
+	TeamData.current_team_ids = ids.duplicate()
+	_refresh_party_tab()
+	_refresh_status_tab()
+	_refresh_equipment_tab()
+	_refresh_martial_tabs()
+
+func _refresh_quest_tab() -> void:
+	if quest_category_option == null or quest_list == null:
+		return
+	if quest_category_option.item_count == 0:
+		quest_category_option.add_item("主線")
+		quest_category_option.add_item("支線")
+		quest_category_option.add_item("已完成")
+	var target_category_idx := 0
+	match _selected_quest_category:
+		"主線":
+			target_category_idx = 0
+		"支線":
+			target_category_idx = 1
+		"已完成":
+			target_category_idx = 2
+	if quest_category_option.selected != target_category_idx:
+		quest_category_option.select(target_category_idx)
+	_selected_quest_category = quest_category_option.get_item_text(target_category_idx)
+	_quest_entries = _build_quest_entries()
+	_refresh_quest_list_for_category(_selected_quest_category)
+
+func _build_quest_entries() -> Array:
+	var entries: Array = []
+	if QuestManager and (QuestManager.has_method("get_main_quest_display") or QuestManager.has_method("get_main_quest_state")):
+		var mq: Dictionary = QuestManager.get_main_quest_display() if QuestManager.has_method("get_main_quest_display") else QuestManager.get_main_quest_state()
+		if not mq.is_empty():
+			var main_status := "進行中"
+			if bool(mq.get("is_finished", false)):
+				main_status = "已完成"
+			var note_lines: Array = mq.get("notes", [])
+			var note_text := _format_notes_for_display(note_lines)
+			entries.append({
+				"id": String(mq.get("id", "main_quest")),
+				"title": String(mq.get("chapter_title", mq.get("title", mq.get("id", "主線任務")))),
+				"type": "主線",
+				"status": main_status,
+				"description": String(mq.get("description", "尚無任務描述。")),
+				"objective": String(mq.get("current_objective", mq.get("objective", mq.get("description", "請推進主線。")))),
+				"note": note_text if note_text != "" else String(mq.get("note", mq.get("liuyu_note", mq.get("observation", "")))),
+				"stage": int(mq.get("stage", 0)),
+			})
+	if SideQuestManager and typeof(SideQuestManager.side_quests) == TYPE_DICTIONARY:
+		for quest_id_any in SideQuestManager.side_quests.keys():
+			var quest_id := String(quest_id_any)
+			var sq: Dictionary = SideQuestManager.side_quests.get(quest_id, {})
+			if sq.is_empty():
+				continue
+			var sq_finished := bool(sq.get("is_finished", false))
+			var sq_note_lines: Array = sq.get("notes", [])
+			var sq_note_text := _format_notes_for_display(sq_note_lines)
+			entries.append({
+				"id": quest_id,
+				"title": String(sq.get("title", quest_id)),
+				"type": "支線",
+				"status": "已完成" if sq_finished else "進行中",
+				"description": String(sq.get("description", "尚無支線描述。")),
+				"objective": String(sq.get("current_objective", sq.get("objective", sq.get("current_goal", sq.get("description", "請追蹤線索。"))))),
+				"note": sq_note_text if sq_note_text != "" else String(sq.get("note", sq.get("liuyu_note", sq.get("observation", "")))),
+				"stage": int(sq.get("stage", 0)),
+			})
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var a_finished := String(a.get("status", "")) == "已完成"
+		var b_finished := String(b.get("status", "")) == "已完成"
+		if a_finished != b_finished:
+			return not a_finished
+		return String(a.get("id", "")) < String(b.get("id", ""))
+	)
+	return entries
+
+func _format_notes_for_display(note_lines: Array) -> String:
+	if typeof(note_lines) != TYPE_ARRAY or (note_lines as Array).is_empty():
+		return ""
+	var formatted: Array[String] = []
+	var idx := 1
+	for line_any in note_lines:
+		var line := String(line_any).strip_edges()
+		if line == "":
+			continue
+		formatted.append("%d. %s" % [idx, line])
+		idx += 1
+	return "\n".join(formatted)
+
+func _refresh_quest_list_for_category(category: String) -> void:
+	if quest_list == null:
+		return
+	quest_list.clear()
+	var filtered: Array = []
+	for entry_any in _quest_entries:
+		var entry: Dictionary = entry_any
+		var status := String(entry.get("status", "進行中"))
+		var qtype := String(entry.get("type", "支線"))
+		match category:
+			"主線":
+				if qtype != "主線" or status == "已完成":
+					continue
+			"支線":
+				if qtype != "支線" or status == "已完成":
+					continue
+			"已完成":
+				if status != "已完成":
+					continue
+		filtered.append(entry)
+	for entry in filtered:
+		var stage := int(entry.get("stage", 0))
+		var label := str(entry.get("title", entry.get("id", "???")))
+		if stage > 0:
+			label += "（第%d步）" % stage
+		quest_list.add_item(label)
+		quest_list.set_item_metadata(quest_list.item_count - 1, String(entry.get("id", "")))
+	if filtered.is_empty():
+		_selected_quest_id = ""
+		_set_quest_empty_state("目前此分類沒有任務。")
+		return
+	var selected_index := 0
+	if _selected_quest_id != "":
+		for i in range(quest_list.item_count):
+			if String(quest_list.get_item_metadata(i)) == _selected_quest_id:
+				selected_index = i
+				break
+	quest_list.select(selected_index)
+	_on_quest_item_selected(selected_index)
+
+func _on_quest_category_selected(index: int) -> void:
+	if quest_category_option == null:
+		return
+	_selected_quest_category = quest_category_option.get_item_text(index)
+	_refresh_quest_list_for_category(_selected_quest_category)
+
+func _on_quest_item_selected(index: int) -> void:
+	if quest_list == null or index < 0 or index >= quest_list.item_count:
+		return
+	var quest_id := String(quest_list.get_item_metadata(index))
+	_selected_quest_id = quest_id
+	for entry_any in _quest_entries:
+		var entry: Dictionary = entry_any
+		if String(entry.get("id", "")) != quest_id:
+			continue
+		_fill_quest_detail(entry)
+		return
+	_set_quest_empty_state("找不到任務資料。")
+
+func _fill_quest_detail(entry: Dictionary) -> void:
+	if quest_detail_title:
+		quest_detail_title.text = "任務：%s" % String(entry.get("title", entry.get("id", "???")))
+	if quest_detail_body == null:
+		return
+	var note := String(entry.get("note", "")).strip_edges()
+	if note == "":
+		note = "（尚無）"
+	var lines := [
+		"[b]%s[/b]" % String(entry.get("title", "未命名任務")),
+		"類型：%s　｜　狀態：%s" % [String(entry.get("type", "支線")), String(entry.get("status", "進行中"))],
+		"",
+		"[b]任務描述[/b]",
+		String(entry.get("description", "尚無任務描述。")),
+		"",
+		"[b]當前目標[/b]",
+		String(entry.get("objective", "尚無明確目標。")),
+		"",
+		"[b]劉語塵筆記／異樣觀察[/b]",
+		note,
+	]
+	quest_detail_body.text = "\n".join(lines)
+
+func _set_quest_empty_state(message: String) -> void:
+	if quest_detail_title:
+		quest_detail_title.text = "任務簡報"
+	if quest_detail_body:
+		quest_detail_body.text = message
+
+func _refresh_lore_tab() -> void:
+	if lore_category_tabs == null:
+		return
+	var category_idx := lore_category_tabs.current_tab
+	if category_idx < 0 or category_idx >= lore_category_tabs.get_tab_count():
+		category_idx = 0
+		lore_category_tabs.current_tab = category_idx
+	var category_name := String(lore_category_tabs.get_child(category_idx).name)
+	_selected_lore_category = category_name
+	match category_name:
+		"奇物":
+			_refresh_lore_items()
+		"豪傑":
+			_refresh_lore_heroes()
+		"神怪":
+			_refresh_lore_monsters()
+		_:
+			_set_lore_empty_state("此分類尚未開放。")
+
+func _on_lore_category_tab_changed(_idx: int) -> void:
+	_refresh_lore_tab()
+
+func _refresh_lore_items() -> void:
+	if lore_item_list == null:
+		return
+	lore_item_list.clear()
+	var unlocked_ids: Array = []
+	var all_items := ItemDB.ITEM_DEFS
+	if typeof(all_items) == TYPE_DICTIONARY:
+		for item_id_any in all_items.keys():
+			var item_id := String(item_id_any)
+			if item_id == "":
+				continue
+			if InventorySync and InventorySync.has_method("has_ever_owned") and InventorySync.has_ever_owned(item_id):
+				unlocked_ids.append(item_id)
+	unlocked_ids.sort()
+	for item_id in unlocked_ids:
+		var info := LoreDB.get_item_lore_detail(item_id)
+		if info.is_empty():
+			continue
+		lore_item_list.add_item(str(info.get("name", item_id)))
+		lore_item_list.set_item_metadata(lore_item_list.item_count - 1, item_id)
+	if lore_item_list.item_count <= 0:
+		_set_lore_empty_state("尚未記錄任何奇物。\n（曾經擁有過的物品會記錄在此）")
+		return
+	lore_item_list.select(0)
+	_on_lore_item_selected(0)
+
+func _refresh_lore_heroes() -> void:
+	if lore_character_list == null:
+		return
+	lore_character_list.clear()
+	for hero_id_any in LoreDB.get_hero_ids():
+		var hero_id := String(hero_id_any)
+		if hero_id == "" or not LoreDB.is_hero_unlocked(hero_id):
+			continue
+		var hero := LoreDB.get_hero_def(hero_id)
+		if hero.is_empty():
+			continue
+		lore_character_list.add_item(str(hero.get("name", hero_id)))
+		lore_character_list.set_item_metadata(lore_character_list.item_count - 1, hero_id)
+	if lore_character_list.item_count <= 0:
+		_set_lore_empty_state("尚未記錄任何豪傑。\n（與關鍵人物對話或劇情觸發後會收錄）")
+		return
+	lore_character_list.select(0)
+	_on_lore_character_selected(0)
+
+func _refresh_lore_monsters() -> void:
+	if lore_enemy_list == null:
+		return
+	lore_enemy_list.clear()
+	var all_defs := EnemyDB.ENEMY_DEFS
+	if typeof(all_defs) == TYPE_DICTIONARY:
+		for enemy_id_any in all_defs.keys():
+			var enemy_id := String(enemy_id_any)
+			if enemy_id == "":
+				continue
+			var unlocked := GlobalState and GlobalState.has_method("get_flag") and bool(GlobalState.get_flag("lore_enemy_%s" % enemy_id))
+			if not unlocked:
+				continue
+			lore_enemy_list.add_item(LoreDB.get_enemy_display_name(enemy_id))
+			lore_enemy_list.set_item_metadata(lore_enemy_list.item_count - 1, enemy_id)
+	if lore_enemy_list.item_count <= 0:
+		_set_lore_empty_state("尚未記錄任何神怪。\n（完成遭遇戰後會收錄）")
+		return
+	lore_enemy_list.select(0)
+	_on_lore_enemy_selected(0)
+
+func _on_lore_item_selected(index: int) -> void:
+	if lore_item_list == null or index < 0 or index >= lore_item_list.item_count:
+		return
+	var item_id := str(lore_item_list.get_item_metadata(index))
+	var item := LoreDB.get_item_lore_detail(item_id)
+	if item.is_empty():
+		_set_lore_empty_state("找不到奇物資料。")
+		return
+	if lore_detail_title:
+		lore_detail_title.text = "奇物：%s" % str(item.get("name", item_id))
+	if lore_detail:
+		var type_text := LoreDB.item_type_display_name(str(item.get("type", "—")))
+		var lines := [
+			"[b]%s[/b]" % str(item.get("name", item_id)),
+			"類型：%s" % type_text,
+			"描述：%s" % str(item.get("description", "—")),
+		]
+		lore_detail.text = "\n".join(lines)
+
+func _on_lore_character_selected(index: int) -> void:
+	if lore_character_list == null or index < 0 or index >= lore_character_list.item_count:
+		return
+	var hero_id := str(lore_character_list.get_item_metadata(index))
+	var hero := LoreDB.get_hero_def(hero_id)
+	if hero.is_empty():
+		_set_lore_empty_state("找不到豪傑資料。")
+		return
+	if lore_detail_title:
+		lore_detail_title.text = "豪傑：%s" % str(hero.get("name", hero_id))
+	if lore_detail:
+		var lines: Array = []
+		var portrait_path := str(hero.get("portrait_path", ""))
+		if portrait_path != "":
+			lines.append("[img]%s[/img]" % portrait_path)
+		lines.append("[b]%s[/b]" % str(hero.get("name", hero_id)))
+		lines.append(str(hero.get("bio", "尚無人物誌內容。")))
+		lore_detail.text = "\n".join(lines)
+
+func _on_lore_enemy_selected(index: int) -> void:
+	if lore_enemy_list == null or index < 0 or index >= lore_enemy_list.item_count:
+		return
+	var enemy_id := str(lore_enemy_list.get_item_metadata(index))
+	var enemy := LoreDB.get_enemy_lore_detail(enemy_id)
+	if enemy.is_empty():
+		_set_lore_empty_state("找不到神怪資料。")
+		return
+	if lore_detail_title:
+		lore_detail_title.text = "神怪：%s" % str(enemy.get("name", enemy_id))
+	if lore_detail:
+		var drop_lines: Array = []
+		var drops_any = enemy.get("drops", [])
+		if typeof(drops_any) == TYPE_ARRAY:
+			for drop_any in drops_any:
+				if typeof(drop_any) != TYPE_DICTIONARY:
+					continue
+				var drop_id := str((drop_any as Dictionary).get("id", ""))
+				if drop_id == "":
+					continue
+				var drop_def := ItemDB.get_def(drop_id)
+				var drop_name := str(drop_def.get("name", drop_id)) if typeof(drop_def) == TYPE_DICTIONARY else drop_id
+				drop_lines.append("• %s" % drop_name)
+		var skills_any = enemy.get("skills", [])
+		var skill_lines: Array = []
+		if typeof(skills_any) == TYPE_ARRAY:
+			for skill_any in skills_any:
+				if typeof(skill_any) != TYPE_DICTIONARY:
+					continue
+				skill_lines.append("• %s" % str((skill_any as Dictionary).get("skill_id", "???")))
+		var enemy_species := str(enemy.get("species", enemy.get("archetype", "江湖人士")))
+		if enemy_species.strip_edges() == "":
+			enemy_species = "江湖人士"
+		var hit_delta := int(enemy.get("accuracy", 100)) - 100
+		var crit_base = 0.05 + floor(float(int(enemy.get("luck", 0))) / 5.0) * 0.01
+		var crit_total := clampf((crit_base + float(enemy.get("crit_rate_bonus", 0.0))) * 100.0, 0.0, 95.0)
+		var lines := [
+			"[b]%s[/b]" % str(enemy.get("name", enemy_id)),
+			"種族：%s" % enemy_species,
+			"經驗值：%d" % int(enemy.get("exp", 0)),
+			"血量：%d" % int(enemy.get("max_hp", enemy.get("hp", 0))),
+			"攻擊力：%d" % int(enemy.get("atk", 0)),
+			"防禦力：%d" % int(enemy.get("def", 0)),
+			"速度：%d" % int(enemy.get("speed", 0)),
+			"命中：%+d" % hit_delta,
+			"閃避：%d" % int(enemy.get("evasion", 0)),
+			"暴擊率：%.1f%%" % crit_total,
+			"初始屬性：%s" % str(enemy.get("element", "—")),
+			"異常抗性：—",
+			"掉落物：%s" % ("無" if drop_lines.is_empty() else "\n" + "\n".join(drop_lines)),
+			"技能：%s" % ("無" if skill_lines.is_empty() else "\n" + "\n".join(skill_lines)),
+		]
+		lore_detail.text = "\n".join(lines)
+
+func _set_lore_empty_state(message: String) -> void:
+	if lore_detail_title:
+		lore_detail_title.text = "見聞詳情"
+	if lore_detail:
+		lore_detail.text = message
+
+func _sync_custom_tab_visuals(active_tab_index: int) -> void:
+	for entry in _custom_tab_entries:
+		var button: TextureButton = entry.get("button")
+		var tab_index: int = int(entry.get("tab_index", -1))
+		var normal_texture: Texture2D = entry.get("normal")
+		var selected_texture: Texture2D = entry.get("selected")
+		if button == null:
+			continue
+		var is_selected := tab_index == active_tab_index
+		var display_texture: Texture2D = selected_texture if is_selected else normal_texture
+		button.texture_normal = display_texture
+		button.texture_hover = display_texture
+		button.texture_pressed = display_texture
+		button.texture_disabled = display_texture
+		button.disabled = is_selected
 
 func _refresh_item_tab() -> void:
 	if item_list == null or item_desc == null:
 		return
+	_refresh_item_status_preview()
 	var selected_index = item_list.get_selected_items()
 	var selected_id = ""
 	if selected_index.size() > 0:
@@ -238,12 +922,17 @@ func _on_inventory_changed() -> void:
 	if tabs == null:
 		return
 	var item_tab_index = $VBoxContainer/道具.get_index()
+	var lore_tab_index = $VBoxContainer/見聞.get_index()
 	if tabs.current_tab == item_tab_index:
 		_refresh_item_tab()
+	if tabs.current_tab == lore_tab_index:
+		_refresh_lore_tab()
 
 func _on_equipment_changed() -> void:
 	_refresh_item_tab()
 	_refresh_equipment_tab()
+	_refresh_item_status_preview()
+	_refresh_equipment_status_preview()
 	_refresh_status_tab()
 	if tabs and tabs.current_tab == $VBoxContainer/武術.get_index():
 		_refresh_weapon_tab_lists()
@@ -259,6 +948,26 @@ func _refresh_gold() -> void:
 		gold_label.text = "💰 盤纏：%d文" % gold
 	if status_gold_label:
 		status_gold_label.text = "💰 盤纏：%d文" % gold
+	if _equipment_gold_label:
+		_equipment_gold_label.text = "💰 盤纏：%d文" % gold
+
+func _refresh_item_status_preview() -> void:
+	if _item_status_preview_slots.is_empty():
+		return
+	var actor = _get_actor_by_id(_get_tab_actor("item"))
+	if actor == null:
+		_fill_status_member_slot_empty(_item_status_preview_slots[0])
+		return
+	_fill_status_member_slot(_item_status_preview_slots[0], actor)
+
+func _refresh_equipment_status_preview() -> void:
+	if _equipment_status_preview_slots.is_empty():
+		return
+	var actor = _get_actor_by_id(_get_tab_actor("equipment"))
+	if actor == null:
+		_fill_status_member_slot_empty(_equipment_status_preview_slots[0])
+		return
+	_fill_status_member_slot(_equipment_status_preview_slots[0], actor)
 
 func _refresh_martial_tabs() -> void:
 	_refresh_skill_tabs()
@@ -482,6 +1191,8 @@ func _on_use_skill_pressed() -> void:
 func _open_skill_target_popup() -> void:
 	if skill_target_popup == null:
 		return
+	_pending_equip_item_id = ""
+	_pending_equip_slot = ""
 	skill_target_popup.clear()
 	var party = TeamData.get_active_party()
 	for actor in party:
@@ -509,6 +1220,13 @@ func _on_skill_target_selected(index: int) -> void:
 	var target = _get_actor_by_id(actor_id)
 	if target == null:
 		print("[MartialUse] target not found")
+		return
+	if _pending_equip_item_id != "":
+		var equip_item_id := _pending_equip_item_id
+		var equip_slot := _pending_equip_slot
+		_pending_equip_item_id = ""
+		_pending_equip_slot = ""
+		_apply_equip_item_to_actor(equip_item_id, equip_slot, actor_id)
 		return
 	if _pending_item_use_id != "":
 		await _apply_pending_item_use_with_sequence(target)
@@ -910,7 +1628,7 @@ func _get_inner_force_bonus(actor) -> Dictionary:
 		"luck": int(_get_actor_value(actor, "luck", 0)),
 	}
 	var runtime_effects: Dictionary = InnerForceDB.get_runtime_effects(inner_force, actor_snapshot)
-	for stat_key in ["str", "con", "agi", "accuracy", "def", "max_hp", "max_mp", "speed", "evasion", "crit_rate_bonus"]:
+	for stat_key in ["str", "con", "agi", "accuracy", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "evasion", "crit_rate_bonus"]:
 		if not runtime_effects.has(stat_key):
 			continue
 		var incoming = runtime_effects.get(stat_key, 0)
@@ -930,7 +1648,9 @@ func _get_effective_max_hp(actor, actor_id: String = "") -> int:
 	if InventorySync and InventorySync.has_method("get_equipment_stat_bonus"):
 		equip_bonus = InventorySync.get_equipment_stat_bonus(actual_actor_id)
 	var inner_bonus := _get_inner_force_bonus(actor)
-	var effective := base_max_hp + int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
+	var flat_bonus := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
+	var mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
+	var effective := int(round(float(base_max_hp) * mult)) + flat_bonus
 	return max(effective, 1)
 
 func _get_effective_max_mp(actor, actor_id: String = "") -> int:
@@ -941,12 +1661,46 @@ func _get_effective_max_mp(actor, actor_id: String = "") -> int:
 	if InventorySync and InventorySync.has_method("get_equipment_stat_bonus"):
 		equip_bonus = InventorySync.get_equipment_stat_bonus(actual_actor_id)
 	var inner_bonus := _get_inner_force_bonus(actor)
-	var effective := base_max_mp + int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	var flat_bonus := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	var mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
+	var effective := int(round(float(base_max_mp) * mult)) + flat_bonus
 	return max(effective, 0)
+
+func _get_first_numeric_value(actor, keys: Array, default_value: float = 0.0) -> float:
+	var total := 0.0
+	var found := false
+	for key_any in keys:
+		var v = _get_actor_value(actor, String(key_any), null)
+		if typeof(v) in [TYPE_INT, TYPE_FLOAT]:
+			total += float(v)
+			found = true
+	return total if found else default_value
+
+func _get_actor_resource_multiplier(actor, equip_bonus: Dictionary, inner_bonus: Dictionary, resource_key: String) -> float:
+	var actor_pct := 0.0
+	if resource_key == "hp":
+		var effective_con := int(_get_actor_value(actor, "con", 0)) + int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0))
+		actor_pct += float(max(0, effective_con)) * 0.01
+		actor_pct += _get_first_numeric_value(actor, ["max_hp_pct_bonus", "hp_pct_bonus", "max_hp_multiplier_bonus", "hp_multiplier_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["item_max_hp_pct_bonus", "item_hp_pct_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["inner_force_max_hp_pct_bonus", "inner_max_hp_pct_bonus"], 0.0)
+	elif resource_key == "mp":
+		var effective_int := int(_get_actor_value(actor, "int", 0)) + int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0))
+		actor_pct += float(max(0, effective_int)) * 0.01
+		actor_pct += _get_first_numeric_value(actor, ["max_mp_pct_bonus", "mp_pct_bonus", "max_mp_multiplier_bonus", "mp_multiplier_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["item_max_mp_pct_bonus", "item_mp_pct_bonus"], 0.0)
+		actor_pct += _get_first_numeric_value(actor, ["inner_force_max_mp_pct_bonus", "inner_max_mp_pct_bonus"], 0.0)
+	var equip_pct := float(equip_bonus.get("max_%s_pct" % resource_key, 0.0))
+	var inner_pct := float(inner_bonus.get("max_%s_pct" % resource_key, 0.0))
+	return max(0.1, 1.0 + actor_pct + equip_pct + inner_pct)
 
 func _get_actor_by_id(actor_id: String):
 	if TeamData == null:
 		return null
+	if TeamData.has_method("get_character_by_id"):
+		var actor_entry = TeamData.get_character_by_id(actor_id)
+		if typeof(actor_entry) == TYPE_DICTIONARY and not (actor_entry as Dictionary).is_empty():
+			return actor_entry
 	for actor in TeamData.get_active_party():
 		var entry_id = _get_actor_id_from_entry(actor)
 		if entry_id == actor_id:
@@ -956,10 +1710,7 @@ func _get_actor_by_id(actor_id: String):
 func _refresh_status_tab() -> void:
 	if _status_member_slots.is_empty():
 		return
-	var party: Array = []
-	if TeamData and TeamData.has_method("get_active_party"):
-		party = TeamData.get_active_party()
-
+	var party: Array = TeamData.get_active_party() if TeamData and TeamData.has_method("get_active_party") else []
 	for i in range(_status_member_slots.size()):
 		if i < party.size():
 			_fill_status_member_slot(_status_member_slots[i], party[i])
@@ -967,6 +1718,7 @@ func _refresh_status_tab() -> void:
 			_fill_status_member_slot_empty(_status_member_slots[i])
 
 func _refresh_equipment_tab() -> void:
+	_refresh_equipment_status_preview()
 	var equipped = InventorySync.get_equipped(_get_active_character_id())
 	_set_equipment_button(weapon1_button, "主武器", str(equipped.get("weapon_1", "")), "weapon_1")
 	_set_equipment_button(weapon2_button, "副武器", str(equipped.get("weapon_2", "")), "weapon_2")
@@ -1024,7 +1776,7 @@ func _open_equip_popup(slot: String) -> void:
 				continue
 		elif item_equip_slot != slot:
 			continue
-		if not _is_weapon_type_allowed(item_def, slot):
+		if not _is_weapon_type_allowed_for_actor(item_def, slot, _get_active_character_id()):
 			continue
 		var name = str(item_def.get("name", item_id))
 		equip_popup.add_item(name)
@@ -1033,9 +1785,12 @@ func _open_equip_popup(slot: String) -> void:
 	equip_popup.popup()
 
 func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
+	return _is_weapon_type_allowed_for_actor(item_def, slot, _get_active_character_id())
+
+func _is_weapon_type_allowed_for_actor(item_def: Dictionary, slot: String, actor_id: String) -> bool:
 	if not slot.begins_with("weapon"):
 		return true
-	var rules = WEAPON_RULES.get(_get_active_character_id(), {})
+	var rules = WEAPON_RULES.get(actor_id, {})
 	var weapon_type = str(item_def.get("weapon_type", ""))
 	var slot_rule = rules.get(slot, [])
 
@@ -1052,6 +1807,99 @@ func _is_weapon_type_allowed(item_def: Dictionary, slot: String) -> bool:
 	if allowed_types.is_empty():
 		return true
 	return allowed_types.has(weapon_type)
+
+func _get_all_character_ids() -> Array:
+	var ids: Array = []
+	if TeamData == null:
+		return ids
+	if typeof(TeamData.all_characters) == TYPE_DICTIONARY:
+		for key_any in TeamData.all_characters.keys():
+			var actor_id := String(key_any)
+			if actor_id == "" or ids.has(actor_id):
+				continue
+			ids.append(actor_id)
+	if ids.has("liuyu"):
+		ids.erase("liuyu")
+		ids.push_front("liuyu")
+	return ids
+
+func _remember_tab_actor(tab_key: String, actor_id: String) -> void:
+	if tab_key == "" or actor_id == "":
+		return
+	if tab_key == "item" or tab_key == "equipment":
+		_tab_actor_memory["item"] = actor_id
+		_tab_actor_memory["equipment"] = actor_id
+		_shared_view_actor_id = actor_id
+		if _is_actor_in_active_party(actor_id):
+			_tab_actor_memory["martial"] = actor_id
+		return
+	if tab_key == "martial":
+		_tab_actor_memory["martial"] = actor_id
+		_tab_actor_memory["item"] = actor_id
+		_tab_actor_memory["equipment"] = actor_id
+		_shared_view_actor_id = actor_id
+		return
+	_tab_actor_memory[tab_key] = actor_id
+
+func _get_tab_actor(tab_key: String) -> String:
+	if (tab_key == "item" or tab_key == "equipment") and _shared_view_actor_id != "":
+		return _shared_view_actor_id
+	return str(_tab_actor_memory.get(tab_key, ""))
+
+func _is_actor_in_active_party(actor_id: String) -> bool:
+	if actor_id == "" or TeamData == null or not TeamData.has_method("get_active_party"):
+		return false
+	for actor in TeamData.get_active_party():
+		if _get_actor_id_from_entry(actor) == actor_id:
+			return true
+	return false
+
+func _apply_tab_actor_context(tab_index: int) -> void:
+	if tabs == null or tab_index < 0:
+		return
+	var tab_key := ""
+	if tab_index == $VBoxContainer/道具.get_index():
+		tab_key = "item"
+		_setup_item_character_select()
+	elif tab_index == $VBoxContainer/裝備.get_index():
+		tab_key = "equipment"
+		_setup_equipment_character_select()
+	elif tab_index == $VBoxContainer/武術.get_index():
+		tab_key = "martial"
+	if tab_key == "":
+		return
+	var remembered_id := _resolve_tab_final_actor_id(tab_key)
+	if remembered_id == "":
+		var seed_ids: Array = _get_canonical_team_ids() if tab_key == "martial" else _get_all_character_ids()
+		if not seed_ids.is_empty():
+			remembered_id = str(seed_ids[0])
+		elif TeamData and TeamData.current_team_ids.size() > 0:
+			remembered_id = str(TeamData.current_team_ids[0])
+		else:
+			remembered_id = "liuyu"
+		_remember_tab_actor(tab_key, remembered_id)
+	print("[TabActorContext] tab=%s final_actor=%s shared=%s martial_mem=%s" % [
+		tab_key, remembered_id, _shared_view_actor_id, str(_tab_actor_memory.get("martial", ""))
+	])
+	_selected_actor_id = remembered_id
+
+func _resolve_tab_final_actor_id(tab_key: String) -> String:
+	if tab_key == "martial":
+		if _is_actor_in_active_party(_shared_view_actor_id):
+			return _shared_view_actor_id
+		var martial_id := str(_tab_actor_memory.get("martial", ""))
+		if _is_actor_in_active_party(martial_id):
+			return martial_id
+		if TeamData and TeamData.has_method("get_active_party"):
+			for actor in TeamData.get_active_party():
+				var actor_id := _get_actor_id_from_entry(actor)
+				if actor_id != "":
+					return actor_id
+		return ""
+	if tab_key == "item" or tab_key == "equipment":
+		if _shared_view_actor_id != "":
+			return _shared_view_actor_id
+	return _get_tab_actor(tab_key)
 
 func _get_active_character_id() -> String:
 	if _selected_actor_id != "":
@@ -1070,48 +1918,282 @@ func _get_active_actor():
 			return party[0]
 	return null
 
+func _setup_item_status_preview_layout() -> void:
+	_item_status_preview_slots = _setup_tab_status_preview_layout(item_tab, "ItemStatusLayout", "ItemCharacterRow", "ItemCharacterSelect", "ItemContentPane")
+
+func _setup_equipment_status_preview_layout() -> void:
+	_equipment_status_preview_slots = _setup_tab_status_preview_layout(equipment_tab, "EquipmentStatusLayout", "EquipmentCharacterRow", "EquipmentCharacterSelect", "EquipmentContentPane")
+
+func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, row_name: String, selector_name: String, content_name: String) -> Array:
+	var slots: Array = []
+	if tab == null:
+		return slots
+	var layout := tab.get_node_or_null(layout_name) as HBoxContainer
+	if layout == null:
+		layout = HBoxContainer.new()
+		layout.name = layout_name
+		layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		layout.add_theme_constant_override("separation", 12)
+		tab.add_child(layout)
+		tab.move_child(layout, 0)
+
+	var left_pane := layout.get_node_or_null("StatusPane") as VBoxContainer
+	if left_pane == null:
+		left_pane = VBoxContainer.new()
+		left_pane.name = "StatusPane"
+		left_pane.custom_minimum_size = Vector2(360, 0)
+		layout.add_child(left_pane)
+
+	var status_gold := left_pane.get_node_or_null("StatusGoldLabel") as Label
+	if status_gold == null:
+		status_gold = Label.new()
+		status_gold.name = "StatusGoldLabel"
+		status_gold.text = "💰 盤纏：0文"
+		left_pane.add_child(status_gold)
+	if tab == item_tab:
+		var old_item_gold := tab.get_node_or_null("GoldLabel") as Label
+		if old_item_gold and old_item_gold != status_gold:
+			old_item_gold.queue_free()
+		gold_label = status_gold
+	elif tab == equipment_tab:
+		_equipment_gold_label = status_gold
+
+	var right_pane := layout.get_node_or_null("RightPane") as VBoxContainer
+	if right_pane == null:
+		right_pane = VBoxContainer.new()
+		right_pane.name = "RightPane"
+		right_pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		right_pane.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		layout.add_child(right_pane)
+
+	var row := right_pane.get_node_or_null(row_name) as HBoxContainer
+	if row == null:
+		row = HBoxContainer.new()
+		row.name = row_name
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var label := Label.new()
+		label.text = "角色："
+		row.add_child(label)
+		var selector := OptionButton.new()
+		selector.name = selector_name
+		selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		selector.custom_minimum_size = Vector2(220, 0)
+		row.add_child(selector)
+		right_pane.add_child(row)
+
+	var preview_row := left_pane.get_node_or_null("PartyStatusRow") as HBoxContainer
+	if preview_row == null:
+		preview_row = HBoxContainer.new()
+		preview_row.name = "PartyStatusRow"
+		preview_row.add_theme_constant_override("separation", 14)
+		left_pane.add_child(preview_row)
+	var preview_member := preview_row.get_node_or_null("Member1") as VBoxContainer
+	if preview_member == null:
+		preview_member = VBoxContainer.new()
+		preview_member.name = "Member1"
+		preview_row.add_child(preview_member)
+	_configure_status_member_container(preview_member)
+	_rebuild_status_member_layout(preview_member)
+
+	var content := right_pane.get_node_or_null(content_name) as VBoxContainer
+	if content == null:
+		content = VBoxContainer.new()
+		content.name = content_name
+		content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		right_pane.add_child(content)
+		var move_children: Array = []
+		for child in tab.get_children():
+			if child != layout:
+				move_children.append(child)
+		for child in move_children:
+			tab.remove_child(child)
+			content.add_child(child)
+
+	_apply_menu_font_style(status_gold)
+	_apply_menu_font_style(row)
+	slots = _build_status_slots_from_row(preview_row)
+	if not slots.is_empty():
+		_setup_status_hover_for_slot(slots[0])
+	return slots
+
+func _build_status_slots_from_row(row: HBoxContainer) -> Array:
+	var slots: Array = []
+	if row == null:
+		return slots
+	for i in range(3):
+		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
+		if member == null:
+			continue
+		_configure_status_member_container(member)
+		_rebuild_status_member_layout(member)
+		slots.append({
+			"name": member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label,
+			"job_class": member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label,
+			"portrait": member.get_node_or_null("CardBG/CardContent/TopSection/PortraitFrame/Portrait") as TextureRect,
+			"level": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/LevelLabel") as Label,
+			"exp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
+			"hp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
+			"mp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
+			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/LuckLabel") as Label,
+		})
+	return slots
+
+func _setup_item_character_select() -> void:
+	if item_tab == null or TeamData == null:
+		return
+	var row := item_tab.get_node_or_null("ItemStatusLayout/RightPane/ItemCharacterRow") as HBoxContainer
+	var selector: OptionButton = null
+	if row:
+		selector = row.get_node_or_null("ItemCharacterSelect") as OptionButton
+	if selector == null:
+		return
+	_ensure_selector_layout(selector, "item_setup_begin")
+	var all_ids := _get_all_character_ids()
+	if all_ids.is_empty() and TeamData and TeamData.has_method("get_active_party"):
+		for actor in TeamData.get_active_party():
+			var actor_id := _get_actor_id_from_entry(actor)
+			if actor_id != "" and not all_ids.has(actor_id):
+				all_ids.append(actor_id)
+	if all_ids.is_empty():
+		return
+	selector.clear()
+	for actor_id in all_ids:
+		var actor = _get_actor_by_id(actor_id)
+		var display_name = _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
+		selector.add_item(display_name)
+		selector.set_item_metadata(selector.item_count - 1, actor_id)
+	if selector.item_count > 0:
+		var remembered_id := _get_tab_actor("item")
+		var restore_info := _restore_selector_selection(selector, remembered_id, all_ids, "item")
+		var selected_id := str(restore_info.get("id", ""))
+		call_deferred("_deferred_restore_selector", selector.get_path(), int(restore_info.get("index", 0)), "item")
+		_remember_tab_actor("item", selected_id)
+		if tabs and tabs.current_tab == $VBoxContainer/道具.get_index():
+			_selected_actor_id = selected_id
+	if not selector.item_selected.is_connected(_on_item_character_selected):
+		selector.item_selected.connect(_on_item_character_selected)
+	_refresh_item_status_preview()
+
+func _on_item_character_selected(index: int) -> void:
+	var selector: OptionButton = null
+	if item_tab:
+		selector = item_tab.get_node_or_null("ItemStatusLayout/RightPane/ItemCharacterRow/ItemCharacterSelect") as OptionButton
+	if selector == null or index < 0 or index >= selector.item_count:
+		return
+	var actor_id := str(selector.get_item_metadata(index))
+	_remember_tab_actor("item", actor_id)
+	_selected_actor_id = actor_id
+	_refresh_item_tab()
+	_refresh_item_status_preview()
+
 func _setup_equipment_character_select() -> void:
 	if equipment_tab == null or TeamData == null:
 		return
-	var row = equipment_tab.get_node_or_null("EquipmentCharacterRow") as HBoxContainer
+	var row = equipment_tab.get_node_or_null("EquipmentStatusLayout/RightPane/EquipmentCharacterRow") as HBoxContainer
 	var selector: OptionButton = null
-	if row == null:
-		row = HBoxContainer.new()
-		row.name = "EquipmentCharacterRow"
-		var label = Label.new()
-		label.text = "角色："
-		row.add_child(label)
-		selector = OptionButton.new()
-		selector.name = "EquipmentCharacterSelect"
-		row.add_child(selector)
-		equipment_tab.add_child(row)
-		equipment_tab.move_child(row, 0)
-	else:
+	if row:
 		selector = row.get_node_or_null("EquipmentCharacterSelect") as OptionButton
 	if selector == null:
 		return
+	_ensure_selector_layout(selector, "equipment_setup_begin")
 	_apply_menu_font_style(row)
-
-	for actor in TeamData.get_active_party():
-		var actor_id = _get_actor_id_from_entry(actor)
-		if actor_id == "":
-			continue
-		selector.add_item(_get_actor_name_from_entry(actor, actor_id))
+	var all_ids := _get_all_character_ids()
+	if all_ids.is_empty() and TeamData and TeamData.has_method("get_active_party"):
+		for actor in TeamData.get_active_party():
+			var actor_id := _get_actor_id_from_entry(actor)
+			if actor_id != "" and not all_ids.has(actor_id):
+				all_ids.append(actor_id)
+	if all_ids.is_empty():
+		return
+	selector.clear()
+	for actor_id in all_ids:
+		var actor = _get_actor_by_id(actor_id)
+		var display_name = _get_actor_name_from_entry(actor, actor_id) if actor != null else actor_id
+		selector.add_item(display_name)
 		selector.set_item_metadata(selector.item_count - 1, actor_id)
 	if selector.item_count > 0:
-		selector.select(0)
-		_selected_actor_id = str(selector.get_item_metadata(0))
-	selector.item_selected.connect(func(index: int):
-		_selected_actor_id = str(selector.get_item_metadata(index))
-		_refresh_equipment_tab()
-		_refresh_weapon_tab_lists()
-		_update_skill_detail(_selected_skill)
-	)
+		var remembered_id := _get_tab_actor("equipment")
+		var restore_info := _restore_selector_selection(selector, remembered_id, all_ids, "equipment")
+		var selected_id := str(restore_info.get("id", ""))
+		call_deferred("_deferred_restore_selector", selector.get_path(), int(restore_info.get("index", 0)), "equipment")
+		_remember_tab_actor("equipment", selected_id)
+		if tabs and tabs.current_tab == $VBoxContainer/裝備.get_index():
+			_selected_actor_id = selected_id
+	if not selector.item_selected.is_connected(_on_equipment_character_selected):
+		selector.item_selected.connect(_on_equipment_character_selected)
+	_refresh_equipment_status_preview()
+
+func _restore_selector_selection(selector: OptionButton, remembered_id: String, all_ids: Array, tag: String) -> Dictionary:
+	if selector == null or selector.item_count <= 0:
+		print("[SelectorRestore:%s] selector empty. ids=%s remembered=%s" % [tag, str(all_ids), remembered_id])
+		return {"id": "", "index": -1, "text": ""}
+	var selected_index := 0
+	if remembered_id != "":
+		for i in range(selector.item_count):
+			if str(selector.get_item_metadata(i)) == remembered_id:
+				selected_index = i
+				break
+	selector.select(selected_index)
+	var selected_text := selector.get_item_text(selected_index)
+	var selected_id := str(selector.get_item_metadata(selected_index))
+	print("[SelectorRestore:%s] ids=%s remembered=%s selected_index=%d selected_id=%s selected_text=%s" % [
+		tag, str(all_ids), remembered_id, selected_index, selected_id, selected_text
+	])
+	return {"id": selected_id, "index": selected_index, "text": selected_text}
+
+func _deferred_restore_selector(selector_path: NodePath, selected_index: int, tag: String) -> void:
+	var selector := get_node_or_null(selector_path) as OptionButton
+	if selector == null or selector.item_count <= 0:
+		return
+	_ensure_selector_layout(selector, "%s_deferred_before_select" % tag)
+	var safe_index := clampi(selected_index, 0, selector.item_count - 1)
+	selector.select(safe_index)
+	selector.queue_redraw()
+	var selected_text := selector.get_item_text(safe_index)
+	print("[SelectorRestoreDeferred:%s] selected_index=%d selected_text=%s size_x=%.1f min_x=%.1f" % [
+		tag, safe_index, selected_text, selector.size.x, selector.custom_minimum_size.x
+	])
+
+func _ensure_selector_layout(selector: OptionButton, tag: String) -> void:
+	if selector == null:
+		return
+	selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if selector.custom_minimum_size.x < 220.0:
+		selector.custom_minimum_size.x = 220.0
+	print("[SelectorLayout:%s] size_x=%.1f min_x=%.1f flags_h=%d" % [
+		tag, selector.size.x, selector.custom_minimum_size.x, selector.size_flags_horizontal
+	])
+
+func _on_equipment_character_selected(index: int) -> void:
+	var selector: OptionButton = null
+	if equipment_tab:
+		selector = equipment_tab.get_node_or_null("EquipmentStatusLayout/RightPane/EquipmentCharacterRow/EquipmentCharacterSelect") as OptionButton
+	if selector == null or index < 0 or index >= selector.item_count:
+		return
+	var actor_id := str(selector.get_item_metadata(index))
+	_remember_tab_actor("equipment", actor_id)
+	_selected_actor_id = actor_id
+	_refresh_equipment_tab()
+	_refresh_equipment_status_preview()
 
 func _refresh_martial_character_select() -> void:
 	if martial_character_select == null or TeamData == null:
 		return
-	var prev_id = _selected_actor_id
+	var prev_id = _get_active_character_id()
+	if not _is_actor_in_active_party(prev_id):
+		prev_id = _get_tab_actor("martial")
 	if martial_character_select.item_count > 0:
 		var prev_index := martial_character_select.get_selected()
 		if prev_index >= 0 and prev_index < martial_character_select.item_count:
@@ -1132,14 +2214,18 @@ func _refresh_martial_character_select() -> void:
 			selected_index = i
 			break
 	martial_character_select.select(selected_index)
-	_selected_actor_id = str(martial_character_select.get_item_metadata(selected_index))
+	var selected_id := str(martial_character_select.get_item_metadata(selected_index))
+	_remember_tab_actor("martial", selected_id)
+	_selected_actor_id = selected_id
 	if not martial_character_select.item_selected.is_connected(_on_martial_character_selected):
 		martial_character_select.item_selected.connect(_on_martial_character_selected)
 
 func _on_martial_character_selected(index: int) -> void:
 	if martial_character_select == null:
 		return
-	_selected_actor_id = str(martial_character_select.get_item_metadata(index))
+	var actor_id := str(martial_character_select.get_item_metadata(index))
+	_remember_tab_actor("martial", actor_id)
+	_selected_actor_id = actor_id
 	_refresh_weapon_tab_lists()
 	_update_skill_detail(_selected_skill)
 
@@ -1154,54 +2240,248 @@ func _setup_status_member_slots() -> void:
 		var member := row.get_node_or_null("Member%d" % (i + 1)) as VBoxContainer
 		if member == null:
 			continue
-		var raw_stats_node := member.get_node_or_null("Stats")
-		var stats_rich: RichTextLabel = null
-		if raw_stats_node is RichTextLabel:
-			stats_rich = raw_stats_node as RichTextLabel
-		elif raw_stats_node is Label:
-			var old_label := raw_stats_node as Label
-			stats_rich = RichTextLabel.new()
-			stats_rich.name = "Stats"
-			stats_rich.custom_minimum_size = old_label.custom_minimum_size
-			stats_rich.size_flags_horizontal = old_label.size_flags_horizontal
-			stats_rich.size_flags_vertical = old_label.size_flags_vertical
-			stats_rich.bbcode_enabled = true
-			stats_rich.fit_content = true
-			stats_rich.scroll_active = false
-			stats_rich.mouse_filter = Control.MOUSE_FILTER_STOP
-			var parent_node := old_label.get_parent()
-			var idx := old_label.get_index()
-			parent_node.add_child(stats_rich)
-			parent_node.move_child(stats_rich, idx)
-			old_label.queue_free()
-		if stats_rich:
-			if not stats_rich.meta_hover_started.is_connected(_on_status_meta_hover_started):
-				stats_rich.meta_hover_started.connect(_on_status_meta_hover_started.bind(stats_rich))
-			if not stats_rich.meta_hover_ended.is_connected(_on_status_meta_hover_ended):
-				stats_rich.meta_hover_ended.connect(_on_status_meta_hover_ended)
-			if not stats_rich.mouse_exited.is_connected(_hide_status_hover_popup):
-				stats_rich.mouse_exited.connect(_hide_status_hover_popup)
+		_configure_status_member_container(member)
+		_rebuild_status_member_layout(member)
 		_status_member_slots.append({
-			"name": member.get_node_or_null("Name") as Label,
-			"job_class": member.get_node_or_null("JobClass") as Label,
-			"portrait": member.get_node_or_null("Portrait") as TextureRect,
-			"stats": stats_rich,
+			"name": member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label,
+			"job_class": member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label,
+			"portrait": member.get_node_or_null("CardBG/CardContent/TopSection/PortraitFrame/Portrait") as TextureRect,
+			"level": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/LevelLabel") as Label,
+			"exp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
+			"hp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
+			"mp": member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
+			"atk": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AtkLabel") as Label,
+			"def": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/DefLabel") as Label,
+			"agi_move": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AgiMoveLabel") as Label,
+			"hit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/HitLabel") as Label,
+			"crit": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/CritLabel") as Label,
+			"evade": member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/EvadeLabel") as Label,
+			"str": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/StrLabel") as Label,
+			"dex": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/DexLabel") as Label,
+			"int": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/IntLabel") as Label,
+			"con": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/ConLabel") as Label,
+			"luck": member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/LuckLabel") as Label,
 		})
-		var stats_label := stats_rich
-		if stats_label:
-			stats_label.add_theme_font_override("normal_font", MenuUIFont)
-			stats_label.add_theme_font_size_override("normal_font_size", 18)
-			stats_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-			stats_label.add_theme_constant_override("outline_size", 4)
-			stats_label.add_theme_font_size_override("font_size", 18)
-		var portrait := member.get_node_or_null("Portrait") as TextureRect
-		if portrait:
-			var base_size: Vector2 = portrait.custom_minimum_size
-			if base_size == Vector2.ZERO:
-				base_size = Vector2(96, 96)
-			portrait.custom_minimum_size = base_size * 1.5
-			portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-			portrait.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		_setup_status_hover_for_slot(_status_member_slots[_status_member_slots.size() - 1])
+
+func _rebuild_status_member_layout(member: VBoxContainer) -> void:
+	for child in member.get_children():
+		member.remove_child(child)
+		child.queue_free()
+
+	var card_bg := PanelContainer.new()
+	card_bg.name = "CardBG"
+	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_bg.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card_bg.custom_minimum_size = STATUS_MEMBER_CARD_SIZE
+	var card_style := StyleBoxTexture.new()
+	card_style.texture = STATUS_MEMBER_CARD_BG
+	card_style.texture_margin_left = 0.0
+	card_style.texture_margin_top = 0.0
+	card_style.texture_margin_right = 0.0
+	card_style.texture_margin_bottom = 0.0
+	card_bg.add_theme_stylebox_override("panel", card_style)
+	member.add_child(card_bg)
+
+	var card_content := VBoxContainer.new()
+	card_content.name = "CardContent"
+	card_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_bg.add_child(card_content)
+
+	var top_spacer := Control.new()
+	top_spacer.name = "TopOffsetSpacer"
+	top_spacer.custom_minimum_size = Vector2(0, 10)
+	card_content.add_child(top_spacer)
+
+	var header_row := HBoxContainer.new()
+	header_row.name = "HeaderRow"
+	header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_content.add_child(header_row)
+
+	var post_header_spacer := Control.new()
+	post_header_spacer.name = "PostHeaderSpacer"
+	post_header_spacer.custom_minimum_size = Vector2(0, 5)
+	card_content.add_child(post_header_spacer)
+
+	var name_offset := Control.new()
+	name_offset.name = "NameOffsetSpacer"
+	name_offset.custom_minimum_size = Vector2(40, 0)
+	header_row.add_child(name_offset)
+
+	var name_label := Label.new()
+	name_label.name = "NameBrushLabel"
+	name_label.text = "—"
+	_apply_status_card_label_size(name_label, true)
+	header_row.add_child(name_label)
+
+	var header_spacer := Control.new()
+	header_spacer.name = "HeaderSpacer"
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(header_spacer)
+
+	var job_label := Label.new()
+	job_label.name = "JobClassLabel"
+	job_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	job_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_apply_status_card_label_size(job_label, true)
+	header_row.add_child(job_label)
+
+	var job_offset := Control.new()
+	job_offset.name = "JobOffsetSpacer"
+	job_offset.custom_minimum_size = Vector2(40, 0)
+	header_row.add_child(job_offset)
+
+	var top_section := HBoxContainer.new()
+	top_section.name = "TopSection"
+	top_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_section.add_theme_constant_override("separation", 8)
+	card_content.add_child(top_section)
+
+	var portrait_frame := Control.new()
+	portrait_frame.name = "PortraitFrame"
+	portrait_frame.custom_minimum_size = Vector2(148, 132)
+	top_section.add_child(portrait_frame)
+
+	var portrait := TextureRect.new()
+	portrait.name = "Portrait"
+	portrait.custom_minimum_size = Vector2(128, 128)
+	portrait.position = Vector2(20, 4)
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait_frame.add_child(portrait)
+
+	var basic_info := VBoxContainer.new()
+	basic_info.name = "BasicInfoBox"
+	basic_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var basic_info_offset := Control.new()
+	basic_info_offset.name = "BasicInfoOffsetX"
+	basic_info_offset.custom_minimum_size = Vector2(50, 0)
+	top_section.add_child(basic_info_offset)
+	top_section.add_child(basic_info)
+
+	var basic_info_offset_y := Control.new()
+	basic_info_offset_y.name = "BasicInfoOffsetY"
+	basic_info_offset_y.custom_minimum_size = Vector2(0, 30)
+	basic_info.add_child(basic_info_offset_y)
+
+	for pair in [
+		["LevelLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["ExpLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["HPLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["MPLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+	]:
+		var lbl := Label.new()
+		lbl.name = pair[0]
+		lbl.text = pair[1]
+		_apply_status_card_label_size(lbl, false)
+		basic_info.add_child(lbl)
+
+	var lower_section := VBoxContainer.new()
+	lower_section.name = "LowerSection"
+	card_content.add_child(lower_section)
+
+	var combat_row := HBoxContainer.new()
+	combat_row.name = "CombatStatsRow"
+	lower_section.add_child(combat_row)
+	var combat_offset_x := Control.new()
+	combat_offset_x.name = "CombatStatsOffsetX"
+	combat_offset_x.custom_minimum_size = Vector2(93, 0)
+	combat_row.add_child(combat_offset_x)
+	var combat_box := VBoxContainer.new()
+	combat_box.name = "CombatStatsBox"
+	combat_row.add_child(combat_box)
+	var combat_offset_y := Control.new()
+	combat_offset_y.name = "CombatStatsOffsetY"
+	combat_offset_y.custom_minimum_size = Vector2(0, 36)
+	combat_box.add_child(combat_offset_y)
+	for pair in [
+		["AtkLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["DefLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["AgiMoveLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["HitLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["CritLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["EvadeLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+	]:
+		var lbl := Label.new()
+		lbl.name = pair[0]
+		lbl.text = pair[1]
+		_apply_status_card_label_size(lbl, false)
+		combat_box.add_child(lbl)
+
+	var base_row := HBoxContainer.new()
+	base_row.name = "BaseStatsRow"
+	lower_section.add_child(base_row)
+	var base_offset_x := Control.new()
+	base_offset_x.name = "BaseStatsOffsetX"
+	base_offset_x.custom_minimum_size = Vector2(93, 0)
+	base_row.add_child(base_offset_x)
+	var base_box := VBoxContainer.new()
+	base_box.name = "BaseStatsBox"
+	base_row.add_child(base_box)
+	var base_offset_y := Control.new()
+	base_offset_y.name = "BaseStatsOffsetY"
+	base_offset_y.custom_minimum_size = Vector2(0, 40)
+	base_box.add_child(base_offset_y)
+	for pair in [
+		["StrLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["DexLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["IntLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["ConLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+		["LuckLabel", "%s—" % STATUS_VALUE_OFFSET_PREFIX],
+	]:
+		var lbl := Label.new()
+		lbl.name = pair[0]
+		lbl.text = pair[1]
+		_apply_status_card_label_size(lbl, false)
+		base_box.add_child(lbl)
+
+	_apply_menu_font_style(member)
+	_enforce_status_card_font_sizes(member)
+
+func _configure_status_member_container(member: VBoxContainer) -> void:
+	if member == null:
+		return
+	member.custom_minimum_size = STATUS_MEMBER_CARD_SIZE
+	member.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	member.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+func _apply_status_card_label_size(label: Label, is_name: bool) -> void:
+	if label == null:
+		return
+	if is_name:
+		label.add_theme_font_size_override("font_size", 20)
+	else:
+		label.add_theme_font_size_override("font_size", 12)
+
+func _enforce_status_card_font_sizes(member: VBoxContainer) -> void:
+	if member == null:
+		return
+	var name_label := member.get_node_or_null("CardBG/CardContent/HeaderRow/NameBrushLabel") as Label
+	_apply_status_card_label_size(name_label, true)
+	var job_label := member.get_node_or_null("CardBG/CardContent/HeaderRow/JobClassLabel") as Label
+	_apply_status_card_label_size(job_label, true)
+	var all_labels: Array = [
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/LevelLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/ExpLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/HPLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/TopSection/BasicInfoBox/MPLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AtkLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/DefLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/AgiMoveLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/HitLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/CritLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/CombatStatsRow/CombatStatsBox/EvadeLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/StrLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/DexLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/IntLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/ConLabel") as Label,
+		member.get_node_or_null("CardBG/CardContent/LowerSection/BaseStatsRow/BaseStatsBox/LuckLabel") as Label,
+	]
+	for label_any in all_labels:
+		var lbl := label_any as Label
+		if lbl:
+			_apply_status_card_label_size(lbl, false)
 
 func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var actor_id := _get_actor_id_from_entry(actor)
@@ -1224,6 +2504,10 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var bonus_def := int(equip_bonus.get("def", 0)) + int(inner_bonus.get("def", 0))
 	var bonus_max_hp := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
 	var bonus_max_mp := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
+	var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
+	var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
+	var total_max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
+	var total_max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
 	var bonus_speed := int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0))
 	var base_str := int(_get_actor_value(actor, "str", 5))
 	var base_agi := int(_get_actor_value(actor, "agi", 5))
@@ -1268,28 +2552,64 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 		portrait.texture = _get_actor_portrait(actor)
 		portrait.modulate = Color(1, 1, 1, 1)
 
-	var stats_label := slot_data.get("stats") as RichTextLabel
-	if stats_label:
-		stats_label.set_meta("actor_id", actor_id)
-		var stat_str := "%s  %s  %s  %s  %s" % [
-			_status_metric_token("str", "力", base_str + bonus_str),
-			_status_metric_token("agi", "敏", base_agi + bonus_agi),
-			_status_metric_token("int", "智", base_int + bonus_int),
-			_status_metric_token("con", "體", base_con + bonus_con),
-			_status_metric_token("luck", "幸", base_luck + bonus_luck),
-		]
-		stats_label.bbcode_text = "Lv.%d  EXP：%d/%d\n氣血：%d/%d (+%d)\n內力：%d/%d (+%d)\n%s  %s  %s\n%s  %s  %s\n%s" % [
-			actor_level, actor_exp, next_exp,
-			base_hp, base_max_hp + bonus_max_hp, bonus_max_hp,
-			base_mp, base_max_mp + bonus_max_mp, bonus_max_mp,
-			_status_metric_token("atk", "攻", base_atk + bonus_atk),
-			_status_metric_token("def", "防", base_def + bonus_def),
-			_status_metric_token("speed", "身法", base_speed + bonus_speed),
-			_status_metric_token("hit_power", "命中", hit_power),
-			_status_metric_token("crit", "暴擊", "%.1f%%" % crit_rate_pct),
-			_status_metric_token("evade_power", "閃避", evade_power),
-			stat_str,
-		]
+	var level_label := slot_data.get("level") as Label
+	if level_label:
+		level_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, actor_level]
+	var exp_label := slot_data.get("exp") as Label
+	if exp_label:
+		exp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, actor_exp, next_exp]
+	var hp_label := slot_data.get("hp") as Label
+	if hp_label:
+		hp_label.set_meta("actor_id", actor_id)
+		hp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_hp, max(total_max_hp, 1)]
+	var mp_label := slot_data.get("mp") as Label
+	if mp_label:
+		mp_label.set_meta("actor_id", actor_id)
+		mp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_mp, max(total_max_mp, 0)]
+	var atk_label := slot_data.get("atk") as Label
+	if atk_label:
+		atk_label.set_meta("actor_id", actor_id)
+		atk_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_atk + bonus_atk)]
+	var def_label := slot_data.get("def") as Label
+	if def_label:
+		def_label.set_meta("actor_id", actor_id)
+		def_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_def + bonus_def)]
+	var agi_move_label := slot_data.get("agi_move") as Label
+	if agi_move_label:
+		agi_move_label.set_meta("actor_id", actor_id)
+		agi_move_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_speed + bonus_speed)]
+	var hit_label := slot_data.get("hit") as Label
+	if hit_label:
+		hit_label.set_meta("actor_id", actor_id)
+		hit_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, hit_power]
+	var crit_label := slot_data.get("crit") as Label
+	if crit_label:
+		crit_label.set_meta("actor_id", actor_id)
+		crit_label.text = "%s%.1f%%" % [STATUS_VALUE_OFFSET_PREFIX, crit_rate_pct]
+	var evade_label := slot_data.get("evade") as Label
+	if evade_label:
+		evade_label.set_meta("actor_id", actor_id)
+		evade_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, evade_power]
+	var str_label := slot_data.get("str") as Label
+	if str_label:
+		str_label.set_meta("actor_id", actor_id)
+		str_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_str + bonus_str)]
+	var dex_label := slot_data.get("dex") as Label
+	if dex_label:
+		dex_label.set_meta("actor_id", actor_id)
+		dex_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_agi + bonus_agi)]
+	var int_label := slot_data.get("int") as Label
+	if int_label:
+		int_label.set_meta("actor_id", actor_id)
+		int_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_int + bonus_int)]
+	var con_label := slot_data.get("con") as Label
+	if con_label:
+		con_label.set_meta("actor_id", actor_id)
+		con_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_con + bonus_con)]
+	var luck_label := slot_data.get("luck") as Label
+	if luck_label:
+		luck_label.set_meta("actor_id", actor_id)
+		luck_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_luck + bonus_luck)]
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
 	var luck_stat = int(_get_actor_value(actor, "luck", 0))
@@ -1413,6 +2733,30 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 	if stat_key in ["str", "agi", "int", "con", "luck", "atk", "def", "speed", "accuracy", "evasion"]:
 		total_value += int(equip_bonus.get(stat_key, 0)) + int(inner_bonus.get(stat_key, 0))
 	match stat_key:
+		"hp_breakdown":
+			var hp_now := int(_get_actor_value(actor, "hp", 0))
+			var hp_base_max := int(_get_actor_value(actor, "max_hp", hp_now))
+			var hp_equip := int(equip_bonus.get("max_hp", 0))
+			var hp_inner := int(inner_bonus.get("max_hp", 0))
+			var hp_stat := _get_actor_resource_stat_bonus(actor, "hp")
+			var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
+			var hp_flat_bonus := hp_equip + hp_inner
+			var hp_total_max := int(round(float(hp_base_max) * hp_mult)) + hp_flat_bonus
+			return "[b]氣血[/b]\n目前：%d/%d\n上限計算：基礎 × 倍率 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
+				hp_now, hp_total_max, hp_equip, hp_inner, hp_stat, hp_mult
+			]
+		"mp_breakdown":
+			var mp_now := int(_get_actor_value(actor, "mp", 0))
+			var mp_base_max := int(_get_actor_value(actor, "max_mp", mp_now))
+			var mp_equip := int(equip_bonus.get("max_mp", 0))
+			var mp_inner := int(inner_bonus.get("max_mp", 0))
+			var mp_stat := _get_actor_resource_stat_bonus(actor, "mp")
+			var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
+			var mp_flat_bonus := mp_equip + mp_inner
+			var mp_total_max := int(round(float(mp_base_max) * mp_mult)) + mp_flat_bonus
+			return "[b]內力[/b]\n目前：%d/%d\n上限計算：基礎 × 倍率 + 裝備 + 內功\n拆解：裝備 %+d｜內功 %+d｜其他 %+d｜倍率 ×%.2f" % [
+				mp_now, mp_total_max, mp_equip, mp_inner, mp_stat, mp_mult
+			]
 		"hit_power":
 			var acc_total := int(_get_actor_value(actor, "accuracy", 100)) + int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
 			var agi_total := int(_get_actor_value(actor, "agi", 0)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
@@ -1441,6 +2785,18 @@ func _build_status_hover_text(actor, stat_key: String) -> String:
 			return "[b]%s[/b]\n目前值：%d\n可逆來源：裝備 %+d、內功 %+d（合計 %+d）" % [
 				_status_key_display_name(stat_key), total_value, equip_delta, inner_delta, reversible
 			]
+
+func _get_actor_resource_stat_bonus(actor, resource_key: String) -> int:
+	var keys: Array = []
+	if resource_key == "hp":
+		keys = ["max_hp_from_con", "hp_from_con", "con_hp_bonus", "max_hp_stat_bonus", "hp_stat_bonus"]
+	elif resource_key == "mp":
+		keys = ["max_mp_from_int", "mp_from_int", "int_mp_bonus", "max_mp_stat_bonus", "mp_stat_bonus"]
+	for key_any in keys:
+		var value := int(_get_actor_value(actor, String(key_any), 0))
+		if value != 0:
+			return value
+	return 0
 
 func _status_key_display_name(stat_key: String) -> String:
 	match stat_key:
@@ -1480,9 +2836,50 @@ func _fill_status_member_slot_empty(slot_data: Dictionary) -> void:
 	if portrait:
 		portrait.texture = null
 		portrait.modulate = Color(0.4, 0.4, 0.4, 1)
-	var stats_label := slot_data.get("stats") as RichTextLabel
-	if stats_label:
-		stats_label.bbcode_text = "空位"
+	for key in ["level", "exp", "hp", "mp", "atk", "def", "agi_move", "hit", "crit", "evade", "str", "dex", "int", "con", "luck"]:
+		var lbl := slot_data.get(key) as Label
+		if lbl:
+			lbl.text = "%s—" % STATUS_VALUE_OFFSET_PREFIX
+			lbl.remove_meta("actor_id")
+
+func _setup_status_hover_for_slot(slot_data: Dictionary) -> void:
+	var hover_key_map := {
+		"hp": "hp_breakdown",
+		"mp": "mp_breakdown",
+		"atk": "atk",
+		"def": "def",
+		"agi_move": "speed",
+		"hit": "hit_power",
+		"crit": "crit",
+		"evade": "evade_power",
+		"str": "str",
+		"dex": "agi",
+		"int": "int",
+		"con": "con",
+		"luck": "luck",
+	}
+	for slot_key in hover_key_map.keys():
+		var stat_label := slot_data.get(slot_key) as Label
+		if stat_label == null:
+			continue
+		stat_label.mouse_filter = Control.MOUSE_FILTER_STOP
+		var stat_key := str(hover_key_map[slot_key])
+		if not stat_label.mouse_entered.is_connected(_on_status_stat_label_mouse_entered):
+			stat_label.mouse_entered.connect(_on_status_stat_label_mouse_entered.bind(stat_label, stat_key))
+		if not stat_label.mouse_exited.is_connected(_hide_status_hover_popup):
+			stat_label.mouse_exited.connect(_hide_status_hover_popup)
+
+func _on_status_stat_label_mouse_entered(stat_label: Label, stat_key: String) -> void:
+	var actor_id := String(stat_label.get_meta("actor_id", ""))
+	if actor_id == "":
+		return
+	_ensure_status_hover_popup()
+	_ensure_status_hover_timer()
+	if _status_hover_popup == null or _status_hover_label == null or _status_hover_timer == null:
+		return
+	_pending_status_hover_meta = stat_key
+	_pending_status_hover_actor_id = actor_id
+	_status_hover_timer.start(0.5)
 
 func _get_actor_portrait(actor) -> Texture2D:
 	var portrait_path := str(_get_actor_value(actor, "portrait_path", ""))
@@ -1511,6 +2908,8 @@ func _party_can_use_walnut() -> bool:
 func _open_party_target_popup() -> void:
 	if skill_target_popup == null:
 		return
+	_pending_equip_item_id = ""
+	_pending_equip_slot = ""
 	skill_target_popup.clear()
 	for actor in TeamData.get_active_party():
 		var actor_id = _get_actor_id_from_entry(actor)
@@ -1519,6 +2918,59 @@ func _open_party_target_popup() -> void:
 		skill_target_popup.add_item(_get_actor_name_from_entry(actor, actor_id))
 		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
 	skill_target_popup.popup()
+
+func _open_equip_target_popup(item_id: String, item_def: Dictionary) -> void:
+	if skill_target_popup == null:
+		return
+	var slot := str(item_def.get("equip_slot", ""))
+	if slot == "":
+		return
+	skill_target_popup.clear()
+	var candidate_ids := _get_all_character_ids()
+	for actor_id in candidate_ids:
+		if not _can_actor_equip_item(actor_id, item_def, slot):
+			continue
+		var actor = _get_actor_by_id(actor_id)
+		var actor_name := _get_actor_name_from_entry(actor, actor_id)
+		skill_target_popup.add_item(actor_name)
+		skill_target_popup.set_item_metadata(skill_target_popup.item_count - 1, actor_id)
+	if skill_target_popup.item_count <= 0:
+		if item_desc:
+			item_desc.text = "目前沒有符合裝備條件的角色。"
+		return
+	_pending_equip_item_id = item_id
+	_pending_equip_slot = slot
+	skill_target_popup.popup()
+
+func _can_actor_equip_item(actor_id: String, item_def: Dictionary, slot: String) -> bool:
+	if actor_id == "" or item_def.is_empty() or slot == "":
+		return false
+	var use_action := str(item_def.get("use_action", "none"))
+	if use_action != "equip":
+		return false
+	var item_slot := str(item_def.get("equip_slot", ""))
+	if slot.begins_with("weapon"):
+		if not item_slot.begins_with("weapon"):
+			return false
+	else:
+		if item_slot != slot:
+			return false
+	if actor_id == "shumian" and slot == "weapon_2":
+		return false
+	return _is_weapon_type_allowed_for_actor(item_def, slot, actor_id)
+
+func _apply_equip_item_to_actor(item_id: String, slot: String, actor_id: String) -> void:
+	if item_id == "" or slot == "" or actor_id == "":
+		return
+	var item_def := ItemDB.get_def(item_id)
+	if item_def.is_empty():
+		return
+	if not _can_actor_equip_item(actor_id, item_def, slot):
+		return
+	if InventorySync.has_method("equip_item_to_slot"):
+		InventorySync.equip_item_to_slot(item_id, slot, actor_id)
+	else:
+		InventorySync.equip_item(item_id, actor_id)
 
 
 func _status_name_zh(status_id: String) -> String:
@@ -1826,12 +3278,12 @@ func _on_use_pressed() -> void:
 		var slot = str(item_def.get("equip_slot", ""))
 		if slot == "":
 			return
-		if InventorySync.is_equipped(item_id, _get_active_character_id()):
-			InventorySync.unequip(slot, _get_active_character_id())
+		var selected_actor_id := _get_active_character_id()
+		if InventorySync.is_equipped(item_id, selected_actor_id):
+			InventorySync.unequip(slot, selected_actor_id)
 			print("[Unequip] slot=%s" % slot)
 		else:
-			InventorySync.equip_item(item_id, _get_active_character_id())
-			print("[Equip] slot=%s id=%s" % [slot, item_id])
+			_open_equip_target_popup(item_id, item_def)
 		return
 
 func _play_walnut_fail_dialog() -> void:

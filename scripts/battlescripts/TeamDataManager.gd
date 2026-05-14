@@ -11,6 +11,11 @@ var _inner_force_db: Node = InnerForceDBScript.new()
 var _skill_db: Node = SkillDBScript.new()
 var _character_db: Node = CharacterDBScript.new()
 var _job_db: Node = JobDBScript.new()
+const LEVEL_BASE_HP_GAIN := 10
+const LEVEL_BASE_MP_GAIN := 5
+const LEVEL_ACCURACY_GAIN := 3
+const LEVEL_EVASION_GAIN := 3
+const LEVEL_MAIN_STAT_GAIN := 3
 
 # === 所有可用角色（包含未上場） ===
 var all_characters: Dictionary = {
@@ -31,7 +36,7 @@ var all_characters: Dictionary = {
 		"defense_value": 0,
 		"portrait_path": "res://assets/sprites/Liu_Yu/LiuYu_battle.png",
 		"inner_force_id": "qingfeng_jue",
-		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "shipo_xinfa", "tiancan_jue"],
+		"known_inner_force_ids": ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "tiancan_jue"],
 		"inner_force_used_prefixes": [],
 		"str": 5,
 		"agi": 5,
@@ -97,7 +102,7 @@ var all_characters: Dictionary = {
 # === 目前出戰隊伍（用角色 ID 陣列） ===
 var current_team_ids: Array = ["liuyu",]# "shumian", "lieshao"]
 var known_skill_ids_by_actor: Dictionary = {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_tianjingquan", "skill_hawkeye_focus", "skill_zhengxinquan"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus", "skill_zhengxinquan"],
 	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus"],
 }
@@ -266,6 +271,23 @@ func set_inner_force(actor_id: String, force_id: String) -> bool:
 	_apply_inner_force_to_actor(actor)
 	all_characters[actor_id] = actor
 	_sync_inner_force_to_global_state(actor_id, force_id)
+	return true
+
+func learn_inner_force(actor_id: String, force_id: String) -> bool:
+	if actor_id == "" or force_id == "":
+		return false
+	if not all_characters.has(actor_id):
+		return false
+	if not _inner_force_db.is_available_to_actor(force_id, actor_id):
+		return false
+	var actor: Dictionary = all_characters[actor_id]
+	_normalize_character(actor)
+	var known_ids: Array = actor.get("known_inner_force_ids", [])
+	if known_ids.has(force_id):
+		return false
+	known_ids.append(force_id)
+	actor["known_inner_force_ids"] = known_ids
+	all_characters[actor_id] = actor
 	return true
 
 func export_team_state() -> Dictionary:
@@ -478,8 +500,8 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 	if _job_db != null and _job_db.has_method("get_job_def"):
 		job_def = _job_db.get_job_def(job_name)
 
-	var hp_gain = int(job_def.get("hp_per_level", 16))
-	var mp_gain = int(job_def.get("mp_per_level", 8))
+	var hp_gain = LEVEL_BASE_HP_GAIN
+	var mp_gain = LEVEL_BASE_MP_GAIN
 	var atk_gain = int(job_def.get("atk_per_level", 1))
 	var def_gain = int(job_def.get("def_per_level", 1))
 
@@ -488,6 +510,8 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + mp_gain
 	actor["atk"] = int(actor.get("atk", 0)) + atk_gain
 	actor["def"] = int(actor.get("def", 0)) + def_gain
+	actor["accuracy"] = int(actor.get("accuracy", 100)) + LEVEL_ACCURACY_GAIN
+	actor["evasion"] = int(actor.get("evasion", 0)) + LEVEL_EVASION_GAIN
 	actor["hp"] = min(int(actor.get("hp", 0)) + hp_gain, int(actor.get("max_hp", 0)))
 	actor["mp"] = min(int(actor.get("mp", 0)) + mp_gain, int(actor.get("max_mp", 0)))
 
@@ -500,7 +524,7 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 	var cycle_index = int(actor.get("stat_cycle_index", 0))
 	var stat_key = String(stat_cycle[cycle_index % stat_cycle.size()])
 	actor["stat_cycle_index"] = cycle_index + 1
-	actor[stat_key] = int(actor.get(stat_key, 0)) + 1
+	actor[stat_key] = int(actor.get(stat_key, 0)) + LEVEL_MAIN_STAT_GAIN
 
 	var stat_to_atk: Dictionary = {}
 	if typeof(job_def.get("stat_to_atk", null)) == TYPE_DICTIONARY:
@@ -551,7 +575,7 @@ func _resolve_known_force_ids_from_legacy(actor_id: String, legacy_forces: Array
 func _default_known_force_ids(actor_id: String) -> Array:
 	match actor_id:
 		"liuyu":
-			return ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue", "shipo_xinfa"]
+			return ["qingfeng_jue", "liuchen_jue", "wuji_zhenjing", "fuchao_jue"]
 		"lieshao":
 			return ["chi_yang_zhenjing", "po_jun_zhenjing"]
 		"shumian":

@@ -51,7 +51,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	if event_market_choice_observe and event_yuheng_market_melody:
 		if not met:
 			return [
-				{ "text": "「火折子、麻線、香包都有。少俠缺什麼喊一聲。」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "「火折子、細線、香包都有。少俠缺什麼喊一聲。」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
   				{ "text": "劉語塵:「老闆，這琴音聽著心都靜了，不曉得有沒有影響到\n大伙的買心?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "「少俠多慮了!!最近大家脾氣倒是不大，買東西也不殺價了，省心。」", "speaker": 1 },
 				{ "text": "「只不過(小聲說道)…情緒像麻線，扯得太緊會斷，太鬆又散。」", "speaker": 1 },

@@ -5,6 +5,7 @@ var system_menu_instance: Control = null
 
 const GAME_ROOT_PATH := "/root/GameRoot"
 const UI_ROOT_NAME := "UIRoot"
+const UI_ROOT_LAYER := 1000
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -30,7 +31,7 @@ func _open_system_menu():
 	var parent := _resolve_ui_parent()
 	parent.add_child(system_menu_instance)
 	await get_tree().process_frame
-	_center_menu_on_viewport(system_menu_instance)
+	_align_menu_to_viewport(system_menu_instance)
 	system_menu_instance.set_process_unhandled_input(true)
 	system_menu_instance.grab_focus()
 
@@ -52,20 +53,19 @@ func _resolve_ui_parent() -> Node:
 		if ui_root == null:
 			ui_root = CanvasLayer.new()
 			ui_root.name = UI_ROOT_NAME
+			(ui_root as CanvasLayer).layer = UI_ROOT_LAYER
 			game_root.add_child(ui_root)
+		elif ui_root is CanvasLayer:
+			(ui_root as CanvasLayer).layer = UI_ROOT_LAYER
 		return ui_root
 	return get_tree().root
 
-func _center_menu_on_viewport(menu: Control) -> void:
+func _align_menu_to_viewport(menu: Control) -> void:
 	if menu == null:
 		return
 
 	menu.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
-	if menu.size == Vector2.ZERO:
-		menu.size = menu.get_combined_minimum_size()
-
-	var vp_size: Vector2 = get_viewport().get_visible_rect().size
-	menu.position = (vp_size - menu.size) * 0.5
+	menu.position = Vector2.ZERO
 
 func close_menu_if_open() -> void:
 	_close_system_menu()

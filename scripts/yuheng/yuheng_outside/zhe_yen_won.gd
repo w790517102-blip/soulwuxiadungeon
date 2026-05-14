@@ -9,6 +9,7 @@ extends CharacterBody2D
 var dialog_manager: Node = null
 var can_interact := false
 var dialog_lines: Array = []
+var _mark_flag_after_close := false
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -79,7 +80,11 @@ func _unhandled_input(event):
 		face_towards(player_pos)
 		if dialog_lines.size() > 0:
 			dialog_manager.show_dialog_sequence(dialog_lines, self)
+			_mark_flag_after_close = not bool(GlobalState.get_flag("met_zhe_yen_won"))
 	if dialog_manager.dialog_active:
 		return
 func reset_dialog_state():
+	if _mark_flag_after_close:
+		GlobalState.set_flag("met_zhe_yen_won", true)
+		_mark_flag_after_close = false
 	get_node("/root/GameRoot/LiuYu").can_move = true

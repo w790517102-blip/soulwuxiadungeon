@@ -78,7 +78,7 @@ func _compose_lines() -> Array:
 	var main_stage := _get_main_stage_safely()
 	var has_gossip := GlobalState.get_flag("triggered_zuoyin_gossip_summary")
 	var inn_stage := int(SideQuestManager.get_quest("talk_to_yuheng_inn_boss").get("stage", 0))
-	var has_inn_info := inn_stage >= 2
+	var has_inn_info := inn_stage >= 1
 	var already_met := GlobalState.get_flag("event_tea_house_first_met")
 
 	# ❶ stage==1：第一次見面（未遇過）→ 初見沉默；已遇過 → 簡短沉默迴圈

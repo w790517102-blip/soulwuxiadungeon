@@ -16,7 +16,7 @@ const JOBS := {
 		"atk_per_level": 1,
 		"def_per_level": 0,
 		"stat_cycle": ["int", "str", "int", "agi", "int", "con", "int", "luck"],
-		"stat_to_atk": {"int": 3},
+		"stat_to_atk": {"int": 2, "luck": 1},
 	},
 	"樂師": {
 		"hp_per_level": 16,
@@ -24,7 +24,7 @@ const JOBS := {
 		"atk_per_level": 1,
 		"def_per_level": 1,
 		"stat_cycle": ["agi", "str", "agi", "int", "agi", "con", "agi", "luck"],
-		"stat_to_atk": {"agi": 3},
+		"stat_to_atk": {"agi": 2, "luck": 1},
 	},
 }
 

@@ -181,6 +181,30 @@ const ENEMY_DEFS := {
 			{"skill_id": "skill_enemy_sparring_palm", "category": "attack", "weight": 8, "cd_turns": 0, "mp_cost": 0, "target": "enemy_single"}
 		],
 		"archetype": "江湖人士"
+	},
+	"yuheng_old_fighter": {
+		"display_name": "演武老翁",
+		"hp": 120,
+		"max_hp": 120,
+		"mp": 20,
+		"atk": 20,
+		"def": 8,
+		"speed": 9,
+		"element": "剛",
+		"exp": 18,
+		"gold": {"chance": 0.0, "min": 0, "max": 0},
+		"drops": [],
+		"ai_profile": "old_fighter_sparring",
+		"skills_mode": "weighted",
+		"skills": [
+			{"skill_id": "skill_enemy_old_fighter_probe_palm", "category": "attack", "weight": 12, "cd_turns": 0, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_old_fighter_sweep_step", "category": "debuff", "weight": 5, "cd_turns": 2, "mp_cost": 0, "target": "enemy_single"},
+			{"skill_id": "skill_enemy_old_fighter_stubborn_fist", "category": "attack", "weight": 8, "cd_turns": 2, "mp_cost": 0, "target": "enemy_single"}
+		],
+		"archetype": "江湖人士",
+		"accuracy": 98,
+		"evasion": 3,
+		"crit_rate_bonus": 0.01
 	}
 }
 

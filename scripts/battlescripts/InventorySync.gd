@@ -30,7 +30,8 @@ var party_inventory: Array = [
 const NEW_GAME_START_GOLD: int = 1000
 var party_gold: int = NEW_GAME_START_GOLD
 var equipped_by_actor: Dictionary = {}
-const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "speed", "accuracy", "evasion", "crit_rate_bonus"]
+var ever_owned_item_ids: Dictionary = {}
+const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "accuracy", "evasion", "crit_rate_bonus"]
 const EQUIP_SLOTS := [
 	"weapon_1",
 	"weapon_2",
@@ -42,11 +43,15 @@ const EQUIP_SLOTS := [
 	"accessory_2",
 ]
 
+func _ready() -> void:
+	_rebuild_ever_owned_from_inventory()
+
 func export_inventory_state() -> Dictionary:
 	return {
 		"party_inventory": party_inventory.duplicate(true),
 		"party_gold": party_gold,
 		"equipped_by_actor": equipped_by_actor.duplicate(true),
+		"ever_owned_item_ids": ever_owned_item_ids.duplicate(true),
 	}
 
 func import_inventory_state(data: Dictionary) -> void:
@@ -59,9 +64,17 @@ func import_inventory_state(data: Dictionary) -> void:
 	if typeof(data.get("equipped_by_actor", null)) == TYPE_DICTIONARY:
 		equipped_by_actor = (data.get("equipped_by_actor", {}) as Dictionary).duplicate(true)
 		_migrate_equipped_data()
+	if typeof(data.get("ever_owned_item_ids", null)) == TYPE_DICTIONARY:
+		ever_owned_item_ids = (data.get("ever_owned_item_ids", {}) as Dictionary).duplicate(true)
+		_merge_ever_owned_from_runtime_data()
+	else:
+		_rebuild_ever_owned_from_inventory()
 	inventory_changed.emit()
 	gold_changed.emit(party_gold)
 	equipment_changed.emit()
+
+func has_ever_owned(item_id: String) -> bool:
+	return item_id != "" and bool(ever_owned_item_ids.get(item_id, false))
 
 func get_gold() -> int:
 	return party_gold
@@ -89,7 +102,21 @@ func get_item_by_id(id: String) -> Dictionary:
 			return item
 	return {}
 
-func consume_item(id: String, amount: int = 1) -> void:
+func get_item_count(id: String) -> int:
+	if id == "":
+		return 0
+	for entry in party_inventory:
+		if str(entry.get("id", "")) == id:
+			return int(entry.get("count", 0))
+	return 0
+
+func has_item(item_id: String, amount: int = 1) -> bool:
+	return get_item_count(item_id) >= max(amount, 1)
+
+func has_item_stack(item_id: String, amount: int = 1) -> bool:
+	return has_item(item_id, amount)
+
+func consume_item(id: String, amount: int = 1, show_message: bool = true) -> void:
 	if amount <= 0:
 		return
 	for entry in party_inventory:
@@ -100,11 +127,15 @@ func consume_item(id: String, amount: int = 1) -> void:
 			else:
 				entry["count"] = new_count
 			inventory_changed.emit()
+			if show_message:
+				_notify_item_delta(id, -amount)
 			return
 
-func add_item_stack(id: String, amount: int = 1) -> void:
+func add_item_stack(id: String, amount: int = 1, show_message: bool = true) -> void:
 	if _add_item_stack_internal(id, amount):
 		inventory_changed.emit()
+		if show_message:
+			_notify_item_delta(id, amount)
 
 func equip_item(item_id: String, actor_id: String = "") -> void:
 	var item_def := ItemDB.get_def(item_id)
@@ -144,7 +175,7 @@ func equip_item_to_slot(item_id: String, slot: String, actor_id: String = "") ->
 	if current_id != "":
 		_add_item_stack_internal(current_id, 1)
 	equipped[slot] = item_id
-	consume_item(item_id, 1)
+	consume_item(item_id, 1, false)
 	equipment_changed.emit()
 
 func unequip(slot: String, actor_id: String = "") -> void:
@@ -186,7 +217,7 @@ func get_equipment_stat_bonus(actor_id: String = "") -> Dictionary:
 		var stats: Dictionary = item_def.get("stats", {})
 		for key in STAT_KEYS:
 			if stats.has(key):
-				if key == "crit_rate_bonus":
+				if key in ["crit_rate_bonus", "max_hp_pct", "max_mp_pct"]:
 					bonus[key] = float(bonus.get(key, 0.0)) + float(stats.get(key, 0.0))
 				else:
 					bonus[key] = int(bonus.get(key, 0)) + int(stats.get(key, 0))
@@ -239,12 +270,36 @@ func _resolve_actor_id(actor_id: String) -> String:
 func _add_item_stack_internal(id: String, amount: int) -> bool:
 	if id == "" or amount <= 0:
 		return false
+	ever_owned_item_ids[id] = true
 	for entry in party_inventory:
 		if entry.get("id") == id:
 			entry["count"] = int(entry.get("count", 0)) + amount
 			return true
 	party_inventory.append({"id": id, "count": amount})
 	return true
+
+func _rebuild_ever_owned_from_inventory() -> void:
+	ever_owned_item_ids.clear()
+	_merge_ever_owned_from_runtime_data()
+
+func _merge_ever_owned_from_runtime_data() -> void:
+	for entry in party_inventory:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var item_id := str(entry.get("id", ""))
+		if item_id == "":
+			continue
+		ever_owned_item_ids[item_id] = true
+	for actor_id_any in equipped_by_actor.keys():
+		var equipped_any = equipped_by_actor[actor_id_any]
+		if typeof(equipped_any) != TYPE_DICTIONARY:
+			continue
+		var equipped: Dictionary = equipped_any
+		for slot in equipped.keys():
+			var equipped_id := str(equipped.get(slot, ""))
+			if equipped_id == "":
+				continue
+			ever_owned_item_ids[equipped_id] = true
 
 func apply_battle_result(battle_result: Dictionary) -> void:
 	if battle_result.is_empty():
@@ -315,20 +370,24 @@ func _make_item_list(source_inventory: Array) -> Array:
 		items.append(item)
 	return items
 
-func spend_gold(amount: int) -> bool:
+func spend_gold(amount: int, show_message: bool = true) -> bool:
 	if amount <= 0:
 		return true
 	if party_gold < amount:
 		return false
 	party_gold -= amount
 	gold_changed.emit(party_gold)
+	if show_message:
+		_notify_gold_delta(-amount)
 	return true
 
-func add_gold(amount: int) -> void:
+func add_gold(amount: int, show_message: bool = true) -> void:
 	if amount == 0:
 		return
 	party_gold += amount
 	gold_changed.emit(party_gold)
+	if show_message:
+		_notify_gold_delta(amount)
 
 
 func is_item_equipped_anywhere(item_id: String) -> bool:
@@ -342,3 +401,29 @@ func is_item_equipped_anywhere(item_id: String) -> bool:
 			if str((equipped as Dictionary).get(slot, "")) == item_id:
 				return true
 	return false
+
+func _notify_item_delta(item_id: String, delta: int) -> void:
+	if delta == 0 or item_id == "":
+		return
+	var toast = get_node_or_null("/root/MessageToast")
+	if toast == null or not toast.has_method("push_message"):
+		return
+	var item_def = ItemDB.get_def(item_id)
+	var item_name = str(item_def.get("name", item_id))
+	var amount = abs(delta)
+	if delta > 0:
+		toast.push_message("獲得：%s x%d" % [item_name, amount])
+	else:
+		toast.push_message("失去：%s x%d" % [item_name, amount])
+
+func _notify_gold_delta(delta: int) -> void:
+	if delta == 0:
+		return
+	var toast = get_node_or_null("/root/MessageToast")
+	if toast == null or not toast.has_method("push_message"):
+		return
+	var amount = abs(delta)
+	if delta > 0:
+		toast.push_message("獲得：%d 文" % amount)
+	else:
+		toast.push_message("失去：%d 文" % amount)
