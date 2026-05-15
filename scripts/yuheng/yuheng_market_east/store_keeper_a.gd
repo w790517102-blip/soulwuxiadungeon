@@ -1,40 +1,33 @@
-
 extends CharacterBody2D
 
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/empty.png"
 @export var speaker_id := 1
-@export var wander_range := 240
-@export var wander_interval := 1.5
-@export var wander_speed := 60.0
-@export var use_path_patrol := true
+@export var use_path_patrol := false
 @export var path_node: NodePath
 
 @onready var animated_sprite := $AnimatedSprite2D
 var dialog_manager: Node = null
 var can_interact := false
 var dialog_lines: Array = []
-var wander_target := Vector2.ZERO
-var wander_timer := 0.0
-var last_direction := Vector2.DOWN
-var last_idle_direction := Vector2.DOWN
 var is_talking: bool = false
-var has_recently_talked: bool = false
-var patrol_progress := 0.0
-var path_ref: PathFollow2D = null
-var previous_position: Vector2 = Vector2.ZERO
-var _mark_flag_after_close := false  # 對話結束時才落旗
+var _mark_flag_after_close := false
+var _mark_melody_flag_after_close := false
+var _interaction_flow_active := false
+var _unlock_on_next_reset := false
+
+const QUEST_ID := "yuheng_green_beans"
+const QUEST_TITLE := "一把四季豆"
+const QUEST_STAGE_2_DESC := "將四季豆帶回給秋嬸。"
+const BEAN_RAW_ITEM_ID := "quest_green_beans_raw"
+const BEAN_FRIED_ITEM_ID := "quest_green_beans_fried"
+const FLAG_TALKED_MELODY_WITH_AMAO := "talked_melody_with_amao"
+signal bean_purchase_flow_finished
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
 	if dialog_manager == null:
 		push_warning("[NPC] DialogManager 沒抓到！")
-
-	if use_path_patrol:
-		path_ref = get_node_or_null(path_node)
-		if path_ref == null:
-			push_warning("[NPC] PathFollow2D 沒有設定或找不到：" + str(path_node))
-	previous_position = global_position
 
 	var main_stage := _get_main_stage_safely()
 	dialog_lines = _build_lines_for_stage(main_stage)
@@ -43,53 +36,36 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	var met := GlobalState.get_flag("met_yuheng_store_keeper_a")
 	var event_market_choice_observe := GlobalState.get_flag("event_market_choice_observe")
 	var event_yuheng_market_melody := GlobalState.get_flag("event_yuheng_market_melody")
-	# ❶ 主線前期：首輪完整版 / 其後走精簡循環
-	if event_market_choice_observe and event_yuheng_market_melody:
-		if not met:
-			return [
-				{ "text": "「青菜新鮮，今早摘的！少俠要不要瞧一瞧？」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-  				{ "text": "劉語塵：「老闆，這街沒有想像中熱鬧，倒是琴聲不小」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「哎呀~拜那琴聲所賜，大家的脾氣都小了些，吵不太起來，\n清淨的很」", "speaker": 1 },
-				{ "text": "「但那琴聲與其說是清幽，不如說比較像是…把心火壓住，\n不能說全好…」", "speaker": 1 },
-				{ "text": "「罷了，多想也是煩惱，如何？少俠要不要來點新鮮的青菜？\n尤其是韭菜，左飲最好這味」", "speaker": 1 },
-]
+	if event_market_choice_observe and event_yuheng_market_melody and not met:
+		return [
+			{ "text": "「青菜新鮮，今早摘的！少俠要不要瞧一瞧？」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「老闆，這街沒有想像中熱鬧，倒是琴聲不小」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「哎呀~拜那琴聲所賜，大家的脾氣都小了些，吵不太起來，清淨的很」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「但那琴聲與其說是清幽，不如說比較像是…把心火壓住，不能說全好…」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「罷了，多想也是煩惱，如何？少俠要不要來點新鮮的青菜？尤其是韭菜，左飲最好這味」", "speaker": 1, "portrait": portrait_path },
+		]
 	if main_stage <= 2:
 		if event_market_choice_observe and event_yuheng_market_melody and met:
 			return [
-				{ "text": "「少俠要些韭菜嗎？左飲以前常買」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "說:「韭菜是最不怕剪斷的菜，剪一茬又長一茬，正像我等\n江湖客之氣節。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「少俠，買菜啊？咱家的菜新鮮得很，早上剛挑來的。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「要青菜、蘿蔔、茄子，還是四季豆？別看我攤小，火候跟刀工都有講究！」", "speaker": 1, "portrait": portrait_path },
 			]
-		else:
-			return [
-				{ "text": "「咱的菜鮮的很，尤其是韭菜，左飲最好這味」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "說:「韭菜是最不怕剪斷的菜，剪一茬又長一茬，正像我等\n江湖客之氣節。」", "speaker": 1, "portrait": portrait_path },
-			]
-	# ❷ 主線中期：對琴音的觀感（循環）
-	elif main_stage <= 6:
+		return [
+			{ "text": "「咱的菜鮮的很，尤其是韭菜，左飲最好這味」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「韭菜是最不怕剪斷的菜，剪一茬又長一茬，正像我等江湖客之氣節。」", "speaker": 1, "portrait": portrait_path },
+		]
+	if main_stage <= 6:
 		return [
 			{ "text": "琴聲善，善亦有度。善若過度，亦成執。", "speaker": 1, "portrait": portrait_path },
 			{ "text": "此地群情雖平，卻像風停於谷，久之易悶。", "speaker": 1, "portrait": portrait_path },
 		]
+	return [
+		{ "text": "白鳶橫天，像給谷口開了一道風眼。", "speaker": 1, "portrait": portrait_path },
+		{ "text": "願君持衡，弦不傷人，心不傷己。", "speaker": 1, "portrait": portrait_path },
+	]
 
-	# ❸ 主線後期：拿到白鳶橫天之後（循環）
-	else:
-		return [
-			{ "text": "白鳶橫天，像給谷口開了一道風眼。", "speaker": 1, "portrait": portrait_path },
-			{ "text": "願君持衡，弦不傷人，心不傷己。", "speaker": 1, "portrait": portrait_path },
-		]
-
-func _process(delta):
+func _process(_delta):
 	z_index = int(global_position.y + z_index_offset)
-
-func _play_directional_anim(dir: Vector2):
-	if dir.length() < 0.1:
-		return
-	last_direction = dir
-	var anim_name = _get_anim_by_vector(dir, "walk")
-	if animated_sprite.sprite_frames.has_animation(anim_name):
-		animated_sprite.play(anim_name)
-	else:
-		animated_sprite.play("idle_down")
 
 func _get_anim_by_vector(dir: Vector2, prefix: String) -> String:
 	var angle = dir.angle()
@@ -112,8 +88,6 @@ func _get_anim_by_vector(dir: Vector2, prefix: String) -> String:
 
 func face_towards(target_position: Vector2) -> void:
 	var direction = (target_position - global_position).normalized()
-	last_direction = direction
-	last_idle_direction = direction
 	var anim_name = _get_anim_by_vector(direction, "idle")
 	if animated_sprite.sprite_frames.has_animation(anim_name):
 		animated_sprite.play(anim_name)
@@ -134,28 +108,145 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
 		if is_talking:
 			return
-		is_talking = true
-
+		_begin_interaction_flow()
 		var liuyu := get_node("/root/GameRoot/LiuYu")
-		liuyu.can_move = false
 		face_towards(liuyu.global_position)
-
-		# ✅ 這行是關鍵：在互動瞬間依目前旗標/主線重新組台詞
-		var main_stage := _get_main_stage_safely()
-		dialog_lines = _build_lines_for_stage(main_stage)
-
-		dialog_manager.show_dialog_sequence(dialog_lines, self)
-		# ✅ 在 reset_dialog_state 裡落旗與重建台詞
+		_run_store_keeper_interaction()
 		_mark_flag_after_close = not GlobalState.get_flag("met_yuheng_store_keeper_a")
+		var met := GlobalState.get_flag("met_yuheng_store_keeper_a")
+		var event_market_choice_observe := GlobalState.get_flag("event_market_choice_observe")
+		var event_yuheng_market_melody := GlobalState.get_flag("event_yuheng_market_melody")
+		_mark_melody_flag_after_close = (not met) and event_market_choice_observe and event_yuheng_market_melody
 
 func reset_dialog_state():
-	get_node("/root/GameRoot/LiuYu").can_move = true
-	is_talking = false
+	if _interaction_flow_active and not _unlock_on_next_reset:
+		is_talking = true
+		return
+	_end_interaction_flow()
 	if _mark_flag_after_close:
 		GlobalState.set_flag("met_yuheng_store_keeper_a", true)
 		_mark_flag_after_close = false
-		# 旗標落地後，重建成「精簡循環版」
-		dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
+	if _mark_melody_flag_after_close:
+		GlobalState.set_flag(FLAG_TALKED_MELODY_WITH_AMAO, true)
+		_mark_melody_flag_after_close = false
+
+func _run_store_keeper_interaction() -> void:
+	await _handle_store_keeper_interact()
+	if _interaction_flow_active:
+		_end_interaction_flow()
+
+func _handle_store_keeper_interact() -> void:
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	if not quest.has("quest_id"):
+		await _show_normal_dialog(false)
+		return
+	if bool(quest.get("is_finished", false)):
+		await _show_normal_dialog(true)
+		return
+	var stage := int(quest.get("stage", 0))
+	if stage <= 1:
+		await _start_green_beans_purchase_flow()
+		return
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
+		{ "text": "「少俠，豆子帶回去給秋嬸了嗎？她剛剛還在廣場邊打轉呢。」", "speaker": 1, "portrait": portrait_path },
+	])
+
+func _show_normal_dialog(with_quest_epilogue: bool) -> void:
+	dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
+	var lines := dialog_lines.duplicate(true)
+	if with_quest_epilogue:
+		lines.append({
+			"text": "「少俠，又來買菜？生熟要分清啊。菜是如此，人心也是如此。半熟不熟的，最容易吃壞肚子。」",
+			"speaker": 1,
+			"portrait": portrait_path,
+		})
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait(lines)
+
+func _start_green_beans_purchase_flow() -> void:
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
+		{ "text": "劉語塵：「老闆，我想買一把四季豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「唷，少俠識貨！咱家的四季豆脆甜得很，生的拿回去清炒，熟的回去拌蒜鹽，都好吃。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「不過我先說清楚，四季豆這東西可不能馬虎。我這邊也有先炸過一遍的熟豆。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「你要買生的，還是炸過一遍的熟豆？」", "speaker": 1, "portrait": portrait_path },
+	])
+	dialog_manager.show_choice([
+		{ "text": "買生的四季豆", "callback": Callable(self, "_buy_raw_green_beans") },
+		{ "text": "買炸過一遍的熟豆", "callback": Callable(self, "_buy_fried_green_beans") },
+	])
+	await bean_purchase_flow_finished
+
+func _buy_raw_green_beans() -> void:
+	dialog_manager.choice_box.hide_choices()
+	_unlock_on_next_reset = false
+	await _play_sequence_and_wait([
+		{ "text": "劉語塵：「給我一把生的四季豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「好嘞！生的最青脆，回去記得煮熟，別貪那一口爽脆。來，少俠拿好。」", "speaker": 1, "portrait": portrait_path },
+	])
+	if InventorySync:
+		InventorySync.add_item_stack(BEAN_RAW_ITEM_ID, 1)
+	_set_green_beans_quest_purchase("raw")
+	bean_purchase_flow_finished.emit()
+
+func _buy_fried_green_beans() -> void:
+	dialog_manager.choice_box.hide_choices()
+	_unlock_on_next_reset = false
+	var talked_melody := GlobalState.get_flag(FLAG_TALKED_MELODY_WITH_AMAO)
+	var lines: Array = [
+		{ "text": "劉語塵：「給我一把炸過一遍的熟豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「好選擇！這豆剛炸好沒多久，回去撒點蒜鹽，再滴兩滴醬油，配飯正香。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「來，少俠拿好，別讓琴聲把香味都吹散了。」", "speaker": 1, "portrait": portrait_path },
+	]
+	if not talked_melody:
+		lines.append_array([
+			{ "text": "劉語塵：「你也察覺琴聲有異？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「嗐，做買賣的人哪能沒察覺？只是察覺歸察覺，日子還是要過。菜要賣，飯要吃，客人問價還得笑。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「不然呢？難道我對著四季豆嘆氣，它就能自己熟啊？」", "speaker": 1, "portrait": portrait_path },
+		])
+		GlobalState.set_flag(FLAG_TALKED_MELODY_WITH_AMAO, true)
+	await _play_sequence_and_wait(lines)
+	if InventorySync:
+		InventorySync.add_item_stack(BEAN_FRIED_ITEM_ID, 1)
+	_set_green_beans_quest_purchase("fried")
+	bean_purchase_flow_finished.emit()
+
+func _play_sequence_and_wait(lines: Array) -> void:
+	if dialog_manager == null:
+		return
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_sequence_finished
+
+func _begin_interaction_flow() -> void:
+	_interaction_flow_active = true
+	_unlock_on_next_reset = false
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = false
+	is_talking = true
+
+func _end_interaction_flow() -> void:
+	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if liuyu:
+		liuyu.can_move = true
+	is_talking = false
+	_interaction_flow_active = false
+	_unlock_on_next_reset = false
+
+func _set_green_beans_quest_purchase(bean_type: String) -> void:
+	var quest := SideQuestManager.get_quest(QUEST_ID)
+	if quest.is_empty():
+		return
+	quest["title"] = QUEST_TITLE
+	quest["description"] = QUEST_STAGE_2_DESC
+	quest["objective"] = QUEST_STAGE_2_DESC
+	quest["current_objective"] = QUEST_STAGE_2_DESC
+	quest["stage"] = 2
+	quest["bean_type"] = bean_type
+	quest["notes"] = ["已向阿茂買到四季豆，該回廣場找秋嬸。"]
+	quest["note"] = "已向阿茂買到四季豆，該回廣場找秋嬸。"
+	SideQuestManager.side_quests[QUEST_ID] = quest
 
 func _get_main_stage_safely() -> int:
 	var qm := get_node_or_null("/root/QuestManager")

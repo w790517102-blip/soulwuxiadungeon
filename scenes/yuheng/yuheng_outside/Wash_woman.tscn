@@ -1,6 +1,6 @@
 [gd_scene load_steps=31 format=3 uid="uid://e1shc750jdva"]
 
-[ext_resource type="Script" uid="uid://bpiv3yp0c42x0" path="res://scripts/yuheng/yuheng_outside/wash_woman.gd" id="1_qq1y7"]
+[ext_resource type="Script" uid="uid://k0xtnnaac50i" path="res://scripts/yuheng/yuheng_market_east/running_woman.gd" id="1_qq1y7"]
 [ext_resource type="Texture2D" uid="uid://d0k7tc4lpxt1y" path="res://assets/sprites/NPC/Yuheng/NPC1.png" id="2_4pdbk"]
 [ext_resource type="Texture2D" uid="uid://cl2ps4pctyis4" path="res://assets/sprites/NPC/Yuheng/NPC1-2.png" id="3_mdx3x"]
 [ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="3_qq1y7"]

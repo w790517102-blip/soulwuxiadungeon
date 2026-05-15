@@ -231,6 +231,7 @@ func start_battle(context: Dictionary) -> void:
 		e["is_enemy"] = true
 		if not e.has("ui_index"):
 			e["ui_index"] = i
+		_mark_enemy_lore_encounter(e)
 		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 
 	if enemy_ai and enemy_ai.has_method("begin_battle"):
@@ -246,6 +247,14 @@ func start_battle(context: Dictionary) -> void:
 
 	await _run_battle_opening_sequence(context)
 	turn_manager.start_battle(player_party, enemy_party)
+
+func _mark_enemy_lore_encounter(enemy: Dictionary) -> void:
+	if enemy.is_empty() or GlobalState == null or not GlobalState.has_method("set_flag"):
+		return
+	var enemy_id := String(enemy.get("id", "")).strip_edges()
+	if enemy_id == "":
+		return
+	GlobalState.set_flag("lore_enemy_%s" % enemy_id, true)
 
 func _play_battle_bgm_from_context(context: Dictionary) -> void:
 	if battle_bgm_player == null:
@@ -490,8 +499,12 @@ func _apply_equipment_bonuses() -> void:
 		var bonus_crit_rate := float(bonus.get("crit_rate_bonus", 0.0))
 		var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(force_bonus.get("max_hp", 0))
 		var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(force_bonus.get("max_mp", 0))
-		var max_hp := int(p.get("max_hp", p.get("hp", 0))) + bonus_max_hp
-		var max_mp := int(p.get("max_mp", p.get("mp", 0))) + bonus_max_mp
+		var hp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "hp")
+		var mp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "mp")
+		var base_max_hp := int(p.get("max_hp", p.get("hp", 0)))
+		var base_max_mp := int(p.get("max_mp", p.get("mp", 0)))
+		var max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
+		var max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
 		p["atk"] = int(p.get("atk", 0)) + bonus_atk
 		p["def"] = int(p.get("def", 0)) + bonus_def
 		p["speed"] = int(p.get("speed", 0)) + bonus_speed
@@ -502,6 +515,32 @@ func _apply_equipment_bonuses() -> void:
 		p["max_mp"] = max_mp
 		p["hp"] = min(int(p.get("hp", 0)), max_hp)
 		p["mp"] = min(int(p.get("mp", 0)), max_mp)
+
+func _resource_multiplier_for_actor(actor: Dictionary, equip_bonus: Dictionary, force_bonus: Dictionary, resource_key: String) -> float:
+	var attr_pct := 0.0
+	if resource_key == "hp":
+		var effective_con := int(actor.get("con", 0)) + int(equip_bonus.get("con", 0)) + int(force_bonus.get("con", 0))
+		attr_pct = float(max(0, effective_con)) * 0.01
+	else:
+		var effective_int := int(actor.get("int", 0)) + int(equip_bonus.get("int", 0)) + int(force_bonus.get("int", 0))
+		attr_pct = float(max(0, effective_int)) * 0.01
+	var equip_pct := float(equip_bonus.get("max_%s_pct" % resource_key, 0.0))
+	var force_pct := float(force_bonus.get("max_%s_pct" % resource_key, 0.0))
+	var actor_pct := _resource_pct_from_actor(actor, resource_key)
+	return max(0.1, 1.0 + attr_pct + equip_pct + force_pct + actor_pct)
+
+func _resource_pct_from_actor(actor: Dictionary, resource_key: String) -> float:
+	var keys: Array = []
+	if resource_key == "hp":
+		keys = ["max_hp_pct_bonus", "hp_pct_bonus", "item_max_hp_pct_bonus", "inner_force_max_hp_pct_bonus"]
+	else:
+		keys = ["max_mp_pct_bonus", "mp_pct_bonus", "item_max_mp_pct_bonus", "inner_force_max_mp_pct_bonus"]
+	var total := 0.0
+	for key_any in keys:
+		var value = actor.get(String(key_any), null)
+		if typeof(value) in [TYPE_INT, TYPE_FLOAT]:
+			total += float(value)
+	return total
 
 func _sync_actor_weapon_types() -> void:
 	if InventorySync == null:
@@ -664,7 +703,9 @@ func _emit_enemy_spoken_line(enemy: Dictionary, text: String) -> void:
 	if text == "":
 		return
 	var enemy_id := String(enemy.get("id", ""))
-	if battle_ui != null and battle_ui.has_method("show_actor_line") and enemy_id != "":
+	if battle_ui != null and battle_ui.has_method("show_actor_line_for_actor"):
+		battle_ui.show_actor_line_for_actor(enemy, text)
+	elif battle_ui != null and battle_ui.has_method("show_actor_line") and enemy_id != "":
 		battle_ui.show_actor_line(enemy_id, text)
 	else:
 		_log(text)
