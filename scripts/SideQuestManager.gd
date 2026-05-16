@@ -3,6 +3,11 @@ extends Node
 # 支線任務容器：quest_id : Dictionary
 var side_quests := {}
 
+func _toast(text: String) -> void:
+	var toast = get_node_or_null("/root/MessageToast")
+	if toast and toast.has_method("push_message"):
+		toast.push_message(text)
+
 # 註冊任務：初始化階段與完成狀態
 func register_quest(id: String, data: Dictionary) -> void:
 	if GlobalState and GlobalState.get("is_loading") == true:
@@ -14,6 +19,9 @@ func register_quest(id: String, data: Dictionary) -> void:
 		side_quests[id]["stage"] = 0
 		side_quests[id]["is_finished"] = false
 		print("[支線] 已註冊任務：%s" % id)
+		var quest_title = str(side_quests[id].get("title", "")).strip_edges()
+		if quest_title != "":
+			_toast("已新增支線任務")
 
 # 推進任務階段
 func advance_quest(id: String, new_stage: int) -> void:
@@ -26,6 +34,7 @@ func complete_quest(id: String) -> void:
 	if side_quests.has(id):
 		side_quests[id]["is_finished"] = true
 		print("[支線] 任務 %s 已完成" % id)
+		_toast("已完成支線任務")
 
 # 取得任務資料
 func get_quest(id: String) -> Dictionary:
@@ -51,3 +60,6 @@ func load_all(saved_data: Dictionary) -> void:
 
 func reset_all() -> void:
 	side_quests.clear()
+
+func notify_objective_updated(_text: String) -> void:
+	pass

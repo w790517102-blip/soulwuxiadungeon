@@ -71,8 +71,7 @@ func change_map_to(path: String):
 			GlobalState.remove_meta("return_encounter_cooldown")
 		if GlobalState.has_meta("return_map_path"):
 			GlobalState.remove_meta("return_map_path")
-		if GlobalState.has_meta("pending_battle_result"):
-			GlobalState.remove_meta("pending_battle_result")
+		# 保留 pending_battle_result 給地圖腳本（例如切磋 NPC）自行消化
 
 		await get_tree().process_frame
 		await get_tree().process_frame

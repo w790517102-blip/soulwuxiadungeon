@@ -278,7 +278,7 @@ func _build_book_reading_lamp_whisper(actor_key: String) -> Array:
 				{ "text": "   一語若能出，未必驚天下。\n   只怕無人問，輕輕也作啞。", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "(你將那幾行字重看了一遍。)", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "劉語塵：「……奇怪，明明只是幾句短詩，卻像有人替我把\n那口氣慢慢順出來了。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
-				{ "text": "劉語塵：「原來有些說不出口，不是因為它不夠重；\n恰恰是因為它太輕、太貼近心口，一碰就散。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
+				{ "text": "劉語塵：「原來有些話無法言喻，不是因為它無關緊要；\n恰恰是因為它太輕、太貼近心頭，一開口便容易誤認為矯情。」", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "劉語塵靜了一會，將書頁輕輕合上。", "speaker": 2, "portrait": LIU_YU_BOOK_PORTRAIT },
 				{ "text": "你對那些難以言明的細微情緒，似乎看得更清楚了一些。\n【智慧 +5】", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
 			]

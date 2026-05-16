@@ -46,6 +46,7 @@ const SHOPS := {
 		"name": "雜貨攤",
 		"items": [
 			{"item_id": "misc_tinderbox", "price": 15, "stock": -1},
+			{"item_id": "item_clean_charcoal", "price": 14, "stock": -1},
 			{"item_id": "misc_hemp_twine", "price": 10, "stock": -1},
 			{"item_id": "misc_small_rope", "price": 18, "stock": -1},
 			{"item_id": "misc_sachet", "price": 20, "stock": -1},
