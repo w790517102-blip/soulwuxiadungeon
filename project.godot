@@ -29,6 +29,14 @@ TeamData="*res://scripts/battlescripts/TeamDataManager.gd"
 InventorySync="*res://scripts/battlescripts/InventorySync.gd"
 MessageToast="*res://scripts/UIMessageToast.gd"
 
+[display]
+
+window/size/mode=3
+window/size/initial_position_type=0
+window/size/resizable=false
+window/size/borderless=true
+window/stretch/mode="viewport"
+
 [input]
 
 move_up={

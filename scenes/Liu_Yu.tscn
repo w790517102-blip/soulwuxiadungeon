@@ -8,8 +8,8 @@
 [ext_resource type="Texture2D" uid="uid://djben8k532ynw" path="res://assets/sprites/Liu_Yu/Liu_Yu_walk2.png" id="4_ysy5h"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ysy5h"]
-radius = 28.0
-height = 168.0
+radius = 16.6125
+height = 107.909
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_k7106"]
 atlas = ExtResource("1_2l3np")
@@ -622,8 +622,8 @@ texture = ExtResource("2_qyo6n")
 metadata/_edit_use_anchors_ = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(6.10352e-05, 155)
-rotation = 1.57952
+position = Vector2(0, 168.965)
+rotation = 1.63014
 shape = SubResource("CapsuleShape2D_ysy5h")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]

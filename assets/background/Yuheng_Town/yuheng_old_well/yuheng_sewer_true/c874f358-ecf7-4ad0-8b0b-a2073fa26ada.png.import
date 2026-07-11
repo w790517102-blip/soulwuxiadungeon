@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cmql47a2tl6mp"
-path="res://.godot/imported/lie_shao.jpg-1e5aa82c07991ecb477d3cbad0404be7.ctex"
+uid="uid://baixpd1ywrlxa"
+path="res://.godot/imported/c874f358-ecf7-4ad0-8b0b-a2073fa26ada.png-0b4ea833911b76a0abcc1d04ba900fb7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/NPC/LieFong/lie_shao.jpg"
-dest_files=["res://.godot/imported/lie_shao.jpg-1e5aa82c07991ecb477d3cbad0404be7.ctex"]
+source_file="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_true/c874f358-ecf7-4ad0-8b0b-a2073fa26ada.png"
+dest_files=["res://.godot/imported/c874f358-ecf7-4ad0-8b0b-a2073fa26ada.png-0b4ea833911b76a0abcc1d04ba900fb7.ctex"]
 
 [params]
 

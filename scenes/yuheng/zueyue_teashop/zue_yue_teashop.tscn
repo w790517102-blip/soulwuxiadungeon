@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=4 uid="uid://daki8cma7saq7"]
+[gd_scene load_steps=37 format=4 uid="uid://daki8cma7saq7"]
 
 [ext_resource type="Script" uid="uid://2702n5p4y7bs" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/zue_yue_teashop.gd" id="1_778kk"]
 [ext_resource type="Texture2D" uid="uid://bpboo4jtbny1l" path="res://assets/background/Yuheng_Town/yuheng_market_east/zue_yue_teashop/ZueYue_teashop.jpg" id="2_y5iix"]
@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" uid="uid://b8ni7pxdro46x" path="res://assets/background/Yuheng_Town/yuheng_market_east/zue_yue_teashop/bucket4-a.png" id="17_nsipr"]
 [ext_resource type="Texture2D" uid="uid://t2ii4qjmhndt" path="res://assets/background/Yuheng_Town/yuheng_market_east/zue_yue_teashop/bucket4-b.png" id="18_ev8sl"]
 [ext_resource type="PackedScene" uid="uid://dokjksrf2vyup" path="res://scenes/yuheng/zueyue_teashop/tea_customer_a.tscn" id="19_ev8sl"]
+[ext_resource type="Texture2D" uid="uid://chlu1h5um3juc" path="res://assets/background/Yuheng_Town/yuheng_market_east/zue_yue_teashop/wall.png" id="19_utc5r"]
 [ext_resource type="PackedScene" uid="uid://d3vacgeab3a3j" path="res://scenes/yuheng/zueyue_teashop/tea_customer_b.tscn" id="20_4ubpv"]
 [ext_resource type="PackedScene" uid="uid://hg1d0jpgsxst" path="res://scenes/yuheng/zueyue_teashop/tea_customer_c.tscn" id="21_edjgc"]
 [ext_resource type="PackedScene" uid="uid://dfxafo1pvt251" path="res://scenes/yuheng/zueyue_teashop/tea_customer_d.tscn" id="22_gdocx"]
@@ -4333,6 +4334,11 @@ position = Vector2(292.305, -74.585)
 texture = ExtResource("18_ev8sl")
 script = ExtResource("6_otceh")
 
+[node name="wall" type="Sprite2D" parent="object"]
+position = Vector2(-346.82, -65.125)
+texture = ExtResource("19_utc5r")
+script = ExtResource("6_otceh")
+
 [node name="tea_customer_a" parent="." instance=ExtResource("19_ev8sl")]
 position = Vector2(-195, 26.14)
 scale = Vector2(0.7, 0.7)
@@ -4360,6 +4366,7 @@ wander_speed = 60.0
 position = Vector2(-8, -224.86)
 scale = Vector2(0.89, 0.89)
 script = ExtResource("26_7k4cs")
+shop_id = "zueyue_teashop"
 
 [node name="tea_shop_servant" parent="." instance=ExtResource("27_3a1hd")]
 position = Vector2(91, -82.945)

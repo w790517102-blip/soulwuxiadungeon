@@ -1,4 +1,4 @@
-[gd_scene load_steps=54 format=4 uid="uid://24ur3svmsar6"]
+[gd_scene load_steps=57 format=4 uid="uid://24ur3svmsar6"]
 
 [ext_resource type="Texture2D" uid="uid://cj3sge80opumn" path="res://assets/background/Yuheng_Town/yuheng_market_east.jpg" id="1_05jtj"]
 [ext_resource type="Script" uid="uid://ck11yugj2xg5c" path="res://scripts/yuheng/yuheng_market_east/yuheng_market_east.gd" id="1_btfug"]
@@ -40,8 +40,10 @@
 [ext_resource type="PackedScene" uid="uid://c28d1mmn3q5cr" path="res://scenes/yuheng/yuheng_market_east/store_keeper_d.tscn" id="38_33mhr"]
 [ext_resource type="Script" uid="uid://ckk81ivdvckpl" path="res://scripts/yuheng/yuheng_market_east/store_keeper_d.gd" id="39_ftxdb"]
 [ext_resource type="PackedScene" uid="uid://cqs6fnsbsp2lh" path="res://scenes/yuheng/yuheng_market_east/store_keeper_e.tscn" id="40_ftxdb"]
+[ext_resource type="Texture2D" uid="uid://bep8hn4yblmrm" path="res://assets/background/Yuheng_Town/yuheng_market_east/pitcher1.png" id="41_js57i"]
+[ext_resource type="Texture2D" uid="uid://dh4ekpqund0ew" path="res://assets/background/Yuheng_Town/yuheng_market_east/wall.png" id="42_8qucu"]
 
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_btfug"]
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_js57i"]
 texture = ExtResource("1_05jtj")
 0:0/0 = 0
 1:0/0 = 0
@@ -6615,7 +6617,7 @@ texture = ExtResource("1_05jtj")
 
 [sub_resource type="TileSet" id="TileSet_dpovc"]
 physics_layer_0/collision_layer = 1
-sources/0 = SubResource("TileSetAtlasSource_btfug")
+sources/0 = SubResource("TileSetAtlasSource_js57i")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_sc1e2"]
 size = Vector2(448.077, 102)
@@ -6668,6 +6670,9 @@ point_count = 12
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_syjxs"]
 size = Vector2(38, 190.714)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_js57i"]
+size = Vector2(93, 73.5643)
+
 [node name="yuheng_market_east" type="Node2D"]
 position = Vector2(0, 114.355)
 script = ExtResource("1_btfug")
@@ -6698,6 +6703,9 @@ position = Vector2(329, 109.15)
 [node name="from_yuheng_market_west" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-597.465, 67.99)
 
+[node name="from_yuheng_old_well" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(116.745, 92.145)
+
 [node name="BlackOverlay" type="ColorRect" parent="."]
 z_index = 1999
 offset_left = -1318.0
@@ -6727,6 +6735,7 @@ offset_right = 463.0
 offset_bottom = 185.0
 
 [node name="CameraBounds" type="Area2D" parent="."]
+visible = false
 position = Vector2(24.235, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
@@ -6924,6 +6933,25 @@ position = Vector2(-735.518, 44.4615)
 rotation = -0.188496
 shape = SubResource("RectangleShape2D_syjxs")
 
+[node name="pitcher1" type="Sprite2D" parent="."]
+position = Vector2(196, 45.93)
+texture = ExtResource("41_js57i")
+script = ExtResource("8_og80n")
+
+[node name="wall" type="Sprite2D" parent="."]
+position = Vector2(212.11, -0.945)
+texture = ExtResource("42_8qucu")
+script = ExtResource("8_og80n")
+
+[node name="To_yuheng_old_well" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_old_well"]
+position = Vector2(156.154, -3.10151)
+rotation = 0.37001
+skew = -0.314159
+shape = SubResource("RectangleShape2D_js57i")
+
 [connection signal="body_entered" from="To_yuheng_outside" to="." method="_on_to_yuheng_outside_body_entered"]
 [connection signal="body_entered" from="ZueYue_entry" to="." method="_on_zue_yue_entry_body_entered"]
 [connection signal="body_entered" from="To_yuheng_market_west" to="." method="_on_to_yuheng_market_west_body_entered"]
+[connection signal="body_entered" from="To_yuheng_old_well" to="." method="_on_to_yuheng_old_well_body_entered"]

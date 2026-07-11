@@ -32,50 +32,50 @@ theme_override_constants/separation = 0
 [node name="TabStatus" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(92, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabItem" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(92, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabEquip" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabSkill" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabParty" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabLore" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabQuest" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabSystem" type="TextureButton" parent="CustomTabBar"]
 custom_minimum_size = Vector2(90, 42)
 layout_mode = 2
-stretch_mode = 0
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="VBoxContainer" type="TabContainer" parent="."]
 layout_mode = 0
@@ -84,8 +84,8 @@ offset_top = 68.0
 offset_right = 1113.0
 offset_bottom = 631.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_ymoqc")
+current_tab = 7
 tabs_visible = false
-current_tab = 1
 
 [node name="狀態" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
@@ -165,6 +165,7 @@ layout_mode = 2
 text = "空位"
 
 [node name="道具" type="VBoxContainer" parent="VBoxContainer"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
@@ -409,7 +410,7 @@ text = "切換心法"
 [node name="任務" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
-metadata/_tab_index = 6
+metadata/_tab_index = 4
 
 [node name="QuestLayout" type="HBoxContainer" parent="VBoxContainer/任務"]
 layout_mode = 2
@@ -430,7 +431,6 @@ custom_minimum_size = Vector2(0, 320)
 layout_mode = 2
 size_flags_vertical = 3
 allow_reselect = true
-select_mode = 0
 
 [node name="QuestRightPane" type="VBoxContainer" parent="VBoxContainer/任務/QuestLayout"]
 layout_mode = 2
@@ -452,7 +452,7 @@ text = "請從左側選擇任務。"
 [node name="隊伍" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
-metadata/_tab_index = 4
+metadata/_tab_index = 5
 
 [node name="PartyLayout" type="HBoxContainer" parent="VBoxContainer/隊伍"]
 layout_mode = 2
@@ -471,7 +471,6 @@ text = "上陣隊伍"
 custom_minimum_size = Vector2(0, 260)
 layout_mode = 2
 allow_reselect = true
-select_mode = 0
 
 [node name="PartyActionBox" type="VBoxContainer" parent="VBoxContainer/隊伍/PartyLayout"]
 layout_mode = 2
@@ -501,7 +500,6 @@ text = "候補隊友"
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 allow_reselect = true
-select_mode = 0
 
 [node name="DetailTitle" type="Label" parent="VBoxContainer/隊伍/PartyLayout/ReservePane"]
 layout_mode = 2
@@ -511,12 +509,16 @@ text = "隊友詳情（預留）"
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
 bbcode_enabled = true
-text = "姓名：—\n職業：—\n等級：—\n\n（後續沿用狀態頁資訊結構）"
+text = "姓名：—
+職業：—
+等級：—
+
+（後續沿用狀態頁資訊結構）"
 
 [node name="見聞" type="VBoxContainer" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
-metadata/_tab_index = 5
+metadata/_tab_index = 6
 
 [node name="LoreLayout" type="HBoxContainer" parent="VBoxContainer/見聞"]
 layout_mode = 2
@@ -568,10 +570,11 @@ text = "見聞詳情"
 custom_minimum_size = Vector2(0, 350)
 layout_mode = 2
 bbcode_enabled = true
-text = "請從左側選擇條目。\n\n（奇物 / 豪傑 / 神怪 詳細資料預留）"
+text = "請從左側選擇條目。
+
+（奇物 / 豪傑 / 神怪 詳細資料預留）"
 
 [node name="系統" type="VBoxContainer" parent="VBoxContainer"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 7
 
@@ -666,6 +669,14 @@ offset_top = 515.0
 offset_right = 249.0
 offset_bottom = 562.0
 text = "讀取"
+
+[node name="MenuButton" type="Button" parent="VBoxContainer/系統/SavePopup"]
+layout_mode = 0
+offset_left = 923.55
+offset_top = 515.0
+offset_right = 1053.55
+offset_bottom = 562.0
+text = "回標題畫面"
 
 [node name="Control" type="Control" parent="."]
 z_index = -90

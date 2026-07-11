@@ -137,9 +137,12 @@ func _handle_oldfighter_interact() -> void:
 	if quest.has("quest_id") and bool(quest.get("is_finished", false)):
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「左飲那小子啊，當年出刀快得像燕子掠水。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「可他真正厲害的，不是刀快，是收刀也快。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「一個人能傷人不稀奇，能在該停的地方停下來，才叫本事。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「少俠，石破心法可練得如何？」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「記住，外物越少，拳意越真。當然，像老夫這般境界，即使拿著掃帚，也已是無物之境。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「所以掃帚不算外物？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			#{ "text": "「左飲那小子啊，當年出刀快得像燕子掠水。」", "speaker": 1, "portrait": portrait_path },
+			#{ "text": "「可他真正厲害的，不是刀快，是收刀也快。」", "speaker": 1, "portrait": portrait_path },
+			#{ "text": "「一個人能傷人不稀奇，能在該停的地方停下來，才叫本事。」", "speaker": 1, "portrait": portrait_path },
 		])
 		return
 	if not quest.has("quest_id"):
@@ -153,9 +156,17 @@ func _start_oldfighter_intro_and_offer() -> void:
 		{ "text": "「唉……這演武台啊，從前可熱鬧得很。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「那時候的年輕人，誰不想在這裡露兩手？刀劍拳腳，打得木樁都快開花。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "劉語塵：「如今倒是冷清。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「可不是嘛。現在的小娃娃都跑去學書墨，說什麼修身養性、吟詩作對。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「不是不好，只是這演武台啊，太久沒聽見拳風了。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "(老翁停下掃帚，看著台面。)", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「我年輕時，曾在這台上與左飲比劃過。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「那小子身法快，出刀更快。一式『燕行破風斬』，我至今都忘不了。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「你與左飲交過手？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「交過，當然交過！」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「雖然……咳，勝負嘛，江湖事，點到為止，不必細說。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「(看來是輸了)。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「少俠，既然你也帶著一身江湖氣，不如上來與老夫比劃比劃？」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「放心，老夫只是活動筋骨，不會欺負後輩。」", "speaker": 1, "portrait": portrait_path },
 	])
 	GlobalState.set_flag(gossip_flag, true)
 	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
@@ -186,6 +197,7 @@ func _choose_decline() -> void:
 	dialog_manager.show_dialog_sequence([
 		{ "text": "劉語塵：「晚輩還有事在身，改日再向前輩請教。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「改日？江湖人最愛說改日。罷了罷了，年輕人怕輸也正常。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「……我什麼都還沒做。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 	], self)
 	await dialog_manager.dialog_sequence_finished
 	_choice_flow_pending = false
@@ -199,31 +211,60 @@ func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
 	_unlock_on_next_reset = false
 	if not has_weapon and not has_armor_or_acc:
 		await _play_sequence_and_wait([
-			{ "text": "「咦？你……你連兵器甲飾都未帶，便敢上演武台？」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "劉語塵：「前輩不是說比劃筋骨嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「好..」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「好啊！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「前輩，承讓。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "老翁盯著劉語塵許久，忽然大笑。", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「不錯不錯！果然英雄出少年。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「能把我逼到這般境地的，你是第二個。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「(小聲嘀咕)第一個是左飲那小子……」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「前輩方才說什麼？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「沒什麼！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「方才那幾番交手，其實都是老夫給你的試探。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「聽起來不像。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「你先以兵器勝我，我看出你鋒芒有餘。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「你再以空手勝我，我看出你根骨不差。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「如今你捨去外物，仍能守住拳意，這才是真正的武人胚子。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「(他居然把輸不起說得像武學境界。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「好！老夫認可你這個徒弟了！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「……徒弟？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "劉語塵：「(我什麼時候拜他為師了？)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「不必害羞。江湖傳承，講究一個緣字。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「這兩本祕笈，你拿去。」", "speaker": 1, "portrait": portrait_path },
 		])
 		await _complete_oldfighter_quest()
 		return
 	if has_weapon:
 		GlobalState.set_flag(FLAG_WEAPON_WIN, true)
 		await _play_sequence_and_wait([
-			{ "text": "「停停停！不打了不打了！你提著兵器跟我較勁，這不算見拳！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「停停停！不打了不打了！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「前輩，承讓。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「承什麼讓？你一個年輕人，提著兵器跟我這手無寸鐵的老人家較勁，\n這叫什麼本事？」",  "speaker": 1, "portrait": portrait_path },
+			{ "text": "「沒有武德！太沒有武德了！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「(這老人家……是真的輸不起吧。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "「若真有本事，就卸了兵器，空手與我再比一回！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「拳腳見真章，才知道你是不是靠行頭壯膽！」", "speaker": 1, "portrait": portrait_path },
 		])
 		var quest := SideQuestManager.get_quest(QUEST_ID)
 		quest["stage"] = 2
-		quest["objective"] = "卸下武器，再與老翁比試一次。"
+		quest["objective"] = "老翁似乎仍不服氣。或許得卸下武器，再與他比試一次。"
 		quest["current_objective"] = quest["objective"]
 		SideQuestManager.side_quests[QUEST_ID] = quest
 		return
 	GlobalState.set_flag(FLAG_UNARMED_WIN, true)
 	await _play_sequence_and_wait([
-		{ "text": "「沒用兵器是不假，可你身上行頭那麼多！還不算純粹！」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「無兵、無甲、無飾，再與我比一回，老夫才認你真本事！」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「不錯……咳，算你有兩下子。」老翁揉著手腕，眼神明顯慌了一下。", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「前輩，這回我可沒用兵器。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「沒用兵器是不假，可你身上行頭那麼多！」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「護腕、衣甲、腰飾……全都在幫你擋勁。若不是這些外物，老夫雙拳\n早叫你知道什麼叫薑還是老的辣！」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「(這老傢伙怎麼這麼好勝……)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「(該不會要我把全身行頭都卸了，再跟他比一回吧？)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「少俠，若你真想證明拳上功夫，那就捨去外物。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「無兵、無甲、無飾，只憑一口氣與一雙拳。到那時，老夫才認你是真本事！」", "speaker": 1, "portrait": portrait_path },
 	])
 	var quest2 := SideQuestManager.get_quest(QUEST_ID)
 	quest2["stage"] = 3
-	quest2["objective"] = "卸下武器、防具與飾品，再與老翁比試。"
+	quest2["objective"] = "老翁仍不肯服輸。或許得卸下防具與飾品，再與他比試。"
 	quest2["current_objective"] = quest2["objective"]
 	SideQuestManager.side_quests[QUEST_ID] = quest2
 
@@ -241,6 +282,10 @@ func _start_oldfighter_sparring_battle() -> void:
 			{ "text": "劉語塵：「前輩不是說比劃筋骨嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "「好，好一個比劃筋骨！」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "「年輕人，你倒是比那些滿身行頭的江湖客乾脆多了。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「接下來你可別放水!」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「別打輸了還想找藉口!」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "劉語塵：「...」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "「要上囉!」", "speaker": 1, "portrait": portrait_path },
 		])
 	elif has_weapon:
 		await _play_sequence_and_wait([
@@ -323,7 +368,7 @@ func _try_resolve_oldfighter_battle_return() -> void:
 		await _play_sequence_and_wait([
 			{ "text": "「哼哼，年輕人，江湖飯可不是靠臉吃的。」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "「回去調調氣，想清楚身上哪些東西是本事，哪些東西只是重量，再來找老夫。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "你在比試中落敗。這場比試不會造成死亡，稍作整備後可再次挑戰。", "speaker": 1, "portrait": portrait_path },
+			
 		])
 		_end_interaction_flow()
 		return
@@ -333,8 +378,14 @@ func _try_resolve_oldfighter_battle_return() -> void:
 
 func _complete_oldfighter_quest() -> void:
 	await _play_sequence_and_wait([
-		{ "text": "「好！好啊！你捨去外物，仍能守住拳意，這才是真本事。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「這兩本祕笈，你拿去。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "(老翁從懷中摸出兩本泛黃冊子。)", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「一本是《石破心法》，講究捨物存真，氣沉骨血。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「另一本是《天驚拳》，拳勢驟起如雷，連環轟擊。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「若有朝一日，你能以石破心法催動天驚拳，便可施展『石破天驚拳』。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「若你能再進一步，外物盡去，拳意純然，或許能觸及真正的——」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "(老翁壓低聲音。)", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「真．石破天驚拳。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「(雖然這老人家好勝又愛嘴硬……但這兩本祕笈，\n似乎真有些門道。) 」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 	])
 	if TeamData and TeamData.has_method("learn_inner_force"):
 		TeamData.learn_inner_force("liuyu", "shipo_xinfa")

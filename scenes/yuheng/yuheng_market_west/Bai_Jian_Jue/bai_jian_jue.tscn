@@ -4221,7 +4221,7 @@ shape = SubResource("RectangleShape2D_1neay")
 [node name="NPC" type="Node2D" parent="."]
 
 [node name="Su_mien" parent="NPC" instance=ExtResource("3_kuoqm")]
-position = Vector2(-105.275, 157.52)
+position = Vector2(-88.155, 86.005)
 scale = Vector2(0.3, 0.3)
 script = ExtResource("4_behou")
 

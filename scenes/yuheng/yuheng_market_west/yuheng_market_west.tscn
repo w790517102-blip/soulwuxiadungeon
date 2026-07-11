@@ -34,7 +34,7 @@
 [ext_resource type="Script" uid="uid://b8e3c6qwstyhh" path="res://scripts/yuheng/yuheng_marekt_west/sugar_kid.gd" id="22_5iwka"]
 [ext_resource type="Script" uid="uid://cpge6xe4xfbod" path="res://scripts/yuheng/yuheng_marekt_west/dreaming_kid.gd" id="22_8wplp"]
 
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dplkc"]
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_5iwka"]
 texture = ExtResource("2_gvwd1")
 0:0/0 = 0
 1:0/0 = 0
@@ -3615,7 +3615,7 @@ texture = ExtResource("2_gvwd1")
 21:37/0 = 0
 22:37/0 = 0
 23:37/0 = 0
-23:37/0/physics_layer_0/polygon_0/points = PackedVector2Array(3.23746, 5.57562, 8, 3.77703, 8, 8, 0, 8)
+23:37/0/physics_layer_0/polygon_0/points = PackedVector2Array(-5.39576, -0.719435, 6.29506, -10.4318, 29.317, -11.8707, 32.9142, 0.359716, 8, 8, 0, 8)
 24:37/0 = 0
 24:37/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, 3.95689, 0, 2.87774, 8, 2.87774, 8, 8, -8, 8)
 25:37/0 = 0
@@ -3735,6 +3735,7 @@ texture = ExtResource("2_gvwd1")
 37:38/0 = 0
 38:38/0 = 0
 39:38/0 = 0
+39:38/0/physics_layer_0/polygon_0/points = PackedVector2Array(-0.359718, 8, -125.182, -38.8495, -116.369, -47.6626, -0.179859, -9.71237)
 40:38/0 = 0
 41:38/0 = 0
 42:38/0 = 0
@@ -4427,7 +4428,7 @@ texture = ExtResource("2_gvwd1")
 50:45/0 = 0
 50:45/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 51:45/0 = 0
-51:45/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+51:45/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 0.899294, -8, 8, -8, 8, 8, -8, 8)
 52:45/0 = 0
 53:45/0 = 0
 54:45/0 = 0
@@ -4525,7 +4526,7 @@ texture = ExtResource("2_gvwd1")
 49:46/0 = 0
 50:46/0 = 0
 51:46/0 = 0
-51:46/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, 1.61873, 5.03605, -5.75548, -1.79859)
+51:46/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -2.51802, 8, -8, 0)
 52:46/0 = 0
 52:46/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 53:46/0 = 0
@@ -4625,8 +4626,11 @@ texture = ExtResource("2_gvwd1")
 49:47/0 = 0
 50:47/0 = 0
 51:47/0 = 0
+51:47/0/physics_layer_0/polygon_0/points = PackedVector2Array(-2.33816, -8, 8, -3.41732, 8, -8)
 52:47/0 = 0
+52:47/0/physics_layer_0/polygon_0/points = PackedVector2Array(8, -3.23746, -8, -3.95689, -8, -8, 8, -8)
 53:47/0 = 0
+53:47/0/physics_layer_0/polygon_0/points = PackedVector2Array(4.85619, -8, -8, -2.1583, -8, -8)
 54:47/0 = 0
 55:47/0 = 0
 56:47/0 = 0
@@ -5142,7 +5146,7 @@ texture = ExtResource("2_gvwd1")
 75:52/0 = 0
 76:52/0 = 0
 77:52/0 = 0
-77:52/0/physics_layer_0/polygon_0/points = PackedVector2Array(-101.605, -51.3671, 8, -8, 8, 3.59718, -87.4935, -28.2237, -89.1869, -23.7079, -133.78, -18.0632, -164.826, -31.6105, -163.697, -49.6737, -154.855, -52.2554, -152.972, -230.305, -231.434, -258.529, -231.999, -238.208, -225.79, -220.709, -226.918, -171.036, -150, -181, -197.001, -145.634, -203.775, -145.07, -205.469, -94.8316, -239.901, -81.8487, -239.901, -67.1724, -247.804, -64.9145, -257.965, -67.7369, -257.4, -78.4619, -371.988, -117.975, -244.417, -166.52, -246.675, -229.741, -246.675, -261.351, -233.692, -270.947, -136.603, -242.724)
+77:52/0/physics_layer_0/polygon_0/points = PackedVector2Array(-101.605, -51.3671, 8, -8, 8, 3.59718, -87.4935, -28.2237, -89.1869, -23.7079, -114.21, -25.5399, -117.628, -24.4608, -123.923, -25.5399, -122.664, -33.9933, -128.599, -35.612, -129.858, -27.6982, -134.894, -27.1587, -139.391, -29.317, -138.311, -46.5834, -159.894, -54.1375, -159.894, -73.5622, -151.801, -77.699, -152.972, -230.305, -231.434, -258.529, -231.999, -238.208, -225.79, -220.709, -226.918, -171.036, -150, -181, -185.075, -149.642, -178.959, -139.391, -178.959, -131.297, -184.895, -127.34, -183.456, -76.6198, -219.787, -57.5548, -219.248, -47.8424, -231.838, -40.8279, -248.745, -46.2237, -248.565, -51.6195, -339.393, -85.7926, -340.293, -83.8142, -342.091, -82.3753, -360.257, -87.5912, -361.304, -122.04, -244.417, -166.52, -246.675, -229.741, -246.675, -261.351, -233.692, -270.947, -136.603, -242.724)
 78:52/0 = 0
 78:52/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -2.87774, 8, -8, 3.0576)
 79:52/0 = 0
@@ -5344,6 +5348,7 @@ texture = ExtResource("2_gvwd1")
 75:54/0 = 0
 76:54/0 = 0
 77:54/0 = 0
+77:54/0/physics_layer_0/polygon_0/points = PackedVector2Array(8, -1.61873, 8, -8, -54.8569, -37.2308, -68.3463, -34.8926, -105.577, -53.7778, -104.498, -44.0654, -103.958, -37.5905, -100.181, -30.3961, -90.2891, -24.1011, -76.44, -20.8636, -64.929, -21.2233, -58.6339, -24.1011, -55.9361, -28.058, -55.2166, -12.9498, -8, 5.75548)
 78:54/0 = 0
 78:54/0/physics_layer_0/polygon_0/points = PackedVector2Array(-1.43887, -8, 8, -8, 8, 8, 4.49647, 8, 1.43887, 2.33816, -0.179859, -2.51802)
 79:54/0 = 0
@@ -6254,7 +6259,7 @@ texture = ExtResource("2_gvwd1")
 
 [sub_resource type="TileSet" id="TileSet_gvwd1"]
 physics_layer_0/collision_layer = 1
-sources/0 = SubResource("TileSetAtlasSource_dplkc")
+sources/0 = SubResource("TileSetAtlasSource_5iwka")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bv0qj"]
 size = Vector2(1534.35, 1018)
@@ -6343,6 +6348,7 @@ tile_map_data = PackedByteArray("AAD//wEAAAAuAB4AAADR/+P/AAAAAAAAAADR/+T/AAAAAAE
 tile_set = SubResource("TileSet_gvwd1")
 
 [node name="CameraBounds" type="Area2D" parent="."]
+visible = false
 position = Vector2(24.235, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
@@ -6396,7 +6402,7 @@ position = Vector2(-654, 49.335)
 position = Vector2(275.01, 340.6)
 
 [node name="from_Bai_Jian_Jue" type="Marker2D" parent="SpawnPoints"]
-position = Vector2(-178.38, 139.345)
+position = Vector2(-151.41, 171.37)
 
 [node name="from_Bamboo_Grove_Suburb" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-650, 188.815)
@@ -6582,16 +6588,17 @@ texture = ExtResource("9_a84ne")
 script = ExtResource("8_a84ne")
 
 [node name="jar" type="Sprite2D" parent="object"]
-position = Vector2(-354.925, 109.015)
+position = Vector2(-354.925, 94.895)
 texture = ExtResource("10_gh6en")
 script = ExtResource("8_a84ne")
 
 [node name="iron_shop" type="Sprite2D" parent="object"]
-position = Vector2(-288.13, 33.095)
+position = Vector2(-288.13, 58.215)
 texture = ExtResource("11_346ta")
 script = ExtResource("8_a84ne")
 
 [node name="iron_shop_2" type="Sprite2D" parent="object"]
+visible = false
 position = Vector2(-289.28, 72.085)
 texture = ExtResource("12_tjda1")
 script = ExtResource("8_a84ne")
@@ -6607,7 +6614,7 @@ texture = ExtResource("15_oy6ja")
 script = ExtResource("16_sw1vm")
 
 [node name="anvil" type="Sprite2D" parent="object"]
-position = Vector2(-499.07, 77.025)
+position = Vector2(-492, 70.335)
 texture = ExtResource("17_sw1vm")
 script = ExtResource("16_sw1vm")
 
@@ -6635,7 +6642,7 @@ shape = SubResource("RectangleShape2D_ab8u7")
 [node name="to_Bai_Jian_Jue" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="to_Bai_Jian_Jue"]
-position = Vector2(-118, 70.335)
+position = Vector2(-156, 139.335)
 rotation = 0.315905
 skew = -0.347321
 shape = SubResource("RectangleShape2D_5iwka")

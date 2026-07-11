@@ -111,24 +111,26 @@ size = Vector2(413.352, 568.044)
 [node name="Su_mien" type="CharacterBody2D"]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-13, 162.5)
+position = Vector2(-10, 415.865)
 shape = SubResource("RectangleShape2D_326i1")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(-12.87, -2.784)
-scale = Vector2(2.178, 2.178)
+position = Vector2(-15.055, 257.421)
+scale = Vector2(2.068, 2.068)
 sprite_frames = SubResource("SpriteFrames_3qs5v")
 animation = &"idle_right_down"
 
 [node name="TextureRect" type="TextureRect" parent="."]
-offset_left = -177.0
-offset_top = -711.0
-offset_right = 1023.0
-offset_bottom = 1389.0
+offset_left = -187.0
+offset_top = -512.0
+offset_right = 1013.0
+offset_bottom = 1588.0
+scale = Vector2(1.07, 1.07)
 texture = ExtResource("3_8amid")
 metadata/_edit_use_anchors_ = true
 
 [node name="Area2D" type="Area2D" parent="."]
+position = Vector2(3, 253.365)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 position = Vector2(113.502, 326.557)

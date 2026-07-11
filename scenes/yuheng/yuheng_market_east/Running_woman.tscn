@@ -4,8 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://cxocknmi1o0fq" path="res://assets/sprites/NPC/Yuheng/Running_woman.png" id="2_twi82"]
 [ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="3_8mjpl"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_hpexa"]
-size = Vector2(66, 20)
+[sub_resource type="CircleShape2D" id="CircleShape2D_hnqtu"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_h4fs5"]
 atlas = ExtResource("2_twi82")
@@ -274,8 +273,8 @@ animations = [{
 script = ExtResource("1_hnqtu")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(9, 71.15)
-shape = SubResource("RectangleShape2D_hpexa")
+position = Vector2(4.925, 65.605)
+shape = SubResource("CircleShape2D_hnqtu")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(14.555, -7.425)

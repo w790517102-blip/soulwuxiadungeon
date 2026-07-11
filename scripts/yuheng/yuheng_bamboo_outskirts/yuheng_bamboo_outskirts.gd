@@ -1,6 +1,7 @@
 extends Node2D
 
 @export var Bamboo_Grove_Suburb: String = "res://scenes/yuheng/Bamboo_Grove_Suburb/Bamboo_Grove_Suburb.tscn"
+@export var YinYueManor: String = "res://scenes/yuheng/YinYueManor/yin_yue_manor.tscn"
 @onready var overlay := $BlackOverlay
 @export var music_tag := "station_stillwind"
 @export var battle_bgm_path := "res://assets/BGM/battle_1.ogg"
@@ -41,3 +42,13 @@ func _on_to_bamboo_grove_suburb_body_entered(body: Node2D) -> void:
 		await tween.finished
 		get_node("/root/GameRoot").spawn_point_name = "from_yuheng_bamboo_outskirts"
 		get_node("/root/GameRoot").change_map_to(Bamboo_Grove_Suburb)
+
+func _on_to_yin_yue_manor_body_entered(body: Node2D) -> void:
+	if body.name == "LiuYu":
+		overlay.visible = true
+		overlay.modulate.a = 0.0
+		var tween = overlay.create_tween()
+		tween.tween_property(overlay, "modulate:a", 1.0, 0.5)
+		await tween.finished
+		get_node("/root/GameRoot").spawn_point_name = "from_yuheng_bamboo_outskirts"
+		get_node("/root/GameRoot").change_map_to(YinYueManor)

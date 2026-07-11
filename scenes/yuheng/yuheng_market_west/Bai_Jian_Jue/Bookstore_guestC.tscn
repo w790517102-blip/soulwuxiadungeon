@@ -155,8 +155,8 @@ position = Vector2(-4.165, 162.5)
 shape = SubResource("RectangleShape2D_anrab")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(3.27, 0)
-scale = Vector2(1.845, 1.845)
+position = Vector2(-1.84, 19.6)
+scale = Vector2(1.55, 1.55)
 sprite_frames = SubResource("SpriteFrames_rfg11")
 animation = &"idle_left"
 

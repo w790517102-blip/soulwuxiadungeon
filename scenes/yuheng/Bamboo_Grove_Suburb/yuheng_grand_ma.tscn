@@ -1,6 +1,7 @@
-[gd_scene load_steps=15 format=3 uid="uid://b07w42x7gu0q7"]
+[gd_scene load_steps=16 format=3 uid="uid://b07w42x7gu0q7"]
 
 [ext_resource type="Texture2D" uid="uid://b5h2vhqmme2mv" path="res://assets/sprites/NPC/Yuheng/Yuheng_Grandma_3.png" id="1_7tgbp"]
+[ext_resource type="Script" uid="uid://h1jiadb8ba3h" path="res://scripts/yuheng/Bamboo_Grove_Suburb/yuheng_grand_ma.gd" id="1_lwx4e"]
 [ext_resource type="Texture2D" uid="uid://7gsu5vc8ueqj" path="res://assets/sprites/NPC/Yuheng/Yuheng_Grandma_1.png" id="2_lwx4e"]
 [ext_resource type="Texture2D" uid="uid://cfkclkep84ymh" path="res://assets/sprites/NPC/Yuheng/Yuheng_Grandma_2.png" id="3_aos5i"]
 
@@ -105,11 +106,13 @@ size = Vector2(101, 23)
 size = Vector2(180, 98)
 
 [node name="Yuheng_GrandMa" type="CharacterBody2D"]
+script = ExtResource("1_lwx4e")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_t5ro2")
 animation = &"sleep"
-frame_progress = 0.949058
+autoplay = "sleep"
+frame_progress = 0.98386
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(1.5, 40.5)
@@ -120,3 +123,6 @@ shape = SubResource("RectangleShape2D_dv4db")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 position = Vector2(-22, 57)
 shape = SubResource("RectangleShape2D_gsb5f")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="Area2D" to="." method="_on_area_2d_body_exited"]

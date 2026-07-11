@@ -1,0 +1,85 @@
+[gd_scene load_steps=7 format=3 uid="uid://2hq7d7mk4n33"]
+
+[ext_resource type="Texture2D" uid="uid://cdxq5k7t1t033" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_old_well_night.jpg" id="1_h8aaa"]
+[ext_resource type="Texture2D" uid="uid://c2y1p6tow5lax" path="res://assets/background/Yuheng_Town/yuheng_old_well/well_locked_night.png" id="2_ugo1f"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cctem"]
+size = Vector2(70.8787, 72.9554)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ih7r8"]
+size = Vector2(654, 134)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_7tfld"]
+size = Vector2(75.5, 50)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_h8aaa"]
+size = Vector2(1130, 846)
+
+[node name="yuheng_old_well_night" type="Node2D"]
+
+[node name="night_view" type="Sprite2D" parent="."]
+scale = Vector2(0.78, 0.78)
+texture = ExtResource("1_h8aaa")
+
+[node name="well_locked" type="Node2D" parent="."]
+
+[node name="well_keyhole" type="Area2D" parent="well_locked"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="well_locked/well_keyhole"]
+position = Vector2(195.004, 110.52)
+rotation = -0.294961
+shape = SubResource("RectangleShape2D_cctem")
+
+[node name="old_well_locked" type="Sprite2D" parent="well_locked"]
+position = Vector2(133, 36)
+scale = Vector2(0.78, 0.78)
+texture = ExtResource("2_ugo1f")
+
+[node name="To_yuheng_market_east_night" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_market_east_night"]
+position = Vector2(-84, 478)
+shape = SubResource("RectangleShape2D_ih7r8")
+
+[node name="To_yuheng_sewer_center" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_sewer_center"]
+position = Vector2(120, 98)
+rotation = 0.221657
+shape = SubResource("RectangleShape2D_7tfld")
+
+[node name="BlackOverlay" type="ColorRect" parent="."]
+z_index = 1999
+offset_left = -1318.0
+offset_top = -808.0
+offset_right = 1846.0
+offset_bottom = 32.0
+scale = Vector2(0.871308, 2.18516)
+color = Color(0, 0, 0, 1)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+visible = false
+
+[node name="MapNamePopup" type="Label" parent="CanvasLayer"]
+visible = false
+z_index = 1000
+offset_right = 120.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "玉衡客棧客房"
+
+[node name="HintLabel" type="Label" parent="CanvasLayer"]
+visible = false
+offset_left = 380.0
+offset_top = 129.0
+offset_right = 463.0
+offset_bottom = 185.0
+
+[node name="CameraBounds" type="Area2D" parent="."]
+position = Vector2(0.35, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
+position = Vector2(-0.349985, -1)
+shape = SubResource("RectangleShape2D_h8aaa")

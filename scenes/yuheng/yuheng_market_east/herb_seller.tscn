@@ -5,8 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://bl2n2m55q3f2e" path="res://assets/sprites/NPC/Yuheng/herb_seller-1.png" id="3_krusy"]
 [ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="3_vefwn"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_hpexa"]
-size = Vector2(66, 20)
+[sub_resource type="CircleShape2D" id="CircleShape2D_am2bs"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_wo2su"]
 atlas = ExtResource("2_am2bs")
@@ -270,8 +269,8 @@ size = Vector2(176, 135)
 script = ExtResource("1_am2bs")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-1.67, 71.15)
-shape = SubResource("RectangleShape2D_hpexa")
+position = Vector2(7.03, 68.04)
+shape = SubResource("CircleShape2D_am2bs")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(-10.63, 6.789)
