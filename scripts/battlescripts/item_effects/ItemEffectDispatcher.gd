@@ -57,7 +57,7 @@ func _handle_heal_hp(controller, user: Dictionary, item: Dictionary, target: Dic
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")
-	var user_id: String = user.get("id", "")
+	var target_id: String = target.get("id", "")
 
 	var before_hp: int = target.get("hp", 0)
 	var max_hp: int = target.get("max_hp", before_hp)
@@ -82,7 +82,7 @@ func _handle_heal_hp(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log(line_no_effect)
 	else:
 		if controller.tone_map != null:
-			var extra_hp = controller.tone_map.get_tone_text("item_use", "heal", user_id)
+			var extra_hp = controller.tone_map.get_tone_text("item_use", "heal", target_id)
 			if extra_hp != "":
 				controller._log(extra_hp)
 
@@ -122,7 +122,7 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")
-	var user_id: String = user.get("id", "")
+	var target_id: String = target.get("id", "")
 
 	var before_mp: int = target.get("mp", 0)
 	var max_mp: int = target.get("max_mp", before_mp)
@@ -147,7 +147,7 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log(line_no_mp)
 	else:
 		if controller.tone_map != null:
-			var extra_mp = controller.tone_map.get_tone_text("item_use", "mp_heal", user_id)
+			var extra_mp = controller.tone_map.get_tone_text("item_use", "mp_heal", target_id)
 			if extra_mp != "":
 				controller._log(extra_mp)
 
@@ -482,7 +482,7 @@ func _handle_cure_status(controller, user: Dictionary, item: Dictionary, target:
 		if controller.has_method("_log_narration"):
 			controller._log_narration(_cure_status_narration(status_id))
 		controller._log("%s 對 %s 使用了 %s。" % [user_name, target_name, item_name])
-		controller._log("%s解除。" % status_name)
+		controller._log("%s 的%s解除。" % [target_name, status_name])
 	else:
 		controller._log("%s 對 %s 使用了 %s，但對方並未處於「%s」。" % [user_name, target_name, item_name, status_name])
 	return true

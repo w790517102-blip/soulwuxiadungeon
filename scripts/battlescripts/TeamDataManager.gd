@@ -16,6 +16,8 @@ const LEVEL_BASE_MP_GAIN := 5
 const LEVEL_ACCURACY_GAIN := 3
 const LEVEL_EVASION_GAIN := 3
 const LEVEL_MAIN_STAT_GAIN := 3
+const MAIN_STAT_KEYS := ["str", "agi", "int", "con", "luck"]
+const BASE_DERIVED_KEYS := ["max_hp", "max_mp", "atk", "def", "speed", "accuracy", "evasion"]
 
 # === 所有可用角色（包含未上場） ===
 var all_characters: Dictionary = {
@@ -191,7 +193,12 @@ func add_perm_stat(actor_id: String, stat_key: String, delta: int) -> bool:
 		return false
 	var actor: Dictionary = all_characters[actor_id]
 	_normalize_character(actor)
-	actor[key] = int(actor.get(key, 0)) + delta
+	var base_key := "base_%s" % key
+	if actor.has(base_key):
+		actor[base_key] = int(actor.get(base_key, actor.get(key, 0))) + delta
+	else:
+		actor[key] = int(actor.get(key, 0)) + delta
+	_normalize_character(actor)
 	all_characters[actor_id] = actor
 	return true
 
@@ -316,7 +323,11 @@ func export_team_state() -> Dictionary:
 			"exp": actor.get("exp", 0),
 			"stat_cycle_index": actor.get("stat_cycle_index", 0),
 			"battle_modifiers": (actor.get("battle_modifiers", {}) as Dictionary).duplicate(true),
-			}
+		}
+		for key in MAIN_STAT_KEYS + BASE_DERIVED_KEYS:
+			var base_key := "base_%s" % key
+			if actor.has(base_key):
+				chars[String(actor_id)][base_key] = actor.get(base_key)
 	return out
 
 func import_team_state(data: Dictionary) -> void:
@@ -352,6 +363,10 @@ func import_team_state(data: Dictionary) -> void:
 				actor["battle_modifiers"] = (patch.get("battle_modifiers", {}) as Dictionary).duplicate(true)
 			if typeof(patch.get("known_inner_force_ids", null)) == TYPE_ARRAY:
 				actor["known_inner_force_ids"] = patch.get("known_inner_force_ids", []).duplicate()
+			for key in MAIN_STAT_KEYS + BASE_DERIVED_KEYS:
+				var base_key := "base_%s" % key
+				if patch.has(base_key):
+					actor[base_key] = int(patch.get(base_key, actor.get(base_key, 0)))
 			_normalize_character(actor)
 			all_characters[actor_id] = actor
 	_normalize_all_characters()
@@ -545,6 +560,59 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 		"def_gain": def_gain,
 	}
 
+
+func _ensure_base_stat_snapshot(actor: Dictionary) -> void:
+	for stat_key in MAIN_STAT_KEYS:
+		var base_key := "base_%s" % stat_key
+		if not actor.has(base_key):
+			actor[base_key] = int(actor.get(stat_key, 5))
+	for stat_key in BASE_DERIVED_KEYS:
+		var base_key := "base_%s" % stat_key
+		if not actor.has(base_key):
+			var fallback = 100 if stat_key == "accuracy" else 0
+			if stat_key == "max_hp":
+				fallback = int(actor.get("hp", 1))
+			elif stat_key == "max_mp":
+				fallback = int(actor.get("mp", 0))
+			actor[base_key] = int(actor.get(stat_key, fallback))
+
+
+func _reset_actor_to_base_stats(actor: Dictionary) -> void:
+	_ensure_base_stat_snapshot(actor)
+	for stat_key in MAIN_STAT_KEYS:
+		actor[stat_key] = int(actor.get("base_%s" % stat_key, actor.get(stat_key, 5)))
+	for stat_key in BASE_DERIVED_KEYS:
+		actor[stat_key] = int(actor.get("base_%s" % stat_key, actor.get(stat_key, 0)))
+
+
+func _apply_inner_force_runtime_stats(actor: Dictionary, force: Dictionary) -> void:
+	_reset_actor_to_base_stats(actor)
+	var actor_snapshot := {}
+	for stat_key in MAIN_STAT_KEYS:
+		actor_snapshot[stat_key] = int(actor.get(stat_key, 0))
+	var runtime_effects: Dictionary = _inner_force_db.get_runtime_effects(force, actor_snapshot) if not force.is_empty() else {}
+	for stat_key in MAIN_STAT_KEYS:
+		actor[stat_key] = int(actor.get(stat_key, 0)) + int(runtime_effects.get(stat_key, 0))
+
+	var effective_str := int(actor.get("str", 0))
+	var effective_agi := int(actor.get("agi", 0))
+	var effective_int := int(actor.get("int", 0))
+	var effective_con := int(actor.get("con", 0))
+	var effective_luck := int(actor.get("luck", 0))
+
+	actor["max_hp"] = max(1, int(round(float(actor.get("base_max_hp", actor.get("max_hp", 1))) * (1.0 + float(max(0, effective_con)) * 0.01))) + int(runtime_effects.get("max_hp", 0)))
+	actor["max_mp"] = max(0, int(round(float(actor.get("base_max_mp", actor.get("max_mp", 0))) * (1.0 + float(max(0, effective_int)) * 0.01))) + int(runtime_effects.get("max_mp", 0)))
+	actor["atk"] = max(0, int(actor.get("base_atk", actor.get("atk", 0))) + int(floor(float(effective_str) * 1.2)) + int(runtime_effects.get("atk", 0)))
+	actor["def"] = max(0, int(actor.get("base_def", actor.get("def", 0))) + int(floor(float(effective_con) * 0.8)) + int(runtime_effects.get("def", 0)))
+	actor["speed"] = max(0, int(actor.get("base_speed", actor.get("speed", 0))) + effective_agi + int(runtime_effects.get("speed", 0)))
+	actor["accuracy"] = max(0, int(actor.get("base_accuracy", actor.get("accuracy", 100))) + int(round(float(effective_agi) * 0.7 + float(effective_luck) * 0.3)) + int(runtime_effects.get("accuracy", 0)))
+	actor["evasion"] = max(0, int(actor.get("base_evasion", actor.get("evasion", 0))) + int(round(float(effective_agi) * 0.7 + float(effective_luck) * 0.3)) + int(runtime_effects.get("evasion", 0)))
+	actor["crit_rate"] = clampf((0.05 + floor(float(effective_luck) / 5.0) * 0.01 + float(runtime_effects.get("crit_rate_bonus", 0.0))), 0.0, 0.95)
+	actor["derived_stats_applied"] = true
+	actor["hp"] = min(int(actor.get("hp", 0)), int(actor.get("max_hp", 1)))
+	actor["mp"] = min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
+
+
 func _apply_inner_force_to_actor(actor: Dictionary) -> void:
 	var actor_id := String(actor.get("id", ""))
 	var force_id := String(actor.get("inner_force_id", ""))
@@ -557,6 +625,7 @@ func _apply_inner_force_to_actor(actor: Dictionary) -> void:
 	actor["available_inner_forces"] = _inner_force_db.get_forces_for_actor(actor_id, actor.get("known_inner_force_ids", []))
 	if force.has("element"):
 		actor["element"] = force["element"]
+	_apply_inner_force_runtime_stats(actor, force)
 
 func _resolve_known_force_ids_from_legacy(actor_id: String, legacy_forces: Array) -> Array:
 	var out: Array = []

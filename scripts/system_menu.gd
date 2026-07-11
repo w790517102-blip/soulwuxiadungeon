@@ -1612,6 +1612,8 @@ func _set_actor_value(actor, key: String, value) -> void:
 		actor.set(key, value)
 
 func _get_inner_force_bonus(actor) -> Dictionary:
+	if bool(_get_actor_value(actor, "derived_stats_applied", false)):
+		return {}
 	var inner_force = _get_actor_value(actor, "inner_force", {})
 	if typeof(inner_force) != TYPE_DICTIONARY:
 		return {}
@@ -1628,7 +1630,7 @@ func _get_inner_force_bonus(actor) -> Dictionary:
 		"luck": int(_get_actor_value(actor, "luck", 0)),
 	}
 	var runtime_effects: Dictionary = InnerForceDB.get_runtime_effects(inner_force, actor_snapshot)
-	for stat_key in ["str", "con", "agi", "accuracy", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "evasion", "crit_rate_bonus"]:
+	for stat_key in ["str", "con", "agi", "int", "luck", "accuracy", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "evasion", "crit_rate_bonus"]:
 		if not runtime_effects.has(stat_key):
 			continue
 		var incoming = runtime_effects.get(stat_key, 0)
@@ -1678,14 +1680,15 @@ func _get_first_numeric_value(actor, keys: Array, default_value: float = 0.0) ->
 
 func _get_actor_resource_multiplier(actor, equip_bonus: Dictionary, inner_bonus: Dictionary, resource_key: String) -> float:
 	var actor_pct := 0.0
+	var derived_applied := bool(_get_actor_value(actor, "derived_stats_applied", false))
 	if resource_key == "hp":
-		var effective_con := int(_get_actor_value(actor, "con", 0)) + int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0))
+		var effective_con := int(equip_bonus.get("con", 0)) if derived_applied else int(_get_actor_value(actor, "con", 0)) + int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0))
 		actor_pct += float(max(0, effective_con)) * 0.01
 		actor_pct += _get_first_numeric_value(actor, ["max_hp_pct_bonus", "hp_pct_bonus", "max_hp_multiplier_bonus", "hp_multiplier_bonus"], 0.0)
 		actor_pct += _get_first_numeric_value(actor, ["item_max_hp_pct_bonus", "item_hp_pct_bonus"], 0.0)
 		actor_pct += _get_first_numeric_value(actor, ["inner_force_max_hp_pct_bonus", "inner_max_hp_pct_bonus"], 0.0)
 	elif resource_key == "mp":
-		var effective_int := int(_get_actor_value(actor, "int", 0)) + int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0))
+		var effective_int := int(equip_bonus.get("int", 0)) if derived_applied else int(_get_actor_value(actor, "int", 0)) + int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0))
 		actor_pct += float(max(0, effective_int)) * 0.01
 		actor_pct += _get_first_numeric_value(actor, ["max_mp_pct_bonus", "mp_pct_bonus", "max_mp_multiplier_bonus", "mp_multiplier_bonus"], 0.0)
 		actor_pct += _get_first_numeric_value(actor, ["item_max_mp_pct_bonus", "item_mp_pct_bonus"], 0.0)
