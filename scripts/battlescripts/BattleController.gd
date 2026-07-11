@@ -2364,6 +2364,18 @@ func _is_support_status_effect(effect_id: String) -> bool:
 	]
 
 
+func _is_positive_status_effect(effect_id: String) -> bool:
+	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
+	return normalized_effect_id in [
+		"buff_speed",
+		"speed_buff",
+		"focus",
+		"evasion_boost",
+		"atk_up",
+		"stat_buff",
+	]
+
+
 func _should_log_status_record(row: Dictionary) -> bool:
 	var target = row.get("target", {})
 	if typeof(target) != TYPE_DICTIONARY or target.is_empty():
