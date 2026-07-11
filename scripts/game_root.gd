@@ -79,6 +79,9 @@ func change_map_to(path: String):
 		$LiuYu.global_position = return_pos
 		if $LiuYu.has_method("battle_restore"):
 			$LiuYu.battle_restore()
+		if GlobalState.get_meta("oldfighter_sparring_flow_lock_active", false) == true:
+			$LiuYu.can_move = false
+			GlobalState.set_meta("menu_locked", true)
 		if $LiuYu.has_method("set_encounter_cooldown"):
 			$LiuYu.set_encounter_cooldown(cooldown_distance)
 		resume_world_bgm_after_battle(0.5)

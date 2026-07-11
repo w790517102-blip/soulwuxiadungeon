@@ -23,6 +23,7 @@ const QUEST_ID := "yh_side_oldfighter_01"
 const QUEST_TITLE := "拳骨未老"
 const FLAG_WEAPON_WIN := "yh_side_oldfighter_weapon_win"
 const FLAG_UNARMED_WIN := "yh_side_oldfighter_unarmed_win"
+const META_SPARRING_LOCK_ACTIVE := "oldfighter_sparring_flow_lock_active"
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -322,6 +323,7 @@ func _start_oldfighter_sparring_battle() -> void:
 		])
 	_battle_pending = true
 	_sparring_flow_active = true
+	GlobalState.set_meta(META_SPARRING_LOCK_ACTIVE, true)
 	GlobalState.set_meta("oldfighter_spar_pending", true)
 	GlobalState.set_meta("oldfighter_spar_has_weapon", has_weapon)
 	GlobalState.set_meta("oldfighter_spar_has_armor_or_acc", has_armor_or_acc)
@@ -373,6 +375,11 @@ func _start_oldfighter_sparring_battle() -> void:
 func _try_resolve_oldfighter_battle_return() -> void:
 	if not GlobalState.get_meta("oldfighter_spar_pending", false):
 		return
+	GlobalState.set_meta(META_SPARRING_LOCK_ACTIVE, true)
+	GlobalState.set_meta("menu_locked", true)
+	var return_liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if return_liuyu:
+		return_liuyu.can_move = false
 	_sparring_flow_active = true
 	var result_meta = GlobalState.get_meta("pending_battle_result", {})
 	if typeof(result_meta) != TYPE_DICTIONARY:
@@ -432,6 +439,8 @@ func _begin_interaction_flow() -> void:
 	_unlock_on_next_reset = false
 	if GlobalState:
 		GlobalState.set_meta("menu_locked", true)
+		if _sparring_flow_active or _battle_pending:
+			GlobalState.set_meta(META_SPARRING_LOCK_ACTIVE, true)
 	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
 	if liuyu:
 		liuyu.can_move = false
@@ -442,6 +451,8 @@ func _end_interaction_flow() -> void:
 		liuyu.can_move = true
 	if GlobalState:
 		GlobalState.set_meta("menu_locked", false)
+		if GlobalState.has_meta(META_SPARRING_LOCK_ACTIVE):
+			GlobalState.remove_meta(META_SPARRING_LOCK_ACTIVE)
 	_interaction_flow_active = false
 	_unlock_on_next_reset = false
 	_choice_active = false
