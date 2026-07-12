@@ -139,6 +139,8 @@ const ITEM_DEFS := {
 		"use_action": "consume",
 		"effect": "fire_talisman",
 		"amount": 15,
+		"turns": 3,
+		"apply_log": "烈火符光燃起，攻勢隨焰勢暴漲。",
 		"enemy_damage": 30,
 		"target_scope": "all_single",
 	},
@@ -455,8 +457,9 @@ static func get_effect_display_text(item_def: Dictionary) -> String:
 				int(item_def.get("turns", 3))
 			]
 		"fire_talisman":
-			return "對我方使用時，攻擊提升 %d；對敵方使用時，造成 %d 點傷害" % [
+			return "對我方使用時，攻擊提升 %d，持續 %d 回合；對敵方使用時，造成 %d 點傷害" % [
 				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3)),
 				int(item_def.get("enemy_damage", 0))
 			]
 		"apply_battle_buff":
