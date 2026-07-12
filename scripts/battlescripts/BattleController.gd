@@ -1194,6 +1194,29 @@ func _copy_long_term_actor_fields(target: Dictionary, source: Dictionary) -> voi
 		if source.has(key):
 			target[key] = source[key]
 
+func _resolve_status_apply_override(effect_id: String, entry: Dictionary, skill_data: Dictionary) -> String:
+	for key_any in ["apply_log", "narration", "status_apply_log", "custom_apply_text"]:
+		var key := String(key_any)
+		var entry_value := String(entry.get(key, "")).strip_edges()
+		if entry_value != "":
+			return entry_value
+
+	var logs_raw = skill_data.get("status_apply_logs", {})
+	if typeof(logs_raw) == TYPE_DICTIONARY:
+		var logs: Dictionary = logs_raw
+		for lookup_key_any in [effect_id, String(entry.get("type", "")), "default"]:
+			var lookup_key := String(lookup_key_any)
+			var log_value := String(logs.get(lookup_key, "")).strip_edges()
+			if log_value != "":
+				return log_value
+
+	for key_any in ["status_apply_log", "custom_apply_text"]:
+		var key := String(key_any)
+		var skill_value := String(skill_data.get(key, "")).strip_edges()
+		if skill_value != "":
+			return skill_value
+	return ""
+
 func _is_rule_allowed(rule_key: String, default_value: bool) -> bool:
 	if ruleset.is_empty():
 		return default_value
@@ -2548,8 +2571,11 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 	var tone_cast := ""
 	var tone_suffer := ""
 	var suppress_status_narration := bool(skill_data.get("_suppress_status_narration", false))
+	if not suppress_status_narration:
+		tone_cast = _resolve_status_apply_override(normalized_effect_id, entry, skill_data)
+		if tone_cast == "" and tone_map != null:
+			tone_cast = tone_map.get_tone_text("status_apply", normalized_effect_id, str(user.get("id", "")))
 	if tone_map != null and not suppress_status_narration:
-		tone_cast = tone_map.get_tone_text("status_apply", normalized_effect_id, str(user.get("id", "")))
 		var suffer_key := normalized_effect_id
 		if bool(effect_target.get("is_enemy", false)):
 			suffer_key = "%s|%s" % [normalized_effect_id, _resolve_enemy_archetype(effect_target)]

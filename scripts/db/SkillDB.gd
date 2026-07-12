@@ -73,7 +73,7 @@ const SKILLS := {
 			"on_kill_heal_max_hp_pct": 0.15,
 			"on_multi_kill_threshold": 2,
 			"on_multi_kill_self_effects": [
-				{"type": "atk_up", "amount": 15, "turns": 2}
+				{"type": "atk_up", "amount": 15, "turns": 2, "apply_log": "殘缺劍意於體內激盪，攻勢更盛。"}
 			]
 		},
 		"available": {"mode": "include", "actor_ids": ["liuyu"]},
