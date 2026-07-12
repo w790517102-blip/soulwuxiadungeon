@@ -328,6 +328,16 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			return "%s 附加了 %s（剩 %d 回合）。" % [actor_name, effect_id, turns_left]
 
 
+
+func _stat_baseline(target: Dictionary, stat_key: String, fallback) -> int:
+	var battle_key := "battle_base_%s" % stat_key
+	if target.has(battle_key):
+		return int(target.get(battle_key, fallback))
+	var base_key := "base_%s" % stat_key
+	if target.has(base_key):
+		return int(target.get(base_key, fallback))
+	return int(target.get(stat_key, fallback))
+
 func _ensure_base_stats(target: Dictionary) -> void:
 	if not target.has("base_speed"):
 		target["base_speed"] = int(target.get("speed", 0))
@@ -357,7 +367,7 @@ func _ensure_base_stats(target: Dictionary) -> void:
 
 func _recalc_speed(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = int(target.get("base_speed", target.get("speed", 0)))
+	var base = _stat_baseline(target, "speed", target.get("speed", 0))
 	var effects = target.get("status_effects", {})
 	var buff = 0
 	var debuff = 0
@@ -377,7 +387,7 @@ func _recalc_speed(target: Dictionary) -> void:
 
 func _recalc_accuracy(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = int(target.get("base_accuracy", target.get("accuracy", 100)))
+	var base = _stat_baseline(target, "accuracy", target.get("accuracy", 100))
 	var effects = target.get("status_effects", {})
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY:
@@ -393,7 +403,7 @@ func _recalc_accuracy(target: Dictionary) -> void:
 
 func _recalc_evasion(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = int(target.get("base_evasion", target.get("evasion", 0)))
+	var base = _stat_baseline(target, "evasion", target.get("evasion", 0))
 	var effects = target.get("status_effects", {})
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY:
@@ -407,7 +417,7 @@ func _recalc_evasion(target: Dictionary) -> void:
 
 func _recalc_atk(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = int(target.get("base_atk", target.get("atk", 0)))
+	var base = _stat_baseline(target, "atk", target.get("atk", 0))
 	var effects = target.get("status_effects", {})
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("weaken"):
@@ -420,7 +430,7 @@ func _recalc_atk(target: Dictionary) -> void:
 
 func _recalc_def(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = int(target.get("base_def", target.get("def", 0)))
+	var base = _stat_baseline(target, "def", target.get("def", 0))
 	var effects = target.get("status_effects", {})
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("break_def"):
@@ -440,7 +450,7 @@ func _recalc_primary_stat(target: Dictionary, stat_key: String) -> void:
 	var mod_key := "%s_mod" % stat_key
 	var buff_effect_id := "stat_buff_%s" % stat_key
 	var debuff_effect_id := "stat_debuff_%s" % stat_key
-	var base = int(target.get(base_key, target.get(stat_key, 0)))
+	var base = _stat_baseline(target, stat_key, target.get(stat_key, 0))
 	var effects = target.get("status_effects", {})
 	var delta = 0
 	if typeof(effects) == TYPE_DICTIONARY:
@@ -454,8 +464,8 @@ func _recalc_primary_stat(target: Dictionary, stat_key: String) -> void:
 
 func _recalc_max_hp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = int(target.get("base_max_hp", target.get("max_hp", target.get("hp", 0))))
-	var base_con: int = max(0, int(target.get("base_con", target.get("con", 0))))
+	var base = _stat_baseline(target, "max_hp", target.get("max_hp", target.get("hp", 0)))
+	var base_con: int = max(0, _stat_baseline(target, "con", target.get("con", 0)))
 	var current_con: int = max(0, int(target.get("con", base_con)))
 	var base_mult := 1.0 + float(base_con) * 0.01
 	var current_mult := 1.0 + float(current_con) * 0.01
@@ -473,8 +483,8 @@ func _recalc_max_hp(target: Dictionary) -> void:
 
 func _recalc_max_mp(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = int(target.get("base_max_mp", target.get("max_mp", target.get("mp", 0))))
-	var base_int: int = max(0, int(target.get("base_int", target.get("int", 0))))
+	var base = _stat_baseline(target, "max_mp", target.get("max_mp", target.get("mp", 0)))
+	var base_int: int = max(0, _stat_baseline(target, "int", target.get("int", 0)))
 	var current_int: int = max(0, int(target.get("int", base_int)))
 	var base_mult := 1.0 + float(base_int) * 0.01
 	var current_mult := 1.0 + float(current_int) * 0.01
