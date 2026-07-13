@@ -36,9 +36,9 @@ func play_special_use_dialog(item_def: Dictionary, target) -> Dictionary:
 	var lines = _build_dialog_lines(event_id, target)
 	if lines.is_empty():
 		return {"handled": false}
-	await _play_dialog_now(lines)
+	var played := bool(await _play_dialog_now(lines))
 	return {
-		"handled": true,
+		"handled": played,
 		"event_id": event_id,
 	}
 
@@ -56,25 +56,29 @@ func get_walnut_fail_dialog_lines() -> Array:
 		}
 	]
 
-func _play_dialog_now(lines: Array) -> void:
+func _play_dialog_now(lines: Array) -> bool:
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		return
+		return false
 	var dialog_manager = tree.root.get_node_or_null("GameRoot/DialogManager")
 	if dialog_manager == null or not dialog_manager.has_method("show_dialog_sequence"):
-		return
+		return false
+	if bool(dialog_manager.get("dialog_active")):
+		return false
 	var prev_mode = dialog_manager.process_mode
 	var had_layer = false
 	var prev_layer = 0
 	if dialog_manager is CanvasLayer:
 		had_layer = true
 		prev_layer = int((dialog_manager as CanvasLayer).layer)
-		(dialog_manager as CanvasLayer).layer = 500
+		(dialog_manager as CanvasLayer).layer = 2000
 	dialog_manager.process_mode = Node.PROCESS_MODE_ALWAYS
+	dialog_manager.set_process_unhandled_input(true)
 	await dialog_manager.show_dialog_sequence(lines)
 	dialog_manager.process_mode = prev_mode
 	if had_layer:
 		(dialog_manager as CanvasLayer).layer = prev_layer
+	return true
 
 func _build_dialog_lines(event_id: String, target) -> Array:
 	var actor_key = _resolve_actor_dialog_key(target)
