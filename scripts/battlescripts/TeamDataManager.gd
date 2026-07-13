@@ -49,7 +49,7 @@ var all_characters: Dictionary = {
 	},
 	"lieshao": {
 		"id": "lieshao",
-		"name": "列肖",
+		"name": "列霄",
 		"hp": 180,
 		"max_hp": 180,
 		"mp": 80,

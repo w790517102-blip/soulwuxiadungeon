@@ -59,7 +59,7 @@ const MARTIAL_PAIRING_BONUSES := [
 		"inner_force_id": "liuchen_jue",
 		"skill_id": "skill_lianjuejian",
 		"effects": {"strike_count_delta": 1},
-		"log": "{name} 運轉流塵訣，連訣劍勢再起一重，追擊如塵隨風！",
+		"log": "{name} 運轉流塵訣，連決劍勢再起一重，追擊如塵隨風！",
 	},
 	{
 		"inner_force_id": "fuchao_jue",

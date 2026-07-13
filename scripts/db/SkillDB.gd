@@ -3,7 +3,7 @@ extends Node
 const SKILLS := {
 	"skill_lianjuejian": {
 		"id": "skill_lianjuejian",
-		"name": "連訣劍",
+		"name": "連決劍",
 		"category": "單體攻擊",
 		"description": "迅速揮劍三次，連擊破敵。",
 		"weapon_type": "劍",
@@ -358,7 +358,7 @@ const SKILLS := {
 	},
 	"skill_hawkeye_focus": {
 		"id": "skill_hawkeye_focus",
-		"name": "鷹眼訣",
+		"name": "鷹眼凝",
 		"category": "自身增益",
 		"description": "提氣凝神，將目力與心念收束於一點，使自身洞察更銳。",
 		"weapon_type": "通用",
@@ -731,7 +731,7 @@ const SKILLS := {
 }
 
 const LEGACY_NAME_TO_ID := {
-	"連訣劍": "skill_lianjuejian",
+	"連決劍": "skill_lianjuejian",
 	"霸刀斬": "skill_badaozhan",
 	"斷水斬": "skill_duanshuizhan",
 	"地缺劍": "skill_diquejian",
@@ -756,7 +756,7 @@ const LEGACY_NAME_TO_ID := {
 	"轉性訣": "skill_force_element_test",
 	"潑墨迷眼": "skill_smoky_ink_blind",
 	"牽絲縛影": "skill_binding_shadow",
-	"鷹眼訣": "skill_hawkeye_focus",
+	"鷹眼凝": "skill_hawkeye_focus",
 	"墨影輕身": "skill_inkveil_swiftroute",
 	"定弦凝神": "skill_qin_resonant_focus",
 	"亂弦絆影": "skill_luanxian_banying",
@@ -948,8 +948,8 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 		"skill_lianjuejian":
 			out.append({
 				"kind": "專屬搭配",
-				"text_long": "流塵訣下可進化為「流塵連訣劍」。",
-				"text_short": "專屬：可進化為流塵連訣劍。",
+				"text_long": "流塵訣下可進化為「流塵連決劍」。",
+				"text_short": "專屬：可進化為流塵連決劍。",
 				"met": current_force_id == "liuchen_jue",
 			})
 		"skill_duanshuizhan":
