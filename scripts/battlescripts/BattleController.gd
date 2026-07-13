@@ -1887,7 +1887,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost", "atk_up", "stat_buff", "stat_debuff"]
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost", "atk_up", "def_up", "stat_buff", "stat_debuff"]
 	var mp_cost = _resolve_skill_mp_cost(actor, skill_data)
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
@@ -2450,6 +2450,7 @@ func _is_support_status_effect(effect_id: String) -> bool:
 		"focus",
 		"evasion_boost",
 		"atk_up",
+		"def_up",
 		"stat_buff",
 		"stat_debuff",
 	]
@@ -2463,6 +2464,7 @@ func _is_positive_status_effect(effect_id: String) -> bool:
 		"focus",
 		"evasion_boost",
 		"atk_up",
+		"def_up",
 		"stat_buff",
 	]
 
@@ -2589,6 +2591,7 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 		"payload": payload,
 		"target": effect_target,
 		"desc": desc,
+		"apply_log": _resolve_status_apply_override(normalized_effect_id, entry, skill_data),
 		"tone_cast": tone_cast,
 		"tone_suffer": tone_suffer,
 	}
@@ -2653,6 +2656,8 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 			payload["accuracy_delta"] = abs(amount if amount > 0 else 15)
 		"atk_up":
 			payload["atk_delta"] = abs(amount if amount > 0 else 10)
+		"def_up":
+			payload["def_delta"] = abs(amount if amount > 0 else 10)
 		"root":
 			payload["evasion_delta"] = -abs(amount if amount > 0 else 20)
 		_:
@@ -3112,13 +3117,17 @@ func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
 	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
 	if bool(skill_data.get("positive_buff", false)):
 		return true
-	return normalized_effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "atk_up", "stat_buff"]
+	return normalized_effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "atk_up", "def_up", "stat_buff"]
 
 
 func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:
 	if applied_records.is_empty():
 		return ""
-	var first_target: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
+	var first_record: Dictionary = applied_records[0] as Dictionary
+	var apply_log := String(first_record.get("apply_log", "")).strip_edges()
+	if apply_log != "":
+		return apply_log
+	var first_target: Dictionary = first_record.get("target", {}) if typeof(first_record.get("target", {})) == TYPE_DICTIONARY else {}
 	var scope: String = _resolve_positive_buff_effective_scope(user, skill_data, first_target)
 	var narration_map = skill_data.get("buff_narration", {})
 	var template := _resolve_positive_buff_override_template(scope, narration_map)
@@ -3225,6 +3234,12 @@ func _build_positive_buff_system_line(user: Dictionary, applied_records: Array) 
 		"speed_buff":
 			label = "速度"
 			amount = int(payload.get("speed_delta", 0))
+		"atk_up":
+			label = "攻擊"
+			amount = int(payload.get("atk_delta", 10))
+		"def_up":
+			label = "防禦"
+			amount = int(payload.get("def_delta", 10))
 		"stat_buff_int":
 			label = "智慧"
 			amount = int(payload.get("stat_delta", 0))
