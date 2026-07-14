@@ -10,8 +10,77 @@ var current_music_tag = ""
 var music_folder = "res://assets/BGM/"
 var _world_bgm_paused_for_battle := false
 var _world_bgm_resume_volume_db := -5.0
+var map_transition_locked := false
+const MAP_EXIT_REQUIRES_EXIT_META := "map_transition_requires_exit"
 
 @onready var music_player = $MusicPlayer  # 音樂播放器節點
+
+func lock_map_transitions(reason := "") -> void:
+	map_transition_locked = true
+	if GlobalState:
+		GlobalState.set_meta("map_transition_locked", true)
+	if reason != "":
+		print("[MapTransitionGuard] locked: ", reason)
+
+func unlock_map_transitions(reason := "") -> void:
+	map_transition_locked = false
+	if GlobalState and GlobalState.has_meta("map_transition_locked"):
+		GlobalState.remove_meta("map_transition_locked")
+	if reason != "":
+		print("[MapTransitionGuard] unlocked: ", reason)
+
+func is_map_transition_locked() -> bool:
+	if map_transition_locked:
+		return true
+	if GlobalState:
+		if bool(GlobalState.get("is_loading")):
+			return true
+		return bool(GlobalState.get_meta("map_transition_locked", false))
+	return false
+
+func can_use_map_transition(body: Node, area: Area2D = null) -> bool:
+	if body == null or body.name != "LiuYu":
+		return false
+	if is_map_transition_locked():
+		print("[MapTransitionGuard] blocked while locked. area=", area.name if area else "<unknown>", " pos=", (body as Node2D).global_position if body is Node2D else Vector2.ZERO)
+		return false
+	if area != null and area.has_meta(MAP_EXIT_REQUIRES_EXIT_META):
+		print("[MapTransitionGuard] blocked until player exits area=", area.name)
+		return false
+	return true
+
+func disarm_overlapping_map_exits(player: Node2D) -> void:
+	if player == null:
+		return
+	var scene_root: Node = null
+	var current_scene = get_node_or_null("CurrentScene")
+	if current_scene and current_scene.get_child_count() > 0:
+		scene_root = current_scene.get_child(0)
+	if scene_root == null:
+		return
+	var areas: Array[Area2D] = []
+	_collect_map_exit_areas(scene_root, areas)
+	for area in areas:
+		var bodies := area.get_overlapping_bodies()
+		if bodies.has(player):
+			area.set_meta(MAP_EXIT_REQUIRES_EXIT_META, true)
+			var exited_callable := Callable(self, "_on_guarded_map_exit_body_exited").bind(area)
+			if not area.body_exited.is_connected(exited_callable):
+				area.body_exited.connect(exited_callable)
+			print("[MapTransitionGuard] disarmed overlapping exit=", area.name, " player_pos=", player.global_position)
+
+func _collect_map_exit_areas(node: Node, out: Array[Area2D]) -> void:
+	if node is Area2D and String(node.name).begins_with("to_"):
+		out.append(node)
+	for child in node.get_children():
+		_collect_map_exit_areas(child, out)
+
+func _on_guarded_map_exit_body_exited(body: Node, area: Area2D) -> void:
+	if body == null or body.name != "LiuYu" or area == null:
+		return
+	if area.has_meta(MAP_EXIT_REQUIRES_EXIT_META):
+		area.remove_meta(MAP_EXIT_REQUIRES_EXIT_META)
+		print("[MapTransitionGuard] rearmed exit after leave=", area.name)
 
 func change_map_to(path: String):
 	current_map_path = path

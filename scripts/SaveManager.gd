@@ -244,9 +244,14 @@ func load_from_slot(slot_index: int) -> void:
 
 	var map_path = String(data.get("current_map_path", ""))
 	var scene_path = String(data.get("current_scene_path", ""))
+	var saved_player_position: Vector2 = data.get("player_position", Vector2.ZERO)
 
 	var game_root = get_node_or_null("/root/GameRoot")
 	var player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+	var initial_player_position := player.global_position if player else Vector2.ZERO
+	print("[SaveManager] load slot=", slot_index, " begin map_path=", map_path, " scene_path=", scene_path, " initial_player_pos=", initial_player_position, " saved_player_pos=", saved_player_position)
+	if game_root and game_root.has_method("lock_map_transitions"):
+		game_root.lock_map_transitions("save_load")
 
 	# ✅ 優先 map_path
 	if game_root and game_root.has_method("change_map_to") and map_path != "":
@@ -254,20 +259,27 @@ func load_from_slot(slot_index: int) -> void:
 		await game_root.change_map_to(map_path)
 		await get_tree().process_frame
 		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+		print("[SaveManager] after map load spawn_player_pos=", player.global_position if player else Vector2.ZERO, " target_saved_pos=", saved_player_position)
 	elif game_root and game_root.has_method("change_map_to") and scene_path != "":
 		await game_root.change_map_to(scene_path)
 		await get_tree().process_frame
 		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+		print("[SaveManager] after scene load spawn_player_pos=", player.global_position if player else Vector2.ZERO, " target_saved_pos=", saved_player_position)
 	elif scene_path != "" and ResourceLoader.exists(scene_path):
 		get_tree().change_scene_to_file(scene_path)
 		await get_tree().process_frame
 		player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
+		print("[SaveManager] after direct scene load spawn_player_pos=", player.global_position if player else Vector2.ZERO, " target_saved_pos=", saved_player_position)
 
 	if player:
-		player.global_position = data.get("player_position", player.global_position)
+		player.global_position = saved_player_position
 		await get_tree().process_frame
+		await get_tree().physics_frame
+		if game_root and game_root.has_method("disarm_overlapping_map_exits"):
+			game_root.disarm_overlapping_map_exits(player)
 		if player.has_method("refresh_danger_zone_from_position"):
 			await player.refresh_danger_zone_from_position(0.7)
+		print("[SaveManager] final_player_pos=", player.global_position, " loading=", GlobalState.get("is_loading"))
 
 	# Managers + runtime snapshot（地圖切換完成後再套用，避免 _ready 初始化覆蓋）
 	if SideQuestManager and SideQuestManager.has_method("reset_all"):
@@ -287,6 +299,8 @@ func load_from_slot(slot_index: int) -> void:
 
 	if GlobalState and GlobalState.has_method("end_load"):
 		GlobalState.end_load()
+	if game_root and game_root.has_method("unlock_map_transitions"):
+		game_root.unlock_map_transitions("save_load")
 
 	var menu_ctrl = get_node_or_null("/root/SystemMenu")
 	if menu_ctrl and menu_ctrl.has_method("close_menu_if_open"):

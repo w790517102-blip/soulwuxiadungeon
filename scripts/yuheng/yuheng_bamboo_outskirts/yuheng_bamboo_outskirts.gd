@@ -59,7 +59,7 @@ func show_map_name():
 		push_warning("MapNamePopup 找不到！請確認 CanvasLayer 裡有加 Label")
 
 func _on_to_bamboo_grove_suburb_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("to_Bamboo_Grove_Suburb")):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -69,7 +69,7 @@ func _on_to_bamboo_grove_suburb_body_entered(body: Node2D) -> void:
 		get_node("/root/GameRoot").change_map_to(Bamboo_Grove_Suburb)
 
 func _on_to_yin_yue_manor_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("to_YinYueManor")):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()

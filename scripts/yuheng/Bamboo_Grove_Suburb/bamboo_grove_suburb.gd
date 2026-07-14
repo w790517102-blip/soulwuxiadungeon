@@ -33,7 +33,7 @@ func show_map_name():
 		push_warning("MapNamePopup 找不到！請確認 CanvasLayer 裡有加 Label")
 
 func _on_to_yuheng_market_west_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("to_yuheng_market_west")):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -44,7 +44,7 @@ func _on_to_yuheng_market_west_body_entered(body: Node2D) -> void:
 
 
 func _on_to_yuheng_bamboo_jungle_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("to_yuheng_bamboo_jungle")):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
