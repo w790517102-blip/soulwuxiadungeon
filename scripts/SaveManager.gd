@@ -248,7 +248,7 @@ func load_from_slot(slot_index: int) -> void:
 
 	var game_root = get_node_or_null("/root/GameRoot")
 	var player = get_node_or_null("/root/GameRoot/LiuYu") as Node2D
-	var initial_player_position := player.global_position if player else Vector2.ZERO
+	var initial_player_position = player.global_position if player else Vector2.ZERO
 	print("[SaveManager] load slot=", slot_index, " begin map_path=", map_path, " scene_path=", scene_path, " initial_player_pos=", initial_player_position, " saved_player_pos=", saved_player_position)
 	if game_root and game_root.has_method("lock_map_transitions"):
 		game_root.lock_map_transitions("save_load")
