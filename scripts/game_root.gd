@@ -84,6 +84,8 @@ func change_map_to(path: String):
 			GlobalState.set_meta("menu_locked", true)
 		if $LiuYu.has_method("set_encounter_cooldown"):
 			$LiuYu.set_encounter_cooldown(cooldown_distance)
+		if $LiuYu.has_method("refresh_danger_zone_from_position"):
+			await $LiuYu.refresh_danger_zone_from_position(0.0)
 		resume_world_bgm_after_battle(0.5)
 
 		print("[GameRoot Return] liuyu visible=", $LiuYu.visible, " can_move=", $LiuYu.get("can_move"))
