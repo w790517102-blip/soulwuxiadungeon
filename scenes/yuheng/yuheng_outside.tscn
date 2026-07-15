@@ -4301,7 +4301,7 @@ script = ExtResource("16_6rdbe")
 min = 0
 max = 999
 enabled = true
-lines = Array[String](["忙死我了!!", "要趕快收衣服"])
+lines = Array[String](["要趕快回家做飯", "四季豆..不能忘了", "要生的?還熟的?"])
 metadata/_custom_type_script = "uid://w8e7rv618eva"
 
 [sub_resource type="Curve2D" id="Curve2D_d0hof"]
