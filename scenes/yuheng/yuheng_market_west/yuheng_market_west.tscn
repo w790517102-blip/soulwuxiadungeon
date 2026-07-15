@@ -6634,9 +6634,9 @@ shape = SubResource("RectangleShape2D_smwb0")
 [node name="pharmacy" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="pharmacy"]
-position = Vector2(324.508, 241.354)
+position = Vector2(300, 300)
 rotation = 0.378736
-skew = -0.378736
+skew = 0.322886
 shape = SubResource("RectangleShape2D_ab8u7")
 
 [node name="to_Bai_Jian_Jue" type="Area2D" parent="."]
