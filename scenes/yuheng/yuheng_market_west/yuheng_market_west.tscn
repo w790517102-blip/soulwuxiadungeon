@@ -6407,6 +6407,9 @@ position = Vector2(-151.41, 171.37)
 [node name="from_Bamboo_Grove_Suburb" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-650, 188.815)
 
+[node name="ManorRouteReturnMarker" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-650, 188.815)
+
 [node name="NPC" type="Node2D" parent="."]
 
 [node name="outlander" parent="NPC" instance=ExtResource("3_gvwd1")]
@@ -6658,3 +6661,4 @@ shape = SubResource("RectangleShape2D_f0n1g")
 [connection signal="body_entered" from="pharmacy" to="." method="_on_pharmacy_body_entered"]
 [connection signal="body_entered" from="to_Bai_Jian_Jue" to="." method="_on_to_bai_jian_jue_body_entered"]
 [connection signal="body_entered" from="to_Bamboo_Grove_Suburb" to="." method="_on_to_bamboo_grove_suburb_body_entered"]
+[connection signal="body_exited" from="to_Bamboo_Grove_Suburb" to="." method="_on_to_bamboo_grove_suburb_body_exited"]
