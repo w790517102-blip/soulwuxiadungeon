@@ -9,13 +9,22 @@
 
 extends Label
 
+enum ChatterSourceMode {
+	MAIN_STAGE_LEGACY,
+	MANUAL_VERSION,
+}
+
 @export var type_time: float = 0.5
 @export var hold_time: float = 3.0
 @export var gap_time: float = 0.3
 @export var random_gap_jitter: float = 0.15
 @export var random_start_index: bool = true
 
+@export var source_mode := ChatterSourceMode.MAIN_STAGE_LEGACY
 @export var stage_rules: Array[ChatterStageRule] = []
+@export var version_rules: Array[ChatterVersionRule] = []
+@export var default_version_id: int = 0
+@export var state_provider_path: NodePath = NodePath("..")
 
 @export var only_when_player_near: bool = true
 @export var trigger_distance: float = 320.0
@@ -35,6 +44,7 @@ var _state: int = 0  # 0 typing, 1 hold, 2 gap
 var _active: bool = false
 var _player: Node2D = null
 var _last_stage: int = -999999
+var _current_version_id: int = -999999
 var _accum: float = 0.0
 
 # 內部：目前這句完整文字（含 \n）
@@ -58,16 +68,21 @@ func _ready() -> void:
 
 	vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-	_apply_stage(_get_stage())
+	_connect_state_provider()
+	if source_mode == ChatterSourceMode.MANUAL_VERSION:
+		set_chatter_version(default_version_id)
+	else:
+		_apply_stage(_get_stage())
 	set_process(true)
 
 func _process(delta: float) -> void:
-	_accum += delta
-	if _accum >= refresh_interval:
-		_accum = 0.0
-		var st := _get_stage()
-		if st != _last_stage:
-			_apply_stage(st)
+	if source_mode == ChatterSourceMode.MAIN_STAGE_LEGACY:
+		_accum += delta
+		if _accum >= refresh_interval:
+			_accum = 0.0
+			var st := _get_stage()
+			if st != _last_stage:
+				_apply_stage(st)
 
 	if not _active:
 		return
@@ -110,7 +125,35 @@ func _process(delta: float) -> void:
 				_reset_cycle()
 
 func refresh_from_story() -> void:
-	_apply_stage(_get_stage())
+	if source_mode == ChatterSourceMode.MANUAL_VERSION:
+		refresh_chatter_version()
+	else:
+		_apply_stage(_get_stage())
+
+func set_chatter_version(version_id: int) -> void:
+	if _current_version_id == version_id:
+		return
+	_current_version_id = version_id
+	var rule := _pick_version_rule(version_id)
+	if rule == null:
+		_set_enabled(false)
+		return
+	_cur_lines = rule.lines
+	_set_enabled(rule.enabled and _cur_lines.size() > 0)
+	if _active:
+		if random_start_index and _cur_lines.size() > 0:
+			_i = randi() % _cur_lines.size()
+		else:
+			_i = 0
+		_reset_cycle()
+
+func get_chatter_version() -> int:
+	return _current_version_id
+
+func refresh_chatter_version() -> void:
+	var version_id := _current_version_id
+	_current_version_id = -999999
+	set_chatter_version(version_id)
 
 func _apply_stage(stage: int) -> void:
 	_last_stage = stage
@@ -132,6 +175,24 @@ func _pick_rule(stage: int) -> ChatterStageRule:
 		if stage >= r.min and stage <= r.max:
 			return r
 	return null
+
+func _pick_version_rule(version_id: int) -> ChatterVersionRule:
+	for r in version_rules:
+		if r.version_id == version_id:
+			return r
+	return null
+
+func _connect_state_provider() -> void:
+	if state_provider_path == NodePath():
+		return
+	var provider := get_node_or_null(state_provider_path)
+	if provider == null:
+		return
+	if not provider.has_signal("overhead_chatter_version_changed"):
+		return
+	var callback := Callable(self, "set_chatter_version")
+	if not provider.is_connected("overhead_chatter_version_changed", callback):
+		provider.connect("overhead_chatter_version_changed", callback)
 
 func _set_enabled(on: bool) -> void:
 	_active = on
