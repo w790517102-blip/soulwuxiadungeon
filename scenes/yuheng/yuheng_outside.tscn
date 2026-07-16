@@ -1,4 +1,4 @@
-[gd_scene load_steps=48 format=4 uid="uid://bm7nx1y3t7kff"]
+[gd_scene load_steps=52 format=4 uid="uid://bm7nx1y3t7kff"]
 
 [ext_resource type="Script" uid="uid://dpbp8ijyowyau" path="res://scripts/yuheng/yuheng_outside/yuheng_outside.gd" id="1_uptbf"]
 [ext_resource type="Texture2D" uid="uid://cxitq2psjp15x" path="res://assets/background/Yuheng_Town/yuheng_outside1.jpg" id="2_ncii6"]
@@ -18,6 +18,7 @@
 [ext_resource type="Script" uid="uid://un7bbnrd5su1" path="res://scripts/overhead_label.gd" id="15_er17y"]
 [ext_resource type="PackedScene" uid="uid://rmvdqsxilwwu" path="res://scenes/yuheng/yuheng_outside/pen_girl.tscn" id="15_g5fqp"]
 [ext_resource type="Script" uid="uid://w8e7rv618eva" path="res://scripts/ChatterStageRule.gd" id="16_6rdbe"]
+[ext_resource type="Script" path="res://scripts/ChatterVersionRule.gd" id="17_qiushen_version"]
 [ext_resource type="Script" uid="uid://y6y1k7dsvqxr" path="res://scripts/yuheng/yuheng_outside/pen_girl.gd" id="16_pmu4d"]
 [ext_resource type="PackedScene" uid="uid://btibi1ocbj6j1" path="res://scenes/yuheng/yuheng_outside/sword_boy.tscn" id="17_hwlhx"]
 [ext_resource type="PackedScene" uid="uid://4y2sw0rece5e" path="res://scenes/yuheng/yuheng_outside/Romeo.tscn" id="18_oc7vj"]
@@ -4304,6 +4305,24 @@ enabled = true
 lines = Array[String](["要趕快回家做飯", "四季豆..不能忘了", "要生的?還熟的?"])
 metadata/_custom_type_script = "uid://w8e7rv618eva"
 
+[sub_resource type="Resource" id="Resource_qiushen_v1"]
+script = ExtResource("17_qiushen_version")
+version_id = 1
+enabled = true
+lines = Array[String](["要趕快回家做飯", "四季豆..不能忘了", "要生的?還熟的?"])
+
+[sub_resource type="Resource" id="Resource_qiushen_v2"]
+script = ExtResource("17_qiushen_version")
+version_id = 2
+enabled = true
+lines = Array[String](["四季豆總算找著了……", "這次可不能又忘了。", "可是，我原本還想煮什麼來著……"])
+
+[sub_resource type="Resource" id="Resource_qiushen_v3"]
+script = ExtResource("17_qiushen_version")
+version_id = 3
+enabled = true
+lines = Array[String](["終於記得要煮什麼菜了～", "蘿蔔有記得醃了。", "明天就吃五花肉。"])
+
 [sub_resource type="Curve2D" id="Curve2D_d0hof"]
 _data = {
 "points": PackedVector2Array(0, 0, 0, 0, -510.18, 431.035, 149.586, -67.7686, -149.586, 67.7686, -233.18, 434.035, 77.7885, 218.18, -77.7885, -218.18, 463.82, 415.035, -34.8456, 192.676, 34.8456, -192.676, -175.18, 702.035, 35.4312, 124.009, -35.4312, -124.009, -423, 593, 106.48, -222.64, -106.48, 222.64, -685, 504, 244.42, 99.22, -244.42, -99.22, -628.18, 473.035, 0, 0, 0, 0, -518.18, 437.035)
@@ -4561,7 +4580,10 @@ theme_override_font_sizes/font_size = 25
 script = ExtResource("15_er17y")
 type_time = 0.3
 gap_time = 0.1
+source_mode = 1
 stage_rules = Array[ExtResource("16_6rdbe")]([SubResource("Resource_3fkc0")])
+version_rules = Array[ExtResource("17_qiushen_version")]([SubResource("Resource_qiushen_v1"), SubResource("Resource_qiushen_v2"), SubResource("Resource_qiushen_v3")])
+default_version_id = 1
 
 [node name="wash woman2" type="Path2D" parent="."]
 position = Vector2(115.18, -40.035)
