@@ -6128,6 +6128,13 @@ position = Vector2(143, 36)
 scale = Vector2(0.78, 0.78)
 texture = ExtResource("3_qs0be")
 
+[node name="WellBarrier" type="StaticBody2D" parent="well_locked"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="well_locked/WellBarrier"]
+position = Vector2(120, 98)
+rotation = 0.221657
+shape = SubResource("RectangleShape2D_w0bky")
+
 [node name="well_keyhole" type="Area2D" parent="well_locked"]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="well_locked/well_keyhole"]

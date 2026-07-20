@@ -15,11 +15,15 @@ var dialog_lines: Array = []
 var _interaction_flow_active := false
 var _unlock_on_next_reset := false
 var _choice_flow_pending := false
+var _choice_active := false
+var _battle_pending := false
+var _sparring_flow_active := false
 
 const QUEST_ID := "yh_side_oldfighter_01"
 const QUEST_TITLE := "拳骨未老"
 const FLAG_WEAPON_WIN := "yh_side_oldfighter_weapon_win"
 const FLAG_UNARMED_WIN := "yh_side_oldfighter_unarmed_win"
+const META_SPARRING_LOCK_ACTIVE := "oldfighter_sparring_flow_lock_active"
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -77,6 +81,8 @@ func _get_anim_by_vector(dir: Vector2, prefix: String) -> String:
 func _unhandled_input(event):
 	if not can_interact:
 		return
+	if _interaction_flow_active or _choice_active or _battle_pending or _sparring_flow_active:
+		return
 	if dialog_manager.dialog_active:
 		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
@@ -87,6 +93,8 @@ func _unhandled_input(event):
 
 func _on_dialogue_finished(npc_node):
 	if npc_node != self:
+		return
+	if _battle_pending or _sparring_flow_active:
 		return
 
 	# 🎯 這裡就是對話完全播完後的安全時機！
@@ -129,7 +137,7 @@ func reset_dialog_state():
 
 func _run_oldfighter_interaction() -> void:
 	await _handle_oldfighter_interact()
-	if _interaction_flow_active:
+	if _interaction_flow_active and not _battle_pending and not _sparring_flow_active:
 		_end_interaction_flow()
 
 func _handle_oldfighter_interact() -> void:
@@ -183,6 +191,7 @@ func _start_oldfighter_intro_and_offer() -> void:
 
 func _offer_spar_choice() -> void:
 	_choice_flow_pending = true
+	_choice_active = true
 	dialog_manager.show_choice([
 		{ "text": "與老翁比試", "callback": Callable(self, "_choose_spar") },
 		{ "text": "暫時婉拒", "callback": Callable(self, "_choose_decline") },
@@ -192,6 +201,7 @@ func _offer_spar_choice() -> void:
 		await get_tree().process_frame
 
 func _choose_decline() -> void:
+	_choice_active = false
 	dialog_manager.choice_box.hide_choices()
 	_unlock_on_next_reset = false
 	dialog_manager.show_dialog_sequence([
@@ -203,9 +213,12 @@ func _choose_decline() -> void:
 	_choice_flow_pending = false
 
 func _choose_spar() -> void:
+	_choice_active = false
+	_choice_flow_pending = false
+	_sparring_flow_active = true
+	_battle_pending = true
 	dialog_manager.choice_box.hide_choices()
 	await _start_oldfighter_sparring_battle()
-	_choice_flow_pending = false
 
 func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
 	_unlock_on_next_reset = false
@@ -269,6 +282,11 @@ func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
 	SideQuestManager.side_quests[QUEST_ID] = quest2
 
 func _start_oldfighter_sparring_battle() -> void:
+	_sparring_flow_active = true
+	_battle_pending = true
+	_choice_active = false
+	if dialog_manager and dialog_manager.choice_box:
+		dialog_manager.choice_box.hide_choices()
 	var equip := InventorySync.get_equipped("liuyu")
 	var has_weapon := String(equip.get("weapon_1", "")) != "" or String(equip.get("weapon_2", "")) != ""
 	var has_armor_or_acc := false
@@ -303,6 +321,9 @@ func _start_oldfighter_sparring_battle() -> void:
 			{ "text": "「空手是空手，可你身上這些護具、腰飾，哪一樣不是外物？」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "「也罷，先讓老夫試試，你這身行頭底下，到底有幾分真本事。」", "speaker": 1, "portrait": portrait_path },
 		])
+	_battle_pending = true
+	_sparring_flow_active = true
+	GlobalState.set_meta(META_SPARRING_LOCK_ACTIVE, true)
 	GlobalState.set_meta("oldfighter_spar_pending", true)
 	GlobalState.set_meta("oldfighter_spar_has_weapon", has_weapon)
 	GlobalState.set_meta("oldfighter_spar_has_armor_or_acc", has_armor_or_acc)
@@ -354,6 +375,12 @@ func _start_oldfighter_sparring_battle() -> void:
 func _try_resolve_oldfighter_battle_return() -> void:
 	if not GlobalState.get_meta("oldfighter_spar_pending", false):
 		return
+	GlobalState.set_meta(META_SPARRING_LOCK_ACTIVE, true)
+	GlobalState.set_meta("menu_locked", true)
+	var return_liuyu = get_node_or_null("/root/GameRoot/LiuYu")
+	if return_liuyu:
+		return_liuyu.can_move = false
+	_sparring_flow_active = true
 	var result_meta = GlobalState.get_meta("pending_battle_result", {})
 	if typeof(result_meta) != TYPE_DICTIONARY:
 		return
@@ -365,6 +392,7 @@ func _try_resolve_oldfighter_battle_return() -> void:
 	GlobalState.remove_meta("oldfighter_spar_has_armor_or_acc")
 	if result != "victory":
 		_begin_interaction_flow()
+		_sparring_flow_active = true
 		await _play_sequence_and_wait([
 			{ "text": "「哼哼，年輕人，江湖飯可不是靠臉吃的。」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "「回去調調氣，想清楚身上哪些東西是本事，哪些東西只是重量，再來找老夫。」", "speaker": 1, "portrait": portrait_path },
@@ -373,6 +401,7 @@ func _try_resolve_oldfighter_battle_return() -> void:
 		_end_interaction_flow()
 		return
 	_begin_interaction_flow()
+	_sparring_flow_active = true
 	await _resolve_spar_result(has_weapon, has_armor_or_acc)
 	_end_interaction_flow()
 
@@ -403,10 +432,15 @@ func _play_sequence_and_wait(lines: Array) -> void:
 	await dialog_manager.dialog_sequence_finished
 
 func _begin_interaction_flow() -> void:
+	if dialog_manager and dialog_manager.choice_box and dialog_manager.choice_box.visible:
+		dialog_manager.choice_box.hide_choices()
+		_choice_active = false
 	_interaction_flow_active = true
 	_unlock_on_next_reset = false
 	if GlobalState:
 		GlobalState.set_meta("menu_locked", true)
+		if _sparring_flow_active or _battle_pending:
+			GlobalState.set_meta(META_SPARRING_LOCK_ACTIVE, true)
 	var liuyu = get_node_or_null("/root/GameRoot/LiuYu")
 	if liuyu:
 		liuyu.can_move = false
@@ -417,5 +451,10 @@ func _end_interaction_flow() -> void:
 		liuyu.can_move = true
 	if GlobalState:
 		GlobalState.set_meta("menu_locked", false)
+		if GlobalState.has_meta(META_SPARRING_LOCK_ACTIVE):
+			GlobalState.remove_meta(META_SPARRING_LOCK_ACTIVE)
 	_interaction_flow_active = false
 	_unlock_on_next_reset = false
+	_choice_active = false
+	_battle_pending = false
+	_sparring_flow_active = false

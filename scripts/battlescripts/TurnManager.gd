@@ -24,7 +24,11 @@ var enemy_party: Array = []
 
 # 自訂比較：快 > 遲 > 柔 > 剛（若未設定 speed，預設 0）
 func _compare_speed(a: Dictionary, b: Dictionary) -> bool:
-	return a.get("speed", 0) > b.get("speed", 0)
+	var a_speed := int(a.get("speed", 0))
+	var b_speed := int(b.get("speed", 0))
+	if a_speed != b_speed:
+		return a_speed > b_speed
+	return int(a.get("battle_order_index", 9999)) < int(b.get("battle_order_index", 9999))
 
 # === 記憶阿達雷勒現象 ===
 var round_in_progress = false
@@ -33,8 +37,18 @@ var round_in_progress = false
 func start_battle(players: Array, enemies: Array) -> void:
 	player_party = players
 	enemy_party = enemies
+	_assign_battle_order_indices()
 	round_count = 1
 	call_deferred("start_new_round")
+
+func _assign_battle_order_indices() -> void:
+	var order_index := 0
+	for actor in player_party + enemy_party:
+		if typeof(actor) != TYPE_DICTIONARY:
+			continue
+		if not actor.has("battle_order_index"):
+			actor["battle_order_index"] = order_index
+		order_index += 1
 
 # 產生新一輪行動順序
 func start_new_round() -> void:

@@ -32,6 +32,7 @@ const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
 const MAJOR_HIT_HEAVY_DAMAGE_RATIO := 0.22
 const ENEMY_DODGE_LINE_CHANCE := 0.60
 const ENEMY_DEBUFF_SUFFER_LINE_CHANCE := 0.90
+const BATTLE_BASELINE_KEYS := ["str", "agi", "int", "con", "luck", "max_hp", "max_mp", "atk", "def", "speed", "accuracy", "evasion", "crit_rate", "crit_rate_bonus"]
 const SE_SEARCH_DIRS := [
 	"res://assets/sound",
 	"res://assets/audio/se/battle",
@@ -58,7 +59,7 @@ const MARTIAL_PAIRING_BONUSES := [
 		"inner_force_id": "liuchen_jue",
 		"skill_id": "skill_lianjuejian",
 		"effects": {"strike_count_delta": 1},
-		"log": "{name} 運轉流塵訣，連訣劍勢再起一重，追擊如塵隨風！",
+		"log": "{name} 運轉流塵訣，連決劍勢再起一重，追擊如塵隨風！",
 	},
 	{
 		"inner_force_id": "fuchao_jue",
@@ -221,7 +222,7 @@ func start_battle(context: Dictionary) -> void:
 			continue
 		p["max_hp"] = int(p.get("max_hp", p.get("hp", 0)))
 		p["max_mp"] = int(p.get("max_mp", p.get("mp", 0)))
-		_apply_inner_force_runtime_bonus_for_actor(p)
+		_snapshot_battle_baseline(p)
 
 	for i in range(enemy_party.size()):
 		var e = enemy_party[i]
@@ -231,6 +232,7 @@ func start_battle(context: Dictionary) -> void:
 		e["is_enemy"] = true
 		if not e.has("ui_index"):
 			e["ui_index"] = i
+		_snapshot_battle_baseline(e)
 		_mark_enemy_lore_encounter(e)
 		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 
@@ -488,42 +490,60 @@ func _apply_equipment_bonuses() -> void:
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
 			continue
-		var bonus := InventorySync.get_equipment_stat_bonus(str(p.get("id", "")))
-		var inner_force: Dictionary = p.get("inner_force", {})
-		var force_bonus: Dictionary = inner_force.get("stat_bonus", {})
-		var bonus_atk := int(bonus.get("atk", 0)) + int(force_bonus.get("atk", 0))
-		var bonus_def := int(bonus.get("def", 0)) + int(force_bonus.get("def", 0))
-		var bonus_speed := int(bonus.get("speed", 0)) + int(force_bonus.get("speed", 0))
-		var bonus_accuracy := int(bonus.get("accuracy", 0)) + int(force_bonus.get("accuracy", 0))
-		var bonus_evasion := int(bonus.get("evasion", 0)) + int(force_bonus.get("evasion", 0))
-		var bonus_crit_rate := float(bonus.get("crit_rate_bonus", 0.0))
-		var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(force_bonus.get("max_hp", 0))
-		var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(force_bonus.get("max_mp", 0))
-		var hp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "hp")
-		var mp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "mp")
-		var base_max_hp := int(p.get("max_hp", p.get("hp", 0)))
-		var base_max_mp := int(p.get("max_mp", p.get("mp", 0)))
-		var max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
-		var max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
-		p["atk"] = int(p.get("atk", 0)) + bonus_atk
-		p["def"] = int(p.get("def", 0)) + bonus_def
-		p["speed"] = int(p.get("speed", 0)) + bonus_speed
-		p["accuracy"] = int(p.get("accuracy", 100)) + bonus_accuracy
-		p["evasion"] = int(p.get("evasion", 0)) + bonus_evasion
-		p["crit_rate_bonus"] = float(p.get("crit_rate_bonus", 0.0)) + bonus_crit_rate
-		p["max_hp"] = max_hp
-		p["max_mp"] = max_mp
-		p["hp"] = min(int(p.get("hp", 0)), max_hp)
-		p["mp"] = min(int(p.get("mp", 0)), max_mp)
+		_apply_equipment_bonus_to_actor(p)
+
+func _apply_equipment_bonus_to_actor(p: Dictionary) -> void:
+	if InventorySync == null or p.is_empty():
+		return
+	var bonus := InventorySync.get_equipment_stat_bonus(str(p.get("id", "")))
+	var force_bonus: Dictionary = {}
+	if not bool(p.get("derived_stats_applied", false)):
+		var inner_force: Dictionary = p.get("inner_force", {}) if typeof(p.get("inner_force", {})) == TYPE_DICTIONARY else {}
+		var raw_force_bonus = inner_force.get("stat_bonus", {})
+		if typeof(raw_force_bonus) == TYPE_DICTIONARY:
+			force_bonus = raw_force_bonus
+	var bonus_atk := int(bonus.get("atk", 0)) + int(force_bonus.get("atk", 0))
+	var bonus_def := int(bonus.get("def", 0)) + int(force_bonus.get("def", 0))
+	var bonus_speed := int(bonus.get("speed", 0)) + int(force_bonus.get("speed", 0))
+	var bonus_accuracy := int(bonus.get("accuracy", 0)) + int(force_bonus.get("accuracy", 0))
+	var bonus_evasion := int(bonus.get("evasion", 0)) + int(force_bonus.get("evasion", 0))
+	var bonus_crit_rate := float(bonus.get("crit_rate_bonus", 0.0))
+	var bonus_max_hp := int(bonus.get("max_hp", 0)) + int(force_bonus.get("max_hp", 0))
+	var bonus_max_mp := int(bonus.get("max_mp", 0)) + int(force_bonus.get("max_mp", 0))
+	var hp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "hp")
+	var mp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "mp")
+	var base_max_hp := int(p.get("max_hp", p.get("hp", 0)))
+	var base_max_mp := int(p.get("max_mp", p.get("mp", 0)))
+	var max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
+	var max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
+	p["atk"] = int(p.get("atk", 0)) + bonus_atk
+	p["def"] = int(p.get("def", 0)) + bonus_def
+	p["speed"] = int(p.get("speed", 0)) + bonus_speed
+	p["accuracy"] = int(p.get("accuracy", 100)) + bonus_accuracy
+	p["evasion"] = int(p.get("evasion", 0)) + bonus_evasion
+	p["crit_rate_bonus"] = float(p.get("crit_rate_bonus", 0.0)) + bonus_crit_rate
+	p["max_hp"] = max_hp
+	p["max_mp"] = max_mp
+	p["hp"] = min(int(p.get("hp", 0)), max_hp)
+	p["mp"] = min(int(p.get("mp", 0)), max_mp)
+
+func _snapshot_battle_baseline(actor: Dictionary) -> void:
+	if actor.is_empty():
+		return
+	for key_any in BATTLE_BASELINE_KEYS:
+		var key := String(key_any)
+		var default_value = 0.0 if key in ["crit_rate", "crit_rate_bonus"] else 0
+		actor["battle_base_%s" % key] = actor.get(key, default_value)
 
 func _resource_multiplier_for_actor(actor: Dictionary, equip_bonus: Dictionary, force_bonus: Dictionary, resource_key: String) -> float:
 	var attr_pct := 0.0
-	if resource_key == "hp":
-		var effective_con := int(actor.get("con", 0)) + int(equip_bonus.get("con", 0)) + int(force_bonus.get("con", 0))
-		attr_pct = float(max(0, effective_con)) * 0.01
-	else:
-		var effective_int := int(actor.get("int", 0)) + int(equip_bonus.get("int", 0)) + int(force_bonus.get("int", 0))
-		attr_pct = float(max(0, effective_int)) * 0.01
+	if not bool(actor.get("derived_stats_applied", false)):
+		if resource_key == "hp":
+			var effective_con := int(actor.get("con", 0)) + int(equip_bonus.get("con", 0)) + int(force_bonus.get("con", 0))
+			attr_pct = float(max(0, effective_con)) * 0.01
+		else:
+			var effective_int := int(actor.get("int", 0)) + int(equip_bonus.get("int", 0)) + int(force_bonus.get("int", 0))
+			attr_pct = float(max(0, effective_int)) * 0.01
 	var equip_pct := float(equip_bonus.get("max_%s_pct" % resource_key, 0.0))
 	var force_pct := float(force_bonus.get("max_%s_pct" % resource_key, 0.0))
 	var actor_pct := _resource_pct_from_actor(actor, resource_key)
@@ -1100,31 +1120,102 @@ func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 		return false
 	var actor_id := str(actor.get("id", ""))
 	var force_id := str(force.get("id", ""))
-	actor["inner_force"] = force
-	if force_id != "":
-		actor["inner_force_id"] = force_id
-	if force.has("element"):
-		actor["element"] = force["element"]
-	_apply_inner_force_runtime_bonus_for_actor(actor)
+	if actor_id == "" or force_id == "":
+		return false
+
+	if team_data_manager != null and team_data_manager.has_method("set_inner_force"):
+		if not team_data_manager.set_inner_force(actor_id, force_id):
+			return false
+
+	var target_actor := actor
+	var found_party_actor := false
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
 			continue
-		if str(p.get("id", "")) != actor_id:
-			continue
-		p["inner_force"] = force
-		if force_id != "":
-			p["inner_force_id"] = force_id
-		if force.has("element"):
-			p["element"] = force["element"]
-		_apply_inner_force_runtime_bonus_for_actor(p)
-		break
-	if actor_id != "" and force_id != "" and team_data_manager != null and team_data_manager.has_method("set_inner_force"):
-		team_data_manager.set_inner_force(actor_id, force_id)
+		if str(p.get("id", "")) == actor_id:
+			target_actor = p
+			found_party_actor = true
+			break
+
+	_refresh_battle_actor_from_team_data(target_actor, force)
+	if found_party_actor:
+		_refresh_battle_actor_from_team_data(actor, force)
 
 	if battle_ui:
 		battle_ui.update_ally_panel()
 
 	return true
+
+func _refresh_battle_actor_from_team_data(actor: Dictionary, force: Dictionary) -> void:
+	if actor.is_empty():
+		return
+	var actor_id := str(actor.get("id", ""))
+	var current_hp := int(actor.get("hp", 0))
+	var current_mp := int(actor.get("mp", 0))
+	var status_effects = actor.get("status_effects", {}).duplicate(true) if typeof(actor.get("status_effects", {})) == TYPE_DICTIONARY else {}
+	var battle_order_index = actor.get("battle_order_index", null)
+	var defending := bool(actor.get("defending", false))
+
+	var source: Dictionary = {}
+	if team_data_manager != null and team_data_manager.has_method("get_character_by_id"):
+		var fresh = team_data_manager.get_character_by_id(actor_id)
+		if typeof(fresh) == TYPE_DICTIONARY:
+			source = fresh
+	if source.is_empty():
+		source = actor.duplicate(true)
+		source["inner_force"] = force
+		source["inner_force_id"] = str(force.get("id", ""))
+		if force.has("element"):
+			source["element"] = force["element"]
+
+	_copy_long_term_actor_fields(actor, source)
+	_apply_equipment_bonus_to_actor(actor)
+	_snapshot_battle_baseline(actor)
+	actor["status_effects"] = status_effects
+	actor["defending"] = defending
+	if battle_order_index != null:
+		actor["battle_order_index"] = battle_order_index
+	actor["hp"] = min(current_hp, int(actor.get("max_hp", current_hp)))
+	actor["mp"] = min(current_mp, int(actor.get("max_mp", current_mp)))
+	_recalc_actor_status_snapshot(actor)
+
+func _copy_long_term_actor_fields(target: Dictionary, source: Dictionary) -> void:
+	var keys := [
+		"id", "name", "display_name", "portrait", "level", "element",
+		"inner_force", "inner_force_id", "available_inner_forces", "known_inner_force_ids",
+		"str", "agi", "int", "con", "luck",
+		"max_hp", "max_mp", "atk", "def", "speed", "accuracy", "evasion", "crit_rate", "crit_rate_bonus",
+		"weapon_1", "weapon_2", "derived_stats_applied",
+		"base_str", "base_agi", "base_int", "base_con", "base_luck",
+		"base_max_hp", "base_max_mp", "base_atk", "base_def", "base_speed", "base_accuracy", "base_evasion", "base_crit_rate", "base_crit_rate_bonus"
+	]
+	for key_any in keys:
+		var key := String(key_any)
+		if source.has(key):
+			target[key] = source[key]
+
+func _resolve_status_apply_override(effect_id: String, entry: Dictionary, skill_data: Dictionary) -> String:
+	for key_any in ["apply_log", "narration", "status_apply_log", "custom_apply_text"]:
+		var key := String(key_any)
+		var entry_value := String(entry.get(key, "")).strip_edges()
+		if entry_value != "":
+			return entry_value
+
+	var logs_raw = skill_data.get("status_apply_logs", {})
+	if typeof(logs_raw) == TYPE_DICTIONARY:
+		var logs: Dictionary = logs_raw
+		for lookup_key_any in [effect_id, String(entry.get("type", "")), "default"]:
+			var lookup_key := String(lookup_key_any)
+			var log_value := String(logs.get(lookup_key, "")).strip_edges()
+			if log_value != "":
+				return log_value
+
+	for key_any in ["status_apply_log", "custom_apply_text"]:
+		var key := String(key_any)
+		var skill_value := String(skill_data.get(key, "")).strip_edges()
+		if skill_value != "":
+			return skill_value
+	return ""
 
 func _is_rule_allowed(rule_key: String, default_value: bool) -> bool:
 	if ruleset.is_empty():
@@ -1796,7 +1887,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var scope: String  = str(skill_data.get("target_scope", "single"))
 	var side: String   = str(skill_data.get("target_side", "enemy"))
 	target = _resolve_confuse_target(actor, target, scope)
-	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost", "atk_up", "stat_buff", "stat_debuff"]
+	var support_status_effects = ["buff_speed", "debuff_speed", "speed_debuff", "slow", "force_element", "blind", "root", "focus", "evasion_boost", "atk_up", "def_up", "stat_buff", "stat_debuff"]
 	var mp_cost = _resolve_skill_mp_cost(actor, skill_data)
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
@@ -2359,8 +2450,22 @@ func _is_support_status_effect(effect_id: String) -> bool:
 		"focus",
 		"evasion_boost",
 		"atk_up",
+		"def_up",
 		"stat_buff",
 		"stat_debuff",
+	]
+
+
+func _is_positive_status_effect(effect_id: String) -> bool:
+	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
+	return normalized_effect_id in [
+		"buff_speed",
+		"speed_buff",
+		"focus",
+		"evasion_boost",
+		"atk_up",
+		"def_up",
+		"stat_buff",
 	]
 
 
@@ -2468,20 +2573,25 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 	var tone_cast := ""
 	var tone_suffer := ""
 	var suppress_status_narration := bool(skill_data.get("_suppress_status_narration", false))
+	if not suppress_status_narration:
+		tone_cast = _resolve_status_apply_override(normalized_effect_id, entry, skill_data)
+		if tone_cast == "" and tone_map != null:
+			tone_cast = tone_map.get_tone_text("status_apply", normalized_effect_id, str(user.get("id", "")))
 	if tone_map != null and not suppress_status_narration:
-		tone_cast = tone_map.get_tone_text("status_apply", normalized_effect_id, str(user.get("id", "")))
 		var suffer_key := normalized_effect_id
 		if bool(effect_target.get("is_enemy", false)):
 			suffer_key = "%s|%s" % [normalized_effect_id, _resolve_enemy_archetype(effect_target)]
-		tone_suffer = tone_map.get_tone_text("status_suffer", suffer_key, str(effect_target.get("id", "")))
-		if tone_suffer != "":
-			tone_suffer = tone_suffer.replace("{name}", str(effect_target.get("name", "???")))
+		if not _is_positive_status_effect(normalized_effect_id):
+			tone_suffer = tone_map.get_tone_text("status_suffer", suffer_key, str(effect_target.get("id", "")))
+			if tone_suffer != "":
+				tone_suffer = tone_suffer.replace("{name}", str(effect_target.get("name", "???")))
 	return {
 		"effect_id": normalized_effect_id,
 		"turns": turns,
 		"payload": payload,
 		"target": effect_target,
 		"desc": desc,
+		"apply_log": _resolve_status_apply_override(normalized_effect_id, entry, skill_data),
 		"tone_cast": tone_cast,
 		"tone_suffer": tone_suffer,
 	}
@@ -2546,6 +2656,8 @@ func _build_status_payload_from_skill_effect(effect_type: String, entry: Diction
 			payload["accuracy_delta"] = abs(amount if amount > 0 else 15)
 		"atk_up":
 			payload["atk_delta"] = abs(amount if amount > 0 else 10)
+		"def_up":
+			payload["def_delta"] = abs(amount if amount > 0 else 10)
 		"root":
 			payload["evasion_delta"] = -abs(amount if amount > 0 else 20)
 		_:
@@ -3005,13 +3117,17 @@ func _is_positive_buff_skill(skill_data: Dictionary, effect_id: String) -> bool:
 	var normalized_effect_id := _canonicalize_status_effect_id(effect_id)
 	if bool(skill_data.get("positive_buff", false)):
 		return true
-	return normalized_effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "atk_up", "stat_buff"]
+	return normalized_effect_id in ["buff_speed", "speed_buff", "focus", "evasion_boost", "atk_up", "def_up", "stat_buff"]
 
 
 func _build_positive_buff_narration(user: Dictionary, skill_data: Dictionary, applied_records: Array) -> String:
 	if applied_records.is_empty():
 		return ""
-	var first_target: Dictionary = (applied_records[0] as Dictionary).get("target", {}) if typeof((applied_records[0] as Dictionary).get("target", {})) == TYPE_DICTIONARY else {}
+	var first_record: Dictionary = applied_records[0] as Dictionary
+	var apply_log := String(first_record.get("apply_log", "")).strip_edges()
+	if apply_log != "":
+		return apply_log
+	var first_target: Dictionary = first_record.get("target", {}) if typeof(first_record.get("target", {})) == TYPE_DICTIONARY else {}
 	var scope: String = _resolve_positive_buff_effective_scope(user, skill_data, first_target)
 	var narration_map = skill_data.get("buff_narration", {})
 	var template := _resolve_positive_buff_override_template(scope, narration_map)
@@ -3118,6 +3234,12 @@ func _build_positive_buff_system_line(user: Dictionary, applied_records: Array) 
 		"speed_buff":
 			label = "速度"
 			amount = int(payload.get("speed_delta", 0))
+		"atk_up":
+			label = "攻擊"
+			amount = int(payload.get("atk_delta", 10))
+		"def_up":
+			label = "防禦"
+			amount = int(payload.get("def_delta", 10))
 		"stat_buff_int":
 			label = "智慧"
 			amount = int(payload.get("stat_delta", 0))
