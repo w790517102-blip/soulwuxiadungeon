@@ -6208,6 +6208,9 @@ position = Vector2(12.805, 131.18)
 [node name="from_yin_yue_manor_room(day)" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(695, -650)
 
+[node name="GushiForbiddenReturnMarker" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-166, -38)
+
 [node name="BlackOverlay" type="ColorRect" parent="."]
 z_index = 1999
 offset_left = -1273.0
@@ -6274,4 +6277,6 @@ skew = 0.23911
 shape = SubResource("RectangleShape2D_wu3g0")
 
 [connection signal="body_entered" from="to_yuheng_bamboo_jungle" to="." method="_on_to_yuheng_bamboo_jungle_body_entered"]
+[connection signal="body_entered" from="forbidden_zone" to="." method="_on_forbidden_zone_body_entered"]
+[connection signal="body_exited" from="forbidden_zone" to="." method="_on_forbidden_zone_body_exited"]
 [connection signal="body_entered" from="to_yin_yue_manor_room(day)" to="." method="_on_to_yin_yue_manor_roomday_body_entered"]

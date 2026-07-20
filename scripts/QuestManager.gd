@@ -82,7 +82,8 @@ func get_main_quest_display() -> Dictionary:
 		out["chapter_title"] = String(def.get("chapter_title", out.get("chapter_title", quest_id)))
 		out["description"] = String(def.get("description", out.get("description", "")))
 		var objective_map: Dictionary = def.get("objectives_by_stage", {})
-		out["current_objective"] = String(objective_map.get(stage, out.get("current_objective", out.get("description", ""))))
+		var objective_override := String(out.get("objective_override", "")).strip_edges()
+		out["current_objective"] = objective_override if objective_override != "" else String(objective_map.get(stage, out.get("current_objective", out.get("description", ""))))
 		out["notes"] = _build_main_quest_notes(quest_id)
 		if not out.has("title") or String(out.get("title", "")).strip_edges() == "":
 			out["title"] = out.get("chapter_title", quest_id)
@@ -114,10 +115,15 @@ func advance_main_quest(new_stage: int, new_objective: String = "") -> void:
 	if GlobalState and GlobalState.get("is_loading") == true:
 		return
 	main_quest["stage"] = new_stage
+	var objective_override := String(new_objective).strip_edges()
+	if objective_override != "":
+		main_quest["objective_override"] = objective_override
+	else:
+		main_quest.erase("objective_override")
 	var display_data := get_main_quest_display()
 	main_quest["chapter_title"] = String(display_data.get("chapter_title", main_quest.get("chapter_title", "")))
 	main_quest["description"] = String(display_data.get("description", main_quest.get("description", "")))
-	main_quest["current_objective"] = new_objective if String(new_objective).strip_edges() != "" else String(display_data.get("current_objective", main_quest.get("description", "")))
+	main_quest["current_objective"] = String(display_data.get("current_objective", main_quest.get("description", "")))
 	main_quest["notes"] = display_data.get("notes", [])
 	print("[任務] 主線已更新：第%d階段｜%s" % [new_stage, String(main_quest.get("current_objective", ""))])
 
@@ -130,6 +136,7 @@ func set_main_objective(text: String) -> void:
 	var display_data := get_main_quest_display()
 	main_quest["chapter_title"] = String(display_data.get("chapter_title", main_quest.get("chapter_title", "")))
 	main_quest["description"] = String(display_data.get("description", main_quest.get("description", "")))
+	main_quest["objective_override"] = objective
 	main_quest["current_objective"] = objective
 	main_quest["notes"] = display_data.get("notes", [])
 	print("[任務] 主線目標已更新：%s" % objective)
