@@ -30,6 +30,7 @@ func _test_scene_contracts() -> void:
 	if packed:
 		var scene := packed.instantiate()
 		_expect(scene.get_script() == EntryFadeScript, "白箋居根節點必須負責進場淡出")
+		_expect(scene.has_node("SpawnPoints/from_yuheng_market_west_scene1"), "白箋居必須保留劇情版西市集入口 SpawnPoint")
 		for path_text in ["Su_mienPath/Su_mien_leave1", "Liu_yu_path/Liu_yu_leave1", "Liu_yu_path/Liu_yu_leave2"]:
 			var path := scene.get_node_or_null(path_text) as Path2D
 			_expect(path != null and path.curve != null and path.curve.get_baked_length() > 0.0, "離場 Path 必須有效：%s" % path_text)
@@ -49,6 +50,11 @@ func _test_scene_contracts() -> void:
 
 func _test_dialogue_split() -> void:
 	var shumian := ShumianScript.new()
+	_expect(shumian.speaker_id == 1, "書眠必須使用上方 NPC 對話框 lane")
+	_expect(shumian.liuyu_speaker_id == 2, "劉語塵必須使用下方玩家對話框 lane")
+	_expect(shumian.huiyin_speaker_id == 1, "紅徽音必須使用上方 NPC 對話框 lane")
+	_expect(ResourceLoader.exists(shumian.portrait_path), "書眠頭像資源必須存在")
+	_expect(ResourceLoader.exists(shumian.huiyin_portrait_path), "紅徽音頭像資源必須存在")
 	var phase_a := _join_dialogue(shumian._build_yinpingyu_event_lines())
 	var phase_b := _join_dialogue(shumian._build_after_shumian_leave_lines())
 	_expect(phase_a.contains("我怕再說下去，連窗也關不住"), "Phase A 必須停在書眠準備離開")

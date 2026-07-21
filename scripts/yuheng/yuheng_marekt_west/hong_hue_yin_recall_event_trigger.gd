@@ -16,11 +16,11 @@ extends Node2D
 @export var wait_for_scene_entry_fade := true
 
 @export var liuyu_portrait_path := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
-@export var huiyin_portrait_path := "res://assets/sprites/Huiyin/Huiyin_headshot.png"
+@export var huiyin_portrait_path := "res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin_headshot.png"
 @export var empty_portrait_path := "res://assets/sprites/empty.png"
 
 @export var liuyu_speaker_id := 2
-@export var huiyin_speaker_id := 5
+@export var huiyin_speaker_id := 1
 @export var narration_speaker_id := 0
 
 const F_READY_HUIYIN_VOICE := "main_yh_ready_huiyin_voice"

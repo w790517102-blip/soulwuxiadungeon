@@ -6,14 +6,14 @@
 extends CharacterBody2D
 
 @export var z_index_offset := 0
-@export var portrait_path := "res://assets/sprites/Shumian/Shumian_headshot.png"
+@export var portrait_path := "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot.png"
 @export var liuyu_portrait_path := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
-@export var huiyin_portrait_path := "res://assets/sprites/Huiyin/Huiyin_headshot.png"
+@export var huiyin_portrait_path := "res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin_headshot.png"
 @export var empty_portrait_path := "res://assets/sprites/empty.png"
 
-@export var speaker_id := 3              # 書眠
+@export var speaker_id := 1              # 上方 NPC 對話框（書眠）
 @export var liuyu_speaker_id := 2        # 劉語塵
-@export var huiyin_speaker_id := 5       # 紅徽音 / 弦外之音
+@export var huiyin_speaker_id := 1       # 上方 NPC 對話框（紅徽音／弦外之音）
 @export var narration_speaker_id := 0    # 旁白 / 系統
 
 # 銀屏語事件結束後要切去的夜晚市集副本。

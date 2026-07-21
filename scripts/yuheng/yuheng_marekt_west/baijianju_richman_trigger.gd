@@ -435,7 +435,7 @@ func _on_baijianju_entered(body: Node2D) -> void:
 	await _fade_overlay_to(1.0)
 	var game_root := get_node_or_null("/root/GameRoot")
 	if game_root and game_root.has_method("change_map_to"):
-		game_root.set("spawn_point_name", "from_yuheng_market_west")
+		game_root.set("spawn_point_name", "from_yuheng_market_west_scene1")
 		game_root.call("change_map_to", BAIJIANJU_EVENT_SCENE)
 	else:
 		push_warning("[暴發戶事件] 找不到 GameRoot.change_map_to，恢復玩家控制。")

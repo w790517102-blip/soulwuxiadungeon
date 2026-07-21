@@ -84,6 +84,14 @@ func _play_dialog_sequence():
 			await _wait_for_continue()
 
 func _head_dialog(text: String, portrait_path: String, speaker: int) -> void:
+	# speaker 是 UI lane：1 = 上方 NPC，其餘 = 下方玩家／旁白。
+	# 每次切換 lane 都清掉非當前面板，避免殘留上一位角色的文字與頭像。
+	if speaker == 1:
+		dialog_box_2.visible = false
+		headshot_2.visible = false
+	else:
+		dialog_box_1.visible = false
+		headshot_1.visible = false
 	var dialog_box = dialog_box_1 if speaker == 1 else dialog_box_2
 	var headshot = headshot_1 if speaker == 1 else headshot_2
 	var label = label_1 if speaker == 1 else label_2
