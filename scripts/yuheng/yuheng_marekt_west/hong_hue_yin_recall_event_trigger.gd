@@ -5,7 +5,7 @@
 
 extends Node2D
 
-@export var area_path: NodePath = "Hong_hue_yin_recall_event"
+@export var area_path: NodePath = "Hong_huei_yin_recall_event"
 @export var player_path: NodePath = "/root/GameRoot/LiuYu"
 @export var dialog_manager_path: NodePath = "/root/GameRoot/DialogManager"
 
@@ -13,6 +13,7 @@ extends Node2D
 @export var spawn_point_path: NodePath = "../SpawnPoints/Hong_hue_yin_recall_event_point"
 @export var move_player_to_spawn_on_ready := true
 @export var auto_start_if_ready := true
+@export var wait_for_scene_entry_fade := true
 
 @export var liuyu_portrait_path := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 @export var huiyin_portrait_path := "res://assets/sprites/Huiyin/Huiyin_headshot.png"
@@ -31,6 +32,7 @@ var triggered := false
 var area: Area2D = null
 var player: Node = null
 var dialog_manager: Node = null
+var _entry_fade_completed := false
 
 
 func _ready() -> void:
@@ -46,6 +48,8 @@ func _ready() -> void:
 		return
 
 	area.body_entered.connect(_on_body_entered)
+	if wait_for_scene_entry_fade:
+		return
 
 	# 保險機制：玩家轉場後可能一出生就已經在 Area2D 裡，body_entered 未必會觸發。
 	# 因此等一幀/一個 physics frame 後檢查旗標，必要時直接啟動事件。
@@ -74,8 +78,28 @@ func _ready() -> void:
 			return
 
 
+func start_after_entry_fade() -> void:
+	_entry_fade_completed = true
+	if triggered or not _should_start_event():
+		_release_entry_lock_if_no_event()
+		return
+	if player == null:
+		player = get_node_or_null(player_path)
+	if move_player_to_spawn_on_ready and player:
+		_move_player_to_spawn()
+		await get_tree().process_frame
+		await get_tree().physics_frame
+	if player:
+		_start_event(player)
+	else:
+		push_warning("[紅徽音弦外之音] 進場淡出後仍找不到 LiuYu，解除控制鎖以避免卡死。")
+		_release_entry_lock_if_no_event()
+
+
 func _on_body_entered(body: Node) -> void:
 	if triggered:
+		return
+	if wait_for_scene_entry_fade and not _entry_fade_completed:
 		return
 	if body.name != "LiuYu":
 		return
@@ -105,9 +129,13 @@ func _start_event(body: Node) -> void:
 
 	if player:
 		player.set("can_move", false)
+		if player is CharacterBody2D:
+			(player as CharacterBody2D).velocity = Vector2.ZERO
+	GlobalState.set_meta("menu_locked", true)
+	GlobalState.set_meta("yinpingyu_cutscene_busy", false)
+	GlobalState.set_meta("huiyin_recall_cutscene_busy", true)
 
-	dialog_manager.show_dialog_sequence(_build_huiyin_voice_lines(), self)
-	await dialog_manager.dialog_sequence_finished
+	await dialog_manager.call("show_dialog_sequence", _build_huiyin_voice_lines(), self)
 
 	GlobalState.set_flag(F_READY_HUIYIN_VOICE, false)
 	GlobalState.set_flag(F_HUIYIN_VOICE_DONE, true)
@@ -116,15 +144,26 @@ func _start_event(body: Node) -> void:
 	_set_main_objective_safely("前往醉月茶坊，尋找紅徽音。")
 
 	if player:
+		if player is CharacterBody2D:
+			(player as CharacterBody2D).velocity = Vector2.ZERO
 		player.set("can_move", true)
+	GlobalState.set_meta("menu_locked", false)
+	GlobalState.set_meta("yinpingyu_cutscene_busy", false)
+	GlobalState.set_meta("huiyin_recall_cutscene_busy", false)
 
 	queue_free()
 
 
 func reset_dialog_state() -> void:
-	# 若 DialogManager 會回呼 reset_dialog_state，這裡保持相容。
+	# DialogManager 關閉對話時仍由 _start_event 持有控制鎖，完成落旗後才統一釋放。
+	pass
+
+
+func _release_entry_lock_if_no_event() -> void:
 	if player:
 		player.set("can_move", true)
+	GlobalState.set_meta("menu_locked", false)
+	GlobalState.set_meta("yinpingyu_cutscene_busy", false)
 
 
 func _build_huiyin_voice_lines() -> Array:

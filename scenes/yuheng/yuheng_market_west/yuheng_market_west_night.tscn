@@ -1,9 +1,10 @@
-[gd_scene load_steps=15 format=4 uid="uid://cw70q4acevp3e"]
+[gd_scene load_steps=16 format=4 uid="uid://cw70q4acevp3e"]
 
 [ext_resource type="Texture2D" uid="uid://bmm72ajjeumc3" path="res://assets/background/Yuheng_Town/yuheng_market_west/yuheng_market_west.jpg" id="1_otug5"]
 [ext_resource type="Texture2D" uid="uid://dh3j3otwjkbxq" path="res://assets/background/Yuheng_Town/yuheng_market_west/yuheng_market_west_night.jpg" id="2_m065t"]
 [ext_resource type="Script" uid="uid://dc6tm6xgkxlmi" path="res://scripts/yuheng/yuheng_marekt_west/night_forbidden_entrance.gd" id="3_oqd8l"]
 [ext_resource type="Script" uid="uid://cuinmdmvxlb01" path="res://scripts/yuheng/yuheng_marekt_west/hong_hue_yin_recall_event_trigger.gd" id="4_6r314"]
+[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/story_scene_entry_fade.gd" id="5_entry_fade"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_oqd8l"]
 texture = ExtResource("1_otug5")
@@ -12402,6 +12403,9 @@ size = Vector2(1534, 1024)
 size = Vector2(116, 58)
 
 [node name="yuheng_market_west_night" type="Node2D"]
+script = ExtResource("5_entry_fade")
+release_player_after_fade = false
+handoff_node_path = NodePath("Hong_huei_yin_recall_event_trigger")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999

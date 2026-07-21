@@ -18,7 +18,7 @@ extends CharacterBody2D
 
 # 銀屏語事件結束後要切去的夜晚市集副本。
 # 請在 Inspector 依你的專案實際路徑調整。
-@export_file("*.tscn") var night_market_scene_path := "res://Scenes/Yuheng/yuheng_market_west_night.tscn"
+@export_file("*.tscn") var night_market_scene_path := "res://scenes/yuheng/yuheng_market_west/yuheng_market_west_night.tscn"
 @export var change_to_night_market_after_event := true
 
 @onready var animated_sprite := get_node_or_null("AnimatedSprite2D")
@@ -27,6 +27,17 @@ var dialog_manager: Node = null
 var can_interact := false
 var is_talking := false
 var dialog_lines: Array = []
+
+enum CutscenePhase {
+	IDLE,
+	DIALOGUE_BEFORE_SHUMIAN_LEAVE,
+	SHUMIAN_LEAVING,
+	DIALOGUE_AFTER_SHUMIAN_LEAVE,
+	LIUYU_LEAVING,
+	FADING_TO_NIGHT,
+}
+
+var cutscene_phase := CutscenePhase.IDLE
 
 # ------------------------------------------------------------
 # Flags
@@ -37,21 +48,13 @@ const F_YINPINGYU_OBTAINED := "item_yinpingyu_obtained"
 # 完成銀屏語後，不在室內直接播放紅徽音弦外之音；
 # 改由夜晚玉衡鎮副本的 Hong_hue_yin_recall_event_trigger.gd 觸發。
 const F_READY_HUIYIN_VOICE := "main_yh_ready_huiyin_voice"
-const F_HEARD_HUIYIN_VOICE := "main_yh_heard_huiyin_voice"
-const F_GO_TO_ZUIYUE_HUIYIN := "main_yh_go_to_zuiyue_huiyin"
 
 # 條件分歧用 flags
 const F_MARKET_QIN_INVESTIGATED := "yh_market_qin_investigated"
 const F_DABAO_MAP_SHOWN := "yh_side_dabao_map_shown"
 
-# 可選道具 ID：若專案有 InventoryManager.add_item，會嘗試加入；沒有也不會報錯。
+# 正式詩卷道具；只在離場全黑結算時透過 InventorySync 發放一次。
 const ITEM_YINPINGYU := "item_yinpingyu_scroll"
-
-# 對話結束後才落旗，避免玩家還在讀對話時流程已被推進。
-var _pending_flags_after_close: Array[String] = []
-var _pending_objective_after_close := ""
-var _pending_add_item_id := ""
-var _pending_add_item_amount := 0
 
 
 func _ready() -> void:
@@ -78,44 +81,158 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if dialog_manager.dialog_active:
 		return
+	if bool(GlobalState.get_meta("menu_locked", false)) or bool(GlobalState.get_meta("story_scene_entry_fade_active", false)):
+		return
 	if not (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
 		return
 	if is_talking:
 		return
 
 	is_talking = true
-
-	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
-	if liuyu:
-		liuyu.can_move = false
-		face_towards(liuyu.global_position)
-
-	_clear_pending_actions()
-	_queue_flag(F_YINPINGYU_DONE)
-	_queue_flag(F_YINPINGYU_OBTAINED)
-	_queue_flag(F_READY_HUIYIN_VOICE)
-	_queue_add_item(ITEM_YINPINGYU, 1)
-	_queue_objective("離開白箋居。")
-
-	dialog_lines = _build_yinpingyu_event_lines()
-	dialog_manager.show_dialog_sequence(dialog_lines, self)
+	_run_yinpingyu_cutscene()
 
 
 func reset_dialog_state() -> void:
-	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
+	# DialogManager 每段結束都會回呼；控制權依 cutscene_phase 由主流程持有，不能在此解鎖。
+	pass
+
+
+func _run_yinpingyu_cutscene() -> void:
+	var liuyu := get_node_or_null("/root/GameRoot/LiuYu") as CharacterBody2D
+	_lock_cutscene_controls(liuyu)
 	if liuyu:
-		liuyu.can_move = true
+		face_towards(liuyu.global_position)
 
-	is_talking = false
-	_apply_pending_actions()
-	_clear_pending_actions()
+	cutscene_phase = CutscenePhase.DIALOGUE_BEFORE_SHUMIAN_LEAVE
+	await dialog_manager.call("show_dialog_sequence", _build_yinpingyu_event_lines(), self)
+	_lock_cutscene_controls(liuyu)
 
-	# 這支是一次性主線劇情專用 NPC；跑完後移除，讓普通書眠 NPC 接手後續狀態。
-	# 接著切到夜晚玉衡鎮西市集，由那裡的紅徽音弦外之音 trigger 接手後續劇情。
+	cutscene_phase = CutscenePhase.SHUMIAN_LEAVING
+	await _move_node_along_scene_path(self, "Su_mienPath/Su_mien_leave1", 1.35, "書眠離場第一段")
+
+	cutscene_phase = CutscenePhase.DIALOGUE_AFTER_SHUMIAN_LEAVE
+	await dialog_manager.call("show_dialog_sequence", _build_after_shumian_leave_lines(), self)
+	_lock_cutscene_controls(liuyu)
+
+	cutscene_phase = CutscenePhase.LIUYU_LEAVING
+	await _move_node_along_scene_path(liuyu, "Liu_yu_path/Liu_yu_leave1", 1.05, "劉語塵離場第一段")
+	await _move_node_along_scene_path(liuyu, "Liu_yu_path/Liu_yu_leave2", 0.95, "劉語塵離場第二段")
+
+	cutscene_phase = CutscenePhase.FADING_TO_NIGHT
+	await _fade_scene_overlay_to_black()
+	_apply_yinpingyu_completion_under_black()
+
 	if change_to_night_market_after_event:
-		_go_to_night_market_scene()
+		var changed_scene := await _go_to_night_market_scene()
+		if changed_scene:
+			return
+	_finish_cutscene_safely(liuyu)
 
-	queue_free()
+
+func _lock_cutscene_controls(liuyu: CharacterBody2D = null) -> void:
+	GlobalState.set_meta("yinpingyu_cutscene_busy", true)
+	GlobalState.set_meta("menu_locked", true)
+	var system_menu := get_node_or_null("/root/SystemMenu")
+	if system_menu and system_menu.has_method("close_menu_if_open"):
+		system_menu.call("close_menu_if_open")
+	if liuyu:
+		liuyu.set("can_move", false)
+		liuyu.velocity = Vector2.ZERO
+		liuyu.set("direction", Vector2.ZERO)
+
+
+func _move_node_along_scene_path(node: Node2D, path_text: String, duration: float, label: String) -> void:
+	if node == null:
+		push_warning("[白箋居銀屏語事件] %s找不到角色，略過走位並繼續安全收束。" % label)
+		return
+	var scene_root := get_parent().get_parent()
+	var path := scene_root.get_node_or_null(path_text) as Path2D
+	if path == null:
+		push_warning("[白箋居銀屏語事件] %s找不到 Path2D：%s" % [label, path_text])
+		return
+	var follow := path.get_node_or_null("PathFollow2D") as PathFollow2D
+	if follow == null or path.curve == null or path.curve.get_baked_length() <= 0.0:
+		push_warning("[白箋居銀屏語事件] %s的 PathFollow2D／Curve 無效，略過走位並繼續。" % label)
+		return
+
+	follow.progress_ratio = 0.0
+	node.global_position = follow.global_position
+	var elapsed := 0.0
+	var previous := node.global_position
+	while elapsed < duration and is_instance_valid(node):
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+		follow.progress_ratio = clampf(elapsed / maxf(duration, 0.01), 0.0, 1.0)
+		node.global_position = follow.global_position
+		var direction := node.global_position - previous
+		if direction.length_squared() > 0.01:
+			_play_directional_animation(node, direction.normalized(), "walk")
+		previous = node.global_position
+	if not is_instance_valid(node):
+		return
+	follow.progress_ratio = 1.0
+	node.global_position = follow.global_position
+	if node is CharacterBody2D:
+		(node as CharacterBody2D).velocity = Vector2.ZERO
+	_play_directional_animation(node, (node.global_position - previous).normalized(), "idle")
+
+
+func _play_directional_animation(node: Node2D, direction: Vector2, prefix: String) -> void:
+	var sprite := node.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if sprite == null or sprite.sprite_frames == null:
+		return
+	if direction == Vector2.ZERO:
+		direction = Vector2.DOWN
+	var animation := _get_anim_by_vector(direction, prefix)
+	if sprite.sprite_frames.has_animation(animation):
+		sprite.play(animation)
+	elif prefix == "walk":
+		var idle_animation := _get_anim_by_vector(direction, "idle")
+		if sprite.sprite_frames.has_animation(idle_animation):
+			sprite.play(idle_animation)
+
+
+func _fade_scene_overlay_to_black() -> void:
+	var scene_root := get_parent().get_parent()
+	var overlay := scene_root.get_node_or_null("BlackOverlay") as ColorRect
+	if overlay == null:
+		push_warning("[白箋居銀屏語事件] 找不到 BlackOverlay；仍會落旗並切場，避免永久卡住。")
+		return
+	overlay.visible = true
+	overlay.modulate.a = 0.0
+	var tween := overlay.create_tween()
+	tween.tween_property(overlay, "modulate:a", 1.0, 0.6)
+	await tween.finished
+
+
+func _apply_yinpingyu_completion_under_black() -> void:
+	GlobalState.set_flag(F_YINPINGYU_DONE, true)
+	GlobalState.set_flag(F_YINPINGYU_OBTAINED, true)
+	GlobalState.set_flag(F_READY_HUIYIN_VOICE, true)
+	if not InventorySync.has_item_anywhere(ITEM_YINPINGYU):
+		InventorySync.add_item_stack(ITEM_YINPINGYU, 1, false)
+
+	var qm := get_node_or_null("/root/QuestManager")
+	if qm and qm.has_method("get_main_quest_state"):
+		var state := qm.call("get_main_quest_state") as Dictionary
+		if String(state.get("id", "")) == "main_001" and int(state.get("stage", 0)) == 4:
+			qm.call("advance_main_quest", 5, "前往夜晚的玉衡鎮西市集，查明琴聲中的呼喚。")
+
+
+func _finish_cutscene_safely(liuyu: CharacterBody2D) -> void:
+	var scene_root := get_parent().get_parent()
+	var overlay := scene_root.get_node_or_null("BlackOverlay") as ColorRect
+	if overlay:
+		overlay.visible = false
+		overlay.modulate.a = 0.0
+	if liuyu:
+		liuyu.velocity = Vector2.ZERO
+		liuyu.set("direction", Vector2.ZERO)
+		liuyu.set("can_move", true)
+	GlobalState.set_meta("menu_locked", false)
+	GlobalState.set_meta("yinpingyu_cutscene_busy", false)
+	cutscene_phase = CutscenePhase.IDLE
+	is_talking = false
 
 
 # ------------------------------------------------------------
@@ -194,7 +311,6 @@ func _build_yinpingyu_event_lines() -> Array:
 
 	lines.append_array(_build_yinpingyu_reading_lines())
 	lines.append_array(_build_resonance_lines())
-	lines.append_array(_build_leave_baijianju_lines())
 	return lines
 
 
@@ -336,17 +452,24 @@ func _build_resonance_lines() -> Array:
 		_l("現在？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("今晚的風太重了。", speaker_id, portrait_path),
 		_l("我怕再說下去，連窗也關不住。", speaker_id, portrait_path),
+	])
+
+	return lines
+
+
+func _build_after_shumian_leave_lines() -> Array:
+	var lines: Array = [
 		_n("書眠轉身走向內室。走到屏風旁時，她停了一下，沒有回頭。"),
 		_l("語塵。", speaker_id, portrait_path),
 		_l("嗯？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("你方才替我說的那些話……", speaker_id, portrait_path),
 		_l("我會記得。", speaker_id, portrait_path),
-		_l("我不是替你。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("我不只是替你。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("...", speaker_id, portrait_path),
 		_l("我知道。", speaker_id, portrait_path),
 		_l("所以我才更會記得。", speaker_id, portrait_path),
-		_n("書眠離開，白箋居內暫時無法繼續對話。"),
-	])
-
+	]
+	lines.append_array(_build_leave_baijianju_lines())
 	return lines
 
 
@@ -355,27 +478,23 @@ func _build_leave_baijianju_lines() -> Array:
 		_n("書眠離開後，白箋居內只剩書燈與墨香。"),
 		_n("遠處琴聲仍在，像隔著一層水，輕輕壓著未說完的話。"),
 		_l("……出去吧。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("主線更新：離開白箋居。"),
+		_n("主線更新：前往夜晚的玉衡鎮西市集，查明琴聲中的呼喚。"),
 	]
 
 
-func _go_to_night_market_scene() -> void:
-	if night_market_scene_path == "":
-		push_warning("[白箋居銀屏語事件] night_market_scene_path 未設定，無法切到夜晚玉衡鎮。")
-		return
+func _go_to_night_market_scene() -> bool:
+	if night_market_scene_path == "" or not ResourceLoader.exists(night_market_scene_path):
+		push_warning("[白箋居銀屏語事件] 夜晚市集場景不存在：%s" % night_market_scene_path)
+		return false
 
-	# 若專案有自己的轉場管理器，優先走它；否則使用 Godot 內建切場景。
-	var transition_manager := get_node_or_null("/root/TransitionManager")
-	if transition_manager and transition_manager.has_method("change_scene_with_fade"):
-		transition_manager.change_scene_with_fade(night_market_scene_path)
-		return
-
-	transition_manager = get_node_or_null("/root/GameRoot/TransitionManager")
-	if transition_manager and transition_manager.has_method("change_scene_with_fade"):
-		transition_manager.change_scene_with_fade(night_market_scene_path)
-		return
-
-	get_tree().change_scene_to_file(night_market_scene_path)
+	# 白箋居已自行淡至全黑；GameRoot.change_map_to 只換場與套 SpawnPoint，不會重複淡黑。
+	var game_root := get_node_or_null("/root/GameRoot")
+	if game_root == null or not game_root.has_method("change_map_to"):
+		push_warning("[白箋居銀屏語事件] 找不到 GameRoot.change_map_to，取消切場並安全解鎖。")
+		return false
+	game_root.set("spawn_point_name", "Hong_huei_yin_recall_event_point")
+	await game_root.call("change_map_to", night_market_scene_path)
+	return true
 
 # ------------------------------------------------------------
 # 互動區域：請將書眠子節點 Area2D 的 body_entered/body_exited 連到這兩個函式。
@@ -420,63 +539,6 @@ func _get_anim_by_vector(dir: Vector2, prefix: String) -> String:
 		return "%s_left_down" % prefix
 	else:
 		return "%s_left" % prefix
-
-
-# ------------------------------------------------------------
-# Pending action helpers
-# ------------------------------------------------------------
-func _queue_flag(flag_name: String) -> void:
-	if not _pending_flags_after_close.has(flag_name):
-		_pending_flags_after_close.append(flag_name)
-
-
-func _queue_objective(text: String) -> void:
-	_pending_objective_after_close = text
-
-
-func _queue_add_item(item_id: String, amount: int = 1) -> void:
-	_pending_add_item_id = item_id
-	_pending_add_item_amount = amount
-
-
-func _apply_pending_actions() -> void:
-	for flag_name in _pending_flags_after_close:
-		GlobalState.set_flag(flag_name, true)
-
-	if _pending_add_item_id != "" and _pending_add_item_amount > 0:
-		_add_item_safely(_pending_add_item_id, _pending_add_item_amount)
-
-	if _pending_objective_after_close != "":
-		_set_main_objective_safely(_pending_objective_after_close)
-
-
-func _clear_pending_actions() -> void:
-	_pending_flags_after_close.clear()
-	_pending_objective_after_close = ""
-	_pending_add_item_id = ""
-	_pending_add_item_amount = 0
-
-
-func _add_item_safely(item_id: String, amount: int = 1) -> void:
-	var inv := get_node_or_null("/root/InventoryManager")
-	if inv and inv.has_method("add_item"):
-		inv.add_item(item_id, amount)
-		return
-
-	inv = get_node_or_null("/root/GameRoot/InventoryManager")
-	if inv and inv.has_method("add_item"):
-		inv.add_item(item_id, amount)
-
-
-func _set_main_objective_safely(text: String) -> void:
-	var qm := get_node_or_null("/root/QuestManager")
-	if qm and qm.has_method("set_main_objective"):
-		qm.set_main_objective(text)
-		return
-
-	qm = get_node_or_null("/root/GameRoot/QuestManager")
-	if qm and qm.has_method("set_main_objective"):
-		qm.set_main_objective(text)
 
 
 # ------------------------------------------------------------

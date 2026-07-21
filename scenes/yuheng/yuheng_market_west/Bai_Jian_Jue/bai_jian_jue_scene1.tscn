@@ -1,13 +1,10 @@
-[gd_scene load_steps=25 format=4 uid="uid://cd2eae33eo4n3"]
+[gd_scene load_steps=28 format=4 uid="uid://cd2eae33eo4n3"]
 
-[ext_resource type="Script" uid="uid://c20wlvbxgbf3t" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/bai_jian_jue.gd" id="1_fk5hk"]
 [ext_resource type="Texture2D" uid="uid://stlkt5vrpcsi" path="res://assets/background/Yuheng_Town/Bai_Jian_Jue.png" id="2_xow8k"]
 [ext_resource type="PackedScene" uid="uid://cykxkyibmttl1" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Su_mien.tscn" id="3_prgqg"]
 [ext_resource type="Script" uid="uid://cc0qrucy3ceg8" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/baijianju_yinpingyu_story_shumian.gd" id="4_ldin7"]
 [ext_resource type="PackedScene" uid="uid://nteysnbkf0xf" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Bookstore_guestA.tscn" id="5_uek06"]
-[ext_resource type="Script" uid="uid://mryand7k3ifw" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/bookstore_guest_b.gd" id="6_w5xcl"]
 [ext_resource type="PackedScene" uid="uid://bbmw3q74wtd0c" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Bookstore_guestB.tscn" id="7_3e8nv"]
-[ext_resource type="Script" uid="uid://vh5r30drnba" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/bookstore_guest_a.gd" id="8_5kguw"]
 [ext_resource type="AudioStream" uid="uid://ci26c3sqnb056" path="res://assets/BGM/yuxin_moonlight_hint.ogg" id="9_tureq"]
 [ext_resource type="AudioStream" uid="uid://c577f6ovuydpv" path="res://assets/BGM/qin_loop.ogg" id="10_lnchx"]
 [ext_resource type="Texture2D" uid="uid://b06e8ugxnte4a" path="res://assets/background/Yuheng_Town/yuheng_market_west/Bai_Jian_Jue/table1.png" id="13_28ses"]
@@ -20,6 +17,8 @@
 [ext_resource type="Texture2D" uid="uid://duo1jki2tgquv" path="res://assets/background/Yuheng_Town/yuheng_market_west/Bai_Jian_Jue/counter1.png" id="20_i25tl"]
 [ext_resource type="Texture2D" uid="uid://b1jnsvi2ewsf0" path="res://assets/background/Yuheng_Town/yuheng_market_west/Bai_Jian_Jue/counter2.png" id="21_p6gxf"]
 [ext_resource type="Texture2D" uid="uid://d3wo47t5fxjlg" path="res://assets/background/Yuheng_Town/yuheng_market_west/Bai_Jian_Jue/bookshelf5.png" id="22_u1ea3"]
+[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/story_scene_entry_fade.gd" id="23_entry_fade"]
+[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/baijianju_scene1_guest_dialog.gd" id="24_guest_dialog"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1neay"]
 texture = ExtResource("2_xow8k")
@@ -4146,12 +4145,36 @@ sources/0 = SubResource("TileSetAtlasSource_1neay")
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kuoqm"]
 size = Vector2(1206.18, 1178)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_1neay"]
-size = Vector2(119, 60)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_64hey"]
+size = Vector2(109.993, 63.678)
+
+[sub_resource type="Curve2D" id="Curve2D_ulds4"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -47, 325, 0, 0, 0, 0, -108, 389)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_hgqma"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -111, 390, 0, 0, 0, 0, -199, 454)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_ldin7"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -93, 88.405, 0, 0, 0, 0, -144, 230)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_qkjat"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -144, 230, 0, 0, 0, 0, -202, 276, 0, 0, 0, 0, -141, 336, 0, 0, 0, 0, -48, 370, 0, 0, 0, 0, 53, 324, 0, 0, 0, 0, 146, 238)
+}
+point_count = 6
 
 [node name="Bai_Jian_Jue_scene1" type="Node2D"]
 position = Vector2(500, 0)
-script = ExtResource("1_fk5hk")
+script = ExtResource("23_entry_fade")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(0, 189)
@@ -4161,11 +4184,10 @@ tile_set = SubResource("TileSet_kuoqm")
 
 [node name="SpawnPoints" type="Node2D" parent="."]
 
-[node name="from_yuheng_market_west" type="Marker2D" parent="SpawnPoints"]
+[node name="from_yuheng_market_west_scene1" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-190.98, 412.615)
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
-visible = false
 z_index = 1999
 offset_left = -1318.0
 offset_top = -808.0
@@ -4209,14 +4231,6 @@ position = Vector2(24.235, 0)
 position = Vector2(163.852, 388)
 shape = SubResource("RectangleShape2D_kuoqm")
 
-[node name="to_yuheng_market_west" type="Area2D" parent="."]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="to_yuheng_market_west"]
-position = Vector2(-271.175, 505.58)
-rotation = 0.441568
-skew = 0.598648
-shape = SubResource("RectangleShape2D_1neay")
-
 [node name="NPC" type="Node2D" parent="."]
 
 [node name="Su_mien" parent="NPC" instance=ExtResource("3_prgqg")]
@@ -4227,12 +4241,14 @@ script = ExtResource("4_ldin7")
 [node name="Bookstore_guestA" parent="NPC" instance=ExtResource("5_uek06")]
 position = Vector2(-279, 353)
 scale = Vector2(0.3, 0.3)
-script = ExtResource("6_w5xcl")
+script = ExtResource("24_guest_dialog")
+guest_id = "guest_a"
 
 [node name="Bookstore_guestB" parent="NPC" instance=ExtResource("7_3e8nv")]
 position = Vector2(259.19, 376.545)
 scale = Vector2(0.3, 0.3)
-script = ExtResource("8_5kguw")
+script = ExtResource("24_guest_dialog")
+guest_id = "guest_b"
 
 [node name="yuxin_moonlight_hint" type="AudioStreamPlayer2D" parent="NPC/Bookstore_guestB"]
 stream = ExtResource("9_tureq")
@@ -4296,4 +4312,41 @@ scale = Vector2(0.775, 0.775)
 texture = ExtResource("22_u1ea3")
 script = ExtResource("14_ejg1f")
 
-[connection signal="body_entered" from="to_yuheng_market_west" to="." method="_on_to_yuheng_market_west_body_entered"]
+[node name="forbidden_zone" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="forbidden_zone"]
+position = Vector2(-192.991, 309.841)
+rotation = -0.516617
+scale = Vector2(1, 1)
+skew = -0.479966
+shape = SubResource("RectangleShape2D_64hey")
+
+[node name="Liu_yu_path" type="Node2D" parent="."]
+
+[node name="Liu_yu_leave1" type="Path2D" parent="Liu_yu_path"]
+curve = SubResource("Curve2D_ulds4")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Liu_yu_path/Liu_yu_leave1"]
+position = Vector2(-47, 325)
+rotation = 2.3322
+
+[node name="Liu_yu_leave2" type="Path2D" parent="Liu_yu_path"]
+curve = SubResource("Curve2D_hgqma")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Liu_yu_path/Liu_yu_leave2"]
+position = Vector2(-111, 390)
+rotation = 2.5128
+
+[node name="Su_mienPath" type="Node2D" parent="."]
+
+[node name="Su_mien_leave1" type="Path2D" parent="Su_mienPath"]
+curve = SubResource("Curve2D_ldin7")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Su_mienPath/Su_mien_leave1"]
+
+[node name="Su_mien_leave2" type="Path2D" parent="Su_mienPath"]
+curve = SubResource("Curve2D_qkjat")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Su_mienPath/Su_mien_leave2"]
+position = Vector2(-144, 230)
+rotation = 2.47107

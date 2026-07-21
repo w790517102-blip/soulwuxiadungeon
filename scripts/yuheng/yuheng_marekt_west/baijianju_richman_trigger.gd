@@ -78,13 +78,13 @@ func _on_player_entered(body: Node2D) -> void:
 
 func _run_richman_cutscene() -> void:
 	_lock_cutscene_controls()
+	await _fade_event_scene_in()
 	await _run_player_approach()
 	await _play_hidden_richman_intro()
 	await _run_richman_entrance()
 	await _play_dialog(_build_recognition_lines())
 	await _play_dialog(_build_confrontation_lines())
 	await _run_richman_exit()
-	await _fade_overlay_to(1.0)
 	await _finalize_richman_event_under_black()
 	await _fade_overlay_to(0.0)
 	await get_tree().create_timer(0.3).timeout
@@ -115,9 +115,30 @@ func _run_richman_entrance() -> void:
 
 func _run_richman_exit() -> void:
 	_lock_cutscene_controls()
+	# 老闆指定：暴發戶開始離場時便同步淡黑，而非等他走完全程才淡黑。
+	var fade_tween: Tween = null
+	if overlay:
+		overlay.visible = true
+		fade_tween = overlay.create_tween()
+		fade_tween.tween_property(overlay, "modulate:a", 1.0, 1.8)
+	else:
+		push_warning("[暴發戶事件] 暴發戶離場時找不到 BlackOverlay，略過同步淡黑。")
 	await _move_node_along_path(richman_actor, richman_leave_path, 1.8, "暴發戶離場")
+	if fade_tween and fade_tween.is_running():
+		await fade_tween.finished
 	if richman_actor:
 		_play_idle(richman_actor, Vector2(1, 1))
+
+
+func _fade_event_scene_in() -> void:
+	if overlay == null:
+		push_warning("[暴發戶事件] 進場找不到 BlackOverlay，略過全黑淡出並繼續。")
+		return
+	overlay.visible = true
+	overlay.modulate.a = 1.0
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	await _fade_overlay_to(0.0)
 
 
 func _finalize_richman_event_under_black() -> void:
