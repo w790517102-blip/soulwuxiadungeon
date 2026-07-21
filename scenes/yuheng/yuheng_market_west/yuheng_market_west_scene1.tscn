@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=4 uid="uid://bhxnjq86b6by1"]
+[gd_scene load_steps=35 format=4 uid="uid://bhxnjq86b6by1"]
 
 [ext_resource type="PackedScene" uid="uid://hhdqqttuga74" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Bookstore_guestC.tscn" id="2_hksqb"]
 [ext_resource type="Texture2D" uid="uid://bmm72ajjeumc3" path="res://assets/background/Yuheng_Town/yuheng_market_west/yuheng_market_west.jpg" id="2_r47uv"]
@@ -20,6 +20,7 @@
 [ext_resource type="Script" uid="uid://d155qh1bemevs" path="res://scripts/yuheng/yuheng_market_east/chair.gd" id="31_haij8"]
 [ext_resource type="Texture2D" uid="uid://chv1o3v8l34hp" path="res://assets/background/Yuheng_Town/yuheng_market_west/anvil.png" id="32_a4hwi"]
 [ext_resource type="Texture2D" uid="uid://djy2u27bpj3do" path="res://assets/background/Yuheng_Town/yuheng_market_west/weapon_shop.png" id="33_kb3ya"]
+[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/scene1_witness_dialog.gd" id="34_scene1_witness"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dplkc"]
 texture = ExtResource("2_r47uv")
@@ -6383,14 +6384,20 @@ scale = Vector2(0.25, 0.25)
 [node name="yuheng_black_smith" parent="NPC" instance=ExtResource("15_mbff6")]
 position = Vector2(-442, 35.335)
 scale = Vector2(0.705, 0.705)
+script = ExtResource("34_scene1_witness")
+witness_id = "blacksmith"
 
 [node name="sugar_kid" parent="NPC" instance=ExtResource("21_lj8gw")]
 position = Vector2(-38, 233.335)
 scale = Vector2(0.27, 0.27)
+script = ExtResource("34_scene1_witness")
+witness_id = "sugar_kid"
 
 [node name="scholar" parent="NPC" instance=ExtResource("9_cxdof")]
 position = Vector2(-142, 340.335)
 scale = Vector2(0.32, 0.32)
+script = ExtResource("34_scene1_witness")
+witness_id = "scholar"
 
 [node name="wash_woman2" type="Path2D" parent="NPC"]
 curve = SubResource("Curve2D_owo3c")
@@ -6410,6 +6417,8 @@ path_node = NodePath("..")
 [node name="outlander" parent="NPC" instance=ExtResource("3_f8rqd")]
 position = Vector2(-414, 125.335)
 scale = Vector2(0.27, 0.27)
+script = ExtResource("34_scene1_witness")
+witness_id = "outlander"
 
 [node name="object" type="Node2D" parent="."]
 
@@ -6469,7 +6478,7 @@ shape = SubResource("RectangleShape2D_smwb0")
 [node name="pharmacy_forbidden" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="pharmacy_forbidden"]
-position = Vector2(324.508, 241.354)
+position = Vector2(301, 304.335)
 rotation = 0.378736
 skew = -0.378736
 shape = SubResource("RectangleShape2D_ab8u7")
@@ -6477,7 +6486,7 @@ shape = SubResource("RectangleShape2D_ab8u7")
 [node name="to_Bai_Jian_Jue" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="to_Bai_Jian_Jue"]
-position = Vector2(-118, 70.335)
+position = Vector2(-142, 154.335)
 rotation = 0.315905
 skew = -0.347321
 shape = SubResource("RectangleShape2D_5iwka")

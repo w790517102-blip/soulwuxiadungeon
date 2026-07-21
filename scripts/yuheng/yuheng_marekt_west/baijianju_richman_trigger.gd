@@ -1,206 +1,491 @@
-# ✅ 白箋居前暴發戶事件觸發腳本
-# 觸發時機：劉語塵於飲月山莊吃到閉門羹後，返回玉衡鎮、靠近白箋居前 Area2D。
-# 劇情功能：銜接「飲月山莊閉莊」→「白箋居開門」→「書眠與銀屏語」。
 extends Node2D
 
-var triggered := false
-
-@onready var dialog_manager := get_node("/root/GameRoot/DialogManager")
-@onready var player := get_node("/root/GameRoot/LiuYu")
-@onready var area := $Area2D
-
-# 依照你的專案實際圖像路徑可再調整
 const EMPTY_PORTRAIT := "res://assets/sprites/empty.png"
 const LIUYU_PORTRAIT := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
-const SHUMIAN_PORTRAIT := "res://assets/sprites/Shumian/Shumian_headshot.png"
-const RICHMAN_PORTRAIT := "res://assets/sprites/NPC/richman_headshot.png"
-
-# 依照你的 DialogManager speaker 定義可再調整
-const NPC_SPEAKER := 1
+const RICHMAN_PORTRAIT := EMPTY_PORTRAIT
 const LIUYU_SPEAKER := 2
-const SHUMIAN_SPEAKER := 3
-const RICHMAN_SPEAKER := 4
-
+const NPC_SPEAKER := 1
 const F_MANOR_CLOSED := "main_yh_manor_closed"
 const F_EVENT_DONE := "event_baijianju_richman_done"
 const F_BAIJIANJU_OPEN := "main_yh_baijianju_open"
+const MAIN_QUEST_ID := "main_001"
+const EVENT_STAGE := 4
+const EVENT_OBJECTIVE := "進入白箋居，確認書眠是否無恙。"
+const BAIJIANJU_EVENT_SCENE := "res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/bai_jian_jue_scene1.tscn"
 
-func _ready():
+@onready var dialog_manager := get_node_or_null("/root/GameRoot/DialogManager")
+@onready var player := get_node_or_null("/root/GameRoot/LiuYu") as CharacterBody2D
+@onready var area := get_node_or_null("Area2D") as Area2D
+@onready var player_path := get_node_or_null("to_bai_jian_ju_front") as Path2D
+@onready var scene_root := get_parent()
+@onready var overlay := scene_root.get_node_or_null("BlackOverlay") as ColorRect
+@onready var richman_root := scene_root.get_node_or_null("NPC/yuheng_Parvenu") as Node2D
+@onready var richman_actor := scene_root.get_node_or_null("NPC/yuheng_Parvenu/Bookstore_guestC") as CharacterBody2D
+@onready var richman_out_path := scene_root.get_node_or_null("NPC/yuheng_Parvenu/Path_OutFromBookstore") as Path2D
+@onready var richman_leave_path := scene_root.get_node_or_null("NPC/yuheng_Parvenu/Path_LeaveTown") as Path2D
+
+var triggered := false
+var cutscene_busy := false
+var _menu_was_locked := false
+var _forbidden_busy := false
+var _forbidden_requires_exit: Dictionary = {}
+var _transition_busy := false
+
+
+func _ready() -> void:
+	_connect_scene_areas()
 	if GlobalState.get_flag(F_EVENT_DONE):
-		queue_free()
+		_apply_post_event_scene_state.call_deferred()
 		return
-	area.body_entered.connect(_on_player_entered)
 
-func _on_player_entered(body):
-	if triggered or not body.name == "LiuYu":
-		return
-	
-	# 這段劇情必須在飲月山莊閉莊後才觸發。
 	if not GlobalState.get_flag(F_MANOR_CLOSED):
+		_hide_richman_until_entrance()
 		return
-	
+
+	# 進入事件副本後立即持有控制鎖，避免出生點與 Trigger 重疊檢查前可移動或開選單。
+	cutscene_busy = true
+	_menu_was_locked = bool(GlobalState.get_meta("menu_locked", false))
+	_lock_cutscene_controls()
+	_hide_richman_until_entrance()
+	if area and not area.body_entered.is_connected(_on_player_entered):
+		area.body_entered.connect(_on_player_entered)
+	_check_spawn_overlap.call_deferred()
+
+
+func _check_spawn_overlap() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if triggered or area == null or player == null:
+		return
+	if area.get_overlapping_bodies().has(player):
+		_on_player_entered(player)
+		return
+	# SpawnPoint 與 Area2D 理應重疊；若物理查詢未及更新，位置在碰撞框附近時仍安全啟動。
+	var shape := area.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape and player.global_position.distance_to(shape.global_position) <= 140.0:
+		push_warning("[暴發戶事件] 出生重疊查詢未回報 LiuYu，改以 SpawnPoint 距離啟動。")
+		_on_player_entered(player)
+
+
+func _on_player_entered(body: Node2D) -> void:
+	if triggered or body == null or body.name != "LiuYu":
+		return
+	if not GlobalState.get_flag(F_MANOR_CLOSED) or GlobalState.get_flag(F_EVENT_DONE):
+		return
 	triggered = true
-	player.can_move = false
-	
-	_face_player_down_left()
-	await get_tree().create_timer(0.35).timeout
-	
-	dialog_manager.show_dialog_sequence(_build_dialog_lines())
-	await dialog_manager.dialog_sequence_finished
-	
+	_run_richman_cutscene()
+
+
+func _run_richman_cutscene() -> void:
+	_lock_cutscene_controls()
+	await _run_player_approach()
+	await _play_hidden_richman_intro()
+	await _run_richman_entrance()
+	await _play_dialog(_build_recognition_lines())
+	await _play_dialog(_build_confrontation_lines())
+	await _run_richman_exit()
+	await _fade_overlay_to(1.0)
+	await _finalize_richman_event_under_black()
+	await _fade_overlay_to(0.0)
+	await get_tree().create_timer(0.3).timeout
+	await _play_after_event_line()
+	_finish_cutscene_safely()
+
+
+func _run_player_approach() -> void:
+	await _move_node_along_path(player, player_path, 1.55, "劉語塵進場")
+	_play_idle(player, Vector2(1, -1))
+	await get_tree().create_timer(0.4).timeout
+
+
+func _play_hidden_richman_intro() -> void:
+	await _play_dialog([
+		_l("……！", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_unknown("哼！跩什麼跩？！"),
+	])
+
+
+func _run_richman_entrance() -> void:
+	if richman_actor:
+		richman_actor.visible = true
+	await _move_node_along_path(richman_actor, richman_out_path, 1.45, "暴發戶出場")
+	if richman_actor and player:
+		_play_idle(richman_actor, (player.global_position - richman_actor.global_position).normalized())
+
+
+func _run_richman_exit() -> void:
+	_lock_cutscene_controls()
+	await _move_node_along_path(richman_actor, richman_leave_path, 1.8, "暴發戶離場")
+	if richman_actor:
+		_play_idle(richman_actor, Vector2(1, 1))
+
+
+func _finalize_richman_event_under_black() -> void:
+	if richman_root and is_instance_valid(richman_root):
+		_disable_node_tree(richman_root)
+		richman_root.queue_free()
+		richman_root = null
+		richman_actor = null
+		await get_tree().process_frame
+	else:
+		push_warning("[暴發戶事件] 全黑結算時找不到 yuheng_Parvenu；仍繼續落旗以避免流程卡死。")
+
 	GlobalState.set_flag(F_EVENT_DONE, true)
 	GlobalState.set_flag(F_BAIJIANJU_OPEN, true)
-	
-	player.can_move = true
-	queue_free()
+	_advance_main_quest_to_event_stage()
+	_disable_main_trigger()
 
-func _build_dialog_lines() -> Array:
-	var lines: Array = [
 
-		_l("飲月山莊既已閉門，左飲暫不可見。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("玉衡鎮內，仍有線索未明。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("書眠或許知道些什麼。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_n("前方忽然傳來一陣爭執聲。"),
-		#暴發戶.tscn的visible切換成true,沿著parth2D移動,移動結束後animation播放idle_up
-		_l("書眠先生，妳這話未免太不近人情了吧？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		#書眠tscn的visible切換成true,沿著parth2D移動
-		_l("我昨日已說過。詩可讀，不可拿來撐場面。", SHUMIAN_SPEAKER, SHUMIAN_PORTRAIT),
-		_l("我老老實實出銀子買，怎麼就叫撐場面？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("若只是想讀，白箋居的詩冊可以借。", SHUMIAN_SPEAKER, SHUMIAN_PORTRAIT),
-		_l("若只是想掛在廳堂上讓賓客稱羨，那便不賣。", SHUMIAN_SPEAKER, SHUMIAN_PORTRAIT),
-		_l("妳——", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		#書眠tscn沿著parth2D移動,她的visible切換成false,
-		_n("書眠沒有再答，只輕輕合上門。"),
-		_n("暴發戶站在門前，臉上一陣青一陣白。"),
-		#暴發戶animation播放idle_left
-		_l("唉唷？這不是早上跟我聊詩的那位小哥嗎？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("……", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你來得正好！", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("早上咱們也算談過詩了吧？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("你說過很多話。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("那就是談過了！", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("既然你懂幾分詩，也算半個風雅人。你替我進去說幾句話。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("說什麼？", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("說服她賣我一卷親筆詩稿。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("價錢好談。若你能辦成，我也少不了你的好處。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("你覺得我像是能替你說話的人？", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("江湖人嘛，總比這些讀書人懂人情世故。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("我剛從一個守門人那裡回來。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("他也很懂人情世故。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("所以呢？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("所以我現在對拿東西敲門的人，沒什麼好感。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("小哥這話就偏了。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("我拿的是真金白銀，又不是空口白話。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("不喊價，如何顯出誠意？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("你那不是誠意。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("那是什麼？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("是俗氣的銀子。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_n("暴發戶怔了一瞬，隨即冷笑。"),
-		_l("少俠倒是伶牙俐嘴。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("可這世上，哪件雅事不要銀子撐著？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("紙要銀子，墨要銀子，書齋要銀子，名聲也要銀子。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("所以你要買的是詩？", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("不然呢？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_n("劉語塵看了他一眼。"),
-		_l("我看不像。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("此話怎說？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("像買門面。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你——", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("書是給人讀的。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你想買回去掛起來，讓賓客看見，說一句『這是書眠親筆』。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你要的不是字。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("是旁人看你時，多敬你半寸的眼神。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_n("暴發戶臉色變得難看。"),
-		_l("胡說！", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("我家中藏書千卷，宴客時談詩論賦，往來皆是名士。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("我若不懂詩，誰懂？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("藏書千卷，未必讀過一卷。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("放肆！", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("往來名士，未必有一人願意聽你說話。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你一介江湖客，衣著寒酸，也配論我？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("我不論你。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("那你是在做什麼？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("替白箋居省些口水。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_n("一旁幾名鎮民本在裝作路過，聽到這句，忍不住低笑。"),
-		_l("笑什麼！", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("你們玉衡鎮不過偏安一隅，真以為出了一個書眠，便人人都高雅起來了？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("高雅不高雅，我不知道。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("但白箋居人人可入，你卻進不去。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你說什麼？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("不是規矩太複雜。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("是你腦袋太簡單。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你敢辱我？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("你若只是買不到書，我不會開口。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你若只是被拒在門外，也與我無關。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("但你把別人的心血當成宴席上的酒杯，把清詞雅句當成臉上的金粉。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("這就不只是買書了。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("書寫出來，不就是給人看的？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("劍鑄出來，也是給人用的。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("可若有人拿劍去切席上的肉，還自稱懂劍。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("鑄劍的人，自然會把他趕出去。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_n("暴發戶一時語塞。"),
-		_l("好，好。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("你們玉衡鎮的人清高，連路過的江湖客也學會擺架子。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("我不是玉衡鎮人。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("那你為何替他們說話？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_n("劉語塵沉默須臾。"),
-		_n("遠處琴聲掠過街角。"),
-		_n("他想起飲月山莊緊閉的山門，與顧石欲言又止的神情。"),
-		_n("也想起白箋居門內那片被吵擾的清靜。"),
-		_l("因為有人不想賣。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("就這樣？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("就這樣。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("荒唐！世上哪有銀子買不到的東西？", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("有。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你買不到別人願意。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_n("暴發戶怔住。"),
-		_l("買不到，便是買不到。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你再喊大聲些，也只是讓旁人更確定你不懂。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("好一張利嘴。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("比不上你的錢袋響。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("你——！", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_n("暴發戶狠狠一甩袖。"),
-		_l("今日她不賣，來日自有人求著我買！", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("你可以等。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("算你識相。", RICHMAN_SPEAKER, RICHMAN_PORTRAIT),
-		_l("等到書懂得嫌人。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_n("暴發戶腳下一頓，滿臉通紅氣得說不出話。"),
-#暴發戶tscn沿著path 2D移動,await 0.5s後 black overlay fade in, await 0.5s後, black overlay fade out
-		_n("四周漸漸安靜。"),
-		_n("幾名鎮民看向劉語塵，似想道謝，又被遠處琴聲一壓，各自低頭散去。"),
-		_l("飲月山莊關門，白箋居也關門。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("只是前者擋我，後者擋他。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+func _play_after_event_line() -> void:
+	await _play_dialog([
+		_l("劉語塵心想：方才鬧出這麼大動靜……", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("劉語塵心想：得先去看看書眠是否無恙。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+	])
 
-		_n("劉語塵看向白箋居。"),
-		_n("方才書眠請人出門時，語氣很穩。"),
-		_n("可那種穩，與紅徽音的琴聲有些相似。"),
-		_n("都像是在把什麼東西壓住。"),
-		_l("「書眠把他趕出來，看來不是脾氣不好。」", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("「...她應該也被困在什麼裡面。」", SHUMIAN_SPEAKER, SHUMIAN_PORTRAIT),
-		_n("白箋居的門沒有鎖。"),
-		_n("門縫裡透出淡淡墨香。"),
-		_l("「……進去看看吧。」", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 
-		_l("主線更新：進入白箋居，察看書眠的狀況。", NPC_SPEAKER, EMPTY_PORTRAIT),
-	]
-	return lines
+func _finish_cutscene_safely() -> void:
+	if overlay:
+		overlay.modulate.a = 0.0
+		overlay.visible = false
+	if player:
+		_clear_player_motion()
+		if player.has_method("_restore_idle_animation"):
+			player.call("_restore_idle_animation")
+		player.set("can_move", true)
+	GlobalState.set_meta("menu_locked", _menu_was_locked)
+	cutscene_busy = false
 
-func _face_player_down_left():
-	if not player:
+
+func _apply_post_event_scene_state() -> void:
+	triggered = true
+	cutscene_busy = false
+	# 舊存檔若只留下事件完成旗標，也要重建白箋居已開放的世界狀態。
+	GlobalState.set_flag(F_BAIJIANJU_OPEN, true)
+	_disable_main_trigger()
+	if richman_root and is_instance_valid(richman_root):
+		_disable_node_tree(richman_root)
+		richman_root.queue_free()
+		richman_root = null
+		richman_actor = null
+	if overlay:
+		overlay.modulate.a = 0.0
+		overlay.visible = false
+	if player:
+		_clear_player_motion()
+		player.set("can_move", true)
+
+
+func _hide_richman_until_entrance() -> void:
+	if richman_actor:
+		richman_actor.visible = false
+
+
+func _disable_main_trigger() -> void:
+	if area:
+		area.monitoring = false
+		area.monitorable = false
+		var collision := area.get_node_or_null("CollisionShape2D") as CollisionShape2D
+		if collision:
+			collision.set_deferred("disabled", true)
+
+
+func _lock_cutscene_controls() -> void:
+	cutscene_busy = true
+	var system_menu := get_node_or_null("/root/SystemMenu")
+	if system_menu and system_menu.has_method("close_menu_if_open"):
+		system_menu.call("close_menu_if_open")
+	GlobalState.set_meta("menu_locked", true)
+	if player:
+		player.set("can_move", false)
+		player.set("override_idle_animation", true)
+		_clear_player_motion()
+
+
+func _clear_player_motion() -> void:
+	if player == null:
 		return
-	if player.has_method("get_idle_anim_name"):
-		player.animated_sprite.play(player.get_idle_anim_name(Vector2(-1, 1)))
+	player.velocity = Vector2.ZERO
+	player.set("direction", Vector2.ZERO)
 
-func _l(text: String, speaker: int, portrait: String = EMPTY_PORTRAIT) -> Dictionary:
-	return {
-		"text": text,
-		"speaker": speaker,
-		"portrait": portrait
-	}
 
-func _n(text: String) -> Dictionary:
-	return {
-		"text": text,
-		"speaker": NPC_SPEAKER,
-		"portrait": EMPTY_PORTRAIT
-	}
+func _move_node_along_path(node: Node2D, path: Path2D, duration: float, label: String) -> void:
+	if node == null:
+		push_warning("[暴發戶事件] %s找不到移動角色，略過走位並繼續。" % label)
+		return
+	if path == null:
+		push_warning("[暴發戶事件] %s找不到 Path2D，保留角色現位並繼續。" % label)
+		return
+	var follow := path.get_node_or_null("PathFollow2D") as PathFollow2D
+	if follow == null:
+		push_warning("[暴發戶事件] %s的 Path2D 缺少 PathFollow2D，改將角色放到 Curve 終點並繼續。" % label)
+		_place_node_at_curve_end(node, path)
+		return
+	if path.curve == null or path.curve.get_baked_length() <= 0.0:
+		push_warning("[暴發戶事件] %s的 Curve2D 無有效長度，保留角色現位並繼續。" % label)
+		return
+
+	follow.progress_ratio = 0.0
+	node.global_position = follow.global_position
+	var elapsed := 0.0
+	var previous_position := node.global_position
+	while elapsed < duration and is_instance_valid(node):
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+		follow.progress_ratio = clampf(elapsed / maxf(duration, 0.01), 0.0, 1.0)
+		node.global_position = follow.global_position
+		var move_direction := node.global_position - previous_position
+		if move_direction.length_squared() > 0.01:
+			_play_walk(node, move_direction.normalized())
+		previous_position = node.global_position
+	if is_instance_valid(node):
+		follow.progress_ratio = 1.0
+		node.global_position = follow.global_position
+		if node is CharacterBody2D:
+			(node as CharacterBody2D).velocity = Vector2.ZERO
+
+
+func _place_node_at_curve_end(node: Node2D, path: Path2D) -> void:
+	if node == null or path == null or path.curve == null:
+		return
+	var curve_length := path.curve.get_baked_length()
+	if curve_length <= 0.0:
+		return
+	node.global_position = path.to_global(path.curve.sample_baked(curve_length))
+	if node is CharacterBody2D:
+		(node as CharacterBody2D).velocity = Vector2.ZERO
+
+
+func _play_walk(node: Node2D, direction: Vector2) -> void:
+	var sprite := node.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if sprite == null or sprite.sprite_frames == null:
+		return
+	var walk_name := _anim_name_for_direction(direction, "walk")
+	if sprite.sprite_frames.has_animation(walk_name):
+		sprite.play(walk_name)
+		return
+	var idle_name := _anim_name_for_direction(direction, "idle")
+	if sprite.sprite_frames.has_animation(idle_name):
+		sprite.play(idle_name)
+
+
+func _play_idle(node: Node2D, direction: Vector2) -> void:
+	if node == null:
+		return
+	var sprite := node.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if sprite == null or sprite.sprite_frames == null:
+		return
+	var anim_name := _anim_name_for_direction(direction, "idle")
+	if sprite.sprite_frames.has_animation(anim_name):
+		sprite.play(anim_name)
+
+
+func _anim_name_for_direction(direction: Vector2, prefix: String) -> String:
+	var angle := direction.angle()
+	if angle >= -PI * 7.0 / 8.0 and angle < -PI * 5.0 / 8.0:
+		return "%s_left_up" % prefix
+	if angle < -PI * 3.0 / 8.0:
+		return "%s_up" % prefix
+	if angle < -PI * 1.0 / 8.0:
+		return "%s_right_up" % prefix
+	if angle < PI * 1.0 / 8.0:
+		return "%s_right" % prefix
+	if angle < PI * 3.0 / 8.0:
+		return "%s_right_down" % prefix
+	if angle < PI * 5.0 / 8.0:
+		return "%s_down" % prefix
+	if angle < PI * 7.0 / 8.0:
+		return "%s_left_down" % prefix
+	return "%s_left" % prefix
+
+
+func _play_dialog(lines: Array, preserve_cutscene_lock := true) -> void:
+	if dialog_manager == null:
+		push_warning("[暴發戶事件] 找不到 DialogManager，略過本段對話並繼續安全收束。")
+		return
+	if preserve_cutscene_lock:
+		_lock_cutscene_controls()
+	await dialog_manager.call("show_dialog_sequence", lines, self)
+	if preserve_cutscene_lock:
+		_lock_cutscene_controls()
+
+
+func _fade_overlay_to(target_alpha: float) -> void:
+	if overlay == null:
+		push_warning("[暴發戶事件] 找不到 BlackOverlay，略過淡入淡出並繼續。")
+		return
+	overlay.visible = true
+	var tween := overlay.create_tween()
+	tween.tween_property(overlay, "modulate:a", target_alpha, 0.5)
+	await tween.finished
+	if is_equal_approx(target_alpha, 0.0):
+		overlay.visible = false
+
+
+func _advance_main_quest_to_event_stage() -> void:
+	var quest_manager := get_node_or_null("/root/QuestManager")
+	if quest_manager == null or not quest_manager.has_method("get_main_quest_state"):
+		push_warning("[暴發戶事件] 找不到 QuestManager，旗標已落但無法推進 stage 4。")
+		return
+	var main_quest := quest_manager.call("get_main_quest_state") as Dictionary
+	if String(main_quest.get("id", "")) != MAIN_QUEST_ID:
+		return
+	var current_stage := int(main_quest.get("stage", 1))
+	if current_stage == 3 and quest_manager.has_method("advance_main_quest"):
+		quest_manager.call("advance_main_quest", EVENT_STAGE, EVENT_OBJECTIVE)
+	elif current_stage >= EVENT_STAGE and quest_manager.has_method("set_main_objective"):
+		quest_manager.call("set_main_objective", EVENT_OBJECTIVE)
+	else:
+		push_warning("[暴發戶事件] 預期 main_001 stage 3，實際為 stage %d；不跨階強推。" % current_stage)
+
+
+func _connect_scene_areas() -> void:
+	_connect_forbidden_area("yuheng_market_east_forbidden", "SpawnPoints/from_yuheng_market_east")
+	_connect_forbidden_area("yuheng_weapon_shop_forbidden", "SpawnPoints/from_yuheng_weapon_shop")
+	_connect_forbidden_area("pharmacy_forbidden", "SpawnPoints/from_yuheng_pharmacy")
+	_connect_forbidden_area("Bamboo_Grove_Suburb_forbidden", "SpawnPoints/from_Bamboo_Grove_Suburb")
+	var baijianju_area := scene_root.get_node_or_null("to_Bai_Jian_Jue") as Area2D
+	if baijianju_area and not baijianju_area.body_entered.is_connected(_on_baijianju_entered):
+		baijianju_area.body_entered.connect(_on_baijianju_entered)
+
+
+func _connect_forbidden_area(area_path: String, marker_path: String) -> void:
+	var forbidden_area := scene_root.get_node_or_null(area_path) as Area2D
+	var return_marker := scene_root.get_node_or_null(marker_path) as Marker2D
+	if forbidden_area == null:
+		push_warning("[暴發戶事件] 找不到 Forbidden Zone：%s" % area_path)
+		return
+	forbidden_area.body_entered.connect(_on_forbidden_body_entered.bind(forbidden_area, return_marker))
+	forbidden_area.body_exited.connect(_on_forbidden_body_exited.bind(forbidden_area))
+
+
+func _on_forbidden_body_entered(body: Node2D, forbidden_area: Area2D, return_marker: Marker2D) -> void:
+	if body == null or body.name != "LiuYu" or cutscene_busy or _forbidden_busy:
+		return
+	if bool(_forbidden_requires_exit.get(forbidden_area.get_instance_id(), false)):
+		return
+	await _play_forbidden_flow(body as CharacterBody2D, forbidden_area, return_marker)
+
+
+func _on_forbidden_body_exited(body: Node2D, forbidden_area: Area2D) -> void:
+	if body and body.name == "LiuYu" and not _forbidden_busy:
+		_forbidden_requires_exit[forbidden_area.get_instance_id()] = false
+
+
+func _play_forbidden_flow(body: CharacterBody2D, forbidden_area: Area2D, return_marker: Marker2D) -> void:
+	if body == null:
+		return
+	_forbidden_busy = true
+	_forbidden_requires_exit[forbidden_area.get_instance_id()] = true
+	var menu_was_locked := bool(GlobalState.get_meta("menu_locked", false))
+	GlobalState.set_meta("menu_locked", true)
+	body.set("can_move", false)
+	body.velocity = Vector2.ZERO
+	await _play_dialog([
+		_l("劉語塵心想：現在不是往這裡去的時候。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("劉語塵心想：方才白箋居鬧出那麼大動靜，得先看看書眠是否無恙。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+	], false)
+	body.set("can_move", false)
+	await _fade_overlay_to(1.0)
+	if return_marker:
+		body.global_position = return_marker.global_position
+		body.velocity = Vector2.ZERO
+		await get_tree().physics_frame
+	else:
+		push_warning("[暴發戶事件] Forbidden Zone %s 找不到退回 Marker。" % forbidden_area.name)
+	await _fade_overlay_to(0.0)
+	body.velocity = Vector2.ZERO
+	body.set("can_move", true)
+	GlobalState.set_meta("menu_locked", menu_was_locked)
+	_forbidden_busy = false
+
+
+func _on_baijianju_entered(body: Node2D) -> void:
+	if body == null or body.name != "LiuYu" or cutscene_busy or _transition_busy:
+		return
+	if not GlobalState.get_flag(F_EVENT_DONE) or not GlobalState.get_flag(F_BAIJIANJU_OPEN):
+		return
+	var baijianju_area := scene_root.get_node_or_null("to_Bai_Jian_Jue") as Area2D
+	if not MapTransitionGuard.can_transition(body, baijianju_area):
+		return
+	_transition_busy = true
+	body.set("can_move", false)
+	if body is CharacterBody2D:
+		(body as CharacterBody2D).velocity = Vector2.ZERO
+	await _fade_overlay_to(1.0)
+	var game_root := get_node_or_null("/root/GameRoot")
+	if game_root and game_root.has_method("change_map_to"):
+		game_root.set("spawn_point_name", "from_yuheng_market_west")
+		game_root.call("change_map_to", BAIJIANJU_EVENT_SCENE)
+	else:
+		push_warning("[暴發戶事件] 找不到 GameRoot.change_map_to，恢復玩家控制。")
+		await _fade_overlay_to(0.0)
+		body.set("can_move", true)
+		_transition_busy = false
+
+
+func _disable_node_tree(root: Node) -> void:
+	root.process_mode = Node.PROCESS_MODE_DISABLED
+	for child in root.find_children("*", "CollisionShape2D", true, false):
+		(child as CollisionShape2D).set_deferred("disabled", true)
+	for child in root.find_children("*", "Area2D", true, false):
+		(child as Area2D).set_deferred("monitoring", false)
+		(child as Area2D).set_deferred("monitorable", false)
+
+
+func _build_recognition_lines() -> Array:
+	return [_l("那個人……是方才白箋居裡的那位暴發戶！", LIUYU_SPEAKER, LIUYU_PORTRAIT)]
+
+
+func _build_confrontation_lines() -> Array:
+	return [
+		_r("喂！你不是方才也在白箋居裡的那位少俠嗎？"),
+		_r("來得正好。你替我進去跟那女人說一聲——她那些親筆詩稿，我出雙倍價錢！"),
+		_r("不，三倍也成！"),
+		_l("書眠姑娘既已說不賣，閣下再加多少銀兩，又有何用？", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("哪有做買賣嫌銀子多的？"),
+		_r("她不過是故作清高，想抬高價錢罷了。"),
+		_r("你替我把話帶到。事成之後，自然少不了你的好處。"),
+		_l("閣下誤會了。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("她不賣，不是因為價錢不夠。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("那是為什麼？"),
+		_l("因為那是她的詩。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("賣與不賣，該由她自己決定。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("哼！我肯花銀子買她的字，是看得起她！"),
+		_l("你那不是誠意。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("只是聲音太大的銀子。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("你——！"),
+		_l("你要的也不是字。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("是旁人看你時，多敬你半寸的眼神。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("我買她的詩稿，拿回去好生供著，有什麼不對？"),
+		_l("供的是詩，還是閣下自己的門面？", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("這一點，閣下心裡應該明白。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("說到底，不過是幾張紙、幾行字！"),
+		_r("這世上還有銀子買不到的東西？"),
+		_l("有。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("什麼？"),
+		_l("你買不到別人願意。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		{"wait": 0.35},
+		_r("今日她不賣，來日自有人求著我買！"),
+		_l("你可以等。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("算你識相。"),
+		_l("等到書懂得嫌人。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_r("你——！"),
+		_r("哼！山水有相逢，咱們走著瞧！"),
+	]
+
+
+func _l(text: String, speaker: int, portrait: String) -> Dictionary:
+	return {"text": "「%s」" % text, "speaker": speaker, "portrait": portrait}
+
+
+func _r(text: String) -> Dictionary:
+	return {"text": "暴發戶：「%s」" % text, "speaker": NPC_SPEAKER, "portrait": RICHMAN_PORTRAIT}
+
+
+func _unknown(text: String) -> Dictionary:
+	return {"text": "？？？：「%s」" % text, "speaker": NPC_SPEAKER, "portrait": EMPTY_PORTRAIT}
+
+
+func reset_dialog_state() -> void:
+	# DialogManager 每段結束都會呼叫；整場控制權只由 _finish_cutscene_safely 統一釋放。
+	pass

@@ -2,6 +2,7 @@ extends Node2D
 
 @export var yuheng_bamboo_outskirts: String = "res://scenes/yuheng/yuheng_bamboo_outskirts/yuheng_bamboo_outskirts.tscn"
 @export var yuheng_market_west: String = "res://scenes/yuheng/yuheng_market_west/yuheng_market_west.tscn"
+@export var yuheng_market_west_richman_event: String = "res://scenes/yuheng/yuheng_market_west/yuheng_market_west_scene1.tscn"
 @onready var overlay := $BlackOverlay
 @export var music_tag := "station_stillwind"
 @export var map_display_name: String = "玉衡鎮竹林郊區"
@@ -40,7 +41,18 @@ func _on_to_yuheng_market_west_body_entered(body: Node2D) -> void:
 		tween.tween_property(overlay, "modulate:a", 1.0, 0.5)
 		await tween.finished
 		get_node("/root/GameRoot").spawn_point_name = "from_Bamboo_Grove_Suburb"
-		get_node("/root/GameRoot").change_map_to(yuheng_market_west)
+		var destination := yuheng_market_west_richman_event if _should_route_to_richman_scene() else yuheng_market_west
+		get_node("/root/GameRoot").change_map_to(destination)
+
+
+func _should_route_to_richman_scene() -> bool:
+	var quest_manager := get_node_or_null("/root/QuestManager")
+	if quest_manager == null or not quest_manager.has_method("get_main_quest_state"):
+		return false
+	var main_quest := quest_manager.call("get_main_quest_state") as Dictionary
+	return String(main_quest.get("id", "")) == "main_001" \
+		and GlobalState.get_flag("main_yh_manor_closed") \
+		and not GlobalState.get_flag("event_baijianju_richman_done")
 
 
 func _on_to_yuheng_bamboo_jungle_body_entered(body: Node2D) -> void:
