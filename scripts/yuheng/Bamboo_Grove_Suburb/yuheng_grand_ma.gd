@@ -10,12 +10,15 @@ extends CharacterBody2D
 @onready var animated_sprite := $AnimatedSprite2D
 
 const ITEM_LUNCHBOX := "item_gushi_lunchbox"
+const ITEM_ZHUJING_SACHET := "acc_zhujing_sachet"
 const F_MET_GUSHI := "met_gushi"
 const F_LUNCHBOX_RECEIVED := "main_yh_lunchbox_received"
 const F_LUNCHBOX_DELIVERED := "main_yh_lunchbox_delivered"
 const F_GUSHI_REQUEST_REPORT_GRANDMA := "main_yh_gushi_request_report_grandma"
 const F_GRANDMA_REPORTED := "main_yh_grandma_reported"
+const F_ZHUJING_SACHET_RECEIVED := "main_yh_zhujing_sachet_received"
 const OBJECTIVE_DELIVER_LUNCHBOX := "將阿婆的便當送到飲月山莊門衛顧石手中。"
+const OBJECTIVE_RETURN_TO_GUSHI := "返回飲月山莊，向顧石覆命。"
 
 var dialog_manager: Node = null
 var can_interact := false
@@ -23,6 +26,7 @@ var dialog_lines: Array = []
 var _is_talking := false
 var _pending_add_lunchbox := false
 var _pending_report_grandma := false
+var _pending_migration_sachet := false
 
 
 func _ready():
@@ -68,6 +72,14 @@ func _build_lines_for_state() -> Array:
 	if GlobalState.get_flag(F_GUSHI_REQUEST_REPORT_GRANDMA) and not GlobalState.get_flag(F_GRANDMA_REPORTED):
 		_pending_report_grandma = true
 		return _build_report_grandma_lines()
+
+	# 舊存檔只在再次與阿婆互動時補領；若香包其實已在背包或任一角色身上，只補旗標。
+	if GlobalState.get_flag(F_GRANDMA_REPORTED) and not GlobalState.get_flag(F_ZHUJING_SACHET_RECEIVED):
+		if _player_owns_sachet():
+			GlobalState.set_flag(F_ZHUJING_SACHET_RECEIVED, true)
+		else:
+			_pending_migration_sachet = true
+			return _build_migration_sachet_lines()
 
 	if GlobalState.get_flag(F_LUNCHBOX_RECEIVED) and not GlobalState.get_flag(F_LUNCHBOX_DELIVERED):
 		return _build_lunchbox_reminder_lines()
@@ -150,6 +162,34 @@ func _build_report_grandma_lines() -> Array:
 		_l("他記得。只是說得少。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("說得少也好，少說少錯。可飯不能少吃。"),
 		_l("顧石既讓我回來報平安，想必也該趁此時通報左飲了。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("我不欠你，我是記著。"),
+		_l("這個拿去。竹林路上野物多，掛在身上，能省不少麻煩。"),
+		_n("阿婆從竹籃裡取出一枚縫得頗為樸素的香包，遞到你手中。"),
+		_l("這香氣……清甜之中，還帶著些草木味。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("不過阿婆將香包給了我，您自己下山時怎麼辦？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("瞎操心。這又不是什麼傳家寶。"),
+		_l("玉衡鎮的人出入這片竹林，腰間多半都掛著一個。老婆子籃裡還有，家中也能再做。"),
+		_l("原來鎮上的居民都會製作？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("裡頭不過是附近長的草葉、曬乾的果皮，再添幾粒草籽。"),
+		_l("咱們人聞著清甜，這一帶的野物聞了，卻嫌得很，遠遠便會繞開。"),
+		_l("那帶到其他地方，也能避獸嗎？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("哪有這麼便宜的事？"),
+		_l("各地野物的脾性不同。這配法，是鎮上的人摸了幾代，才摸清這片竹林裡的野獸最厭惡什麼氣味。"),
+		_l("出了玉衡鎮，老婆子可不敢保證牠們會遠遠繞開。"),
+		_l("不過，聽鎮上那些出過遠門的人回來說，外地的野獸也不大喜歡這股味兒。"),
+		_l("真要靠近撲咬，鼻子先讓香味擾了，動作總會遲疑幾分，沒那麼凶。"),
+		_l("所以鎮上才常備著幾個。碰上不熟山路的外地人，也會給他們一枚，免得平白受傷。"),
+		_l("原來如此。那我便收下了，多謝阿婆。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("謝什麼？少在林子裡被獸追得滿地跑，便算沒有糟蹋我的針線了。"),
+		_n("獲得飾品：竹徑香包"),
+	]
+
+
+func _build_migration_sachet_lines() -> Array:
+	return [
+		_l("少俠，且慢。先前只顧著聽顧石的消息，倒忘了把這個交給你。"),
+		_l("竹徑香包不是稀罕物，卻能讓這片竹林的野物遠遠繞開。掛好了再趕路。"),
+		_n("獲得飾品：竹徑香包"),
 	]
 
 
@@ -181,6 +221,7 @@ func _n(text: String) -> Dictionary:
 func _clear_pending_actions() -> void:
 	_pending_add_lunchbox = false
 	_pending_report_grandma = false
+	_pending_migration_sachet = false
 
 
 func _apply_pending_actions() -> void:
@@ -190,7 +231,21 @@ func _apply_pending_actions() -> void:
 		_set_main_objective_safely(OBJECTIVE_DELIVER_LUNCHBOX)
 	if _pending_report_grandma:
 		GlobalState.set_flag(F_GRANDMA_REPORTED, true)
+		if not _player_owns_sachet():
+			_add_item_safely(ITEM_ZHUJING_SACHET, 1)
+		GlobalState.set_flag(F_ZHUJING_SACHET_RECEIVED, true)
+		_set_main_objective_safely(OBJECTIVE_RETURN_TO_GUSHI)
+	if _pending_migration_sachet:
+		if not _player_owns_sachet():
+			_add_item_safely(ITEM_ZHUJING_SACHET, 1)
+		GlobalState.set_flag(F_ZHUJING_SACHET_RECEIVED, true)
 	_clear_pending_actions()
+
+
+func _player_owns_sachet() -> bool:
+	return InventorySync \
+		and InventorySync.has_method("has_item_anywhere") \
+		and InventorySync.has_item_anywhere(ITEM_ZHUJING_SACHET)
 
 
 func _add_item_safely(item_id: String, amount: int = 1) -> void:

@@ -200,6 +200,11 @@ func _update_random_encounter(delta: float) -> void:
 		return
 	if current_zone_id == "":
 		return
+	if _is_random_encounter_suppressed(current_zone_id):
+		# 裝備期間不累積距離；卸下後會從正常遭遇距離重新開始。
+		_encounter_distance_accum = 0.0
+		_encounter_cooldown_distance = 0.0
+		return
 	if direction == Vector2.ZERO:
 		return
 
@@ -227,6 +232,14 @@ func _update_random_encounter(delta: float) -> void:
 		_trigger_random_battle()
 	else:
 		_encounter_cooldown_distance = cooldown_distance
+
+func _is_random_encounter_suppressed(region_id: String) -> bool:
+	return InventorySync \
+		and InventorySync.has_method("active_party_has_equipment_region_effect") \
+		and InventorySync.active_party_has_equipment_region_effect(
+			"suppress_random_encounter_region_ids",
+			region_id
+		)
 
 func _is_battle_active() -> bool:
 	return get_tree().root.find_child("BattleScene", true, false) != null

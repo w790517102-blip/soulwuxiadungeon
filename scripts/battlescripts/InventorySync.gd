@@ -116,6 +116,14 @@ func has_item(item_id: String, amount: int = 1) -> bool:
 func has_item_stack(item_id: String, amount: int = 1) -> bool:
 	return has_item(item_id, amount)
 
+func has_item_anywhere(item_id: String) -> bool:
+	if has_item(item_id):
+		return true
+	for actor_id_any in equipped_by_actor.keys():
+		if is_equipped(item_id, str(actor_id_any)):
+			return true
+	return false
+
 func consume_item(id: String, amount: int = 1, show_message: bool = true) -> void:
 	if amount <= 0:
 		return
@@ -199,6 +207,35 @@ func is_equipped(item_id: String, actor_id: String = "") -> bool:
 	var equipped = _get_equipped_ref(actor_id)
 	for slot in equipped.keys():
 		if str(equipped.get(slot, "")) == item_id:
+			return true
+	return false
+
+func get_equipment_effect(actor_id: String, effect_key: String, fallback = null):
+	if effect_key == "":
+		return fallback
+	var equipped := _get_equipped_ref(actor_id)
+	for slot in EQUIP_SLOTS:
+		var item_id := str(equipped.get(slot, ""))
+		if item_id == "":
+			continue
+		var item_def := ItemDB.get_def(item_id)
+		var effects_any = item_def.get("equip_effects", {})
+		if typeof(effects_any) != TYPE_DICTIONARY:
+			continue
+		var effects: Dictionary = effects_any
+		if effects.has(effect_key):
+			return effects.get(effect_key)
+	return fallback
+
+func active_party_has_equipment_region_effect(effect_key: String, region_id: String) -> bool:
+	if effect_key == "" or region_id == "":
+		return false
+	if not TeamData or typeof(TeamData.current_team_ids) != TYPE_ARRAY:
+		return false
+	for actor_id_any in TeamData.current_team_ids:
+		var actor_id := str(actor_id_any)
+		var region_ids_any = get_equipment_effect(actor_id, effect_key, [])
+		if typeof(region_ids_any) == TYPE_ARRAY and (region_ids_any as Array).has(region_id):
 			return true
 	return false
 

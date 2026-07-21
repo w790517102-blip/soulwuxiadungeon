@@ -217,6 +217,21 @@ func execute(
 		if dmg < 1.0:
 			dmg = 1.0
 
+	# 裝備效果在最終取整前套用；只認敵人資料的正式 family，不由名稱或外觀推斷。
+	if String(user.get("family", "")) == "animal":
+		var target_actor_id := String(target.get("id", ""))
+		if target_actor_id != "" and InventorySync and InventorySync.has_method("get_equipment_effect"):
+			var animal_multiplier := float(InventorySync.get_equipment_effect(
+				target_actor_id,
+				"animal_damage_taken_multiplier",
+				1.0
+			))
+			if animal_multiplier < 1.0:
+				dmg *= clampf(animal_multiplier, 0.0, 1.0)
+				context["animal_damage_reduction"] = 1.0 - animal_multiplier
+				if dmg < 1.0:
+					dmg = 1.0
+
 	var dmg_int: int = int(dmg)
 	var target_hp: int = int(target.get("hp", 0)) - dmg_int
 	target["hp"] = target_hp

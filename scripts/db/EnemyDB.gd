@@ -28,6 +28,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
+		"family": "animal",
 		"archetype": "野獸",
 		"accuracy": 104,
 		"evasion": 5,
@@ -47,6 +48,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
+		"family": "animal",
 		"archetype": "野獸",
 		"accuracy": 111,
 		"evasion": 7,
@@ -66,6 +68,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
+		"family": "animal",
 		"archetype": "野獸",
 		"accuracy": 98,
 		"evasion": 0,
@@ -85,6 +88,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "aggressive",
 		"skills": [],
+		"family": "animal",
 		"archetype": "爬蟲",
 		"accuracy": 108,
 		"evasion": 7,
@@ -104,6 +108,7 @@ const ENEMY_DEFS := {
 		"drops": [],
 		"ai_profile": "default",
 		"skills": [],
+		"family": "animal",
 		"archetype": "野獸"
 	},
 	"sewer_thug": {
@@ -282,6 +287,8 @@ static func _normalize_drops(drops_data) -> Array:
 static func _normalize_enemy_def(enemy: Dictionary) -> Dictionary:
 	if typeof(enemy.get("skills", [])) != TYPE_ARRAY:
 		enemy["skills"] = []
+	if not enemy.has("family"):
+		enemy["family"] = ""
 	var raw_archetype := String(enemy.get("archetype", enemy.get("species", ""))).strip_edges()
 	var normalized_archetype := resolve_archetype(raw_archetype)
 	if normalized_archetype == "":
