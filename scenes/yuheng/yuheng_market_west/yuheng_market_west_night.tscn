@@ -12404,6 +12404,7 @@ size = Vector2(116, 58)
 
 [node name="yuheng_market_west_night" type="Node2D"]
 script = ExtResource("5_entry_fade")
+music_tag = "yuheng_night"
 release_player_after_fade = false
 handoff_node_path = NodePath("Hong_huei_yin_recall_event_trigger")
 

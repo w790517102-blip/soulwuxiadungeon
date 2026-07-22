@@ -4175,6 +4175,7 @@ point_count = 6
 [node name="Bai_Jian_Jue_scene1" type="Node2D"]
 position = Vector2(500, 0)
 script = ExtResource("23_entry_fade")
+music_tag = "yuheng_inner"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(0, 189)
@@ -4263,54 +4264,63 @@ position = Vector2(-86.06, 482.79)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("13_28ses")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="table2" type="Sprite2D" parent="object"]
 position = Vector2(-228.58, 346.365)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("15_2550a")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="bookshelf1" type="Sprite2D" parent="object"]
 position = Vector2(8.3, 391.415)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("16_c1t7j")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="bookshelf2" type="Sprite2D" parent="object"]
 position = Vector2(133.15, 439.885)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("17_lht10")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="bookshelf3" type="Sprite2D" parent="object"]
 position = Vector2(-309.19, 285.785)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("18_bu0n0")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="bookshelf4" type="Sprite2D" parent="object"]
 position = Vector2(182.955, 309.12)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("19_mqg7o")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="counter1" type="Sprite2D" parent="object"]
 position = Vector2(-48, 242.465)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("20_i25tl")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="counter2" type="Sprite2D" parent="object"]
 position = Vector2(-49.65, 180.6)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("21_p6gxf")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="bookshelf5" type="Sprite2D" parent="object"]
 position = Vector2(265.1, 204.63)
 scale = Vector2(0.775, 0.775)
 texture = ExtResource("22_u1ea3")
 script = ExtResource("14_ejg1f")
+sort_from_texture_bottom = true
 
 [node name="forbidden_zone" type="Area2D" parent="."]
 

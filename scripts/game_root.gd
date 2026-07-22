@@ -10,6 +10,8 @@ var current_music_tag = ""
 var music_folder = "res://assets/BGM/"
 var _world_bgm_paused_for_battle := false
 var _world_bgm_resume_volume_db := -5.0
+var _music_transition_serial := 0
+var _music_tween: Tween = null
 var map_transition_locked := false
 const MAP_EXIT_REQUIRES_EXIT_META := "map_transition_requires_exit"
 
@@ -160,31 +162,70 @@ func change_map_to(path: String):
 		print("[GameRoot Return] liuyu visible=", $LiuYu.visible, " can_move=", $LiuYu.get("can_move"))
 
 func play_music_by_tag(tag: String, fade_time = 1.5):
-	if tag == current_music_tag:
+	if tag == current_music_tag and music_player.playing:
 		print("[音樂] music_tag 無變化（仍為：", tag, "）")
 		return
+	transition_music_by_tag(tag, fade_time, 0.5)
+
+
+# 供劇情場景在 BlackOverlay 淡出前等待音樂確實完成交接。
+# 全專案仍只使用 GameRoot/MusicPlayer；serial 會讓較新的切歌取消較舊的延遲 callback，
+# 避免快速換場時上一首在稍後又被設回來。
+func transition_music_by_tag(tag: String, fade_out_time := 0.2, fade_in_time := 0.2) -> bool:
+	if tag == current_music_tag and music_player.playing:
+		return true
 	var track_path = music_folder + tag + ".ogg"
 	print("[音樂] 嘗試載入：", track_path)
 	var track = load(track_path)
-	if track is AudioStream:
-		_world_bgm_paused_for_battle = false
-		current_music_tag = tag
-		fade_out_and_in(track, fade_time)
-		print("[音樂] 成功播放：", tag)
-	else:
+	if not track is AudioStream:
 		push_warning("[音樂] 未找到對應曲盤: %s" % track_path)
 		print("[音樂] ❌ 載入失敗：", track_path)
+		return false
+
+	_music_transition_serial += 1
+	var serial := _music_transition_serial
+	_world_bgm_paused_for_battle = false
+	current_music_tag = tag
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+
+	if music_player.playing and fade_out_time > 0.0:
+		_music_tween = create_tween()
+		_music_tween.tween_property(music_player, "volume_db", -50.0, fade_out_time)
+		await _music_tween.finished
+		if serial != _music_transition_serial:
+			return false
+
+	music_player.stop()
+	music_player.stream = track
+	music_player.stream.loop = true
+	music_player.volume_db = -50.0 if fade_in_time > 0.0 else -5.0
+	music_player.play()
+	if fade_in_time > 0.0:
+		_music_tween = create_tween()
+		_music_tween.tween_property(music_player, "volume_db", -5.0, fade_in_time)
+		await _music_tween.finished
+		if serial != _music_transition_serial:
+			return false
+	print("[音樂] 成功播放：", tag)
+	return true
 
 func fade_out_and_in(new_track: AudioStream, fade_time: float):
-	var tween = create_tween()
-	tween.tween_property(music_player, "volume_db", -50, 1.5)
-	tween.tween_callback(func ():
+	# 舊呼叫點相容入口；新程式應以 tag 呼叫 transition_music_by_tag()。
+	_music_transition_serial += 1
+	var serial := _music_transition_serial
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+	_music_tween = create_tween()
+	_music_tween.tween_property(music_player, "volume_db", -50.0, maxf(fade_time, 0.0))
+	_music_tween.tween_callback(func ():
+		if serial != _music_transition_serial:
+			return
+		music_player.stop()
 		music_player.stream = new_track
 		music_player.stream.loop = true
+		music_player.volume_db = -5.0
 		music_player.play()
-		music_player.volume_db = -5
-		var fade_in = create_tween()
-		fade_in.tween_property(music_player, "volume_db", 1, 0.5)
 	)
 
 func pause_world_bgm_for_battle() -> void:

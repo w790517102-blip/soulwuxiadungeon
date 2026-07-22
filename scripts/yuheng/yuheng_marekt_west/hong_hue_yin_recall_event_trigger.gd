@@ -10,7 +10,7 @@ extends Node2D
 @export var dialog_manager_path: NodePath = "/root/GameRoot/DialogManager"
 
 # 若玩家切場景後不是自動落在 spawn point，可由本腳本在事件前把玩家放到這裡。
-@export var spawn_point_path: NodePath = "../SpawnPoints/Hong_hue_yin_recall_event_point"
+@export var spawn_point_path: NodePath = "../SpawnPoints/Hong_huei_yin_recall_event_point"
 @export var move_player_to_spawn_on_ready := true
 @export var auto_start_if_ready := true
 @export var wait_for_scene_entry_fade := true

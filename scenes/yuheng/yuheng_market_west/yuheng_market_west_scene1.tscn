@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=4 uid="uid://bhxnjq86b6by1"]
+[gd_scene load_steps=36 format=4 uid="uid://bhxnjq86b6by1"]
 
 [ext_resource type="PackedScene" uid="uid://hhdqqttuga74" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Bookstore_guestC.tscn" id="2_hksqb"]
 [ext_resource type="Texture2D" uid="uid://bmm72ajjeumc3" path="res://assets/background/Yuheng_Town/yuheng_market_west/yuheng_market_west.jpg" id="2_r47uv"]
@@ -20,7 +20,8 @@
 [ext_resource type="Script" uid="uid://d155qh1bemevs" path="res://scripts/yuheng/yuheng_market_east/chair.gd" id="31_haij8"]
 [ext_resource type="Texture2D" uid="uid://chv1o3v8l34hp" path="res://assets/background/Yuheng_Town/yuheng_market_west/anvil.png" id="32_a4hwi"]
 [ext_resource type="Texture2D" uid="uid://djy2u27bpj3do" path="res://assets/background/Yuheng_Town/yuheng_market_west/weapon_shop.png" id="33_kb3ya"]
-[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/scene1_witness_dialog.gd" id="34_scene1_witness"]
+[ext_resource type="Script" uid="uid://b1lqlsa15prip" path="res://scripts/yuheng/yuheng_marekt_west/scene1_witness_dialog.gd" id="34_scene1_witness"]
+[ext_resource type="Script" path="res://scripts/scene_music_tag.gd" id="35_scene_music"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dplkc"]
 texture = ExtResource("2_r47uv")
@@ -6290,6 +6291,8 @@ point_count = 3
 size = Vector2(154, 196)
 
 [node name="yuheng_market_west_scene1" type="Node2D"]
+script = ExtResource("35_scene_music")
+music_tag = "yuheng"
 position = Vector2(0, 462.665)
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]

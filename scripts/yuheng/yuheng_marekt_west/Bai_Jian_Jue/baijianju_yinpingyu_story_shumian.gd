@@ -27,11 +27,17 @@ var dialog_manager: Node = null
 var can_interact := false
 var is_talking := false
 var dialog_lines: Array = []
+var _synced_dialogue_done := false
+var _synced_movement_done := false
 
 enum CutscenePhase {
 	IDLE,
-	DIALOGUE_BEFORE_SHUMIAN_LEAVE,
-	SHUMIAN_LEAVING,
+	INTRO_AND_READING,
+	AFTER_YUXIN_MUSIC,
+	RESONANCE,
+	SHUMIAN_LEAVE_1,
+	BEFORE_SHUMIAN_LEAVE_2,
+	SHUMIAN_LEAVE_2,
 	DIALOGUE_AFTER_SHUMIAN_LEAVE,
 	LIUYU_LEAVING,
 	FADING_TO_NIGHT,
@@ -103,12 +109,43 @@ func _run_yinpingyu_cutscene() -> void:
 	if liuyu:
 		face_towards(liuyu.global_position)
 
-	cutscene_phase = CutscenePhase.DIALOGUE_BEFORE_SHUMIAN_LEAVE
+	cutscene_phase = CutscenePhase.INTRO_AND_READING
 	await dialog_manager.call("show_dialog_sequence", _build_yinpingyu_event_lines(), self)
 	_lock_cutscene_controls(liuyu)
 
-	cutscene_phase = CutscenePhase.SHUMIAN_LEAVING
-	await _move_node_along_scene_path(self, "Su_mienPath/Su_mien_leave1", 1.35, "書眠離場第一段")
+	cutscene_phase = CutscenePhase.AFTER_YUXIN_MUSIC
+	await _switch_story_music("yuxin_moonlight_hint")
+	await dialog_manager.call("show_dialog_sequence", _build_after_yuxin_music_lines(), self)
+	_lock_cutscene_controls(liuyu)
+
+	cutscene_phase = CutscenePhase.RESONANCE
+	await _switch_story_music("Hong_huei_yin_trueheart")
+	await dialog_manager.call("show_dialog_sequence", _build_resonance_lines(), self)
+	_lock_cutscene_controls(liuyu)
+
+	cutscene_phase = CutscenePhase.SHUMIAN_LEAVE_1
+	await _show_dialogue_while_moving(
+		[_n("她起身，像是想再說什麼，卻終究把話停在唇邊。")],
+		self,
+		"Su_mienPath/Su_mien_leave1",
+		1.35,
+		"書眠離場第一段"
+	)
+	_lock_cutscene_controls(liuyu)
+
+	cutscene_phase = CutscenePhase.BEFORE_SHUMIAN_LEAVE_2
+	await dialog_manager.call("show_dialog_sequence", _build_before_shumian_leave2_lines(), self)
+	_lock_cutscene_controls(liuyu)
+
+	cutscene_phase = CutscenePhase.SHUMIAN_LEAVE_2
+	await _show_dialogue_while_moving(
+		[_l("我怕再說下去，連窗也關不住。", speaker_id, portrait_path)],
+		self,
+		"Su_mienPath/Su_mien_leave2",
+		1.35,
+		"書眠離場第二段"
+	)
+	_lock_cutscene_controls(liuyu)
 
 	cutscene_phase = CutscenePhase.DIALOGUE_AFTER_SHUMIAN_LEAVE
 	await dialog_manager.call("show_dialog_sequence", _build_after_shumian_leave_lines(), self)
@@ -127,6 +164,35 @@ func _run_yinpingyu_cutscene() -> void:
 		if changed_scene:
 			return
 	_finish_cutscene_safely(liuyu)
+
+
+func _switch_story_music(tag: String) -> void:
+	var game_root := get_node_or_null("/root/GameRoot")
+	if game_root == null or not game_root.has_method("transition_music_by_tag"):
+		push_warning("[白箋居銀屏語事件] 找不到 GameRoot.transition_music_by_tag，無法切換至 %s。" % tag)
+		return
+	await game_root.call("transition_music_by_tag", tag, 0.25, 0.25)
+
+
+func _show_dialogue_while_moving(lines: Array, node: Node2D, path_text: String, duration: float, label: String) -> void:
+	# DialogManager 先顯示首行，Path coroutine 隨即開始；兩者都完成才離開此 phase。
+	# 因此即使玩家快速跳字，下一段也必須等待角色真正抵達。
+	_synced_dialogue_done = false
+	_synced_movement_done = false
+	Callable(self, "_run_synced_dialogue").call_deferred(lines)
+	Callable(self, "_run_synced_movement").call_deferred(node, path_text, duration, label)
+	while not (_synced_dialogue_done and _synced_movement_done):
+		await get_tree().process_frame
+
+
+func _run_synced_dialogue(lines: Array) -> void:
+	await dialog_manager.call("show_dialog_sequence", lines, self)
+	_synced_dialogue_done = true
+
+
+func _run_synced_movement(node: Node2D, path_text: String, duration: float, label: String) -> void:
+	await _move_node_along_scene_path(node, path_text, duration, label)
+	_synced_movement_done = true
 
 
 func _lock_cutscene_controls(liuyu: CharacterBody2D = null) -> void:
@@ -310,7 +376,6 @@ func _build_yinpingyu_event_lines() -> Array:
 	])
 
 	lines.append_array(_build_yinpingyu_reading_lines())
-	lines.append_array(_build_resonance_lines())
 	return lines
 
 
@@ -366,14 +431,18 @@ func _build_yinpingyu_reading_lines() -> Array:
 		_n("不是驚嚇，而是久未有人真正讀見之後，忽然湧上來的酸楚與喜悅。"),
 		_l("我未寫下的那一筆，其實是——", speaker_id, portrait_path),
 		_l("你沉默時，我想說的那一句。", speaker_id, portrait_path),
-		_n("BGM 切換為低聲版本『心音重疊』。"),
+	])
+
+	return lines
+
+
+func _build_after_yuxin_music_lines() -> Array:
+	return [
 		_n("環境音靜默三秒。書燈輕晃，紙頁聲停止。"),
 		_n("劉語塵看著那片空白。"),
 		_n("一時間，飲月山莊閉門的不甘、尋找『那物』的焦急、一路所見的異樣，都像被這片空白暫時盛住。"),
 		_n("他不是忘了自己為何而來，而是忽然明白，心神原來可以不被琴聲牽走，也不被目的拖著走。"),
-	])
-
-	return lines
+	]
 
 
 func _build_resonance_lines() -> Array:
@@ -446,15 +515,18 @@ func _build_resonance_lines() -> Array:
 		_l("對她。", speaker_id, portrait_path),
 		_l("對這座鎮。", speaker_id, portrait_path),
 		_l("也對那些本來該被我寫下，卻最後只剩空白的話。", speaker_id, portrait_path),
-		_n("她起身，像是想再說什麼，卻終究把話停在唇邊。"),
+	])
+
+	return lines
+
+
+func _build_before_shumian_leave2_lines() -> Array:
+	return [
 		_n("那停頓不是拒絕，而是怕自己一開口，便把劉語塵推進更深的水裡。"),
 		_l("你先回去吧。", speaker_id, portrait_path),
 		_l("現在？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("今晚的風太重了。", speaker_id, portrait_path),
-		_l("我怕再說下去，連窗也關不住。", speaker_id, portrait_path),
-	])
-
-	return lines
+	]
 
 
 func _build_after_shumian_leave_lines() -> Array:
