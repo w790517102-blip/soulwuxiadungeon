@@ -7,6 +7,7 @@ const SceneMusicTagScript = preload("res://scripts/scene_music_tag.gd")
 const ItemDBScript = preload("res://scripts/db/ItemDB.gd")
 
 const MARKET_SCENE := "res://scenes/yuheng/yuheng_market_west/yuheng_market_west_scene1.tscn"
+const NORMAL_BAIJIANJU_SCENE := "res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/bai_jian_jue.tscn"
 const BAIJIANJU_SCENE := "res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/bai_jian_jue_scene1.tscn"
 const NIGHT_SCENE := "res://scenes/yuheng/yuheng_market_west/yuheng_market_west_night.tscn"
 
@@ -15,6 +16,7 @@ var _failures: Array[String] = []
 
 func _initialize() -> void:
 	_test_scene_contracts()
+	_test_dynamic_y_sort_contract()
 	_test_dialogue_split()
 	_test_item_definition()
 	if _failures.is_empty():
@@ -45,8 +47,6 @@ func _test_scene_contracts() -> void:
 		for path_text in ["Su_mienPath/Su_mien_leave1", "Su_mienPath/Su_mien_leave2", "Liu_yu_path/Liu_yu_leave1", "Liu_yu_path/Liu_yu_leave2"]:
 			var path := scene.get_node_or_null(path_text) as Path2D
 			_expect(path != null and path.curve != null and path.curve.get_baked_length() > 0.0, "離場 Path 必須有效：%s" % path_text)
-		for furniture in scene.get_node("object").get_children():
-			_expect(bool(furniture.get("sort_from_texture_bottom")), "白箋居家具必須以圖片底緣作為接地排序線：%s" % furniture.name)
 		_expect(scene.get_node("NPC/Bookstore_guestA").get_script() == GuestScript, "客人一必須使用 scene-local 對話")
 		_expect(scene.get_node("NPC/Bookstore_guestB").get_script() == GuestScript, "客人二必須使用 scene-local 對話")
 		scene.free()
@@ -60,6 +60,45 @@ func _test_scene_contracts() -> void:
 		_expect(night.has_node("SpawnPoints/Hong_huei_yin_recall_event_point"), "夜市必須保留紅徽音事件 SpawnPoint")
 		_expect(night.has_node("Hong_huei_yin_recall_event_trigger"), "夜市必須保留紅徽音接手 Trigger")
 		night.free()
+
+
+func _test_dynamic_y_sort_contract() -> void:
+	var normal_packed := load(NORMAL_BAIJIANJU_SCENE) as PackedScene
+	var story_packed := load(BAIJIANJU_SCENE) as PackedScene
+	_expect(normal_packed != null and story_packed != null, "普通與劇情白箋居都必須可載入以比較排序")
+	if normal_packed == null or story_packed == null:
+		return
+
+	var normal := normal_packed.instantiate()
+	var story := story_packed.instantiate()
+	_expect(story.get_node("NPC").z_index == 0 and story.get_node("object").z_index == 0, "角色與家具父節點不可帶固定高 Z")
+	_expect(not story.get_node("NPC").y_sort_enabled and not story.get_node("object").y_sort_enabled, "白箋居必須完整沿用動態 z_index，不混用 Y-sort")
+
+	for name in ["table1", "table2", "bookshelf1", "bookshelf2", "bookshelf3", "bookshelf4", "counter1", "counter2", "bookshelf5"]:
+		var normal_furniture := normal.get_node("object/" + name) as Sprite2D
+		var story_furniture := story.get_node("object/" + name) as Sprite2D
+		_expect(story_furniture.get_script() == normal_furniture.get_script(), "劇情家具必須沿用普通白箋居的排序腳本：%s" % name)
+		_expect(story_furniture.position.is_equal_approx(normal_furniture.position), "劇情家具排序 pivot 必須與普通白箋居一致：%s" % name)
+		story_furniture.call("_process", 0.0)
+		_expect(story_furniture.z_index == int(story_furniture.global_position.y), "家具 Z 必須等於 authored sorting pivot Y：%s" % name)
+
+	var guest := GuestScript.new()
+	guest.position = Vector2(0.0, 345.0)
+	guest._process(0.0)
+	var furniture_z := 346
+	_expect(guest.z_index < furniture_z, "角色在家具排序線上方時必須位於家具後方")
+	guest.position.y = 347.0
+	guest._process(0.0)
+	_expect(guest.z_index > furniture_z, "角色在家具排序線下方時必須位於家具前方")
+	guest.free()
+
+	var scripted_actor := ShumianScript.new()
+	scripted_actor.global_position.y = 512.75
+	scripted_actor.call("_sync_dynamic_z", scripted_actor)
+	_expect(scripted_actor.z_index == 512, "Path 同幀改變角色座標後必須立即同步動態 Z")
+	scripted_actor.free()
+	normal.free()
+	story.free()
 
 
 func _test_dialogue_split() -> void:

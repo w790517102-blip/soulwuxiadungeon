@@ -3,6 +3,7 @@ extends CharacterBody2D
 @export_enum("guest_a", "guest_b") var guest_id := "guest_a"
 @export var portrait_path := "res://assets/sprites/empty.png"
 @export var speaker_id := 1
+@export var z_index_offset := 0
 
 var can_interact := false
 var is_talking := false
@@ -11,6 +12,11 @@ var dialog_manager: Node
 
 func _ready() -> void:
 	dialog_manager = get_node_or_null("/root/GameRoot/DialogManager")
+
+
+func _process(_delta: float) -> void:
+	# instance-local 對話腳本取代原客人腳本後，仍必須保留專案共用的逐幀 Y/Z 排序。
+	z_index = int(global_position.y + z_index_offset)
 
 
 func _on_area_2d_body_entered(body: Node2D) -> void:
