@@ -12,6 +12,7 @@ var _failures: Array[String] = []
 func _initialize() -> void:
 	_test_item_data()
 	_test_atk_up_status_affects_damage()
+	_test_atk_up_does_not_touch_resources_or_primary_stats()
 	_test_refresh_not_stack_and_duration()
 
 	if _failures.is_empty():
@@ -57,6 +58,40 @@ func _test_atk_up_status_affects_damage() -> void:
 	status_manager.free()
 
 
+func _test_atk_up_does_not_touch_resources_or_primary_stats() -> void:
+	var status_manager = StatusEffectManagerScript.new()
+	var actor := _make_actor(20)
+	var watched_keys := [
+		"hp",
+		"max_hp",
+		"mp",
+		"max_mp",
+		"def",
+		"speed",
+		"accuracy",
+		"evasion",
+		"str",
+		"agi",
+		"int",
+		"con",
+		"luck",
+	]
+	var before := _snapshot(actor, watched_keys)
+	var ok := bool(status_manager.apply_effect(actor, "atk_up", {"atk_delta": 15}, 3))
+	var after_apply := _snapshot(actor, watched_keys)
+	_expect(ok, "atk_up applies for resource guard")
+	_expect(_snapshots_equal(before, after_apply), "atk_up does not alter HP MP or primary stats")
+	_expect(int(actor.get("atk", 0)) == 35, "atk_up still changes atk")
+
+	status_manager.tick_end_of_turn([actor])
+	status_manager.tick_end_of_turn([actor])
+	status_manager.tick_end_of_turn([actor])
+	var after_expire := _snapshot(actor, watched_keys)
+	_expect(_snapshots_equal(before, after_expire), "atk_up expiry does not alter HP MP or primary stats")
+	_expect(int(actor.get("atk", 0)) == 20, "atk_up expiry restores atk only")
+	status_manager.free()
+
+
 func _test_refresh_not_stack_and_duration() -> void:
 	var status_manager = StatusEffectManagerScript.new()
 	var actor := _make_actor(20)
@@ -79,14 +114,39 @@ func _make_actor(atk: int) -> Dictionary:
 	return {
 		"id": "liuyu",
 		"name": "Liuyu",
-		"hp": 200,
-		"max_hp": 200,
+		"hp": 176,
+		"max_hp": 240,
+		"mp": 41,
+		"max_mp": 88,
 		"atk": atk,
 		"base_atk": atk,
 		"battle_base_atk": atk,
-		"def": 0,
-		"agi": 100,
-		"luck": 0,
+		"def": 7,
+		"base_def": 7,
+		"battle_base_def": 7,
+		"speed": 13,
+		"base_speed": 13,
+		"battle_base_speed": 13,
+		"accuracy": 96,
+		"base_accuracy": 96,
+		"battle_base_accuracy": 96,
+		"evasion": 4,
+		"base_evasion": 4,
+		"battle_base_evasion": 4,
+		"str": 11,
+		"agi": 12,
+		"int": 13,
+		"con": 14,
+		"luck": 15,
+		"base_str": 6,
+		"base_agi": 7,
+		"base_int": 8,
+		"base_con": 9,
+		"base_luck": 10,
+		"battle_base_max_hp": 240,
+		"battle_base_max_mp": 88,
+		"base_max_hp": 240,
+		"base_max_mp": 88,
 		"element": "",
 		"status_effects": {},
 	}
@@ -121,6 +181,21 @@ func _make_attack_skill() -> Dictionary:
 func _has_status(actor: Dictionary, effect_id: String) -> bool:
 	var effects = actor.get("status_effects", {})
 	return typeof(effects) == TYPE_DICTIONARY and (effects as Dictionary).has(effect_id)
+
+
+func _snapshot(actor: Dictionary, keys: Array) -> Dictionary:
+	var out := {}
+	for key in keys:
+		out[String(key)] = actor.get(String(key), null)
+	return out
+
+
+func _snapshots_equal(before: Dictionary, after: Dictionary) -> bool:
+	for key in before.keys():
+		if before.get(key) != after.get(key):
+			push_error("Snapshot changed: %s before=%s after=%s" % [key, str(before.get(key)), str(after.get(key))])
+			return false
+	return true
 
 
 func _expect(condition: bool, message: String) -> void:

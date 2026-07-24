@@ -158,14 +158,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 		"decrement_timing": get_decrement_timing(effect_id),
 	}
 
-	_recalc_speed(target)
-	_recalc_accuracy(target)
-	_recalc_evasion(target)
-	_recalc_atk(target)
-	_recalc_def(target)
-	_recalc_primary_stats(target)
-	_recalc_max_hp(target)
-	_recalc_max_mp(target)
+	_recalc_stats_for_effect(target, effect_id)
 	return true
 
 
@@ -250,6 +243,16 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 	if not removed:
 		return
 
+	_recalc_stats_for_effect(target, effect_id)
+
+func recalc_actor_stats(target: Dictionary) -> void:
+	if target.is_empty():
+		return
+	_ensure_base_stats(target)
+	_recalc_all_stats(target)
+
+
+func _recalc_all_stats(target: Dictionary) -> void:
 	_recalc_speed(target)
 	_recalc_accuracy(target)
 	_recalc_evasion(target)
@@ -259,18 +262,32 @@ func remove_effect(target: Dictionary, effect_id: String) -> void:
 	_recalc_max_hp(target)
 	_recalc_max_mp(target)
 
-func recalc_actor_stats(target: Dictionary) -> void:
-	if target.is_empty():
+
+func _recalc_stats_for_effect(target: Dictionary, effect_id: String) -> void:
+	effect_id = _canonicalize_effect_id(effect_id)
+	if effect_id.begins_with("stat_buff_") or effect_id.begins_with("stat_debuff_"):
+		_recalc_all_stats(target)
 		return
-	_ensure_base_stats(target)
-	_recalc_speed(target)
-	_recalc_accuracy(target)
-	_recalc_evasion(target)
-	_recalc_atk(target)
-	_recalc_def(target)
-	_recalc_primary_stats(target)
-	_recalc_max_hp(target)
-	_recalc_max_mp(target)
+	match effect_id:
+		"atk_up", "weaken":
+			_recalc_atk(target)
+		"def_up", "break_def":
+			_recalc_def(target)
+		"speed_buff", "slow":
+			_recalc_speed(target)
+		"warm_wine_buff":
+			_recalc_speed(target)
+			_recalc_accuracy(target)
+		"blind", "focus":
+			_recalc_accuracy(target)
+		"evasion_boost", "root":
+			_recalc_evasion(target)
+		"weak":
+			_recalc_max_hp(target)
+		"seal_mp":
+			_recalc_max_mp(target)
+		_:
+			pass
 
 
 func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictionary = {}) -> String:
