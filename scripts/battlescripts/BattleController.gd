@@ -1576,8 +1576,7 @@ func _begin_end_battle(result: String) -> void:
 		battle_ui.show_battle_result(battle_result)
 		await battle_ui.battle_result_confirmed
 
-	if result != "escape":
-		_restore_player_base_stats()
+	_restore_player_base_stats()
 	_clear_next_battle_modifiers_for_party()
 
 	if victory_handler:

@@ -96,10 +96,14 @@ func execute(
 	var scaling_bonus = _calc_stat_scaling_bonus(user, skill_data)
 
 	# === 基礎傷害計算 ===
-	var base_attack: float = float(user.get("atk", 10))
+	var attack_context := _resolve_effective_attack(user)
+	var base_attack: float = float(attack_context.get("effective_atk", user.get("atk", 10)))
 	var effective_attack: float = base_attack + float(scaling_bonus)
 	if effective_attack < 1.0:
 		effective_attack = 1.0
+	result["base_atk"] = int(attack_context.get("base_atk", user.get("atk", 0)))
+	result["effective_atk"] = int(base_attack)
+	result["atk_status_delta"] = int(attack_context.get("status_delta", 0))
 	var multiplier: float = float(skill_data.get("power", 1.0))
 	var dmg: float = effective_attack * multiplier
 
@@ -220,8 +224,9 @@ func execute(
 	# 裝備效果在最終取整前套用；只認敵人資料的正式 family，不由名稱或外觀推斷。
 	if String(user.get("family", "")) == "animal":
 		var target_actor_id := String(target.get("id", ""))
-		if target_actor_id != "" and InventorySync and InventorySync.has_method("get_equipment_effect"):
-			var animal_multiplier := float(InventorySync.get_equipment_effect(
+		var inventory_sync := _get_inventory_sync()
+		if target_actor_id != "" and inventory_sync and inventory_sync.has_method("get_equipment_effect"):
+			var animal_multiplier := float(inventory_sync.get_equipment_effect(
 				target_actor_id,
 				"animal_damage_taken_multiplier",
 				1.0
@@ -290,20 +295,54 @@ func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
 		total += float(int(user.get(stat_key, 0))) * coeff
 	return int(floor(total))
 
+func _resolve_effective_attack(actor: Dictionary) -> Dictionary:
+	var current_atk := int(actor.get("atk", 10))
+	var effects = actor.get("status_effects", {})
+	if typeof(effects) != TYPE_DICTIONARY:
+		return {"base_atk": current_atk, "effective_atk": current_atk, "status_delta": 0}
+	var effect_dict: Dictionary = effects
+	var status_delta := 0
+	if effect_dict.has("weaken") and typeof(effect_dict["weaken"]) == TYPE_DICTIONARY:
+		var weaken_payload = effect_dict["weaken"].get("payload", {})
+		if typeof(weaken_payload) == TYPE_DICTIONARY:
+			status_delta += int((weaken_payload as Dictionary).get("atk_delta", 0))
+	if effect_dict.has("atk_up") and typeof(effect_dict["atk_up"]) == TYPE_DICTIONARY:
+		var atk_up_payload = effect_dict["atk_up"].get("payload", {})
+		if typeof(atk_up_payload) == TYPE_DICTIONARY:
+			status_delta += int((atk_up_payload as Dictionary).get("atk_delta", 0))
+	if status_delta == 0:
+		return {"base_atk": current_atk, "effective_atk": current_atk, "status_delta": 0}
+	var base_atk := current_atk
+	if actor.has("battle_base_atk"):
+		base_atk = int(actor.get("battle_base_atk", current_atk))
+	elif actor.has("base_atk"):
+		base_atk = int(actor.get("base_atk", current_atk))
+	return {
+		"base_atk": base_atk,
+		"effective_atk": max(0, base_atk + status_delta),
+		"status_delta": status_delta,
+	}
+
 func _is_actor_fully_unequipped(actor: Dictionary) -> bool:
 	if actor.is_empty():
 		return false
 	var actor_id := String(actor.get("id", ""))
 	if actor_id == "":
 		return false
-	if typeof(InventorySync) == TYPE_NIL or not InventorySync.has_method("get_equipped"):
+	var inventory_sync := _get_inventory_sync()
+	if inventory_sync == null or not inventory_sync.has_method("get_equipped"):
 		return false
 	var equip_slots := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2"]
-	var equipped: Dictionary = InventorySync.get_equipped(actor_id)
+	var equipped: Dictionary = inventory_sync.get_equipped(actor_id)
 	for slot in equip_slots:
 		if String(equipped.get(slot, "")) != "":
 			return false
 	return true
+
+func _get_inventory_sync() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_node_or_null("/root/InventorySync")
 
 
 func _roll_hit(user: Dictionary, target: Dictionary, extra_accuracy: float = 0.0) -> Dictionary:
