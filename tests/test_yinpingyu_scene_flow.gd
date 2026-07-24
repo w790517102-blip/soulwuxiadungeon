@@ -77,7 +77,8 @@ func _test_dynamic_y_sort_contract() -> void:
 	var shumian_sprite := story_shumian.get_node("AnimatedSprite2D") as AnimatedSprite2D
 	_expect(story_shumian.get_parent() == story.get_node("NPC"), "劇情書眠必須留在共同 NPC 排序分支")
 	_expect(shumian_sprite.z_index == 0 and shumian_sprite.z_as_relative and not shumian_sprite.show_behind_parent and not shumian_sprite.top_level, "書眠可見 Sprite 不可覆寫根節點排序")
-	_expect(float(story_shumian.get("z_index_offset")) == 0.0, "劇情書眠 Inspector 不可殘留異常 z_index_offset")
+	_expect(float(story_shumian.get("z_index_offset")) == 100.0, "劇情書眠必須透過既有 z_index_offset 校正素材 pivot")
+	_expect(not story_shumian.has_method("_sync_dynamic_z"), "Path 演出不得持有書眠專用 Z 同步方法")
 	var leave1 := story.get_node("Su_mienPath/Su_mien_leave1") as Path2D
 	var leave1_end := leave1.to_global(leave1.curve.get_point_position(leave1.curve.point_count - 1))
 	story_shumian.global_position = leave1_end
@@ -90,6 +91,17 @@ func _test_dynamic_y_sort_contract() -> void:
 	story_shumian.call("_play_directional_animation", story_shumian, Vector2.ZERO, "idle")
 	story_shumian._process(0.0)
 	_expect(story_shumian.z_index == handoff_z, "切換 idle 並經過下一個 process frame 後必須維持 authored Z")
+	var leave2 := story.get_node("Su_mienPath/Su_mien_leave2") as Path2D
+	var leave2_end := leave2.to_global(leave2.curve.get_point_position(leave2.curve.point_count - 1))
+	story_shumian.global_position = leave2_end
+	story_shumian._process(0.0)
+	var bookshelf_at_leave2 := story.get_node("object/bookshelf5") as Sprite2D
+	bookshelf_at_leave2.call("_process", 0.0)
+	_expect(story_shumian.z_index > bookshelf_at_leave2.z_index, "第二段終點的書眠必須位於右側櫃子前方")
+	var leave2_idle_z := story_shumian.z_index
+	story_shumian.call("_play_directional_animation", story_shumian, Vector2.ZERO, "idle")
+	story_shumian._process(0.0)
+	_expect(story_shumian.z_index == leave2_idle_z, "第二段結束切回 idle 後必須維持共用動態 Z")
 
 	for name in ["table1", "table2", "bookshelf1", "bookshelf2", "bookshelf3", "bookshelf4", "counter1", "counter2", "bookshelf5"]:
 		var normal_furniture := normal.get_node("object/" + name) as Sprite2D

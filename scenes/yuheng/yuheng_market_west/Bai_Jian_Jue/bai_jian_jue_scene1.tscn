@@ -4238,6 +4238,7 @@ shape = SubResource("RectangleShape2D_kuoqm")
 position = Vector2(-93, 88.405)
 scale = Vector2(0.3, 0.3)
 script = ExtResource("4_ldin7")
+z_index_offset = 100
 
 [node name="Bookstore_guestA" parent="NPC" instance=ExtResource("5_uek06")]
 position = Vector2(-279, 353)

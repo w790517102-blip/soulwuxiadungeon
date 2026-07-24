@@ -225,7 +225,6 @@ func _move_node_along_scene_path(node: Node2D, path_text: String, duration: floa
 
 	follow.progress_ratio = 0.0
 	node.global_position = follow.global_position
-	_sync_dynamic_z(node)
 	var elapsed := 0.0
 	var previous := node.global_position
 	while elapsed < duration and is_instance_valid(node):
@@ -233,7 +232,6 @@ func _move_node_along_scene_path(node: Node2D, path_text: String, duration: floa
 		elapsed += get_process_delta_time()
 		follow.progress_ratio = clampf(elapsed / maxf(duration, 0.01), 0.0, 1.0)
 		node.global_position = follow.global_position
-		_sync_dynamic_z(node)
 		var direction := node.global_position - previous
 		if direction.length_squared() > 0.01:
 			_play_directional_animation(node, direction.normalized(), "walk")
@@ -242,17 +240,9 @@ func _move_node_along_scene_path(node: Node2D, path_text: String, duration: floa
 		return
 	follow.progress_ratio = 1.0
 	node.global_position = follow.global_position
-	_sync_dynamic_z(node)
 	if node is CharacterBody2D:
 		(node as CharacterBody2D).velocity = Vector2.ZERO
 	_play_directional_animation(node, (node.global_position - previous).normalized(), "idle")
-
-
-func _sync_dynamic_z(node: Node2D) -> void:
-	# 自動走位在 actor._process() 之後更新座標時，同幀同步 Z，避免演出移動期間落後一幀。
-	# LiuYu 與書眠都沿用場景 authored root Y 與 z_index_offset 契約。
-	var offset := float(node.get("z_index_offset"))
-	node.z_index = int(node.global_position.y + offset)
 
 
 func _play_directional_animation(node: Node2D, direction: Vector2, prefix: String) -> void:
