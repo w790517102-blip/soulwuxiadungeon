@@ -510,25 +510,26 @@ func _apply_exp_to_actor(actor: Dictionary, exp_gain: int) -> Array:
 
 
 func _level_up_actor(actor: Dictionary) -> Dictionary:
+	_ensure_base_stat_snapshot(actor)
 	var job_name = String(actor.get("job", ""))
 	var job_def: Dictionary = {}
 	if _job_db != null and _job_db.has_method("get_job_def"):
 		job_def = _job_db.get_job_def(job_name)
 
-	var hp_gain = LEVEL_BASE_HP_GAIN
-	var mp_gain = LEVEL_BASE_MP_GAIN
+	var hp_gain = int(job_def.get("hp_per_level", LEVEL_BASE_HP_GAIN))
+	var mp_gain = int(job_def.get("mp_per_level", LEVEL_BASE_MP_GAIN))
 	var atk_gain = int(job_def.get("atk_per_level", 1))
 	var def_gain = int(job_def.get("def_per_level", 1))
+	var hp_before = int(actor.get("hp", 0))
+	var mp_before = int(actor.get("mp", 0))
 
 	actor["level"] = int(actor.get("level", 1)) + 1
-	actor["max_hp"] = int(actor.get("max_hp", actor.get("hp", 0))) + hp_gain
-	actor["max_mp"] = int(actor.get("max_mp", actor.get("mp", 0))) + mp_gain
-	actor["atk"] = int(actor.get("atk", 0)) + atk_gain
-	actor["def"] = int(actor.get("def", 0)) + def_gain
-	actor["accuracy"] = int(actor.get("accuracy", 100)) + LEVEL_ACCURACY_GAIN
-	actor["evasion"] = int(actor.get("evasion", 0)) + LEVEL_EVASION_GAIN
-	actor["hp"] = min(int(actor.get("hp", 0)) + hp_gain, int(actor.get("max_hp", 0)))
-	actor["mp"] = min(int(actor.get("mp", 0)) + mp_gain, int(actor.get("max_mp", 0)))
+	_add_base_stat(actor, "max_hp", hp_gain)
+	_add_base_stat(actor, "max_mp", mp_gain)
+	_add_base_stat(actor, "atk", atk_gain)
+	_add_base_stat(actor, "def", def_gain)
+	_add_base_stat(actor, "accuracy", LEVEL_ACCURACY_GAIN)
+	_add_base_stat(actor, "evasion", LEVEL_EVASION_GAIN)
 
 	var stat_cycle: Array = []
 	if typeof(job_def.get("stat_cycle", null)) == TYPE_ARRAY:
@@ -539,15 +540,17 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 	var cycle_index = int(actor.get("stat_cycle_index", 0))
 	var stat_key = String(stat_cycle[cycle_index % stat_cycle.size()])
 	actor["stat_cycle_index"] = cycle_index + 1
-	actor[stat_key] = int(actor.get(stat_key, 0)) + LEVEL_MAIN_STAT_GAIN
+	_add_base_stat(actor, stat_key, LEVEL_MAIN_STAT_GAIN)
 
 	var stat_to_atk: Dictionary = {}
 	if typeof(job_def.get("stat_to_atk", null)) == TYPE_DICTIONARY:
 		stat_to_atk = job_def.get("stat_to_atk", {})
-	actor["atk"] = int(actor.get("atk", 0)) + int(stat_to_atk.get(stat_key, 0))
+	var stat_atk_gain = int(stat_to_atk.get(stat_key, 0))
+	_add_base_stat(actor, "atk", stat_atk_gain)
 
-	actor["hp"] = min(int(actor.get("hp", 0)), int(actor.get("max_hp", 0)))
-	actor["mp"] = min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
+	_apply_inner_force_to_actor(actor)
+	actor["hp"] = min(hp_before + hp_gain, int(actor.get("max_hp", 0)))
+	actor["mp"] = min(mp_before + mp_gain, int(actor.get("max_mp", 0)))
 
 	return {
 		"actor_id": String(actor.get("id", "")),
@@ -556,9 +559,17 @@ func _level_up_actor(actor: Dictionary) -> Dictionary:
 		"stat_key": stat_key,
 		"hp_gain": hp_gain,
 		"mp_gain": mp_gain,
-		"atk_gain": atk_gain,
+		"atk_gain": atk_gain + stat_atk_gain,
 		"def_gain": def_gain,
 	}
+
+
+func _add_base_stat(actor: Dictionary, stat_key: String, delta: int) -> void:
+	if delta == 0:
+		return
+	var base_key := "base_%s" % stat_key
+	actor[base_key] = int(actor.get(base_key, actor.get(stat_key, 0))) + delta
+	actor[stat_key] = int(actor.get(base_key, actor.get(stat_key, 0)))
 
 
 func _ensure_base_stat_snapshot(actor: Dictionary) -> void:
