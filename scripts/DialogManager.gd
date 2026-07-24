@@ -3,6 +3,9 @@ extends CanvasLayer
 signal dialog_sequence_finished(npc_node)
 signal dialog_finished  # ✅ 新增這行
 
+const NARRATION_SPEAKER_ID := 0
+const LIUYU_SPEAKER_ID := 2
+
 @onready var dialog_box_1 := $DialogBox1
 @onready var dialog_box_2 := $DialogBox2
 @onready var headshot_1 := $DialogBox1/HeadShot1
@@ -25,10 +28,8 @@ var last_npc: Node2D = null
 var continue_emitted := false
 
 func _ready():
-	dialog_box_1.visible = false
-	headshot_1.visible = false
-	dialog_box_2.visible = false
-	headshot_2.visible = false
+	_clear_dialog_lane(dialog_box_1, headshot_1, label_1)
+	_clear_dialog_lane(dialog_box_2, headshot_2, label_2)
 	dialog_active = false
 
 func show_main_story_dialog(text: String, portrait_path := "", speaker := 1, npc_node: Node2D = null) -> void:
@@ -84,24 +85,26 @@ func _play_dialog_sequence():
 			await _wait_for_continue()
 
 func _head_dialog(text: String, portrait_path: String, speaker: int) -> void:
-	# speaker 是 UI lane：1 = 上方 NPC，其餘 = 下方玩家／旁白。
-	# 每次切換 lane 都清掉非當前面板，避免殘留上一位角色的文字與頭像。
-	if speaker == 1:
-		dialog_box_2.visible = false
-		headshot_2.visible = false
+	# speaker 保留角色／旁白語意；UI lane 只由共用規則決定：
+	# 0 = 旁白（上方、無頭像），2 = 劉語塵（下方），其餘對話角色 = 上方。
+	var uses_top_lane := speaker != LIUYU_SPEAKER_ID
+	if uses_top_lane:
+		_clear_dialog_lane(dialog_box_2, headshot_2, label_2)
 	else:
-		dialog_box_1.visible = false
-		headshot_1.visible = false
-	var dialog_box = dialog_box_1 if speaker == 1 else dialog_box_2
-	var headshot = headshot_1 if speaker == 1 else headshot_2
-	var label = label_1 if speaker == 1 else label_2
+		_clear_dialog_lane(dialog_box_1, headshot_1, label_1)
+	var dialog_box = dialog_box_1 if uses_top_lane else dialog_box_2
+	var headshot = headshot_1 if uses_top_lane else headshot_2
+	var label = label_1 if uses_top_lane else label_2
+	var is_narration := speaker == NARRATION_SPEAKER_ID
 
 	label.text = ""
-	if portrait_path != "":
+	headshot.texture = null
+	headshot.visible = false
+	if not is_narration and portrait_path != "":
 		headshot.texture = load(portrait_path)
+		headshot.visible = headshot.texture != null
 
 	dialog_box.visible = true
-	headshot.visible = true
 	dialog_box.modulate.a = 0.0
 	headshot.modulate.a = 0.0
 
@@ -147,11 +150,16 @@ func _unhandled_input(event):
 		continue_emitted = true
 
 func hide_dialog():
-	dialog_box_1.visible = false
-	headshot_1.visible = false
-	dialog_box_2.visible = false
-	headshot_2.visible = false
+	_clear_dialog_lane(dialog_box_1, headshot_1, label_1)
+	_clear_dialog_lane(dialog_box_2, headshot_2, label_2)
 	dialog_active = false
+
+
+func _clear_dialog_lane(dialog_box: CanvasItem, headshot: Sprite2D, label: Label) -> void:
+	dialog_box.visible = false
+	headshot.visible = false
+	headshot.texture = null
+	label.text = ""
 
 func _reset_npc_state():
 	if last_npc and last_npc.has_method("reset_dialog_state"):
