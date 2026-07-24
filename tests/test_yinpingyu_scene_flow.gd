@@ -73,6 +73,29 @@ func _test_dynamic_y_sort_contract() -> void:
 	var story := story_packed.instantiate()
 	_expect(story.get_node("NPC").z_index == 0 and story.get_node("object").z_index == 0, "角色與家具父節點不可帶固定高 Z")
 	_expect(not story.get_node("NPC").y_sort_enabled and not story.get_node("object").y_sort_enabled, "白箋居必須完整沿用動態 z_index，不混用 Y-sort")
+	var story_shumian := story.get_node("NPC/Su_mien") as CharacterBody2D
+	var shumian_sprite := story_shumian.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	var shumian_collision := story_shumian.get_node("CollisionShape2D") as CollisionShape2D
+	var shumian_shape := shumian_collision.shape as RectangleShape2D
+	_expect(story_shumian.get_parent() == story.get_node("NPC"), "劇情書眠必須留在共同 NPC 排序分支")
+	_expect(shumian_sprite.z_index == 0 and shumian_sprite.z_as_relative and not shumian_sprite.show_behind_parent and not shumian_sprite.top_level, "書眠可見 Sprite 不可覆寫根節點排序")
+	_expect(float(story_shumian.get("z_index_offset")) == 0.0, "劇情書眠 Inspector 不可殘留異常 z_index_offset")
+	story_shumian.call("update_y_sort")
+	var authored_foot_y := shumian_collision.to_global(Vector2(0.0, shumian_shape.size.y * 0.5)).y
+	_expect(story_shumian.z_index == int(authored_foot_y), "書眠必須以碰撞形狀底端的腳底 Y 進行排序")
+	_expect(authored_foot_y > story_shumian.global_position.y + 100.0, "回歸場景必須覆蓋書眠根節點與腳底的大幅偏移")
+	var leave1 := story.get_node("Su_mienPath/Su_mien_leave1") as Path2D
+	var leave1_end := leave1.to_global(leave1.curve.get_point_position(leave1.curve.point_count - 1))
+	story_shumian.global_position = leave1_end
+	story_shumian.call("update_y_sort")
+	var counter_at_handoff := story.get_node("object/counter1") as Sprite2D
+	counter_at_handoff.call("_process", 0.0)
+	_expect(int(story_shumian.global_position.y) < counter_at_handoff.z_index, "回歸情境必須證明舊根節點 Y 會把站立書眠錯放到櫃台後")
+	_expect(story_shumian.z_index > counter_at_handoff.z_index, "第一段終點必須依腳底 Y 讓站立書眠位於櫃台前")
+	var handoff_z := story_shumian.z_index
+	story_shumian.call("_play_directional_animation", story_shumian, Vector2.ZERO, "idle")
+	story_shumian._process(0.0)
+	_expect(story_shumian.z_index == handoff_z, "切換 idle 並經過下一個 process frame 後不可恢復舊 Z")
 
 	for name in ["table1", "table2", "bookshelf1", "bookshelf2", "bookshelf3", "bookshelf4", "counter1", "counter2", "bookshelf5"]:
 		var normal_furniture := normal.get_node("object/" + name) as Sprite2D
