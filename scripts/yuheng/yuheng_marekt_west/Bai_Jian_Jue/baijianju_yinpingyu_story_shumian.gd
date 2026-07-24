@@ -77,21 +77,9 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	update_y_sort()
-
-
-func update_y_sort() -> void:
-	# Su_mien.tscn 的角色根節點在圖像上方，不是腳底；
-	# 以腳底碰撞形狀的底端與家具 sorting pivot 比較，並保留 Inspector offset 微調契約。
-	var sorting_y := global_position.y
-	var body_collision := get_node_or_null("CollisionShape2D") as CollisionShape2D
-	if body_collision != null:
-		var local_foot := Vector2.ZERO
-		var rectangle := body_collision.shape as RectangleShape2D
-		if rectangle != null:
-			local_foot.y = rectangle.size.y * 0.5
-		sorting_y = body_collision.to_global(local_foot).y
-	z_index = int(sorting_y + z_index_offset)
+	# 白箋居的角色與家具都以場景 authored root Y 作為 sorting pivot。
+	# Su_mien.tscn 的碰撞形狀位於圖像下方，但不是本場景的深度基準。
+	z_index = int(global_position.y + z_index_offset)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -262,10 +250,7 @@ func _move_node_along_scene_path(node: Node2D, path_text: String, duration: floa
 
 func _sync_dynamic_z(node: Node2D) -> void:
 	# 自動走位在 actor._process() 之後更新座標時，同幀同步 Z，避免演出移動期間落後一幀。
-	# 書眠的根節點不在腳底，必須呼叫她的腳底排序；LiuYu 則沿用專案既有契約。
-	if node.has_method("update_y_sort"):
-		node.call("update_y_sort")
-		return
+	# LiuYu 與書眠都沿用場景 authored root Y 與 z_index_offset 契約。
 	var offset := float(node.get("z_index_offset"))
 	node.z_index = int(node.global_position.y + offset)
 
