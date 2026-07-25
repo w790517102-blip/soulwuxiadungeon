@@ -2630,7 +2630,8 @@ func _ensure_status_hover_popup() -> void:
 	if _status_hover_layer == null or not is_instance_valid(_status_hover_layer):
 		_status_hover_layer = CanvasLayer.new()
 		_status_hover_layer.name = "StatusHoverOverlayLayer"
-		_status_hover_layer.layer = 200
+		var parent_canvas := get_parent() as CanvasLayer
+		_status_hover_layer.layer = parent_canvas.layer + 1 if parent_canvas else 200
 		add_child(_status_hover_layer)
 	_status_hover_popup = PanelContainer.new()
 	_status_hover_popup.name = "StatusHoverPopup"
@@ -2669,6 +2670,14 @@ func _ensure_status_hover_popup() -> void:
 	_status_hover_label.add_theme_constant_override("outline_size", 4)
 	pad.add_child(_status_hover_label)
 	_ensure_status_hover_timer()
+	print(
+		"[HookoverDebug]",
+		" popup_exists=", is_instance_valid(_status_hover_popup),
+		" popup_path=", _status_hover_popup.get_path(),
+		" parent=", _status_hover_popup.get_parent().get_path(),
+		" canvas_layer=", _status_hover_layer.layer,
+		" visible=", _status_hover_popup.visible
+	)
 
 func _ensure_status_hover_timer() -> void:
 	if _status_hover_timer != null and is_instance_valid(_status_hover_timer):
@@ -2709,14 +2718,25 @@ func _on_status_hover_delay_timeout() -> void:
 	_status_hover_popup.show()
 	_status_hover_popup.reset_size()
 	_position_status_hover_popup(get_global_mouse_position())
+	print(
+		"[HookoverDebug] show",
+		" stat=", _pending_status_hover_meta,
+		" actor=", _pending_status_hover_actor_id,
+		" parent=", _status_hover_popup.get_parent().get_path(),
+		" canvas_layer=", _status_hover_layer.layer,
+		" position=", _status_hover_popup.position
+	)
 
 func _hide_status_hover_popup() -> void:
+	var was_active := _pending_status_hover_meta != "" or (_status_hover_popup != null and _status_hover_popup.visible)
 	_pending_status_hover_meta = ""
 	_pending_status_hover_actor_id = ""
 	if _status_hover_timer:
 		_status_hover_timer.stop()
 	if _status_hover_popup:
 		_status_hover_popup.hide()
+	if was_active:
+		print("[HookoverDebug] hide")
 
 func _position_status_hover_popup(mouse_pos: Vector2) -> void:
 	if _status_hover_popup == null:
@@ -2877,6 +2897,12 @@ func _on_status_stat_label_mouse_entered(stat_label: Label, stat_key: String) ->
 	var actor_id := String(stat_label.get_meta("actor_id", ""))
 	if actor_id == "":
 		return
+	print(
+		"[HookoverDebug] mouse_entered",
+		" stat=", stat_key,
+		" node=", stat_label.get_path(),
+		" actor=", actor_id
+	)
 	_ensure_status_hover_popup()
 	_ensure_status_hover_timer()
 	if _status_hover_popup == null or _status_hover_label == null or _status_hover_timer == null:

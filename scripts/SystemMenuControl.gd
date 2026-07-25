@@ -30,10 +30,18 @@ func _open_system_menu():
 	system_menu_instance = system_menu_scene.instantiate()
 	var parent := _resolve_ui_parent()
 	parent.add_child(system_menu_instance)
-	await get_tree().process_frame
-	_align_menu_to_viewport(system_menu_instance)
 	system_menu_instance.set_process_unhandled_input(true)
 	system_menu_instance.grab_focus()
+	print(
+		"[SystemMenuDebug]",
+		" scene_file=", system_menu_instance.scene_file_path,
+		" path=", system_menu_instance.get_path(),
+		" parent=", parent.get_path(),
+		" position=", system_menu_instance.position,
+		" global_position=", system_menu_instance.global_position,
+		" size=", system_menu_instance.size,
+		" scale=", system_menu_instance.scale
+	)
 
 	system_menu_instance.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	get_tree().paused = true
@@ -59,13 +67,6 @@ func _resolve_ui_parent() -> Node:
 			(ui_root as CanvasLayer).layer = UI_ROOT_LAYER
 		return ui_root
 	return get_tree().root
-
-func _align_menu_to_viewport(menu: Control) -> void:
-	if menu == null:
-		return
-
-	menu.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
-	menu.position = Vector2.ZERO
 
 func close_menu_if_open() -> void:
 	_close_system_menu()
