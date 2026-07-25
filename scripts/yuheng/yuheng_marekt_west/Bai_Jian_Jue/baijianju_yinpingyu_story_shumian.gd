@@ -115,8 +115,11 @@ func _run_yinpingyu_cutscene() -> void:
 	await dialog_manager.call("show_dialog_sequence", _build_yinpingyu_event_lines(), self)
 	_lock_cutscene_controls(liuyu)
 
-	cutscene_phase = CutscenePhase.AFTER_YUXIN_MUSIC
 	await _switch_story_music("yuxin_moonlight_hint")
+	await dialog_manager.call("show_dialog_sequence", _build_yinpingyu_reading_lines(), self)
+	_lock_cutscene_controls(liuyu)
+
+	cutscene_phase = CutscenePhase.AFTER_YUXIN_MUSIC
 	await dialog_manager.call("show_dialog_sequence", _build_after_yuxin_music_lines(), self)
 	_lock_cutscene_controls(liuyu)
 
@@ -377,13 +380,11 @@ func _build_yinpingyu_event_lines() -> Array:
 		_n("獲得詩卷：《銀屏語》"),
 	])
 
-	lines.append_array(_build_yinpingyu_reading_lines())
 	return lines
 
 
 func _build_yinpingyu_reading_lines() -> Array:
 	var lines: Array = [
-		_n("畫面淡暗，白箋居內環境音降低。"),
 		_n("書燈微晃，詩卷展開。紙頁聲很輕。"),
 		_n("《銀屏語》第一首"),
 		_n("銀屏不語月先明，\n一寸清光照舊城。\n人倚窗前聽遠曲，\n不知心事已無聲。"),
