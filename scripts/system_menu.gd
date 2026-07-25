@@ -2675,6 +2675,7 @@ func _ensure_status_hover_timer() -> void:
 		return
 	_status_hover_timer = Timer.new()
 	_status_hover_timer.name = "StatusHoverDelayTimer"
+	_status_hover_timer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_status_hover_timer.one_shot = true
 	_status_hover_timer.wait_time = 0.5
 	_status_hover_timer.timeout.connect(_on_status_hover_delay_timeout)
