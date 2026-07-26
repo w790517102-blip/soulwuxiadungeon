@@ -1,6 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://2hq7d7mk4n33"]
+[gd_scene load_steps=8 format=3 uid="uid://2hq7d7mk4n33"]
 
 [ext_resource type="Texture2D" uid="uid://cdxq5k7t1t033" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_old_well_night.jpg" id="1_h8aaa"]
+[ext_resource type="Script" uid="uid://cm8bhn61d84ju" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_old_well_night.gd" id="1_ugo1f"]
 [ext_resource type="Texture2D" uid="uid://c2y1p6tow5lax" path="res://assets/background/Yuheng_Town/yuheng_old_well/well_locked_night.png" id="2_ugo1f"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cctem"]
@@ -13,11 +14,13 @@ size = Vector2(654, 134)
 size = Vector2(75.5, 50)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_h8aaa"]
-size = Vector2(1130, 846)
+size = Vector2(1061.82, 846)
 
 [node name="yuheng_old_well_night" type="Node2D"]
+script = ExtResource("1_ugo1f")
 
 [node name="night_view" type="Sprite2D" parent="."]
+z_index = -1999
 scale = Vector2(0.78, 0.78)
 texture = ExtResource("1_h8aaa")
 
@@ -35,6 +38,13 @@ position = Vector2(133, 36)
 scale = Vector2(0.78, 0.78)
 texture = ExtResource("2_ugo1f")
 
+[node name="WellBarrier" type="StaticBody2D" parent="well_locked"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="well_locked/WellBarrier"]
+position = Vector2(120, 98)
+rotation = 0.221657
+shape = SubResource("RectangleShape2D_7tfld")
+
 [node name="To_yuheng_market_east_night" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_market_east_night"]
@@ -49,6 +59,7 @@ rotation = 0.221657
 shape = SubResource("RectangleShape2D_7tfld")
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
+visible = false
 z_index = 1999
 offset_left = -1318.0
 offset_top = -808.0
@@ -78,8 +89,16 @@ offset_right = 463.0
 offset_bottom = 185.0
 
 [node name="CameraBounds" type="Area2D" parent="."]
-position = Vector2(0.35, 0)
+position = Vector2(45.53, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
-position = Vector2(-0.349985, -1)
+position = Vector2(-32.44, -1)
 shape = SubResource("RectangleShape2D_h8aaa")
+
+[node name="SpawnPoints" type="Node2D" parent="."]
+
+[node name="from_yuheng_market_east_night" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-84, 339)
+
+[connection signal="body_entered" from="To_yuheng_market_east_night" to="." method="_on_to_yuheng_market_east_night_body_entered"]
+[connection signal="body_entered" from="To_yuheng_sewer_center" to="." method="_on_to_yuheng_sewer_center_body_entered"]

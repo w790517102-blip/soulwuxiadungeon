@@ -7,9 +7,11 @@ extends Node2D
 @onready var sewer_transition_collision: CollisionShape2D = get_node_or_null("To_yuheng_sewer_center/CollisionShape2D") as CollisionShape2D
 @onready var well_barrier_collision: CollisionShape2D = get_node_or_null("well_locked/WellBarrier/CollisionShape2D") as CollisionShape2D
 @onready var well_keyhole: Area2D = get_node_or_null("well_locked/well_keyhole") as Area2D
+@onready var well_locked_sprite: Sprite2D = get_node_or_null("well_locked/well_locked") as Sprite2D
 @export var music_tag := "yuheng"
 @export var map_display_name: String = "醉月茶坊後巷廢井"
 
+const F_OLD_WELL_UNLOCKED := "event_yuheng_old_well_unlocked"
 const LIUYU_PORTRAIT_PATH := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 const LIUYU_SPEAKER_ID := 2
 
@@ -74,17 +76,13 @@ func _on_to_yuheng_sewer_center_body_entered(body: Node2D) -> void:
 
 
 func _is_sewer_route_unlocked() -> bool:
-	# TODO: 正式接紅徽音特殊委託後，集中在此判定：
-	# - 當前主線為 main_001。
-	# - 已進入舊水道調查 stage。
-	# - 紅徽音特殊委託演出完成。
-	# - 舊水道調查主線正式開始。
-	# 本輪不建立候選 flag，主線初期一律保持封鎖。
-	return false
+	return GlobalState.get_flag(F_OLD_WELL_UNLOCKED)
 
 
 func _apply_sewer_route_state() -> void:
 	var unlocked := _is_sewer_route_unlocked()
+	if well_locked_sprite:
+		well_locked_sprite.visible = not unlocked
 	if sewer_transition:
 		sewer_transition.monitoring = unlocked
 		sewer_transition.monitorable = unlocked
