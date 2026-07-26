@@ -51,6 +51,22 @@ const MAIN_QUEST_DEFS := {
 				"flag": "met_Su_Mien",
 				"text": "書眠姑娘也是琴音壓情的受害者，但為什麼她會如此自責呢？",
 			},
+			{
+				"flag": "main_yh_manor_closed",
+				"text": "飲月山莊突然閉莊，顧石卻仍守在門前。他守著的究竟是山門，還是一個連自己都不願相信的結果？",
+			},
+			{
+				"flag": "event_baijianju_richman_done",
+				"text": "銀子能買下詩稿，卻買不到書眠的願意。玉衡鎮的人失去的，也許不只是情緒，還有辨認他人心意與界線的能力。",
+			},
+			{
+				"flag": "event_huiyin_voice_done",
+				"text": "書眠把未說完的話收了回去，琴聲卻在夜裡喚我前去。她們像在迴避同一件事，也像都在等我把它問清楚。",
+			},
+			{
+				"flag": "main_yh_got_half_string_copper_button",
+				"text": "紅徽音將半弦銅釦交給了我。若那口廢井真能以它開啟，玉衡鎮被壓住的另一半聲音，或許就藏在井下。",
+			},
 		],
 	},
 }
