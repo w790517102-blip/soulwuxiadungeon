@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bvmppwmynqqdi"
-path="res://.godot/imported/Stone_TP.png-1d8fe720f4a4378bea67ceee1a15b5d2.ctex"
+uid="uid://dfhrhiirisnan"
+path="res://.godot/imported/bitterness_tone_phantom.png-618345847ee10f8015416eed4ad93658.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/NPC/Enemy/Stone_TP.png"
-dest_files=["res://.godot/imported/Stone_TP.png-1d8fe720f4a4378bea67ceee1a15b5d2.ctex"]
+source_file="res://assets/Enemy/bitterness_tone_phantom.png"
+dest_files=["res://.godot/imported/bitterness_tone_phantom.png-618345847ee10f8015416eed4ad93658.ctex"]
 
 [params]
 
