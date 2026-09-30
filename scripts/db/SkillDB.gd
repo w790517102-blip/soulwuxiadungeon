@@ -1,5 +1,10 @@
 extends Node
 
+const ACQUISITION_ROUTE_WEAPON_FAMILY_LEVEL := "weapon_family_level"
+const ACQUISITION_ROUTE_ACTOR_GROWTH := "actor_growth"
+const ACQUISITION_ROUTE_QUEST_EVENT := "quest_event"
+const ACQUISITION_ROUTE_MANUAL := "manual"
+
 const SKILLS := {
 	"skill_lianjuejian": {
 		"id": "skill_lianjuejian",
@@ -12,7 +17,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"strike_count": 3,
-		"effects": [{"type": "damage", "power": 0.4}],
+		"effects": [{"type": "damage", "power": 0.6}],
 		"stat_scaling": {"str": 0.6, "agi": 0.3, "int": 0.1},
 		"available": {"mode": "all"},
 	},
@@ -30,6 +35,7 @@ const SKILLS := {
 		"effects": [{"type": "damage", "power": 1.0}],
 		"stat_scaling": {"str": 0.8, "agi": 0.2},
 		"available": {"mode": "all"},
+		"shareable": true,
 	},
 	"skill_duanshuizhan": {
 		"id": "skill_duanshuizhan",
@@ -43,6 +49,23 @@ const SKILLS := {
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.2}],
 		"stat_scaling": {"str": 0.85, "agi": 0.15},
+		"available": {"mode": "all"},
+		"shareable": false,
+	},
+	"skill_breaking_wave_spear": {
+		"id": "skill_breaking_wave_spear",
+		"name": "破浪槍",
+		"category": "單體攻擊",
+		"description": "借浪勢尋隙而入，槍鋒不與正面硬撼。刺破敵方架勢後，再乘隙而進。",
+		"weapon_type": "槍",
+		"menu_usable": false,
+		"mp_cost": 12,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [
+			{"type": "damage", "power": 1.12},
+			{"type": "break_def", "amount": 5, "turns": 2},
+		],
 		"available": {"mode": "all"},
 	},
 	"skill_diquejian": {
@@ -141,12 +164,13 @@ const SKILLS := {
 		"description": "一筆揮就，一詩成陣，敵人心神動搖。",
 		"weapon_type": "筆",
 		"menu_usable": false,
-		"mp_cost": 0,
+		"mp_cost": 5,
 		"target_scope": "single",
 		"target_side": "enemy",
 		"effects": [{"type": "damage", "power": 1.3}],
 		"stat_scaling": {"int": 0.8, "luck": 0.2},
 		"available": {"mode": "all"},
+		"companion_insight": {"enabled": true},
 	},
 	"skill_zhengxinquan": {
 		"id": "skill_zhengxinquan",
@@ -449,6 +473,11 @@ const SKILLS := {
 		"effects": [{"type": "damage", "power": 1.2}],
 		"stat_scaling": {"str": 0.8, "agi": 0.2},
 		"available": {"mode": "all"},
+		"shareable": true,
+		"acquisition_routes": [
+			{"type": "actor_growth", "actor_id": "lieshao", "required_level": 1},
+		],
+		"companion_insight": {"enabled": true, "required_level": 9},
 	},
 	"skill_luanyinsuiqin": {
 		"id": "skill_luanyinsuiqin",
@@ -463,6 +492,11 @@ const SKILLS := {
 		"effects": [{"type": "damage", "power": 1.1}],
 		"stat_scaling": {"agi": 0.6, "int": 0.3, "luck": 0.1},
 		"available": {"mode": "all"},
+		"shareable": true,
+		"acquisition_routes": [
+			{"type": "actor_growth", "actor_id": "lieshao", "required_level": 1},
+		],
+		"companion_insight": {"enabled": true, "required_level": 11},
 	},
 	"skill_huagu_mianzhang": {
 		"id": "skill_huagu_mianzhang",
@@ -728,6 +762,354 @@ const SKILLS := {
 		"effects": [{"type": "damage", "power": 1.05}],
 		"available": {"mode": "all"},
 	},
+	"skill_sewer_bat_tidal_swoop": {
+		"id": "skill_sewer_bat_tidal_swoop",
+		"name": "潮翳掠擊",
+		"category": "單體攻擊",
+		"description": "潮翳蝠挾著濕冷水氣掠過目標，留下迅疾爪痕。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.92}],
+		"available": {"mode": "all"},
+	},
+	"skill_sewer_bat_veiling_wings": {
+		"id": "skill_sewer_bat_veiling_wings",
+		"name": "潮翳蔽目",
+		"category": "單體減益",
+		"description": "濕翳隨翼風撲面，擾亂目標視線，使其命中暫時下降。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.68}, {"type": "blind", "amount": 15, "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_fidgety_sewer_fish_tail_flurry": {
+		"id": "skill_fidgety_sewer_fish_tail_flurry",
+		"name": "燥尾亂拍",
+		"category": "單體攻擊",
+		"description": "燥尾魚蝦魅躁動甩尾，接連拍擊同一目標兩次。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"strike_count": 2,
+		"effects": [{"type": "damage", "power": 0.46}],
+		"available": {"mode": "all"},
+	},
+	"skill_fidgety_sewer_fish_dirty_splash": {
+		"id": "skill_fidgety_sewer_fish_dirty_splash",
+		"name": "污水飛濺",
+		"category": "單體減益",
+		"description": "魚尾拍起混濁污水，遮蔽目標視線，使其命中暫時下降。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.72}, {"type": "blind", "amount": 15, "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_turbid_tone_corroding_touch": {
+		"id": "skill_turbid_tone_corroding_touch",
+		"name": "濁語蝕心",
+		"category": "單體減益",
+		"description": "濁語侵入心念，削弱目標發力根基，使其攻擊暫時下降。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.78}, {"type": "weaken", "amount": 5, "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_turbid_tone_murky_strike": {
+		"id": "skill_turbid_tone_murky_strike",
+		"name": "濁痕侵襲",
+		"category": "單體攻擊",
+		"description": "濁語蝕靈凝成污痕，直撲目標。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.95}],
+		"available": {"mode": "all"},
+	},
+	"skill_bitterness_tone_bitter_breath": {
+		"id": "skill_bitterness_tone_bitter_breath",
+		"name": "苦息入喉",
+		"category": "單體減益",
+		"description": "腐苦藥氣滲入喉間，使毒意在回合末持續侵蝕生命。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.72}, {"type": "poison", "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_bitterness_tone_medicine_dregs": {
+		"id": "skill_bitterness_tone_medicine_dregs",
+		"name": "藥渣腐觸",
+		"category": "單體攻擊",
+		"description": "苦息藥魅捲起腐敗藥渣，重重侵襲目標。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.95}],
+		"available": {"mode": "all"},
+	},
+	"skill_broken_talisman_residual_mark": {
+		"id": "skill_broken_talisman_residual_mark",
+		"name": "殘符蝕甲",
+		"category": "單體減益",
+		"description": "殘缺符痕附上護身氣勢，使目標防禦暫時下降。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.78}, {"type": "break_def", "amount": 5, "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_broken_talisman_leaking_curse": {
+		"id": "skill_broken_talisman_leaking_curse",
+		"name": "漏咒入脈",
+		"category": "單體減益",
+		"description": "殘漏咒力滲入經脈，使目標最大內力暫時降低。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.65}, {"type": "seal_mp", "amount": 9, "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_broken_talisman_paper_cut": {
+		"id": "skill_broken_talisman_paper_cut",
+		"name": "殘咒割痕",
+		"category": "單體攻擊",
+		"description": "碎裂符紙裹著殘咒掠過，割向目標。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.94}],
+		"available": {"mode": "all"},
+	},
+	"skill_fixation_wish_bind": {
+		"id": "skill_fixation_wish_bind",
+		"name": "縛願纏足",
+		"category": "單體減益",
+		"description": "未散執念纏住目標腳步，使其閃避暫時下降。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.72}, {"type": "root", "amount": 7, "turns": 3}],
+		"available": {"mode": "all"},
+	},
+	"skill_fixation_heavy_resentment": {
+		"id": "skill_fixation_heavy_resentment",
+		"name": "執念壓身",
+		"category": "單體減益",
+		"description": "沉重執念壓迫身形，使目標速度暫時下降。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.86}, {"type": "slow", "amount": 5, "turns": 2}],
+		"available": {"mode": "all"},
+	},
+	"skill_fixation_crushing_shadow": {
+		"id": "skill_fixation_crushing_shadow",
+		"name": "殘影重壓",
+		"category": "單體攻擊",
+		"description": "縛願殘影挾著沉重執念壓向目標。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 1.0}],
+		"available": {"mode": "all"},
+	},
+	"skill_broken_string_snapping_note": {
+		"id": "skill_broken_string_snapping_note",
+		"name": "斷弦裂音",
+		"category": "單體攻擊",
+		"description": "驟斷弦音化作尖銳裂響，直刺目標。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 1.15}],
+		"available": {"mode": "all"},
+	},
+	"skill_broken_string_wrong_beat": {
+		"id": "skill_broken_string_wrong_beat",
+		"name": "錯拍連震",
+		"category": "單體減益",
+		"description": "錯亂弦拍接連震擊兩次，餘震使目標速度暫時下降。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"strike_count": 2,
+		"effects": [{"type": "damage", "power": 0.46}, {"type": "slow", "amount": 5, "turns": 2}],
+		"available": {"mode": "all"},
+	},
+	"skill_echo_tone_returning_wave": {
+		"id": "skill_echo_tone_returning_wave",
+		"name": "回音追擊",
+		"category": "單體攻擊",
+		"description": "第一道音浪掠過後，折返的回聲再次擊中同一目標。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"strike_count": 2,
+		"effects": [{"type": "damage", "power": 0.48}],
+		"available": {"mode": "all"},
+	},
+	"skill_echo_tone_misheard_answer": {
+		"id": "skill_echo_tone_misheard_answer",
+		"name": "錯認回聲",
+		"category": "單體控制",
+		"description": "真假難辨的回聲擾亂心神，使目標的單體行動可能誤認敵我。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"effects": [{"type": "damage", "power": 0.70}, {"type": "confuse", "turns": 2}],
+		"available": {"mode": "all"},
+	},
+	"skill_molin_reverse_scale_iron_stance": {
+		"id": "skill_molin_reverse_scale_iron_stance",
+		"name": "逆鱗鐵勢",
+		"category": "姿態轉換",
+		"description": "豎起墨鱗、凝住身軀，將自身屬性轉為剛。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "self",
+		"target_side": "self",
+		"action_kind": "state_transition",
+		"tone_event": "transition_hard",
+		"effects": [{"type": "replace_element", "target": "self", "element": "剛"}],
+		"available": {"mode": "all"},
+	},
+	"skill_molin_sunken_tide_breath": {
+		"id": "skill_molin_sunken_tide_breath",
+		"name": "沉潮斂息",
+		"category": "姿態轉換",
+		"description": "伏下墨鱗、引回濁水，將自身屬性轉為遲。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "self",
+		"target_side": "self",
+		"action_kind": "state_transition",
+		"tone_event": "transition_slow",
+		"effects": [{"type": "replace_element", "target": "self", "element": "遲"}],
+		"available": {"mode": "all"},
+	},
+	"skill_molin_tail_sweep": {
+		"id": "skill_molin_tail_sweep",
+		"name": "尾巴掃擊",
+		"category": "全體攻擊",
+		"description": "巨尾橫掃全場；每名目標各自有機會暈眩一回合。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "enemy_all",
+		"target_side": "enemy",
+		"tone_event": "tail_sweep",
+		"effects": [
+			{"type": "damage", "power": 0.8},
+			{"type": "stun", "turns": 1, "chance": 0.25}
+		],
+		"available": {"mode": "all"},
+	},
+	"skill_molin_water_bullet": {
+		"id": "skill_molin_water_bullet",
+		"name": "水彈",
+		"category": "單體減益",
+		"description": "吐出濁水彈襲擊單一目標，並可能降低閃避。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"tone_event": "water_bullet",
+		"effects": [
+			{"type": "damage", "power": 0.65},
+			{"type": "root", "amount": 10, "turns": 3, "chance": 0.65}
+		],
+		"available": {"mode": "all"},
+	},
+	"skill_molin_deluge_burial": {
+		"id": "skill_molin_deluge_burial",
+		"name": "激流葬",
+		"category": "全體攻擊",
+		"description": "倒卷濁水轟擊全體，必定降低速度。只能由已預告的鎖定意圖施放。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "enemy_all",
+		"target_side": "enemy",
+		"tone_event": "deluge_cast",
+		"committed_intent_only": true,
+		"effects": [
+			{"type": "damage", "power": 1.6},
+			{"type": "slow", "amount": 20, "turns": 3, "chance": 1.0}
+		],
+		"available": {"mode": "all"},
+	},
+	"skill_molin_rusty_fork_thrust": {
+		"id": "skill_molin_rusty_fork_thrust",
+		"name": "鏽叉突貫",
+		"category": "單體攻擊",
+		"description": "以鏽蝕魚叉直取目標。",
+		"weapon_type": "槍",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"tone_event": "rusty_fork_thrust",
+		"effects": [{"type": "damage", "power": 1.25}],
+		"available": {"mode": "all"},
+	},
+	"skill_molin_breaking_wave_fork": {
+		"id": "skill_molin_breaking_wave_fork",
+		"name": "破浪叉",
+		"category": "單體攻擊",
+		"description": "魚叉破浪連刺，同一目標承受兩段攻擊。",
+		"weapon_type": "槍",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"tone_event": "breaking_wave_fork",
+		"strike_count": 2,
+		"effects": [{"type": "damage", "power": 0.75}],
+		"available": {"mode": "all"},
+	},
 }
 
 const LEGACY_NAME_TO_ID := {
@@ -786,7 +1168,7 @@ const LEGACY_NAME_TO_ID := {
 
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
 	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
-	"shumian": ["skill_bisaoyanxia", "skill_luobichengshi", "skill_zhengxinquan", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman", "skill_linfu_ranfeng", "skill_linfu_guyuan", "skill_linfu_jiying", "skill_linfu_zhuangli", "skill_linfu_humai", "skill_debuff_speed_test", "skill_force_element_test", "skill_smoky_ink_blind", "skill_hawkeye_focus", "skill_mobishuxin", "skill_inkveil_swiftroute"],
+	"shumian": ["skill_luobichengshi", "skill_mobishuxin", "skill_smoky_ink_blind", "skill_linfu_humai", "skill_zhengxinquan"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus", "skill_luanxian_banying"],
 	"enemy1": ["skill_enemy_zhishui_yinzhang"],
 	"enemy2": ["skill_enemy_panshi_gangquan"],
@@ -808,8 +1190,15 @@ func get_default_skill_ids(actor_id: String) -> Array:
 		return []
 	return (DEFAULT_SKILL_IDS_BY_ACTOR[actor_id] as Array).duplicate()
 
-func get_skills_for_actor(actor_id: String, actor = null, known_skill_ids: Array = []) -> Array:
-	var ids: Array = known_skill_ids if not known_skill_ids.is_empty() else get_default_skill_ids(actor_id)
+func get_skills_for_actor(
+	actor_id: String,
+	actor = null,
+	known_skill_ids: Array = [],
+	use_defaults_when_empty: bool = true
+) -> Array:
+	var ids: Array = known_skill_ids
+	if ids.is_empty() and use_defaults_when_empty:
+		ids = get_default_skill_ids(actor_id)
 	var out: Array = []
 	for raw_id in ids:
 		var skill_id := coerce_skill_id(raw_id)
@@ -830,6 +1219,13 @@ func is_available_for_actor(skill_id: String, actor_id: String) -> bool:
 	if skill.is_empty():
 		return false
 	var available = skill.get("available", {"mode": "all"})
+	# Backward compatibility: old data may use "all", a single actor id,
+	# or a plain actor-id array instead of the current scope dictionary.
+	if typeof(available) == TYPE_STRING:
+		var available_text := String(available)
+		return available_text == "all" or available_text == actor_id
+	if typeof(available) == TYPE_ARRAY:
+		return (available as Array).has(actor_id)
 	if typeof(available) != TYPE_DICTIONARY:
 		return true
 	var mode := String((available as Dictionary).get("mode", "all"))
@@ -839,6 +1235,67 @@ func is_available_for_actor(skill_id: String, actor_id: String) -> bool:
 		var actor_ids = (available as Dictionary).get("actor_ids", [])
 		return typeof(actor_ids) == TYPE_ARRAY and (actor_ids as Array).has(actor_id)
 	return true
+
+func get_required_level(skill_id: String) -> int:
+	var skill := get_skill(skill_id)
+	if skill.is_empty():
+		return 1
+	return max(1, int(skill.get("required_level", 1)))
+
+func is_level_eligible(skill_id: String, actor_level: int) -> bool:
+	return actor_level >= get_required_level(skill_id)
+
+func is_shareable(skill_id: String) -> bool:
+	var skill := get_skill(skill_id)
+	if skill.is_empty():
+		return false
+	return bool(skill.get("shareable", true))
+
+func get_acquisition_routes(skill_id: String) -> Array:
+	var skill := get_skill(skill_id)
+	if skill.is_empty():
+		return []
+	var routes = skill.get("acquisition_routes", [])
+	if typeof(routes) != TYPE_ARRAY:
+		return []
+	return (routes as Array).duplicate(true)
+
+func allows_companion_insight(skill_id: String) -> bool:
+	var skill := get_skill(skill_id)
+	if skill.is_empty():
+		return false
+	var insight = skill.get("companion_insight", {})
+	if typeof(insight) == TYPE_BOOL:
+		return bool(insight)
+	if typeof(insight) != TYPE_DICTIONARY:
+		return false
+	return bool((insight as Dictionary).get("enabled", false))
+
+func get_companion_insight_required_level(skill_id: String) -> int:
+	var skill := get_skill(skill_id)
+	if skill.is_empty():
+		return 1
+	var insight = skill.get("companion_insight", {})
+	if typeof(insight) == TYPE_DICTIONARY:
+		return max(1, int((insight as Dictionary).get("required_level", skill.get("required_level", 1))))
+	return get_required_level(skill_id)
+
+func is_exclusive_skill(skill_id: String) -> bool:
+	var skill := get_skill(skill_id)
+	if skill.is_empty():
+		return false
+	var available = skill.get("available", {"mode": "all"})
+	if typeof(available) == TYPE_STRING:
+		return String(available) != "all"
+	if typeof(available) == TYPE_ARRAY:
+		return (available as Array).size() == 1
+	if typeof(available) != TYPE_DICTIONARY:
+		return false
+	var scope: Dictionary = available
+	if String(scope.get("mode", "all")) != "include":
+		return false
+	var actor_ids = scope.get("actor_ids", [])
+	return typeof(actor_ids) == TYPE_ARRAY and (actor_ids as Array).size() == 1
 
 func is_weapon_compatible(skill: Dictionary, actor) -> bool:
 	if skill.is_empty():
@@ -928,6 +1385,14 @@ func normalize_skill_def(skill: Dictionary) -> Dictionary:
 					break
 	if not skill.has("available"):
 		skill["available"] = {"mode": "all"}
+	if not skill.has("required_level"):
+		skill["required_level"] = 1
+	if not skill.has("shareable"):
+		skill["shareable"] = true
+	if not skill.has("acquisition_routes") or typeof(skill.get("acquisition_routes", [])) != TYPE_ARRAY:
+		skill["acquisition_routes"] = []
+	if not skill.has("companion_insight"):
+		skill["companion_insight"] = {"enabled": false}
 
 	if skill.has("effect") and skill.has("heal_amount"):
 		var effect := String(skill.get("effect", ""))
@@ -958,6 +1423,13 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 				"text_long": "伏潮訣下可進化為「伏潮斷水斬」，命中附加破防 2 回合。",
 				"text_short": "專屬：伏潮斷水斬，命中附加破防2回合。",
 				"met": current_force_id == "fuchao_jue",
+			})
+		"skill_breaking_wave_spear":
+			out.append({
+				"kind": "專屬搭配",
+				"text_long": "沉潮訣下可進化為「沉潮破浪槍」，追加 STR / AGI 加權。",
+				"text_short": "專屬：沉潮破浪槍，追加 STR / AGI 加權。",
+				"met": current_force_id == "chenchao_jue",
 			})
 		"skill_tianjingquan":
 			out.append({
@@ -1013,6 +1485,15 @@ func _build_weapon_boost_entry(force_id: String, skill_weapon_type: String) -> D
 				"kind": "武器加成",
 				"text_long": "天殘訣下，劍系招式傷害 +10%；當自身 HP 低於 50% 時，劍系招式暴擊率 +10%。",
 				"text_short": "天殘訣：劍傷+10%，低血(HP<50%)時劍招暴擊+10%。",
+				"met": true,
+			}
+		"chenchao_jue":
+			if skill_weapon_type != "槍":
+				return {}
+			return {
+				"kind": "武器加成",
+				"text_long": "沉潮訣下，槍系招式 MP 消耗降低 10%。",
+				"text_short": "沉潮訣：槍招 MP 消耗 -10%。",
 				"met": true,
 			}
 		_:

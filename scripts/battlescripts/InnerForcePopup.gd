@@ -31,6 +31,7 @@ func show_inner_forces(actor: Dictionary) -> void:
 	current_actor  = actor
 	force_options  = actor.get("available_inner_forces", [])
 	selected_force = {}
+	confirm_button.disabled = force_options.is_empty()
 
 	force_list.clear()
 	description.text = ""
@@ -111,6 +112,9 @@ func _update_description_for_index(index: int) -> void:
 		extra_tone = "\n\n" + extra_tone
 
 	description.text = "%s\n\n%s%s%s%s" % [header, main_desc, effect_block, extra_info, extra_tone]
+	var active_id := String(current_actor.get("inner_force_id", current_actor.get("inner_force", {}).get("id", "")))
+	var state_text := "已運行" if active_id == String(force.get("id", "")) else "未運行"
+	description.text += "\n\n類型：%s\n狀態：%s\n切換：消耗本次行動；依本場戰鬥規則執行。" % [f_type, state_text]
 
 
 func _on_confirm_pressed() -> void:

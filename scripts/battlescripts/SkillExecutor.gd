@@ -8,13 +8,8 @@ var style: BattleStyle = BattleStyle.new()
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 var tone: ToneMap = ToneMap.new()
 
-# 屬性剋制表：快 > 遲 > 柔 > 剛 > 快
-var ke_system: Dictionary = {
-	"快": "遲",
-	"遲": "柔",
-	"柔": "剛",
-	"剛": "快"
-}
+const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
+const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 
 func execute(
 	user: Dictionary,
@@ -37,7 +32,10 @@ func execute(
 
 	# === 詞綴組合：有符合 boost_weapon 才套 prefix ===
 	var prefix: String = ""
-	if inner_force.has("prefix") and inner_force.has("boost_weapon"):
+	# Effective variants already own their display name (for example
+	# 「沉潮破浪槍」 or 「真．石破天驚拳」).  Do not prepend the active
+	# inner-force prefix a second time when a resolved clone reaches execution.
+	if not skill_data.has("coupling_tier") and inner_force.has("prefix") and inner_force.has("boost_weapon"):
 		var boost_weapon: String = String(inner_force.get("boost_weapon", ""))
 		var weapon_type_for_skill: String = String(skill_data.get("weapon_type", ""))
 		if weapon_type_for_skill == boost_weapon:
@@ -154,8 +152,9 @@ func execute(
 	# --- 屬性剋制 ---
 	var user_element: String = String(user.get("element", ""))
 	var target_element: String = String(target.get("element", ""))
-	if ke_system.has(user_element) and String(ke_system[user_element]) == target_element:
-		dmg *= 1.2
+	var element_advantage_multiplier := InnerForceDB.resolve_element_advantage_multiplier(user_element, target_element)
+	if element_advantage_multiplier > 1.0:
+		dmg *= element_advantage_multiplier
 		context["element_advantage"] = true
 	else:
 		context["element_advantage"] = false
@@ -196,6 +195,7 @@ func execute(
 			crit_rate += float(inner_force.get("sword_crit_bonus_low_hp", 0.0))
 	if inner_force_id == "shipo_xinfa" and _is_actor_fully_unequipped(user):
 		crit_rate += float(inner_force.get("crit_rate_bonus_if_naked", 0.0))
+	crit_rate = InnerForceDB.resolve_element_final_stat(user_element, "crit_rate", crit_rate)
 	crit_rate = clampf(crit_rate, 0.0, 0.95)
 	if randf() < crit_rate:
 		dmg *= 1.5
@@ -205,7 +205,11 @@ func execute(
 		context["crit"] = false
 
 	# --- 防禦（target.def * 2） ---
-	var defense: float = float(target.get("def", 0))
+	var defense: float = InnerForceDB.resolve_element_final_stat(
+		target_element,
+		"def",
+		float(target.get("def", 0))
+	)
 	if bool(target.get("defending", false)):
 		defense *= 2.0
 		context["defending"] = true
@@ -238,6 +242,17 @@ func execute(
 					dmg = 1.0
 
 	var dmg_int: int = int(dmg)
+	var damage_guard: Dictionary = BattleDamageGuard.resolve_hp_damage(user, target, dmg_int)
+	if bool(damage_guard.get("blocked", false)):
+		dmg_int = 0
+		result["damage_prevented"] = true
+		result["damage_prevention_effect_id"] = String(damage_guard.get("effect_id", ""))
+		result["damage_prevention_log"] = String(damage_guard.get("log", ""))
+		# A blocked blow may still count as a hit for attached-status resolution,
+		# but it is not presented as a damaging critical hit.
+		result["crit"] = false
+	else:
+		dmg_int = int(damage_guard.get("damage", dmg_int))
 	var target_hp: int = int(target.get("hp", 0)) - dmg_int
 	target["hp"] = target_hp
 	result["damage"] = dmg_int
@@ -275,6 +290,10 @@ func execute(
 		dmg_int,
 		context
 	)
+	if bool(result.get("damage_prevented", false)):
+		# The strike aggregator emits one shield line for the whole action, so a
+		# multi-hit skill cannot repeat the same long narration per segment.
+		log_lines.clear()
 	result["log"] = log_lines
 
 	return result
@@ -297,9 +316,14 @@ func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
 
 func _resolve_effective_attack(actor: Dictionary) -> Dictionary:
 	var current_atk := int(actor.get("atk", 10))
+	var base_atk := current_atk
+	if actor.has("battle_base_atk"):
+		base_atk = int(actor.get("battle_base_atk", current_atk))
+	elif actor.has("base_atk"):
+		base_atk = int(actor.get("base_atk", current_atk))
 	var effects = actor.get("status_effects", {})
 	if typeof(effects) != TYPE_DICTIONARY:
-		return {"base_atk": current_atk, "effective_atk": current_atk, "status_delta": 0}
+		return {"base_atk": base_atk, "effective_atk": max(0, base_atk), "status_delta": 0}
 	var effect_dict: Dictionary = effects
 	var status_delta := 0
 	if effect_dict.has("weaken") and typeof(effect_dict["weaken"]) == TYPE_DICTIONARY:
@@ -310,13 +334,6 @@ func _resolve_effective_attack(actor: Dictionary) -> Dictionary:
 		var atk_up_payload = effect_dict["atk_up"].get("payload", {})
 		if typeof(atk_up_payload) == TYPE_DICTIONARY:
 			status_delta += int((atk_up_payload as Dictionary).get("atk_delta", 0))
-	if status_delta == 0:
-		return {"base_atk": current_atk, "effective_atk": current_atk, "status_delta": 0}
-	var base_atk := current_atk
-	if actor.has("battle_base_atk"):
-		base_atk = int(actor.get("battle_base_atk", current_atk))
-	elif actor.has("base_atk"):
-		base_atk = int(actor.get("base_atk", current_atk))
 	return {
 		"base_atk": base_atk,
 		"effective_atk": max(0, base_atk + status_delta),
@@ -346,14 +363,23 @@ func _get_inventory_sync() -> Node:
 
 
 func _roll_hit(user: Dictionary, target: Dictionary, extra_accuracy: float = 0.0) -> Dictionary:
-	var attacker_agi := float(int(user.get("agi", 0)))
-	var attacker_luck := float(int(user.get("luck", 0)))
-	var defender_agi := float(int(target.get("agi", 0)))
-	var defender_luck := float(int(target.get("luck", 0)))
-	var accuracy_mod := float(int(user.get("accuracy", 100)) - 100)
-	var evasion_mod := float(int(target.get("evasion", 0)))
-	var hit_score := attacker_agi * 0.7 + attacker_luck * 0.3 + accuracy_mod + extra_accuracy
-	var evade_score := defender_agi * 0.7 + defender_luck * 0.3 + evasion_mod
+	var final_accuracy := InnerForceDB.resolve_element_final_stat(
+		String(user.get("element", "")),
+		"accuracy",
+		float(user.get("accuracy", 100))
+	)
+	var final_evasion := InnerForceDB.resolve_element_final_stat(
+		String(target.get("element", "")),
+		"evasion",
+		float(target.get("evasion", 0))
+	)
+	var accuracy_mod := final_accuracy - 100.0
+	var evasion_mod := final_evasion
+	# Player Accuracy/Evasion already include the canonical AGI/Luck contribution
+	# from TeamData. Enemy actors provide these final fields directly, so the
+	# contest must consume only the resolved combat stats on both sides.
+	var hit_score := accuracy_mod + extra_accuracy
+	var evade_score := evasion_mod
 	var chance := clampi(int(round(75.0 + (hit_score - evade_score))), 5, 95)
 	var roll := randf() * 100.0
 	return {

@@ -6,8 +6,9 @@ signal battle_opening_confirmed
 
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
+const ItemDB = preload("res://scripts/db/ItemDB.gd")
 const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
-const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.ttf"
+const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/DotGothic16-Regular.ttf"
 const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
 const DEBUG_ENEMY_PANEL_LAYOUT := true
@@ -27,8 +28,9 @@ var tone = ToneMap.new()
 @onready var btn_inner_force = $ActionPanel/BtnInnerForce
 @onready var btn_weapon_switch = $ActionPanel.get_node_or_null("BtnWeaponSwitch")
 @onready var battle_result_overlay = $BattleResultOverlay
+@onready var battle_result_scroll = $BattleResultOverlay/ResultPanel/ResultContent/RewardScroll
 @onready var battle_result_title = $BattleResultOverlay/ResultPanel/ResultContent/ResultTitle
-@onready var battle_result_body = $BattleResultOverlay/ResultPanel/ResultContent/ResultBody
+@onready var battle_result_body = $BattleResultOverlay/ResultPanel/ResultContent/RewardScroll/ResultBody
 @onready var battle_result_confirm = $BattleResultOverlay/ResultPanel/ResultContent/ConfirmButton
 @onready var status_hover_popup: PanelContainer = $StatusHoverPopup
 @onready var status_hover_label: RichTextLabel = $StatusHoverPopup/StatusHoverLabel
@@ -60,17 +62,29 @@ var pending_item_user: Dictionary = {}
 var pending_skill: Dictionary = {}
 var pending_skill_user: Dictionary = {}
 var _pending_battle_result: Dictionary = {}
+enum BattleResultPhase {
+	NONE,
+	REWARDS,
+	GROWTH,
+}
+var _battle_result_phase: int = BattleResultPhase.NONE
+var _battle_result_waiting_confirm_release: bool = false
 
 # 隊伍資料與 UI slot 參考
 var allies: Array = []      # 由 BattleController / TeamDataManager 傳進來
 var enemies: Array = []
 var ally_slots: Array = []  # AllyPanel 底下的 TeamMate_1/2/3
 var enemy_slots: Array = [] # EnemyPanel 底下的敵人 slot（之後你可以做 EnemySlot.gd）
+var guest_actor: Dictionary = {}
+var guest_slot_index: int = -1
 var _ally_status_labels: Array = []
 var _enemy_status_labels: Array = []
 var _actor_bubble_labels: Dictionary = {}
 var _actor_bubble_boxes: Dictionary = {}
 var _actor_bubble_tokens: Dictionary = {}
+var _message_input_router: Node
+var _opening_intro_typing: bool = false
+var _opening_intro_fade: Tween
 var _bubble_debug_logged: Dictionary = {}
 var _dialogue_event_tick: int = 0
 var _actor_speech_cooldown_until: Dictionary = {}
@@ -247,6 +261,16 @@ func _ready() -> void:
 	_ensure_status_abbrev_overlay()
 	_debug_enemy_panel_layout("ready_immediate")
 	call_deferred("_debug_enemy_panel_layout", "ready_deferred")
+	preload("res://scripts/presentation/BattleTypography.gd").apply(self)
+	log_panel.managed_input = true
+	_message_input_router = preload("res://scripts/presentation/BattleMessageInput.gd").new()
+	_message_input_router.ui = self
+	add_child(_message_input_router)
+	for popup in [skill_list_popup, inner_force_popup, item_list_popup, defense_confirm_popup, target_select_popup]:
+		popup.window_input.connect(_route_popup_message_input.bind(popup))
+		var popup_router := preload("res://scripts/presentation/BattleMessageInput.gd").new()
+		popup_router.ui = self
+		popup.add_child(popup_router)
 
 func _apply_menu_font_style(root: Node) -> void:
 	if root == null:
@@ -402,6 +426,8 @@ func play_battle_opening(intro_line: String) -> void:
 	hide_all_popups()
 	on_action_selection = false
 	_opening_intro_label.text = intro_line
+	_opening_intro_label.visible_characters = 0
+	_opening_intro_typing = true
 	_opening_hint_label.visible = true
 	_opening_intro_label.visible = true
 	_opening_start_label.visible = false
@@ -411,9 +437,10 @@ func play_battle_opening(intro_line: String) -> void:
 	_battle_black_overlay.visible = true
 	_opening_overlay.modulate = Color(1, 1, 1, 1)
 	_opening_overlay.visible = true
-	var intro_fade := create_tween()
-	intro_fade.tween_property(_opening_intro_label, "modulate:a", 1.0, 0.24)
-	intro_fade.parallel().tween_property(_opening_hint_label, "modulate:a", 1.0, 0.32)
+	_opening_intro_fade = create_tween()
+	_opening_intro_fade.tween_property(_opening_intro_label, "modulate:a", 1.0, 0.24)
+	_opening_intro_fade.parallel().tween_property(_opening_hint_label, "modulate:a", 1.0, 0.32)
+	_reveal_opening_intro()
 	await battle_opening_confirmed
 	_battle_opening_waiting_confirm = false
 	_opening_hint_label.visible = false
@@ -472,7 +499,7 @@ func _apply_opening_overlay_rect(ctrl: Control) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _battle_opening_locked or not _battle_opening_waiting_confirm:
 		return
-	var confirm_pressed := _is_opening_confirm_event(event)
+	var confirm_pressed := log_panel.is_message_input(event)
 	if not confirm_pressed and event is InputEventMouseButton:
 		confirm_pressed = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	if not confirm_pressed:
@@ -481,6 +508,70 @@ func _unhandled_input(event: InputEvent) -> void:
 		_battle_opening_waiting_confirm = false
 		emit_signal("battle_opening_confirmed")
 		get_viewport().set_input_as_handled()
+
+func _reveal_opening_intro() -> void:
+	var count: float = 0.0
+	while _opening_intro_typing:
+		await get_tree().process_frame
+		count += 30.0 * get_process_delta_time()
+		_opening_intro_label.visible_characters = mini(int(count), _opening_intro_label.text.length())
+		if int(count) >= _opening_intro_label.text.length():
+			_opening_intro_typing = false
+	_opening_intro_label.visible_characters = -1
+
+func _battle_message_blocked() -> bool:
+	if battle_result_overlay.visible: return true
+	for popup in [skill_list_popup, inner_force_popup, item_list_popup, defense_confirm_popup, target_select_popup]:
+		if popup.visible: return true
+	return false
+
+func handle_battle_message_input(event: InputEvent) -> bool:
+	if not log_panel.is_message_input(event): return false
+	# A currently typing message is the sole exception to normal modal priority.
+	if _opening_intro_typing:
+		_opening_intro_typing = false
+		_opening_intro_label.visible_characters = -1
+		if _opening_intro_fade and _opening_intro_fade.is_valid(): _opening_intro_fade.kill()
+		_opening_intro_label.modulate.a = 1.0
+		_opening_hint_label.modulate.a = 1.0
+		return true
+	if log_panel.is_typewriter_active(): return log_panel.handle_message_input()
+	if _battle_message_blocked(): return false
+	if _battle_opening_locked and _battle_opening_waiting_confirm:
+		_battle_opening_waiting_confirm = false
+		battle_opening_confirmed.emit()
+		return true
+	return log_panel.handle_message_input()
+
+func _route_popup_message_input(event: InputEvent, popup: Window) -> void:
+	if popup.is_input_handled(): return
+	if handle_battle_message_input(event): popup.set_input_as_handled()
+
+func _input(event: InputEvent) -> void:
+	if not _battle_result_waiting_confirm_release:
+		return
+	if not _is_battle_result_confirm_release(event):
+		return
+	_battle_result_waiting_confirm_release = false
+	if battle_result_confirm:
+		battle_result_confirm.disabled = false
+		battle_result_confirm.grab_focus()
+	set_process_input(false)
+	get_viewport().set_input_as_handled()
+
+func _is_battle_result_confirm_release(event: InputEvent) -> bool:
+	if event == null:
+		return false
+	if event.is_action_released("ui_accept"):
+		return true
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		return not key_event.pressed and (
+			key_event.keycode == KEY_ENTER
+			or key_event.keycode == KEY_KP_ENTER
+			or key_event.keycode == KEY_SPACE
+		)
+	return false
 
 func _is_opening_confirm_event(event: InputEvent) -> bool:
 	if event == null:
@@ -695,6 +786,8 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 		"force_element":
 			var element = str(data.get("payload", {}).get("element", ""))
 			return "元素變化：%s（剩 %d 回合）" % [element, turns]
+		"yumei_entanglement":
+			return "語魅纏身：玩家造成的生命傷害歸零"
 		_:
 			return "%s（剩 %d 回合）" % [effect_id, turns]
 
@@ -710,16 +803,58 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 
 ## 戰鬥開始時由 BattleController 呼叫，載入雙方隊伍資料
 func set_teams(allies_data: Array, enemies_data: Array) -> void:
+	_clear_guest_presentation()
 	allies = allies_data
 	enemies = enemies_data
 	_log_enemy_layout_sizes("before_set_teams_update")
 	_setup_actor_bubble_labels()
 	update_ally_panel()
+	_set_unused_ally_slots_empty()
 	update_enemy_panel()
 	_refresh_all_status_abbrev_labels("set_teams")
 	_log_enemy_layout_sizes("after_set_teams_update")
 	_log_slot_vertical_baselines("after_set_teams_update")
 	call_deferred("_debug_enemy_panel_layout", "set_teams")
+
+
+## Show a scripted support actor without adding it to the controllable party.
+## The slot is presentation-only; all battle targeting/turn logic continues to
+## use the `allies` array above.
+func set_guest_presentation(guest_data: Dictionary) -> void:
+	_clear_guest_presentation()
+	if guest_data.is_empty():
+		return
+	var slot_index := allies.size()
+	if slot_index < 0 or slot_index >= ally_slots.size():
+		return
+	var slot = ally_slots[slot_index]
+	if slot == null or not slot.has_method("setup_guest_from_actor"):
+		return
+	guest_actor = guest_data.duplicate(true)
+	guest_slot_index = slot_index
+	slot.setup_guest_from_actor(guest_actor)
+
+
+func _clear_guest_presentation() -> void:
+	if guest_slot_index >= 0 and guest_slot_index < ally_slots.size():
+		var slot = ally_slots[guest_slot_index]
+		if slot and slot.has_method("clear_guest_presentation"):
+			slot.clear_guest_presentation()
+		elif slot:
+			slot.show()
+	guest_actor = {}
+	guest_slot_index = -1
+
+
+func _set_unused_ally_slots_empty() -> void:
+	for i in range(ally_slots.size()):
+		if i < allies.size():
+			continue
+		var slot = ally_slots[i]
+		if slot and slot.has_method("clear_slot"):
+			slot.clear_slot()
+		elif slot:
+			slot.show()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
@@ -1114,7 +1249,7 @@ func play_hit_fx_on_actor(actor: Dictionary, fx_name: String) -> void:
 		return
 
 	# 先找是不是我方
-	var idx = allies.find(actor)
+	var idx = _find_ally_slot_index(actor)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot and slot.has_method("play_hit_fx"):
@@ -1142,6 +1277,19 @@ func _find_enemy_slot_index(target: Dictionary) -> int:
 		if idx >= 0 and idx < enemy_slots.size():
 			return idx
 	return enemies.find(target)
+
+
+func _find_ally_slot_index(target: Dictionary) -> int:
+	if target.is_empty():
+		return -1
+	var actor_id := String(target.get("id", "")).strip_edges()
+	if actor_id != "":
+		for i in range(allies.size()):
+			if i >= ally_slots.size() or typeof(allies[i]) != TYPE_DICTIONARY:
+				continue
+			if String((allies[i] as Dictionary).get("id", "")).strip_edges() == actor_id:
+				return i
+	return allies.find(target)
 
 func _setup_actor_bubble_labels() -> void:
 	_actor_bubble_labels.clear()
@@ -1295,6 +1443,8 @@ func begin_turn(actor: Dictionary) -> void:
 func show_battle_result(result: Dictionary) -> void:
 	_enter_battle_end_ui_cleanup()
 	_pending_battle_result = result.duplicate(true)
+	_battle_result_phase = BattleResultPhase.REWARDS
+	_battle_result_waiting_confirm_release = false
 	var outcome = str(result.get("result", "victory"))
 	var exp = int(result.get("exp", 0))
 	var gold = int(result.get("gold", 0))
@@ -1307,10 +1457,24 @@ func show_battle_result(result: Dictionary) -> void:
 		var count = int(d.get("count", 1))
 		if count <= 0:
 			continue
-		drops_lines.append("%s x%d" % [drop_id, count])
+		var drop_name: String = drop_id
+		if ItemDB.ITEM_DEFS.has(drop_id):
+			var drop_def := ItemDB.get_def(drop_id)
+			drop_name = str(drop_def.get("name", drop_id))
+		drops_lines.append("%s x%d" % [drop_name, count])
 	var drops_block = "掉落：無"
 	if drops_lines.size() > 0:
 		drops_block = "掉落：\n" + "\n".join(drops_lines)
+	var reward_messages = result.get("reward_messages", [])
+	var reward_block := ""
+	if typeof(reward_messages) == TYPE_ARRAY and not (reward_messages as Array).is_empty():
+		var reward_lines: Array[String] = []
+		for message_any in reward_messages:
+			var message := String(message_any).strip_edges()
+			if message != "":
+				reward_lines.append(message)
+		if not reward_lines.is_empty():
+			reward_block = "\n\n戰利品：\n" + "\n".join(reward_lines)
 
 	match outcome:
 		"defeat":
@@ -1318,15 +1482,123 @@ func show_battle_result(result: Dictionary) -> void:
 		_:
 			battle_result_title.text = "戰鬥勝利"
 
-	battle_result_body.text = "經驗：%d\n金幣：%d\n%s" % [exp, gold, drops_block]
+	battle_result_body.text = "經驗：%d\n金幣：%d\n%s%s" % [exp, gold, drops_block, reward_block]
+	if battle_result_scroll:
+		battle_result_scroll.scroll_vertical = 0
 	action_panel.hide()
 	battle_result_overlay.show()
 	if battle_result_confirm:
+		battle_result_confirm.disabled = false
 		battle_result_confirm.grab_focus()
+	set_process_input(false)
+
+func _battle_result_has_growth(result: Dictionary) -> bool:
+	var growth = result.get("growth_result", {})
+	if typeof(growth) != TYPE_DICTIONARY:
+		return false
+	var level_ups = (growth as Dictionary).get("level_ups", [])
+	var skills_learned = (growth as Dictionary).get("skills_learned", [])
+	var has_level_ups := typeof(level_ups) == TYPE_ARRAY and not (level_ups as Array).is_empty()
+	var has_skills_learned := typeof(skills_learned) == TYPE_ARRAY and not (skills_learned as Array).is_empty()
+	return has_level_ups or has_skills_learned
+
+func _next_battle_result_phase(current_phase: int, result: Dictionary) -> int:
+	if current_phase == BattleResultPhase.REWARDS and _battle_result_has_growth(result):
+		return BattleResultPhase.GROWTH
+	return BattleResultPhase.NONE
+
+func _show_growth_result() -> void:
+	_battle_result_phase = BattleResultPhase.GROWTH
+	battle_result_title.text = "角色成長"
+	battle_result_body.text = _build_growth_result_block(_pending_battle_result)
+	if battle_result_scroll:
+		battle_result_scroll.scroll_vertical = 0
+	# A keyboard-confirmed reward window may still have Space/Enter held down.
+	# Disable the same focused button until that key is released; no timer is
+	# involved, and only a fresh press can finish the Growth window.
+	_battle_result_waiting_confirm_release = Input.is_action_pressed("ui_accept") \
+		or Input.is_key_pressed(KEY_SPACE) \
+		or Input.is_key_pressed(KEY_ENTER) \
+		or Input.is_key_pressed(KEY_KP_ENTER)
+	if battle_result_confirm:
+		battle_result_confirm.disabled = _battle_result_waiting_confirm_release
+		if not _battle_result_waiting_confirm_release:
+			battle_result_confirm.grab_focus()
+	set_process_input(_battle_result_waiting_confirm_release)
+
+func _build_growth_result_block(result: Dictionary) -> String:
+	var growth = result.get("growth_result", {})
+	if typeof(growth) != TYPE_DICTIONARY:
+		return ""
+	var level_ups = (growth as Dictionary).get("level_ups", [])
+	var skills_learned = (growth as Dictionary).get("skills_learned", [])
+	var actor_order: Array = []
+	var lines_by_actor: Dictionary = {}
+
+	if typeof(level_ups) == TYPE_ARRAY:
+		for event_any in level_ups:
+			if typeof(event_any) != TYPE_DICTIONARY:
+				continue
+			var event: Dictionary = event_any
+			var actor_id := String(event.get("actor_id", ""))
+			if actor_id == "":
+				continue
+			if not actor_order.has(actor_id):
+				actor_order.append(actor_id)
+				lines_by_actor[actor_id] = []
+			(lines_by_actor[actor_id] as Array).append("%s　Lv.%d → Lv.%d" % [
+				String(event.get("actor_name", actor_id)),
+				int(event.get("old_level", 1)),
+				int(event.get("new_level", 1)),
+			])
+
+	if typeof(skills_learned) == TYPE_ARRAY:
+		for event_any in skills_learned:
+			if typeof(event_any) != TYPE_DICTIONARY:
+				continue
+			var event: Dictionary = event_any
+			var actor_id := String(event.get("actor_id", ""))
+			if actor_id == "":
+				continue
+			if not actor_order.has(actor_id):
+				actor_order.append(actor_id)
+				lines_by_actor[actor_id] = [String(event.get("actor_name", actor_id))]
+			(lines_by_actor[actor_id] as Array).append("　悟得「%s」" % String(event.get("skill_name", event.get("skill_id", ""))))
+
+	if actor_order.is_empty():
+		return ""
+	var growth_lines: Array = []
+	for actor_id_any in actor_order:
+		growth_lines.append_array(lines_by_actor.get(String(actor_id_any), []))
+	return "\n".join(growth_lines)
 
 func _on_battle_result_confirmed() -> void:
+	var next_phase := _next_battle_result_phase(_battle_result_phase, _pending_battle_result)
+	if next_phase == BattleResultPhase.GROWTH:
+		_show_growth_result()
+		return
 	battle_result_overlay.hide()
+	_battle_result_phase = BattleResultPhase.NONE
+	_battle_result_waiting_confirm_release = false
+	if battle_result_confirm:
+		battle_result_confirm.disabled = false
+	set_process_input(false)
 	emit_signal("battle_result_confirmed", _pending_battle_result)
+
+
+func fade_to_black_for_battle_end(duration: float = 0.5) -> void:
+	if _battle_black_overlay == null:
+		return
+	_battle_black_overlay.visible = true
+	_battle_black_overlay.modulate.a = 0.0
+	var fade_tween := _battle_black_overlay.create_tween()
+	fade_tween.tween_property(
+		_battle_black_overlay,
+		"modulate:a",
+		1.0,
+		maxf(duration, 0.0)
+	)
+	await fade_tween.finished
 
 
 ## 整隊我方 UI 刷新（例如回合開始時）
@@ -1478,35 +1750,37 @@ func play_hit_fx_on_target(target: Dictionary, fx_id: String) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx = _find_enemy_slot_index(target)
-	if idx != -1 and idx < enemy_slots.size():
-		var slot = enemy_slots[idx]
-		if slot.has_method("play_hit_fx"):
-			slot.play_hit_fx(fx_id)
-		return
-
-	idx = allies.find(target)
+	# Prefer the player's actor-id lookup so a per-target dispatch can never be
+	# redirected by a stale/shared enemy index.
+	var idx = _find_ally_slot_index(target)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("play_hit_fx"):
 			slot.play_hit_fx(fx_id)
+		return
+
+	idx = _find_enemy_slot_index(target)
+	if idx != -1 and idx < enemy_slots.size():
+		var enemy_slot = enemy_slots[idx]
+		if enemy_slot.has_method("play_hit_fx"):
+			enemy_slot.play_hit_fx(fx_id)
 
 func play_damage_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx = _find_enemy_slot_index(target)
-	if idx != -1 and idx < enemy_slots.size():
-		var slot = enemy_slots[idx]
-		if slot.has_method("play_damage_react"):
-			slot.play_damage_react()
-		return
-
-	idx = allies.find(target)
+	var idx = _find_ally_slot_index(target)
 	if idx != -1 and idx < ally_slots.size():
 		var slot = ally_slots[idx]
 		if slot.has_method("play_damage_react"):
 			slot.play_damage_react()
+		return
+
+	idx = _find_enemy_slot_index(target)
+	if idx != -1 and idx < enemy_slots.size():
+		var enemy_slot = enemy_slots[idx]
+		if enemy_slot.has_method("play_damage_react"):
+			enemy_slot.play_damage_react()
 
 func play_heal_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
@@ -1530,7 +1804,7 @@ func play_guard_react(target: Dictionary) -> void:
 	if allies.is_empty() and enemies.is_empty():
 		return
 
-	var idx = enemies.find(target)
+	var idx = _find_enemy_slot_index(target)
 	if idx != -1 and idx < enemy_slots.size():
 		var slot = enemy_slots[idx]
 		if slot.has_method("play_guard_react"):
@@ -1839,7 +2113,9 @@ func _on_btn_skill_pressed() -> void:
 		if w2 != "":
 			weapons.append(w2)
 
-	var skills = character_skill_db.get_skills(current_actor["id"])
+	# 戰鬥中的角色已整合裝備與內功；技能清單只能讀取這份 runtime actor。
+	# 若再依 ID 取 TeamData，normalize 會就地覆寫共用 Dictionary，令裝備能力消失。
+	var skills = character_skill_db.get_skills_by_actor(current_actor)
 	var inner_force = current_actor.get("inner_force", {})
 	skill_list_popup.show_skills(skills, inner_force, character_skill_db, weapons, current_actor)
 
@@ -2140,7 +2416,7 @@ func _set_actor_target_focus(actor: Dictionary, active: bool) -> void:
 			slot.set_target_focus(active)
 		return
 
-	idx = enemies.find(actor)
+	idx = _find_enemy_slot_index(actor)
 	if idx != -1 and idx < enemy_slots.size():
 		var enemy_slot = enemy_slots[idx]
 		if enemy_slot and enemy_slot.has_method("set_target_focus"):
@@ -2229,7 +2505,7 @@ func _set_target_highlight_for_actor(actor: Dictionary, is_active: bool) -> void
 		return
 
 	# 再找敵方
-	idx = enemies.find(actor)
+	idx = _find_enemy_slot_index(actor)
 	if idx != -1 and idx < enemy_slots.size():
 		var enemy_slot = enemy_slots[idx]
 		if enemy_slot and enemy_slot.has_method("set_target_highlight"):

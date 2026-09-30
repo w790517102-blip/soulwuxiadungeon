@@ -2,6 +2,7 @@ extends Node
 
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 var _skill_db: Node = SkillDBScript.new()
+var knowledge_provider: Node = null
 
 enum SkillCouplingTier {
 	NORMAL,
@@ -17,26 +18,208 @@ const SKILL_COLOR_RISK_UPGRADE := Color(0.74, 0.40, 0.96) # 紫（絕技）
 const SKILL_COLOR_EXCLUSIVE := Color(1.00, 0.62, 0.20) # 橘（專屬）
 const SKILL_COLOR_ULTIMATE := Color(1.00, 0.22, 0.22) # 紅（奧義）
 
+# Shared data authority for inner-force × martial synergies.  Runtime skill
+# resolution reads this table after any legendary/risk variant is selected;
+# battle execution can reuse the same rule for strike-count and on-hit effects.
+const SYNERGY_RULES := [
+	{
+		"inner_force_id": "liuchen_jue",
+		"skill_id": "skill_lianjuejian",
+		"effects": {"strike_count_delta": 1},
+		"display_name": "流塵連決劍",
+		"log": "{name} 運轉流塵訣，連決劍勢再起一重，追擊如塵隨風！",
+	},
+	{
+		"inner_force_id": "fuchao_jue",
+		"skill_id": "skill_duanshuizhan",
+		"effects": {
+			"on_hit_status": {"effect_id": "break_def", "amount": 10, "turns": 2}
+		},
+		"display_name": "伏潮斷水斬",
+		"log": "{name} 刀勢忽沉，伏潮勁意先壓後斬，招路更見沉狠。",
+	},
+	{
+		"inner_force_id": "chenchao_jue",
+		"skill_id": "skill_breaking_wave_spear",
+		"effects": {"bonus_stat_scaling": {"str": 0.70, "agi": 0.45}},
+		"display_name": "沉潮破浪槍",
+	},
+]
+
 func get_skills(character_id: String) -> Array:
 	var actor = null
-	if TeamData and TeamData.has_method("get_character_by_id"):
-		actor = TeamData.get_character_by_id(character_id)
-	var known_ids: Array = []
-	if TeamData and TeamData.has_method("get_known_skill_ids"):
-		known_ids = TeamData.get_known_skill_ids(character_id)
-	return _skill_db.get_skills_for_actor(character_id, actor, known_ids)
+	var provider := _get_knowledge_provider()
+	if provider and provider.has_method("get_character_by_id"):
+		actor = provider.get_character_by_id(character_id)
+	return get_effective_skills_for_actor(character_id, actor, true)
 
 func get_skills_by_actor(actor) -> Array:
 	if typeof(actor) == TYPE_DICTIONARY:
-		return _skill_db.get_skills_for_actor(String(actor.get("id", "")), actor)
+		var actor_id := String(actor.get("id", ""))
+		return get_effective_skills_for_actor(actor_id, actor, true)
 	if actor is Object:
 		var id_value = actor.get("id")
 		if typeof(id_value) == TYPE_STRING and id_value != "":
-			return _skill_db.get_skills_for_actor(String(id_value), actor)
+			return get_effective_skills_for_actor(String(id_value), actor, true)
 	return []
 
+func get_effective_skills_for_actor(actor_id: String, actor = null, apply_weapon_filter: bool = false) -> Array:
+	actor_id = _canonicalize_actor_id(actor_id)
+	var effective_ids := get_effective_skill_ids_for_actor(actor_id, actor)
+	var weapon_actor = actor if apply_weapon_filter else null
+	return _skill_db.get_skills_for_actor(actor_id, weapon_actor, effective_ids, false)
+
+func get_effective_skill_ids_for_actor(actor_id: String, actor = null) -> Array:
+	actor_id = _canonicalize_actor_id(actor_id)
+	var out: Array = []
+	var battle_profile_ids = _get_battle_profile_skill_ids(actor)
+	if battle_profile_ids != null:
+		# A story battle profile is an explicit, finite loadout.  Do not merge
+		# later save knowledge, manual knowledge, or LiuYu companion insights into
+		# this temporary actor.
+		for raw_id in battle_profile_ids:
+			var profile_id = _skill_db.coerce_skill_id(raw_id)
+			if profile_id == "" or out.has(profile_id):
+				continue
+			if _is_skill_eligible_for_actor(actor_id, profile_id, actor):
+				out.append(profile_id)
+		return out
+	var candidate_ids: Array = []
+	var provider := _get_knowledge_provider()
+	if provider and provider.has_method("refresh_liuyu_companion_insights"):
+		provider.refresh_liuyu_companion_insights()
+	# Keep each actor's established personal-skill order stable; newly effective
+	# shared/manual skills follow the canonical SkillDB order.
+	if provider and provider.has_method("get_known_skill_ids"):
+		for raw_id in provider.get_known_skill_ids(actor_id):
+			var personal_id = _skill_db.coerce_skill_id(raw_id)
+			if personal_id != "" and not candidate_ids.has(personal_id):
+				candidate_ids.append(personal_id)
+	for skill_any in _skill_db.get_all_skills():
+		if typeof(skill_any) != TYPE_DICTIONARY:
+			continue
+		var skill_id := String((skill_any as Dictionary).get("id", ""))
+		if skill_id != "" and not candidate_ids.has(skill_id):
+			candidate_ids.append(skill_id)
+	for skill_id in candidate_ids:
+		if actor_has_effective_skill(actor_id, String(skill_id), actor):
+			out.append(skill_id)
+	return out
+
+func actor_has_effective_skill(actor_id: String, skill_id: String, actor = null) -> bool:
+	actor_id = _canonicalize_actor_id(actor_id)
+	var canonical_id = _skill_db.coerce_skill_id(skill_id)
+	if actor_id == "" or canonical_id == "":
+		return false
+	# Eligibility is authoritative and is checked before every knowledge source.
+	if not _skill_db.is_available_for_actor(canonical_id, actor_id):
+		return false
+	var skill: Dictionary = _skill_db.get_skill(canonical_id)
+	if skill.is_empty() or not _actor_has_weapon_aptitude(actor_id, String(skill.get("weapon_type", "")), actor):
+		return false
+	var actor_level = max(1, int(_actor_get_value(actor, "level", _get_actor_level(actor_id))))
+	if not _skill_db.is_level_eligible(canonical_id, actor_level):
+		return false
+	var battle_profile_ids = _get_battle_profile_skill_ids(actor)
+	if battle_profile_ids != null:
+		return battle_profile_ids.has(canonical_id)
+
+	var provider := _get_knowledge_provider()
+	if provider == null:
+		return _skill_db.get_default_skill_ids(actor_id).has(canonical_id)
+	if provider.has_method("knows_skill") and bool(provider.knows_skill(actor_id, canonical_id)):
+		return true
+	if provider.has_method("has_skill_manual_knowledge") and bool(provider.has_skill_manual_knowledge(canonical_id)):
+		return true
+	if not _skill_db.is_shareable(canonical_id):
+		return false
+	# Only LiuYu's valid personal knowledge may become a shared source.
+	# Another actor's personal knowledge never propagates to teammates.
+	if not _skill_db.is_available_for_actor(canonical_id, "liuyu"):
+		return false
+	return provider.has_method("knows_skill") and bool(provider.knows_skill("liuyu", canonical_id))
+
+
+func _is_skill_eligible_for_actor(actor_id: String, skill_id: String, actor = null) -> bool:
+	var skill: Dictionary = _skill_db.get_skill(skill_id)
+	if skill.is_empty() or not _skill_db.is_available_for_actor(skill_id, actor_id):
+		return false
+	if not _actor_has_weapon_aptitude(actor_id, String(skill.get("weapon_type", "")), actor):
+		return false
+	var actor_level = max(1, int(_actor_get_value(actor, "level", _get_actor_level(actor_id))))
+	return _skill_db.is_level_eligible(skill_id, actor_level)
+
+
+func _get_battle_profile_skill_ids(actor):
+	if typeof(actor) != TYPE_DICTIONARY:
+		return null
+	var raw_ids = (actor as Dictionary).get("battle_skill_ids", null)
+	if typeof(raw_ids) != TYPE_ARRAY:
+		return null
+	return raw_ids as Array
+
+func _actor_has_weapon_aptitude(actor_id: String, weapon_type: String, actor = null) -> bool:
+	if weapon_type == "":
+		return true
+	var actor_aptitudes = _actor_get_value(actor, "weapon_aptitudes", null)
+	if typeof(actor_aptitudes) == TYPE_ARRAY:
+		return (actor_aptitudes as Array).has(weapon_type)
+	var provider := _get_knowledge_provider()
+	if provider and provider.has_method("has_weapon_aptitude"):
+		return bool(provider.has_weapon_aptitude(actor_id, weapon_type))
+	return false
+
+func _get_knowledge_provider() -> Node:
+	if knowledge_provider != null:
+		return knowledge_provider
+	if typeof(TeamData) != TYPE_NIL:
+		return TeamData
+	return null
+
+func _canonicalize_actor_id(actor_id: String) -> String:
+	var provider := _get_knowledge_provider()
+	if provider and provider.has_method("canonicalize_actor_id"):
+		return String(provider.canonicalize_actor_id(actor_id))
+	if actor_id == "su_mien":
+		return "shumian"
+	return actor_id
+
+func _get_actor_level(actor_id: String) -> int:
+	var provider := _get_knowledge_provider()
+	if provider and provider.has_method("get_character_by_id"):
+		var actor = provider.get_character_by_id(actor_id)
+		return max(1, int(_actor_get_value(actor, "level", 1)))
+	return 1
+
+func _actor_get_value(actor, key: String, fallback):
+	if typeof(actor) == TYPE_DICTIONARY:
+		return (actor as Dictionary).get(key, fallback)
+	if actor is Object:
+		var value = actor.get(key)
+		return fallback if value == null else value
+	return fallback
+
+func resolve_effective_skill(skill_id: String, actor: Dictionary = {}, context: Dictionary = {}) -> Dictionary:
+	var canonical_id: String = _skill_db.coerce_skill_id(skill_id)
+	if canonical_id == "":
+		return {}
+	var base_skill: Dictionary = _skill_db.get_skill(canonical_id)
+	if base_skill.is_empty():
+		return {}
+	var inner_force = context.get("inner_force", actor.get("inner_force", {}))
+	if typeof(inner_force) != TYPE_DICTIONARY:
+		inner_force = {}
+	return resolve_runtime_skill(base_skill, inner_force, actor)
+
 func resolve_runtime_skill(skill: Dictionary, inner_force: Dictionary, actor: Dictionary = {}) -> Dictionary:
-	var runtime_skill: Dictionary = skill.duplicate(true)
+	# Always rebuild from SkillDB when an id is available.  A caller may pass an
+	# already-resolved clone (for example from a popup); reusing that clone would
+	# apply pairing modifiers a second time.
+	var skill_id := String(skill.get("id", ""))
+	var canonical_skill: Dictionary = {}
+	if skill_id != "":
+		canonical_skill = _skill_db.get_skill(_skill_db.coerce_skill_id(skill_id))
+	var runtime_skill: Dictionary = canonical_skill if not canonical_skill.is_empty() else skill.duplicate(true)
 	var risk_upgrade = runtime_skill.get("risk_upgrade", {})
 	if typeof(risk_upgrade) == TYPE_DICTIONARY:
 		var risk_map: Dictionary = risk_upgrade
@@ -51,26 +234,53 @@ func resolve_runtime_skill(skill: Dictionary, inner_force: Dictionary, actor: Di
 			runtime_skill["coupling_tier"] = SkillCouplingTier.RISK_UPGRADE
 
 	var chain = runtime_skill.get("legendary_chain", {})
-	if typeof(chain) != TYPE_DICTIONARY:
-		return runtime_skill
-	var chain_map: Dictionary = chain
-	var required_force_id := String(chain_map.get("inner_force_id", ""))
-	var current_force_id := String(inner_force.get("id", ""))
-	if required_force_id == "" or current_force_id != required_force_id:
-		return runtime_skill
+	if typeof(chain) == TYPE_DICTIONARY:
+		var chain_map: Dictionary = chain
+		var required_force_id := String(chain_map.get("inner_force_id", ""))
+		var current_force_id := String(inner_force.get("id", ""))
+		if required_force_id != "" and current_force_id == required_force_id:
+			if _is_actor_fully_unequipped(actor):
+				runtime_skill["name"] = String(chain_map.get("ultimate_name", runtime_skill.get("name", "")))
+				runtime_skill["target_scope"] = "enemy_all_per_target_random_hits"
+				runtime_skill["target_side"] = "enemy"
+				runtime_skill["coupling_tier"] = SkillCouplingTier.ULTIMATE
+			else:
+				runtime_skill["name"] = String(chain_map.get("exclusive_name", runtime_skill.get("name", "")))
+				runtime_skill["target_scope"] = "enemy_all_shared_random_hits"
+				runtime_skill["target_side"] = "enemy"
+				runtime_skill["coupling_tier"] = SkillCouplingTier.EXCLUSIVE
 
-	if _is_actor_fully_unequipped(actor):
-		runtime_skill["name"] = String(chain_map.get("ultimate_name", runtime_skill.get("name", "")))
-		runtime_skill["target_scope"] = "enemy_all_per_target_random_hits"
-		runtime_skill["target_side"] = "enemy"
-		runtime_skill["coupling_tier"] = SkillCouplingTier.ULTIMATE
-		return runtime_skill
-
-	runtime_skill["name"] = String(chain_map.get("exclusive_name", runtime_skill.get("name", "")))
-	runtime_skill["target_scope"] = "enemy_all_shared_random_hits"
-	runtime_skill["target_side"] = "enemy"
-	runtime_skill["coupling_tier"] = SkillCouplingTier.EXCLUSIVE
+	_apply_pairing_synergy(runtime_skill, inner_force)
 	return runtime_skill
+
+static func get_pairing_rule(skill_id: String, inner_force_id: String) -> Dictionary:
+	if skill_id == "" or inner_force_id == "":
+		return {}
+	for entry in SYNERGY_RULES:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		if String(entry.get("skill_id", "")) == skill_id and String(entry.get("inner_force_id", "")) == inner_force_id:
+			return (entry as Dictionary).duplicate(true)
+	return {}
+
+func _apply_pairing_synergy(runtime_skill: Dictionary, inner_force: Dictionary) -> void:
+	var rule := get_pairing_rule(String(runtime_skill.get("id", "")), String(inner_force.get("id", "")))
+	if rule.is_empty():
+		return
+	var effects = rule.get("effects", {})
+	if typeof(effects) == TYPE_DICTIONARY:
+		var bonus_scaling = (effects as Dictionary).get("bonus_stat_scaling", {})
+		if typeof(bonus_scaling) == TYPE_DICTIONARY and not (bonus_scaling as Dictionary).is_empty():
+			var merged_scaling = runtime_skill.get("stat_scaling", {})
+			merged_scaling = merged_scaling.duplicate(true) if typeof(merged_scaling) == TYPE_DICTIONARY else {}
+			for stat_key in (bonus_scaling as Dictionary).keys():
+				var key := String(stat_key)
+				merged_scaling[key] = float(merged_scaling.get(key, 0.0)) + float((bonus_scaling as Dictionary).get(stat_key, 0.0))
+			runtime_skill["stat_scaling"] = merged_scaling
+	var display_name := String(rule.get("display_name", ""))
+	if display_name != "":
+		runtime_skill["name"] = display_name
+		runtime_skill["coupling_tier"] = SkillCouplingTier.EXCLUSIVE
 
 func resolve_skill_name(skill: Dictionary, inner_force: Dictionary) -> String:
 	if skill.has("coupling_tier"):

@@ -1,9 +1,11 @@
 extends Node
 class_name StatusEffectManager
 
+const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 const DEFAULT_SLOW_DELTA := 10
 const DECREMENT_TIMING_END_OF_ROUND := "end_of_round"
 const DECREMENT_TIMING_AFTER_OWNER_ACTION := "after_owner_action"
+const DECREMENT_TIMING_MANUAL := "manual"
 
 
 func _canonicalize_effect_id(effect_id: String) -> String:
@@ -25,6 +27,8 @@ func get_decrement_timing(effect_id: String) -> String:
 	match canonical:
 		"stun", "slow":
 			return DECREMENT_TIMING_AFTER_OWNER_ACTION
+		"yumei_entanglement":
+			return DECREMENT_TIMING_MANUAL
 		_:
 			return DECREMENT_TIMING_END_OF_ROUND
 
@@ -109,7 +113,7 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 				}
 				target["element"] = new_element
 				return true
-			"poison", "stun", "confuse":
+			"poison", "stun", "confuse", "yumei_entanglement":
 				pass
 			"slow":
 				if int(effect_payload.get("slow_delta", 0)) <= 0:
@@ -177,16 +181,26 @@ func tick_end_of_turn(actors: Array) -> Array:
 			if effect_id == "poison" and int(actor.get("hp", 0)) > 0:
 				var max_hp = int(actor.get("max_hp", actor.get("base_max_hp", 0)))
 				var tick_damage = max(10, int(floor(float(max_hp) * 0.05)))
+				var poison_record: Dictionary = effects[effect_id]
+				var poison_payload: Dictionary = poison_record.get("payload", {})
+				var damage_guard: Dictionary = BattleDamageGuard.resolve_hp_damage(
+					{"is_enemy": bool(poison_payload.get("_source_is_enemy", false))},
+					actor,
+					tick_damage
+				)
+				tick_damage = int(damage_guard.get("damage", tick_damage))
 				var before_hp = int(actor.get("hp", 0))
 				var after_hp = max(0, before_hp - tick_damage)
 				actor["hp"] = after_hp
 				if after_hp <= 0:
 					actor["is_dead"] = true
-				events.append({
-					"type": "poison_tick",
-					"actor": actor,
-					"damage": before_hp - after_hp,
-				})
+					events.append({
+						"type": "poison_tick",
+						"actor": actor,
+						"damage": before_hp - after_hp,
+						"damage_prevented": bool(damage_guard.get("blocked", false)),
+						"damage_prevention_log": String(damage_guard.get("log", "")),
+					})
 
 			var effect_data: Dictionary = effects[effect_id]
 			var timing := String(effect_data.get("decrement_timing", get_decrement_timing(effect_id)))
@@ -253,20 +267,23 @@ func recalc_actor_stats(target: Dictionary) -> void:
 
 
 func _recalc_all_stats(target: Dictionary) -> void:
+	_recalc_primary_stats(target)
 	_recalc_speed(target)
 	_recalc_accuracy(target)
 	_recalc_evasion(target)
 	_recalc_atk(target)
 	_recalc_def(target)
-	_recalc_primary_stats(target)
 	_recalc_max_hp(target)
 	_recalc_max_mp(target)
+	_recalc_crit_rate(target)
 
 
 func _recalc_stats_for_effect(target: Dictionary, effect_id: String) -> void:
 	effect_id = _canonicalize_effect_id(effect_id)
 	if effect_id.begins_with("stat_buff_") or effect_id.begins_with("stat_debuff_"):
-		_recalc_all_stats(target)
+		var stat_key: String = _stat_key_from_effect_id(effect_id)
+		_recalc_primary_stat(target, stat_key)
+		_recalc_derived_stats_for_primary(target, stat_key)
 		return
 	match effect_id:
 		"atk_up", "weaken":
@@ -288,6 +305,25 @@ func _recalc_stats_for_effect(target: Dictionary, effect_id: String) -> void:
 			_recalc_max_mp(target)
 		_:
 			pass
+
+
+func _recalc_derived_stats_for_primary(target: Dictionary, stat_key: String) -> void:
+	match stat_key:
+		"str":
+			_recalc_atk(target)
+		"agi":
+			_recalc_speed(target)
+			_recalc_accuracy(target)
+			_recalc_evasion(target)
+		"int":
+			_recalc_max_mp(target)
+		"con":
+			_recalc_max_hp(target)
+			_recalc_def(target)
+		"luck":
+			_recalc_accuracy(target)
+			_recalc_evasion(target)
+			_recalc_crit_rate(target)
 
 
 func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictionary = {}) -> String:
@@ -346,6 +382,8 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			return "%s 速度下降 %d（剩 %d 回合）。" % [actor_name, int(payload.get("slow_delta", 0)), turns_left]
 		"force_element":
 			return "%s 屬性轉為「%s」（剩 %d 回合）。" % [actor_name, String(payload.get("element", "?")), turns_left]
+		"yumei_entanglement":
+			return "%s 被「語魅纏身」護住，玩家造成的生命傷害將歸零。" % actor_name
 		_:
 			return "%s 附加了 %s（剩 %d 回合）。" % [actor_name, effect_id, turns_left]
 
@@ -389,10 +427,13 @@ func _ensure_base_stats(target: Dictionary) -> void:
 
 func _recalc_speed(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = _stat_baseline(target, "speed", target.get("speed", 0))
+	var base: int = _stat_baseline(target, "speed", target.get("speed", 0))
+	var base_agi: int = max(0, _stat_baseline(target, "agi", target.get("agi", 0)))
+	var current_agi: int = max(0, int(target.get("agi", base_agi)))
+	var primary_delta: int = current_agi - base_agi
 	var effects = target.get("status_effects", {})
-	var buff = 0
-	var debuff = 0
+	var buff: int = 0
+	var debuff: int = 0
 
 	if typeof(effects) == TYPE_DICTIONARY:
 		if effects.has("speed_buff"):
@@ -404,14 +445,15 @@ func _recalc_speed(target: Dictionary) -> void:
 		if effects.has("warm_wine_buff"):
 			buff += int(effects["warm_wine_buff"].get("payload", {}).get("speed_delta", 0))
 
-	target["speed"] = max(base + buff - debuff, 0)
+	target["speed"] = max(base + primary_delta + buff - debuff, 0)
 
 
 func _recalc_accuracy(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = _stat_baseline(target, "accuracy", target.get("accuracy", 100))
+	var base: int = _stat_baseline(target, "accuracy", target.get("accuracy", 100))
+	var primary_delta: int = _agi_luck_derived_delta(target)
 	var effects = target.get("status_effects", {})
-	var delta = 0
+	var delta: int = 0
 	if typeof(effects) == TYPE_DICTIONARY:
 		if effects.has("warm_wine_buff"):
 			delta += int(effects["warm_wine_buff"].get("payload", {}).get("accuracy_delta", 0))
@@ -419,48 +461,65 @@ func _recalc_accuracy(target: Dictionary) -> void:
 			delta += int(effects["blind"].get("payload", {}).get("accuracy_delta", 0))
 		if effects.has("focus"):
 			delta += int(effects["focus"].get("payload", {}).get("accuracy_delta", 0))
-	target["accuracy"] = base + delta
+	target["accuracy"] = base + primary_delta + delta
 	target["accuracy_mod"] = delta
 
 
 func _recalc_evasion(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = _stat_baseline(target, "evasion", target.get("evasion", 0))
+	var base: int = _stat_baseline(target, "evasion", target.get("evasion", 0))
+	var primary_delta: int = _agi_luck_derived_delta(target)
 	var effects = target.get("status_effects", {})
-	var delta = 0
+	var delta: int = 0
 	if typeof(effects) == TYPE_DICTIONARY:
 		if effects.has("evasion_boost"):
 			delta += int(effects["evasion_boost"].get("payload", {}).get("evasion_delta", 0))
 		if effects.has("root"):
 			delta += int(effects["root"].get("payload", {}).get("evasion_delta", 0))
-	target["evasion"] = base + delta
+	target["evasion"] = base + primary_delta + delta
 	target["evasion_mod"] = delta
 
 
 func _recalc_atk(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = _stat_baseline(target, "atk", target.get("atk", 0))
+	var base: int = _stat_baseline(target, "atk", target.get("atk", 0))
+	var base_str: int = max(0, _stat_baseline(target, "str", target.get("str", 0)))
+	var current_str: int = max(0, int(target.get("str", base_str)))
+	var primary_delta: int = int(floor(float(current_str) * 1.2)) - int(floor(float(base_str) * 1.2))
 	var effects = target.get("status_effects", {})
-	var delta = 0
+	var delta: int = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("weaken"):
 		delta += int(effects["weaken"].get("payload", {}).get("atk_delta", 0))
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("atk_up"):
 		delta += int(effects["atk_up"].get("payload", {}).get("atk_delta", 0))
-	target["atk"] = max(0, base + delta)
+	target["atk"] = max(0, base + primary_delta + delta)
 	target["atk_mod"] = delta
 
 
 func _recalc_def(target: Dictionary) -> void:
 	_ensure_base_stats(target)
-	var base = _stat_baseline(target, "def", target.get("def", 0))
+	var base: int = _stat_baseline(target, "def", target.get("def", 0))
+	var base_con: int = max(0, _stat_baseline(target, "con", target.get("con", 0)))
+	var current_con: int = max(0, int(target.get("con", base_con)))
+	var primary_delta: int = int(floor(float(current_con) * 0.8)) - int(floor(float(base_con) * 0.8))
 	var effects = target.get("status_effects", {})
-	var delta = 0
+	var delta: int = 0
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("break_def"):
 		delta += int(effects["break_def"].get("payload", {}).get("def_delta", 0))
 	if typeof(effects) == TYPE_DICTIONARY and effects.has("def_up"):
 		delta += int(effects["def_up"].get("payload", {}).get("def_delta", 0))
-	target["def"] = max(0, base + delta)
+	target["def"] = max(0, base + primary_delta + delta)
 	target["def_mod"] = delta
+
+
+func _agi_luck_derived_delta(target: Dictionary) -> int:
+	var base_agi: int = max(0, _stat_baseline(target, "agi", target.get("agi", 0)))
+	var base_luck: int = max(0, _stat_baseline(target, "luck", target.get("luck", 0)))
+	var current_agi: int = max(0, int(target.get("agi", base_agi)))
+	var current_luck: int = max(0, int(target.get("luck", base_luck)))
+	var base_contribution: int = int(round(float(base_agi) * 0.7 + float(base_luck) * 0.3))
+	var current_contribution: int = int(round(float(current_agi) * 0.7 + float(current_luck) * 0.3))
+	return current_contribution - base_contribution
 
 
 func _recalc_primary_stats(target: Dictionary) -> void:
@@ -522,6 +581,15 @@ func _recalc_max_mp(target: Dictionary) -> void:
 	if int(target.get("mp", 0)) > new_max:
 		target["mp"] = new_max
 	target["max_mp_mod"] = (scaled_base - base) + delta
+
+
+func _recalc_crit_rate(target: Dictionary) -> void:
+	var base: float = float(target.get("battle_base_crit_rate", target.get("crit_rate", 0.05)))
+	var base_luck: int = max(0, _stat_baseline(target, "luck", target.get("luck", 0)))
+	var current_luck: int = max(0, int(target.get("luck", base_luck)))
+	var base_luck_bonus: float = floor(float(base_luck) / 5.0) * 0.01
+	var current_luck_bonus: float = floor(float(current_luck) / 5.0) * 0.01
+	target["crit_rate"] = clampf(base + current_luck_bonus - base_luck_bonus, 0.0, 0.95)
 
 
 func _resolve_stat_buff_effect_id(effect_id: String, payload: Dictionary) -> String:

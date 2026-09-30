@@ -68,7 +68,9 @@ func describe_attack(
 	if context.get("target_down", false):
 		var down_line := ""
 		if target_side == "enemy":
-			if user_side != "enemy":
+			if tone_map.has_method("get_specific_enemy_defeat_text"):
+				down_line = tone_map.get_specific_enemy_defeat_text(target)
+			if down_line == "" and user_side != "enemy":
 				down_line = tone_map.get_character_tone_text("ally_enemy_defeat", String(user.get("id", "")))
 			if down_line == "":
 				var archetype := _resolve_enemy_archetype(target)

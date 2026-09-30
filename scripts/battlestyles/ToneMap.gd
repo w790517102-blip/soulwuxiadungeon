@@ -361,6 +361,42 @@ var tone_map := {
 			]
 		},
 		"語魅": {
+			"echo_tone_phantom": [
+				"{name} 周身層層疊疊的聲浪逐漸散去。牠仍急切地向劉語塵追問：\n「為什麼……沒有回音了？」\n劉語塵沉聲道：\n「你不是想說話。你只是怕沒有人回答你。」",
+				"{name} 體內交疊的語句接連破碎。牠第一次遲疑地問道：\n「那些話……都不是我的？」\n劉語塵答道：\n「搶到話頭，不等於說出了自己。」",
+				"{name} 的聲音一層層向外散失，牠仍試圖抓住那些不斷返回的殘句：\n「我明明說了這麼多……為什麼反而聽不見自己？」\n劉語塵道：\n「說得越多，你自己的聲音反而越遠。」",
+				"{name} 最後的聲音仍在空氣裡顫抖：\n「別安靜……安靜下來，我就聽見自己了……」\n劉語塵收住劍勢：\n「先安靜。聽清楚哪一句才是你的。」"
+			],
+			"broken_talisman_tone_phantom": [
+				"{name} 身上的符紙一層層向內收束，牠驚恐地望著逐漸封閉的形體：\n「原來……被封住的是我？」\n劉語塵沉聲道：\n「當封印落在自己身上，你也知道那不是拯救。」",
+				"{name} 的咒文自裂口間不斷脫落，牠喃喃道：\n「我再也……封不住任何東西了……」\n劉語塵答道：\n「會受傷，不代表不該活著。」",
+				"{name} 仍指著劉語塵，尖聲否認：\n「不對……漏洞明明是你！」\n劉語塵揮劍震散殘咒：\n「人不是符紙，不能哪裡破了，就拿命去填。」",
+				"{name} 的形體被殘咒層層纏住，仍不甘地喊道：\n「你這個……漏洞……！」\n劉語塵冷冷道：\n「有缺口，不代表就該被封死。」"
+			],
+			"fixation_tone_phantom": [
+				"{name} 身上的願線一條條鬆開，牠驚恐地喊道：\n「不對！這樣你的願望就會成真！」\n劉語塵收住劍勢：\n「願望本來就是為了有一天能夠實現。」",
+				"{name} 的殘影逐漸變淡，仍緊盯著劉語塵：\n「沒有了願望……你該何去何從？」\n劉語塵答道：\n「不知道也無妨。沒有願望，我也還是我。」",
+				"{name} 試圖將散開的願線重新纏向劉語塵：\n「只要他們永遠需要你，你就永遠有留下的理由……」\n劉語塵揮劍斬斷願線：\n「真正的守護，不是讓人永遠離不開你。」",
+				"{name} 的殘影已近乎透明，仍低聲挽留：\n「願未了……便不許走……」\n劉語塵道：\n「願可以未了，人仍有權走；願既已了，人更有權繼續活。」"
+			],
+			"broken_string_tone_phantom": [
+				"{name} 周身的弦絲一根根崩裂，牠望著仍然站立的劉語塵，喃喃道：\n「我斷了……但你還活著……為什麼我還是無法弄斷你？」\n劉語塵收住劍勢：\n「因為人與人之間的連結，不是一根任你撥弄的弦。」",
+				"{name} 周身的弦音接連崩斷。牠原本平靜的聲音忽然失控：\n「不……等等……我不想斷掉！」\n「可是……我不能求你住手……我不能這樣啊！」\n劉語塵冷冷道：\n「這就是報應。當被斷的人換成你，你也不甘心，不是嗎？」",
+				"{name} 顫抖著伸出手，試圖抓住正在消散的斷弦：\n「我只是……不想再有人受傷……」\n劉語塵道：\n「那就不該由你替別人決定，什麼必須斷掉。」\n「弦可以不奏，卻不該由你替它斬斷。」",
+				"{name} 的最後一根弦在空中崩斷，四周落入牠曾經嚮往的寂靜。牠卻茫然地問道：\n「原來……斷掉的聲音……也會痛嗎……」\n劉語塵將劍收回：\n「沉默不等於無傷，安靜也不是和平。」"
+			],
+			"turbid_tone_phantom": [
+				"{name} 的濁影像被劈開的污痕般向四周剝落，卻仍低聲說道：\n「你來救她，不過是想讓她欠你。」\n劉語塵收住刀勢，只道：\n「她不欠我。」",
+				"{name} 周身濁霧漸散，仍不肯放棄替人定義：\n「你敢說自己沒有半點私心？」\n劉語塵答道：\n「有私心，不代表沒有真心。」",
+				"{name} 的聲音逐漸碎裂：\n「誰不是為了自己？」\n劉語塵道：\n「為了自己，也能不傷害別人。」",
+				"{name} 最後留下的污語仍在甬道間迴盪：\n「你寧願相信自己……也不肯承認我說中了……」\n劉語塵收刀：\n「人的心可以有很多聲音，但不由你替他定義。」"
+			],
+			"bitterness_tone_phantom": [
+				"{name} 的身體自傷口處逸出腐敗藥氣，聲音第一次失去篤定：\n「這種苦……不是我要的……」\n劉語塵沉聲道：\n「你加諸別人的苦，是傷害，不是藥。」",
+				"{name} 像是第一次無法替痛苦尋得解釋，顫聲問道：\n「我的苦……沒有意義？」\n劉語塵答道：\n「痛苦本身，從來不能證明什麼。」",
+				"{name} 還想抓住最後的執念：\n「可是……苦能治人。苦得越深，便治得越——」\n劉語塵打斷牠：\n「你弄反了。有效的治療或許伴隨痛苦，但痛苦本身不能證明療效。」",
+				"{name} 在散落的藥氣中喃喃：\n「我明明是在救人……」\n劉語塵收刀道：\n「沒必要先打斷別人的腿，再遞上一根拐杖，便說自己救了人。」"
+			],
 			"default": [
 				"{name} 身形一顫，籠罩四周的迷霧隨之潰散，只餘零碎暗影消沒於風中。",
 				"{name} 原本盤繞不去的詭譎氣息忽然失了依附，像退潮般迅速散去。",
@@ -754,7 +790,10 @@ var enemy_dialogue := {
 		"地痞": ["嘖，自己送上門來了？", "今兒個就拿你開刀。", "識相點，少受點罪。"],
 		"江湖人士": ["請了。", "既已拔兵刃，那便手底下見真章。", "出手之前，先報上名來。"],
 		"朝廷": ["奉命行事，退開。", "抗命者，按律不赦。", "朝命在前，莫怪刀下無情。"],
-		"default": ["殺機驟起，敵影已逼上前。"],
+		"default": [],
+	},
+	"attack": {
+		"default": [],
 	},
 	"skill": {
 		"野獸": ["吼啊——！", "嗷——！", "砰！（暴衝）"],
@@ -764,7 +803,7 @@ var enemy_dialogue := {
 		"地痞": ["看老子這一手！", "給我躺下！", "吃我一招！"],
 		"江湖人士": ["接招。", "得罪了。", "這一式，請指教。"],
 		"朝廷": ["拿下他。", "伏誅吧。", "依令行事。"],
-		"default": ["敵勢驟起，殺招已至。"],
+		"default": [],
 	},
 	"dodge": {
 		"野獸": ["吼！", "嗚——！", "呼嚕！（閃開）"],
@@ -775,7 +814,7 @@ var enemy_dialogue := {
 		"江湖人士": ["慢了。", "這一下，還差些火候。", "出手雖快，仍少了準頭。"],
 		"朝廷": ["徒勞。", "招已看破。", "這等手段，還不夠。"],
 		"語魅": ["你碰不到我……", "霧裡的影子，如何抓得住？", "再快，也只是徒勞……"],
-		"default": ["這一下，落空了。"],
+		"default": [],
 	},
 	"debuff_success": {
 		"野獸": ["嗚吼！", "哈呲……！", "呼嚕！（逼近）"],
@@ -785,7 +824,7 @@ var enemy_dialogue := {
 		"地痞": ["怎麼樣？還撐得住嗎？", "嘿，這下難受了吧？", "看你還怎麼硬撐！"],
 		"江湖人士": ["勁路已亂，你還撐得了多久？", "這口氣一散，再難回來。", "你的章法，已經亂了。"],
 		"朝廷": ["你已無力再抗。", "章法已亂，還想撐？", "到此為止了。"],
-		"default": ["敵勢乘虛而入，壓迫感陡然加重。"],
+		"default": [],
 	},
 	"debuff_suffer": {
 		"野獸": ["吼嗚！", "嗚啊！", "哈呲……！"],
@@ -796,7 +835,7 @@ var enemy_dialogue := {
 		"江湖人士": ["勁路……亂了。", "這一下，倒是有些門道。", "氣息被你打岔了……"],
 		"朝廷": ["章法受擾……", "可惡，氣勁被截住了。", "這等旁門手段……"],
 		"語魅": ["你竟敢……反過來污染我……", "這股雜音……竟侵了進來……", "不該是這樣……不該是這樣……"],
-		"default": ["氣息驟亂，身形明顯一滯。"],
+		"default": [],
 	},
 	"down": {
 		"野獸": ["嗚……", "嗷啊！", "砰……！（伏地）", "嗚咽……！"],
@@ -806,7 +845,7 @@ var enemy_dialogue := {
 		"地痞": ["可惡……這筆帳……", "啐……今天算你走運……", "這次……算老子倒楣……"],
 		"江湖人士": ["……果然還是技不如人。", "這一敗，我認。", "再也……提不起這口氣了……"],
 		"朝廷": ["可笑……我這頂官帽，竟也掉了……", "回去之後……怕是難逃究責……", "朝命未成……我竟先倒在這裡……", "官身至此……竟成笑柄……"],
-		"default": ["敵影踉蹌幾步，終究無力再戰。"],
+		"default": [],
 	},
 }
 
@@ -814,22 +853,332 @@ var yumei_dialogue := {
 	"opening": {
 		"磐石": ["何必要如此拼命？", "當顆石頭，不好嗎？", "別再動了……"],
 		"滯水": ["留下來吧……", "越掙扎，只會沉得越快……", "任何事物，終究都會消逝……"],
+		"濁語蝕靈": [
+			"救人、尋寶、守護……換幾個好聽的字，還不是為了你自己。",
+			"你的話太乾淨了……我不信。",
+			"讓我看看，你的好意底下藏著什麼。",
+		],
+		"苦息藥魅": [
+			"你之所以軟弱，是因為受的苦還不夠多。別怕，我來幫你。",
+			"你為何抵抗呢？是因為害怕痛苦嗎？這樣就對了——良藥苦口。",
+			"再忍一忍。等你習慣了痛，就不會覺得自己有病了。",
+		],
+		"斷弦魅": [
+			"所有痛苦，都是從彼此相連開始的。",
+			"別怕。等聲音都停下來，你便不會再受傷了。",
+			"我會替你斬斷那些仍能碰痛你的東西。",
+		],
+		"縛願殘影": [
+			"別急著抵達。願望一旦實現，便什麼也不剩了。",
+			"只要還有所求，你就永遠知道自己為何前進。",
+			"把願望留在這裡吧。我會替你守著它，永遠不讓它結束。",
+		],
+		"漏咒靈": [
+			"有裂縫……我聽見你在漏。",
+			"別怕，我會把你補得一點也不剩。",
+			"只要封住……就不會再痛了。",
+		],
+		"回音魘": [
+			"你聽見我了嗎？聽見了就回答我！",
+			"先別說你的……先讓我說！",
+			"只要還有回音，我就沒有被抹掉。",
+		],
+	},
+	"attack": {
+		"濁語蝕靈": [
+			"何必急著反抗？心虛的人，出手總是更快。",
+			"我只是把你不敢承認的念頭挑出來。",
+			"這一擊，是想證明自己清白嗎？",
+			"別裝了，你早就開始懷疑自己。",
+		],
+		"苦息藥魅": [
+			"別怕，這一下只是藥引。",
+			"再忍一忍，苦味才剛入口。",
+			"你需要的不是安慰，是更重的藥。",
+			"痛一點，才記得住療程。",
+		],
+		"斷弦魅": [
+			"別動……讓我來撥你。",
+			"只要不再相連，我們就不會彼此傷害。",
+			"別再震動了。你的聲音，會傳到別人心裡。",
+			"安靜一點……很快便不會痛了。",
+		],
+		"縛願殘影": [
+			"留下來……這樣你就能一輩子擁有願望了。",
+			"擊敗我，是你的心願吧？",
+			"若我不妨礙你，你的願望豈不變得廉價？",
+			"再多付出一些吧。越難抵達的願望，才越值得你留下。",
+		],
+		"漏咒靈": [
+			"活著總會受傷……需要我把你填補起來。",
+			"活著總會弄傷自己……我幫你把命封住。",
+			"別動……永遠待在這裡，就不會再裂開。",
+			"傷口會漏血，嘴會漏話……全都封起來。",
+		],
+		"回音魘": [
+			"別插嘴！我還沒有證明我說得出來！",
+			"聽我說！至於我要說什麼……不重要！",
+			"你不回答，就是想逼我閉嘴！",
+			"只要能讓你回應，說什麼都一樣！",
+		],
 	},
 	"skill": {
 		"磐石": ["安靜一點……", "停下來吧。", "你不必再往前走了。", "讓一切都凝住吧。"],
 		"滯水": ["沉下去吧……", "別再逆流了……", "你很累了，不是嗎？", "順著我，就不用再撐了。"],
+		"濁語蝕靈": [
+			"別急著辯解……越解釋，越像掩飾。",
+			"沾上一點，就夠了。",
+			"我沒有污衊你……我只是替你把話說完。",
+		],
+		"苦息藥魅": [
+			"你之所以軟弱，是因為受的苦還不夠多。別怕，我來幫你。",
+			"你為何抵抗呢？是因為害怕痛苦嗎？這樣就對了——良藥苦口。",
+			"再忍一忍。等你習慣了痛，就不會覺得自己有病了。",
+			"別怕，這一帖會很苦，但你正需要它。",
+		],
+		"斷弦魅": [
+			"我不是要傷害你。我只是要斬斷我們之間的連結。",
+			"只要你死了，你就不需要再受傷了。",
+			"讓最後一根弦也安靜下來吧。",
+			"別怕。斷掉以後，便沒有任何聲音能再追上你。",
+		],
+		"縛願殘影": [
+			"願未了，便不許走。",
+			"別讓終點靠得太近……再加一個條件吧。",
+			"只要願望永遠不能完成，你便永遠不必面對完成以後的自己。",
+			"只要他們永遠需要你，你就永遠不必懷疑自己為何活著。",
+		],
+		"漏咒靈": [
+			"補咒未成……拿你的命來填！",
+			"封身、封口、封心……這樣就完整了。",
+			"不准流血、不准說話、不准離開！",
+			"缺口……一個都不能留下！",
+		],
+		"回音魘": [
+			"重複我！重複我！這樣我才是真的！",
+			"不用聽懂……只要回應！",
+			"再大聲一點——把心裡那句也蓋掉！",
+			"你們都不肯聽？那我就讓整座鎮子一起說！",
+		],
+	},
+	"dodge": {
+		"濁語蝕靈": [
+			"打偏了……還是你其實不想殺我？",
+			"猶豫了？那才是你的真心吧。",
+			"你連自己為什麼揮刀都不知道。",
+		],
+		"苦息藥魅": [
+			"打不到我，很苦吧？",
+			"別急，這份挫折也會使你強壯。",
+		],
+		"斷弦魅": [
+			"你看，我弄斷你的攻勢了。",
+			"你也想把我斷掉嗎？",
+			"撥不到弦……這就對了。",
+			"沒有碰到，就不會受傷。你看，多安靜。",
+		],
+		"縛願殘影": [
+			"打不倒我，你的願望就能永遠留著。",
+			"快許願……快說你想打中我！",
+			"這真的是你的願望嗎？",
+			"又失敗了一次……真好，你還不必與願望告別。",
+		],
+		"漏咒靈": [
+			"你的每個動作，都是漏洞。",
+			"封不住我？那我只好先封住你。",
+			"別再掙扎……讓我把你補完整。",
+			"這裡、那裡……你全身都是缺口。",
+		],
+		"回音魘": [
+			"慢了，你的聲音早就被我蓋過去了。",
+			"你想說什麼？我替你說！",
+			"只要我不停下來，你就沒有開口的地方。",
+			"你的聲音……為什麼沒有跟著我回來？",
+		],
 	},
 	"debuff_success": {
 		"磐石": ["看吧，掙扎只是徒勞。", "你終究還是慢下來了。", "思緒凝住之後，就不會再痛了。", "別動，別想，別再反抗。"],
 		"滯水": ["看吧，連腳步都慢下來了。", "你已經開始下沉了。", "放手之後，一切都會安靜。"],
+		"濁語蝕靈": [
+			"你也開始懷疑自己了，對吧？",
+			"只要摻進一點懷疑，你就再也洗不乾淨了。",
+			"何必裝得那麼無辜？",
+		],
+		"苦息藥魅": [
+			"很好……痛苦已經留下來了。",
+			"越難受，越證明藥正在起效。",
+			"別怕，這正是你需要的療程。",
+		],
+		"斷弦魅": [],
+		"縛願殘影": [],
+		"漏咒靈": [],
+		"回音魘": [],
 	},
 	"debuff_suffer": {
 		"磐石": ["凝住的……怎會被撼動……", "不，不該再動了……", "裂了……那股寂靜，裂了……"],
 		"滯水": ["水流……竟亂了……", "我明明已將你拖住……", "這股逆流……好吵……"],
+		"斷弦魅": [],
+		"縛願殘影": [],
+		"漏咒靈": [],
+		"回音魘": [],
 	},
 	"down": {
 		"磐石": ["原來……石頭也會裂開……", "你們……為何不肯停下……", "凝住的東西……竟也會崩散……"],
 		"滯水": ["水……竟也有盡頭……", "原來……還有人能逆流而上……", "這股水聲……終於……也要停了……"],
+		"濁語蝕靈": [
+			"你殺我……真的是為了救人嗎？",
+			"我消失了，那些懷疑也不會消失……",
+			"你寧願相信自己……也不肯承認我說中了……",
+		],
+		"苦息藥魅": [
+			"這種苦……不是我要的……",
+			"我的苦……沒有意義？",
+			"怎麼可能？我竟然因為受苦而消失！",
+		],
+		"斷弦魅": [
+			"我斷了……但你還活著……",
+			"我不能……再弄斷你了……",
+			"這份安靜……為什麼如此可怕？",
+		],
+		"縛願殘影": [
+			"不對……願望快要成真了……",
+			"別讓終點來得這麼快……",
+			"沒有了願望……你該何去何從？",
+			"你不能現在就不需要我……",
+		],
+		"漏咒靈": [
+			"原來被封住的……是我？",
+			"我再也……封不住任何東西了……",
+			"不對……漏洞明明是你……",
+			"你這個……漏洞……！",
+		],
+		"回音魘": [
+			"為什麼……沒有回音了？",
+			"等一下……我真正想說的是……",
+			"那些話……都不是我的？",
+			"別安靜……安靜下來，我就聽見自己了……",
+		],
+	},
+}
+
+var yumei_suffer := {
+	"苦息藥魅": {
+		"chance": 0.35,
+		"lines": [
+			{
+				"w": 40,
+				"text": "{name} 傷口間逸出一縷縷腐敗藥氣，那張模糊不清的嘴卻像在安撫病人般溫柔開合：\n「好痛……就是這樣！我也會讓你吃下這份苦！」",
+			},
+			{
+				"w": 35,
+				"text": "{name} 被刀勢逼得向後扭曲，仍伸出霧化的手臂，彷彿要接過某種珍貴藥材：\n「你也想讓我吃你的苦嗎？」",
+			},
+			{
+				"w": 25,
+				"text": "{name} 周身藥霧自裂口緩緩流散，牠凝視著傷處，帶著近乎感激的語氣低聲說：\n「原來這就是你的藥方……好，我收下了。」",
+			},
+		],
+	},
+	"濁語蝕靈": {
+		"chance": 0.35,
+		"lines": [
+			{
+				"w": 40,
+				"text": "{name} 的濁影被刀鋒撕開一道缺口，裂口間卻傳出像是早已看透一切的低笑：\n「這麼急著讓我閉嘴……是怕我繼續說下去嗎？」",
+			},
+			{
+				"w": 35,
+				"text": "{name} 周身污霧向後翻卷，牠卻把受創的身體重新湊近，語氣愈發篤定：\n「你看，越想否認的人，出手總是越重。」",
+			},
+			{
+				"w": 25,
+				"text": "{name} 的形體在斬擊下短暫潰散，幾道混濁聲音又從不同方向黏合成一句話：\n「何必動怒？我不過是替你把不敢承認的心思說出來。」",
+			},
+		],
+	},
+	"斷弦魅": {
+		"chance": 0.35,
+		"lines": [
+			{
+				"w": 35,
+				"text": "{name} 胸前幾根模糊的琴弦在斬擊中驟然繃斷，斷裂的餘音卻遲遲沒有散去。牠側耳聽著自己的傷口，困惑地低語：\n「弦斷了……但為何我開心不起來？」",
+			},
+			{
+				"w": 30,
+				"text": "{name} 的形體被刀勢割開，破碎的弦絲像失去依附般垂落。牠望著劉語塵，聲音裡第一次透出不解：\n「你為什麼要弄斷我？……雖然，斷掉才是對的。」",
+			},
+			{
+				"w": 20,
+				"text": "{name} 周身的弦音猛然一滯，幾道裂痕沿著牠的身軀向外蔓延。牠下意識伸手想將斷弦重新接起，卻又僵在半途：\n「我斷了，就沒辦法再弄斷你了……」",
+			},
+			{
+				"w": 15,
+				"text": "{name} 的弦音短暫全數沉寂。牠站在自己曾經嚮往的寂靜裡，身影卻不受控制地顫抖起來：\n「這份安靜……為什麼落在我身上時，如此可怕？」",
+			},
+		],
+	},
+	"縛願殘影": {
+		"chance": 0.35,
+		"lines": [
+			{
+				"w": 35,
+				"text": "{name} 的殘影被劍光削去一角，纏繞在牠身上的願線也隨之鬆脫。牠顧不得傷處，只急切地望向劉語塵：\n「別這麼快……你的願望快要實現了！」",
+			},
+			{
+				"w": 30,
+				"text": "{name} 被刀勢逼得向後散開，幾張寫滿願詞的殘紙從牠體內飄落。牠慌忙將那些殘紙重新纏回身上：\n「再多一個條件就好……這樣你還能繼續想要。」",
+			},
+			{
+				"w": 20,
+				"text": "{name} 的影子在斬擊下劇烈扭曲，卻仍試圖以溫柔的語氣安撫劉語塵：\n「你看，付出得越多，願望才越值得珍惜……不是嗎？」",
+			},
+			{
+				"w": 15,
+				"text": "{name} 身上的願線接連斷落。牠伸手抓向那些已經不再依附於牠的願詞，聲音第一次顯得空洞：\n「若你真的不再需要我……那我還剩下什麼？」",
+			},
+		],
+	},
+	"漏咒靈": {
+		"chance": 0.35,
+		"lines": [
+			{
+				"w": 35,
+				"text": "{name} 身上的符紙被劍勢割開一道裂口，墨色咒文沿著破損處不斷滲落。牠慌忙伸手按住傷處，尖聲斥道：\n「不要再製造更多漏洞！」",
+			},
+			{
+				"w": 30,
+				"text": "{name} 的形體在斬擊下向內凹陷，幾層原本貼合的封咒也隨之翹起。牠望著不斷擴大的裂縫，焦躁地喊道：\n「看看你做了什麼……裂口又變大了！」",
+			},
+			{
+				"w": 20,
+				"text": "{name} 周身的封紋被刀光切斷，殘缺的咒線卻反過來纏向牠自己的身體。牠猛然後退，第一次露出恐懼：\n「難道……你也想封住我？」",
+			},
+			{
+				"w": 15,
+				"text": "{name} 試圖將破裂的符紙重新貼回身上，雙手卻因恐慌而不斷顫抖。牠聲嘶力竭地否認：\n「住手！我才不是需要修補的那個！」",
+			},
+		],
+	},
+	"回音魘": {
+		"chance": 0.35,
+		"lines": [
+			{
+				"w": 35,
+				"text": "{name} 的聲浪被劍勢震得四散，破碎的語句卻立刻從四周重新彈回。牠不但沒有停止，反而帶著近乎欣喜的聲音喊道：\n「你反駁我了……你果然聽見我了！」",
+			},
+			{
+				"w": 30,
+				"text": "{name} 的話音被斬擊截成數段，尚未說完的字句在空中彼此碰撞。牠慌忙追逐那些散亂的聲音，急切地喊道：\n「別打斷我！我還沒說完！」",
+			},
+			{
+				"w": 20,
+				"text": "{name} 的形體在刀光中劇烈震盪，重疊的聲音卻仍不斷指向劉語塵。牠像是抓住了新的證明般尖聲說道：\n「看看你……你根本不想聽！」",
+			},
+			{
+				"w": 15,
+				"text": "{name} 周身的回音因受創而扭曲失真，數句互相矛盾的話同時從牠體內湧出。牠拚命壓過那些聲音，近乎固執地喊道：\n「我說錯了又怎樣？至少現在是我在說！」",
+			},
+		],
 	},
 }
 
@@ -1098,6 +1447,63 @@ var hit_reactions := {
 }
 
 
+var enemy_profile_tones := {
+	"molin_yanjiang": {
+		"transition_hard_prelude": [
+			"墨鱗魘將身上鱗片驟然豎起，龐大的身軀不再隨呼吸起伏，竟如一尊鑄鐵般沉沉立在水中。",
+		],
+		"transition_hard_close": [
+			"鱗甲彼此緊扣，連吐息造成的起伏都幾乎消失了。",
+		],
+		"transition_slow_prelude": [
+			"墨鱗魘將緊繃的身軀忽然一沉，豎起的墨鱗逐片伏下，周遭濁水重新纏上牠龐大的身形。",
+		],
+		"transition_slow_close": [
+			"牠的腹部再次隨悠長吐息緩慢起伏，水勢也像被那呼吸牽住一般，一收、一放。",
+		],
+		"deluge_tell": [
+			"周遭水流忽然停滯了一瞬。",
+			"下一刻，潭中的濁水竟開始朝墨鱗魘將腳下倒卷……",
+		],
+		"deluge_cast": ["倒卷的濁流驟然潰落，整片水勢如同墓穴般壓向眾人。"],
+		"tail_sweep": ["墨鱗魘將扭動龐大身軀，覆滿硬鱗的巨尾貼著水面橫掃而來。"],
+		"water_bullet": ["墨鱗魘將鼓起魚腹，一團混濁水彈猛然破水射出。"],
+		"rusty_fork_thrust": ["墨鱗魘將踏碎水面，鏽叉挾著沉重水勢直貫而來。"],
+		"breaking_wave_fork": ["鏽叉劃開濁流，第一刺未歇，第二道寒芒已循浪追至。"],
+	},
+	"reptile": {},
+	"default": {},
+}
+
+
+func get_enemy_profile_lines(event_key: String, enemy: Dictionary, context: Dictionary = {}) -> Array:
+	var profile := String(enemy.get("tone_profile", "")).strip_edges()
+	var species := String(enemy.get("species", enemy.get("archetype", ""))).strip_edges()
+	for lookup_key in [profile, species, "default"]:
+		if lookup_key == "" or not enemy_profile_tones.has(lookup_key):
+			continue
+		var profile_data = enemy_profile_tones.get(lookup_key, {})
+		if typeof(profile_data) != TYPE_DICTIONARY:
+			continue
+		var event_value = (profile_data as Dictionary).get(event_key, null)
+		var pool := _normalize_text_pool(event_value)
+		if pool.is_empty():
+			continue
+		var current_element := String(context.get("current_element", enemy.get("element", "")))
+		var resolved: Array = []
+		for line in pool:
+			resolved.append(String(line).replace("{name}", String(enemy.get("display_name", enemy.get("name", "敵人")))).replace("{element}", current_element))
+		return resolved
+	return []
+
+
+func get_enemy_profile_text(event_key: String, enemy: Dictionary, context: Dictionary = {}) -> String:
+	var lines := get_enemy_profile_lines(event_key, enemy, context)
+	if lines.is_empty():
+		return ""
+	return String(lines[randi() % lines.size()])
+
+
 func get_tone_text(category: String, key: String, user_id: String, side: String = "") -> String:
 	# 🔹 特例：被擊中語氣（category = "hit", key = hit_kind）
 	if category == "hit":
@@ -1270,10 +1676,14 @@ func get_enemy_dialogue(event_key: String, enemy: Dictionary) -> String:
 		archetype = "default"
 	var yumei_kind := _resolve_yumei_kind(enemy)
 	var specific_pool: Array = []
+	var has_explicit_yumei_pool := false
 	if yumei_kind != "" and yumei_dialogue.has(event_key):
 		var yumei_event_map = yumei_dialogue.get(event_key, {})
 		if typeof(yumei_event_map) == TYPE_DICTIONARY:
+			has_explicit_yumei_pool = (yumei_event_map as Dictionary).has(yumei_kind)
 			specific_pool = (yumei_event_map as Dictionary).get(yumei_kind, [])
+	if has_explicit_yumei_pool and specific_pool.is_empty():
+		return ""
 	var default_pool: Array = []
 	if enemy_dialogue.has(event_key):
 		var event_map = enemy_dialogue.get(event_key, {})
@@ -1284,6 +1694,42 @@ func get_enemy_dialogue(event_key: String, enemy: Dictionary) -> String:
 	var history_context := yumei_kind if yumei_kind != "" else archetype
 	var history_key := "enemy_dialogue|%s|%s|%s" % [event_key, history_context, enemy_id]
 	return _pick_weighted_text(specific_pool, default_pool, history_key)
+
+
+func get_yumei_suffer_text(enemy: Dictionary) -> String:
+	var kind := _resolve_yumei_kind(enemy)
+	if kind == "" or not yumei_suffer.has(kind):
+		return ""
+	var config = yumei_suffer.get(kind, {})
+	if typeof(config) != TYPE_DICTIONARY:
+		return ""
+	var chance := clampf(float((config as Dictionary).get("chance", 0.0)), 0.0, 1.0)
+	if chance <= 0.0 or randf() >= chance:
+		return ""
+	var enemy_id := String(enemy.get("id", ""))
+	var history_key := "yumei_suffer|%s|%s" % [kind, enemy_id]
+	var text := _pick_weighted_entry_text((config as Dictionary).get("lines", []), history_key)
+	if text == "":
+		return ""
+	return text.replace("{name}", String(enemy.get("display_name", enemy.get("name", "敵人"))))
+
+
+func get_specific_enemy_defeat_text(enemy: Dictionary) -> String:
+	var archetype := String(enemy.get("archetype", enemy.get("species", ""))).strip_edges()
+	var enemy_id := String(enemy.get("id", "")).strip_edges()
+	if archetype == "" or enemy_id == "":
+		return ""
+	var category = tone_map.get("enemy_defeat", {})
+	if typeof(category) != TYPE_DICTIONARY:
+		return ""
+	var archetype_map = (category as Dictionary).get(archetype, {})
+	if typeof(archetype_map) != TYPE_DICTIONARY or not (archetype_map as Dictionary).has(enemy_id):
+		return ""
+	return _pick_weighted_text(
+		(archetype_map as Dictionary).get(enemy_id, []),
+		[],
+		"enemy_defeat|%s|%s|specific" % [archetype, enemy_id]
+	)
 
 
 func _resolve_yumei_kind(enemy: Dictionary) -> String:
@@ -1467,6 +1913,49 @@ func _pick_weighted_text(specific_value, default_value, history_key: String) -> 
 	var last_key := String(keys[keys.size() - 1])
 	_last_tone_pick_by_context[history_key] = last_key
 	return last_key
+
+
+func _pick_weighted_entry_text(entries, history_key: String) -> String:
+	if typeof(entries) != TYPE_ARRAY:
+		return ""
+	var valid_entries: Array = []
+	for entry in entries:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var text := String((entry as Dictionary).get("text", "")).strip_edges()
+		var weight := int((entry as Dictionary).get("w", (entry as Dictionary).get("weight", 0)))
+		if text == "" or weight <= 0:
+			continue
+		valid_entries.append({"text": text, "weight": weight})
+	if valid_entries.is_empty():
+		return ""
+
+	var last_line := String(_last_tone_pick_by_context.get(history_key, ""))
+	if valid_entries.size() > 1 and last_line != "":
+		var filtered: Array = []
+		for entry in valid_entries:
+			if String((entry as Dictionary).get("text", "")) != last_line:
+				filtered.append(entry)
+		if not filtered.is_empty():
+			valid_entries = filtered
+
+	var total_weight := 0
+	for entry in valid_entries:
+		total_weight += int((entry as Dictionary).get("weight", 0))
+	if total_weight <= 0:
+		return ""
+	var roll := randi_range(1, total_weight)
+	var cumulative := 0
+	for entry in valid_entries:
+		cumulative += int((entry as Dictionary).get("weight", 0))
+		if roll <= cumulative:
+			var selected := String((entry as Dictionary).get("text", ""))
+			_last_tone_pick_by_context[history_key] = selected
+			return selected
+	var fallback := String((valid_entries.back() as Dictionary).get("text", ""))
+	_last_tone_pick_by_context[history_key] = fallback
+	return fallback
+
 
 func _normalize_text_pool(value) -> Array:
 	var out: Array = []

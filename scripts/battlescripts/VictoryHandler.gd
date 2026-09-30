@@ -7,7 +7,8 @@ func _ready() -> void:
 
 func victory(battle_result: Dictionary = {}) -> void:
 	print("[VictoryHandler] victory called")
-	if typeof(battle_result) == TYPE_DICTIONARY and not battle_result.is_empty():
+	if typeof(battle_result) == TYPE_DICTIONARY and not battle_result.is_empty() \
+	and not bool(battle_result.get("_inventory_rewards_applied", false)):
 		InventorySync.apply_battle_result(battle_result)
 	# ✅ 勝利後一定回地圖：後續劇情與流程統一在地圖場景續接
 	_request_return_to_map("victory", battle_result)
@@ -19,6 +20,10 @@ func defeat(battle_result: Dictionary = {}) -> void:
 func escape(battle_result: Dictionary = {}) -> void:
 	print("[VictoryHandler] escape called")
 	_request_return_to_map("escape", battle_result)
+
+func phase_break(battle_result: Dictionary = {}) -> void:
+	print("[VictoryHandler] scripted phase break called")
+	_request_return_to_map("phase_break", battle_result)
 
 func _request_return_to_map(result: String, battle_result: Dictionary) -> void:
 	if _returning:

@@ -3,6 +3,8 @@
 
 extends Node
 
+const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
+
 signal turn_started(actor: Dictionary)
 signal turn_ended(actor: Dictionary)
 signal round_started(round_number: int)
@@ -22,10 +24,18 @@ var round_end_emitted = false
 var player_party: Array = []
 var enemy_party: Array = []
 
-# 自訂比較：快 > 遲 > 柔 > 剛（若未設定 speed，預設 0）
+# 每輪依角色當下的最終加權速度排序（若未設定 speed，預設 0）
 func _compare_speed(a: Dictionary, b: Dictionary) -> bool:
-	var a_speed := int(a.get("speed", 0))
-	var b_speed := int(b.get("speed", 0))
+	var a_speed := int(InnerForceDB.resolve_element_final_stat(
+		String(a.get("element", "")),
+		"speed",
+		float(a.get("speed", 0))
+	))
+	var b_speed := int(InnerForceDB.resolve_element_final_stat(
+		String(b.get("element", "")),
+		"speed",
+		float(b.get("speed", 0))
+	))
 	if a_speed != b_speed:
 		return a_speed > b_speed
 	return int(a.get("battle_order_index", 9999)) < int(b.get("battle_order_index", 9999))
@@ -122,7 +132,14 @@ func get_current_actor() -> Dictionary:
 	return active_actor
 
 func _actor_key(actor: Dictionary) -> String:
-	var id = str(actor.get("id", ""))
+	var battle_uid := str(actor.get("battle_uid", ""))
+	if battle_uid != "":
+		return battle_uid
+	var id := str(actor.get("id", ""))
+	if bool(actor.get("is_enemy", false)):
+		var ui_index := int(actor.get("ui_index", -1))
+		if ui_index >= 0:
+			return "%s#%d" % [id if id != "" else "enemy", ui_index]
 	if id != "":
 		return id
 	return str(actor.get("name", ""))
@@ -182,6 +199,11 @@ func _try_end_round() -> void:
 		return
 	round_end_emitted = true
 	round_in_progress = false
+	var controller := get_parent()
+	if controller != null and controller.has_method("run_round_end_encounter_actions"):
+		await controller.call("run_round_end_encounter_actions", round_count)
+	if _is_battle_ending():
+		return
 	emit_signal("round_ended", round_count)
 	round_count += 1
 	call_deferred("start_new_round")

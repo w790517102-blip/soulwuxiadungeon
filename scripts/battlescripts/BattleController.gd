@@ -4,7 +4,9 @@ const ToneMapScript = preload("res://scripts/battlestyles/ToneMap.gd")
 const ItemDB = preload("res://scripts/db/ItemDB.gd")
 const BattleIntroDB = preload("res://scripts/db/BattleIntroDB.gd")
 const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
+const CharacterSkillScript = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const StatusEffectManagerScript = preload("res://scripts/battle/StatusEffectManager.gd")
+const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 var tone_map = ToneMapScript.new()
 var status_manager = StatusEffectManagerScript.new()
 
@@ -18,6 +20,9 @@ var last_round_logged: int = -1
 var last_round_regen: int = -1
 var battle_finished: bool = false
 var _ending: bool = false
+# Canonical actors stay owned by TeamData. Battles operate on independent runtime
+# dictionaries so equipment/status fields cannot overwrite permanent character data.
+var _canonical_player_refs: Dictionary = {}
 var _player_base_snapshot: Dictionary = {}
 var _pending_ally_down_reactions: Array = []
 var battle_context: Dictionary = {}
@@ -28,10 +33,30 @@ var _se_name_to_paths: Dictionary = {}
 var _se_catalog_built := false
 var ruleset: Dictionary = {}
 var regen_policy: Dictionary = {}
+var encounter_mechanic: Dictionary = {}
+var scripted_guest: Dictionary = {}
+var _encounter_cycle_round: int = 0
+var _scripted_guest_cycle_step: int = 0
+var _guest_last_variant_by_action: Dictionary = {}
 const MAJOR_HIT_LOW_HP_THRESHOLD := 0.35
 const MAJOR_HIT_HEAVY_DAMAGE_RATIO := 0.22
 const ENEMY_DODGE_LINE_CHANCE := 0.60
 const ENEMY_DEBUFF_SUFFER_LINE_CHANCE := 0.90
+const ENEMY_ATTACK_DIALOGUE_CHANCE := 0.35
+const BATTLE_BGM_BASE_VOLUME_DB := -3.0
+const BATTLE_BGM_VOLUME_TRIM_DB := {
+	"battle_1": 0.0,
+	"battle_dungen": -5.0,
+	"battle_yumei": -10.0,
+}
+const BATTLE_BGM_DEFAULT_PATH := "res://assets/BGM/battle_1.ogg"
+const BATTLE_BGM_DUNGEN_PATH := "res://assets/BGM/battle_dungen.ogg"
+const BATTLE_BGM_YUMEI_PATH := "res://assets/BGM/battle_yumei.ogg"
+const YUHENG_SEWER_ZONE_IDS := {
+	"yuheng_sewer": true,
+}
+const YUHENG_SEWER_MAP_ROOT := \
+	"res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/"
 const BATTLE_BASELINE_KEYS := ["str", "agi", "int", "con", "luck", "max_hp", "max_mp", "atk", "def", "speed", "accuracy", "evasion", "crit_rate", "crit_rate_bonus"]
 const SE_SEARCH_DIRS := [
 	"res://assets/sound",
@@ -54,23 +79,6 @@ const WEAPON_SE_MAP := {
 	"拳": "fist",
 	"掌": "fist",
 }
-const MARTIAL_PAIRING_BONUSES := [
-	{
-		"inner_force_id": "liuchen_jue",
-		"skill_id": "skill_lianjuejian",
-		"effects": {"strike_count_delta": 1},
-		"log": "{name} 運轉流塵訣，連決劍勢再起一重，追擊如塵隨風！",
-	},
-	{
-		"inner_force_id": "fuchao_jue",
-		"skill_id": "skill_duanshuizhan",
-		"effects": {
-			"on_hit_status": {"effect_id": "break_def", "amount": 10, "turns": 2}
-		},
-		"log": "{name} 刀勢忽沉，伏潮勁意先壓後斬，招路更見沉狠。",
-	}
-]
-
 const GAME_OVER_NARRATION_LINES := [
 	"你們已用盡全力對抗強敵，卻仍在這場惡戰中敗下陣來。",
 	"滿腔俠義與未竟心願，終究沒能走出這一戰的風塵，只得在此刻沉入歷史的餘燼之中。",
@@ -200,15 +208,30 @@ func start_battle(context: Dictionary) -> void:
 		push_error("❌ BattleContext 缺少 player_party 或 enemy_party。")
 		return
 
-	var ctx_players = context.get("player_party", [])
-	var ctx_enemies = context.get("enemy_party", [])
+	var ctx_players: Array = context.get("player_party", []) \
+		if typeof(context.get("player_party", [])) == TYPE_ARRAY else []
+	var ctx_enemies: Array = context.get("enemy_party", []) \
+		if typeof(context.get("enemy_party", [])) == TYPE_ARRAY else []
 	if ctx_players.is_empty() or ctx_enemies.is_empty():
 		push_error("❌ BattleContext 的 player_party / enemy_party 不可為空。")
 		return
 
 	battle_context = context
+	encounter_mechanic = context.get("encounter_mechanic", {}) \
+		if typeof(context.get("encounter_mechanic", {})) == TYPE_DICTIONARY else {}
+	scripted_guest = context.get("scripted_guest", {}) \
+		if typeof(context.get("scripted_guest", {})) == TYPE_DICTIONARY else {}
+	_encounter_cycle_round = 0
+	_scripted_guest_cycle_step = 0
+	_guest_last_variant_by_action.clear()
 	_play_battle_bgm_from_context(context)
-	player_party = ctx_players
+	# A special encounter may carry a stale/test-shaped player dictionary in its
+	# context. When it declares canonical actor IDs, resolve those IDs here so
+	# Phase 1 and Phase 2 both enter battle from TeamData's canonical/story card.
+	# Only current HP/MP are carried across this boundary; permanent stats,
+	# equipment and inner-force data remain canonical and are rebuilt below.
+	var resolved_players := _resolve_context_player_party(context, ctx_players)
+	player_party = _build_player_battle_actors(resolved_players)
 	enemy_party = ctx_enemies
 	_pending_ally_down_reactions.clear()
 	ruleset = context.get("ruleset", {})
@@ -223,6 +246,7 @@ func start_battle(context: Dictionary) -> void:
 		p["max_hp"] = int(p.get("max_hp", p.get("hp", 0)))
 		p["max_mp"] = int(p.get("max_mp", p.get("mp", 0)))
 		_snapshot_battle_baseline(p)
+	_apply_initial_player_resources(context)
 
 	for i in range(enemy_party.size()):
 		var e = enemy_party[i]
@@ -230,8 +254,9 @@ func start_battle(context: Dictionary) -> void:
 			continue
 		e["max_hp"] = int(e.get("max_hp", e.get("hp", 0)))
 		e["is_enemy"] = true
-		if not e.has("ui_index"):
-			e["ui_index"] = i
+		# enemy_id 是物種身分；battle_uid / ui_index 才是本場戰鬥中的個體身分。
+		e["ui_index"] = i
+		e["battle_uid"] = "%s#%d" % [String(e.get("id", "enemy")), i]
 		_snapshot_battle_baseline(e)
 		_mark_enemy_lore_encounter(e)
 		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
@@ -241,6 +266,8 @@ func start_battle(context: Dictionary) -> void:
 
 	if battle_ui:
 		battle_ui.set_teams(player_party, enemy_party)
+		if battle_ui.has_method("set_guest_presentation"):
+			battle_ui.set_guest_presentation(scripted_guest)
 		battle_ui.apply_ruleset(ruleset)
 
 	battle_finished = false
@@ -261,16 +288,81 @@ func _mark_enemy_lore_encounter(enemy: Dictionary) -> void:
 func _play_battle_bgm_from_context(context: Dictionary) -> void:
 	if battle_bgm_player == null:
 		return
-	var battle_bgm_path := str(context.get("battle_bgm_path", ""))
-	if battle_bgm_path == "":
-		return
-	var stream := load(battle_bgm_path)
+	var enemies_any = context.get("enemy_party", [])
+	var enemies: Array = enemies_any if typeof(enemies_any) == TYPE_ARRAY else []
+	var battle_bgm_path := _resolve_battle_bgm_path(enemies, context)
+	var stream := _load_battle_bgm_with_fallback(battle_bgm_path)
 	if stream == null or not (stream is AudioStream):
-		push_warning("❗ battle_bgm_path 載入失敗：%s" % battle_bgm_path)
 		return
+	_enable_battle_bgm_loop(stream)
 	battle_bgm_player.stream = stream
-	battle_bgm_player.volume_db = -3.0
+	var music_key := _battle_bgm_key_from_path(stream.resource_path)
+	battle_bgm_player.volume_db = BATTLE_BGM_BASE_VOLUME_DB + float(
+		BATTLE_BGM_VOLUME_TRIM_DB.get(music_key, 0.0)
+	)
 	battle_bgm_player.play()
+
+
+func _resolve_battle_bgm_path(enemies: Array, context: Dictionary) -> String:
+	# 新版明確 override 具有最高優先權；舊版非預設 battle_bgm_path 亦視為明確指定。
+	var explicit_override := String(context.get("battle_bgm_override_path", "")).strip_edges()
+	if explicit_override != "":
+		return explicit_override
+	var legacy_path := String(context.get("battle_bgm_path", "")).strip_edges()
+	if legacy_path != "" and legacy_path != BATTLE_BGM_DEFAULT_PATH:
+		return legacy_path
+
+	for enemy in enemies:
+		if typeof(enemy) != TYPE_DICTIONARY:
+			continue
+		if String((enemy as Dictionary).get("archetype", "")).strip_edges() == "語魅":
+			return BATTLE_BGM_YUMEI_PATH
+
+	if _is_yuheng_sewer_battle(context):
+		return BATTLE_BGM_DUNGEN_PATH
+	return BATTLE_BGM_DEFAULT_PATH
+
+
+func _is_yuheng_sewer_battle(context: Dictionary) -> bool:
+	var zone_id := String(context.get("zone_id", "")).strip_edges()
+	if YUHENG_SEWER_ZONE_IDS.has(zone_id):
+		return true
+	# 固定劇情戰可使用自己的 battle key；此時以 context 中的正式地圖路徑判定區域。
+	var map_id := String(context.get("map_id", "")).strip_edges()
+	return map_id.begins_with(YUHENG_SEWER_MAP_ROOT)
+
+
+func _load_battle_bgm_with_fallback(path: String) -> AudioStream:
+	var selected_path := path if path != "" else BATTLE_BGM_DEFAULT_PATH
+	var stream = load(selected_path)
+	if stream is AudioStream:
+		return stream as AudioStream
+	if selected_path != BATTLE_BGM_DEFAULT_PATH:
+		push_warning(
+			"❗ 戰鬥音樂載入失敗：%s；改用預設音樂 %s。" % [
+				selected_path,
+				BATTLE_BGM_DEFAULT_PATH,
+			]
+		)
+		var fallback = load(BATTLE_BGM_DEFAULT_PATH)
+		if fallback is AudioStream:
+			return fallback as AudioStream
+	push_warning("❗ 預設戰鬥音樂載入失敗：%s" % BATTLE_BGM_DEFAULT_PATH)
+	return null
+
+
+func _enable_battle_bgm_loop(stream: AudioStream) -> void:
+	for property_data in stream.get_property_list():
+		if String((property_data as Dictionary).get("name", "")) != "loop":
+			continue
+		stream.set("loop", true)
+		return
+	push_warning("❗ 戰鬥音樂資源不支援 loop 屬性：%s" % stream.resource_path)
+
+
+func _battle_bgm_key_from_path(path: String) -> String:
+	return path.get_file().get_basename()
+
 
 func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
 	if not _can_play_se():
@@ -514,6 +606,8 @@ func _apply_equipment_bonus_to_actor(p: Dictionary) -> void:
 	var mp_mult := _resource_multiplier_for_actor(p, bonus, force_bonus, "mp")
 	var base_max_hp := int(p.get("max_hp", p.get("hp", 0)))
 	var base_max_mp := int(p.get("max_mp", p.get("mp", 0)))
+	var base_hp := int(p.get("hp", 0))
+	var base_mp := int(p.get("mp", 0))
 	var max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
 	var max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
 	p["atk"] = int(p.get("atk", 0)) + bonus_atk
@@ -524,8 +618,11 @@ func _apply_equipment_bonus_to_actor(p: Dictionary) -> void:
 	p["crit_rate_bonus"] = float(p.get("crit_rate_bonus", 0.0)) + bonus_crit_rate
 	p["max_hp"] = max_hp
 	p["max_mp"] = max_mp
-	p["hp"] = min(int(p.get("hp", 0)), max_hp)
-	p["mp"] = min(int(p.get("mp", 0)), max_mp)
+	# Canonical resources exclude equipment maxima. A canonically full actor must
+	# therefore enter battle full after the equipped maximum is reconstructed;
+	# injured actors keep their exact current resource value.
+	p["hp"] = max_hp if base_hp >= base_max_hp else mini(base_hp, max_hp)
+	p["mp"] = max_mp if base_mp >= base_max_mp else mini(base_mp, max_mp)
 
 func _snapshot_battle_baseline(actor: Dictionary) -> void:
 	if actor.is_empty():
@@ -639,7 +736,85 @@ func _actor_key(actor: Dictionary) -> String:
 		return id
 	return str(actor.get("name", ""))
 
+
+func _resolve_context_player_party(context: Dictionary, incoming_players: Array) -> Array:
+	var override_any = context.get("party_actor_ids_override", [])
+	if typeof(override_any) != TYPE_ARRAY or (override_any as Array).is_empty():
+		return incoming_players
+	if team_data_manager == null or not team_data_manager.has_method("get_party_for_actor_ids"):
+		return incoming_players
+
+	var override_ids: Array = override_any as Array
+	var canonical_party_any
+	if bool(context.get("use_story_battle_profile", false)) \
+	and team_data_manager.has_method("get_story_battle_party_for_actor_ids"):
+		# The encounter explicitly requests its authored story-time card.  This
+		# keeps a loaded save's later/test Shumian progression out of the special
+		# battle while still carrying only HP/MP across the battle boundary below.
+		canonical_party_any = team_data_manager.get_story_battle_party_for_actor_ids(override_ids)
+	else:
+		canonical_party_any = team_data_manager.get_party_for_actor_ids(override_ids)
+	if typeof(canonical_party_any) != TYPE_ARRAY:
+		return incoming_players
+	var canonical_party: Array = canonical_party_any as Array
+	if canonical_party.size() != override_ids.size():
+		return incoming_players
+
+	var incoming_resources: Dictionary = {}
+	for actor_any in incoming_players:
+		if typeof(actor_any) != TYPE_DICTIONARY:
+			continue
+		var incoming: Dictionary = actor_any
+		var raw_id := String(incoming.get("id", "")).strip_edges()
+		if raw_id == "":
+			continue
+		var actor_id := raw_id
+		if team_data_manager.has_method("canonicalize_actor_id"):
+			actor_id = String(team_data_manager.canonicalize_actor_id(raw_id))
+		incoming_resources[actor_id] = {
+			"has_hp": incoming.has("hp"),
+			"hp": int(incoming.get("hp", 0)),
+			"has_mp": incoming.has("mp"),
+			"mp": int(incoming.get("mp", 0)),
+		}
+
+	var resolved: Array = []
+	for canonical_any in canonical_party:
+		if typeof(canonical_any) != TYPE_DICTIONARY:
+			continue
+		var actor: Dictionary = (canonical_any as Dictionary).duplicate(true)
+		var actor_id := String(actor.get("id", "")).strip_edges()
+		var resource_any = incoming_resources.get(actor_id, {})
+		if typeof(resource_any) == TYPE_DICTIONARY:
+			var resource: Dictionary = resource_any
+			if bool(resource.get("has_hp", false)):
+				actor["hp"] = resource.get("hp", actor.get("hp", 0))
+			if bool(resource.get("has_mp", false)):
+				actor["mp"] = resource.get("mp", actor.get("mp", 0))
+		resolved.append(actor)
+
+	if resolved.size() != override_ids.size():
+		return incoming_players
+	return resolved
+
+
+func _build_player_battle_actors(canonical_players: Array) -> Array:
+	_canonical_player_refs.clear()
+	var runtime_players: Array = []
+	for actor_any in canonical_players:
+		if typeof(actor_any) != TYPE_DICTIONARY:
+			continue
+		var canonical_actor: Dictionary = actor_any
+		var actor_id := _actor_key(canonical_actor)
+		if actor_id != "":
+			_canonical_player_refs[actor_id] = canonical_actor
+		runtime_players.append(canonical_actor.duplicate(true))
+	return runtime_players
+
+
 func _snapshot_player_base_stats() -> void:
+	# Diagnostic/fallback snapshot of the canonical, pre-equipment layer. It must
+	# never be copied wholesale back over a live battle actor.
 	_player_base_snapshot.clear()
 	for p in player_party:
 		if typeof(p) != TYPE_DICTIONARY:
@@ -649,44 +824,98 @@ func _snapshot_player_base_stats() -> void:
 			continue
 		_player_base_snapshot[key] = p.duplicate(true)
 
-func _restore_player_base_stats() -> void:
-	if _player_base_snapshot.is_empty():
+
+func _apply_initial_player_resources(context: Dictionary) -> void:
+	var resources_any = context.get("initial_player_resources", {})
+	if typeof(resources_any) == TYPE_DICTIONARY:
+		var resources: Dictionary = resources_any
+		for actor_any in player_party:
+			if typeof(actor_any) != TYPE_DICTIONARY:
+				continue
+			var actor: Dictionary = actor_any
+			var actor_id := String(actor.get("id", "")).strip_edges()
+			if actor_id == "" or not resources.has(actor_id) \
+			or typeof(resources[actor_id]) != TYPE_DICTIONARY:
+				continue
+			var carried: Dictionary = resources[actor_id]
+			actor["hp"] = mini(
+				int(carried.get("hp", actor.get("hp", 0))),
+				int(actor.get("max_hp", actor.get("hp", 0)))
+			)
+			actor["mp"] = mini(
+				int(carried.get("mp", actor.get("mp", 0))),
+				int(actor.get("max_mp", actor.get("mp", 0)))
+			)
+
+	# Explicit full-resource deployment is a runtime-only policy for a new
+	# encounter. Phase 2 intentionally omits this key and carries its Phase 1
+	# resources through `initial_player_resources` instead.
+	var full_deployment_ids_any = context.get("full_resource_deployment_actor_ids", [])
+	if typeof(full_deployment_ids_any) != TYPE_ARRAY:
 		return
-	for p in player_party:
-		if typeof(p) != TYPE_DICTIONARY:
+	var full_deployment_ids: Array = full_deployment_ids_any
+	for actor_any in player_party:
+		if typeof(actor_any) != TYPE_DICTIONARY:
 			continue
-		var key = _actor_key(p)
-		if key == "" or not _player_base_snapshot.has(key):
+		var actor: Dictionary = actor_any
+		var actor_id := String(actor.get("id", "")).strip_edges()
+		if actor_id == "" or not full_deployment_ids.has(actor_id):
 			continue
-		var runtime_inner_force_id := String(p.get("inner_force_id", ""))
-		var runtime_inner_force: Dictionary = p.get("inner_force", {}) if typeof(p.get("inner_force", {})) == TYPE_DICTIONARY else {}
-		var runtime_element := String(p.get("element", ""))
-		var runtime_known_ids: Array = p.get("known_inner_force_ids", []) if typeof(p.get("known_inner_force_ids", [])) == TYPE_ARRAY else []
-		var runtime_available_forces: Array = p.get("available_inner_forces", []) if typeof(p.get("available_inner_forces", [])) == TYPE_ARRAY else []
-		var snapshot: Dictionary = _player_base_snapshot[key].duplicate(true)
-		var keep_hp = int(p.get("hp", snapshot.get("hp", 0)))
-		var keep_mp = int(p.get("mp", snapshot.get("mp", 0)))
-		print("[BattleRestore] before status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
-		p.clear()
-		for field in snapshot.keys():
-			p[field] = snapshot[field]
-		var restored_max_hp = int(p.get("max_hp", keep_hp))
-		var restored_max_mp = int(p.get("max_mp", keep_mp))
-		p["hp"] = min(keep_hp, restored_max_hp)
-		p["mp"] = min(keep_mp, restored_max_mp)
-		if runtime_inner_force_id != "":
-			p["inner_force_id"] = runtime_inner_force_id
-		if not runtime_inner_force.is_empty():
-			p["inner_force"] = runtime_inner_force.duplicate(true)
-		if runtime_element != "":
-			p["element"] = runtime_element
-		if not runtime_known_ids.is_empty():
-			p["known_inner_force_ids"] = runtime_known_ids.duplicate()
-		if not runtime_available_forces.is_empty():
-			p["available_inner_forces"] = runtime_available_forces.duplicate(true)
-		if runtime_inner_force_id != "" and team_data_manager != null and team_data_manager.has_method("set_inner_force"):
-			team_data_manager.set_inner_force(String(p.get("id", key)), runtime_inner_force_id)
-		print("[BattleRestore] after status_effects=", p.get("status_effects", null), " buffs=", p.get("buffs", null))
+		actor["hp"] = int(actor.get("max_hp", actor.get("hp", 0)))
+		actor["mp"] = int(actor.get("max_mp", actor.get("mp", 0)))
+
+
+func _sync_player_resources_to_canonical(battle_result: Dictionary) -> void:
+	var resources_any = battle_result.get("player_resources", {})
+	if typeof(resources_any) != TYPE_DICTIONARY:
+		return
+	var resources: Dictionary = resources_any
+	for actor_id_any in resources.keys():
+		var actor_id := String(actor_id_any).strip_edges()
+		if actor_id == "" or typeof(resources[actor_id_any]) != TYPE_DICTIONARY:
+			continue
+		var canonical_actor: Dictionary = {}
+		if team_data_manager != null and team_data_manager.has_method("get_character_by_id"):
+			var canonical_any = team_data_manager.get_character_by_id(actor_id)
+			if typeof(canonical_any) == TYPE_DICTIONARY:
+				canonical_actor = canonical_any
+		if canonical_actor.is_empty() and _canonical_player_refs.has(actor_id) \
+		and typeof(_canonical_player_refs[actor_id]) == TYPE_DICTIONARY:
+			canonical_actor = _canonical_player_refs[actor_id]
+		if canonical_actor.is_empty():
+			continue
+		var saved: Dictionary = resources[actor_id_any]
+		var hp_gain := _battle_result_resource_growth_gain(battle_result, actor_id, "hp_gain")
+		var mp_gain := _battle_result_resource_growth_gain(battle_result, actor_id, "mp_gain")
+		canonical_actor["hp"] = maxi(0, mini(
+			int(saved.get("hp", canonical_actor.get("hp", 0))) + hp_gain,
+			int(canonical_actor.get("max_hp", saved.get("hp", 0)))
+		))
+		canonical_actor["mp"] = maxi(0, mini(
+			int(saved.get("mp", canonical_actor.get("mp", 0))) + mp_gain,
+			int(canonical_actor.get("max_mp", saved.get("mp", 0)))
+		))
+
+
+func _battle_result_resource_growth_gain(
+	battle_result: Dictionary,
+	actor_id: String,
+	gain_key: String
+) -> int:
+	var growth_any = battle_result.get("growth_result", {})
+	if typeof(growth_any) != TYPE_DICTIONARY:
+		return 0
+	var events_any = (growth_any as Dictionary).get("level_events", [])
+	if typeof(events_any) != TYPE_ARRAY:
+		return 0
+	var total := 0
+	for event_any in events_any:
+		if typeof(event_any) != TYPE_DICTIONARY:
+			continue
+		var event: Dictionary = event_any
+		if String(event.get("actor_id", "")) == actor_id:
+			total += int(event.get(gain_key, 0))
+	return total
 
 
 func _log(msg: String, allow_when_ending: bool = false) -> void:
@@ -1009,20 +1238,15 @@ func _resolve_pairing_bonus(actor: Dictionary, skill_data: Dictionary) -> Dictio
 	var skill_id := String(skill_data.get("id", ""))
 	if inner_force_id == "" or skill_id == "":
 		return {}
-	for entry in MARTIAL_PAIRING_BONUSES:
-		if typeof(entry) != TYPE_DICTIONARY:
-			continue
-		var rule: Dictionary = entry
-		if String(rule.get("inner_force_id", "")) != inner_force_id:
-			continue
-		if String(rule.get("skill_id", "")) != skill_id:
-			continue
-		return rule
-	return {}
+	return CharacterSkillScript.get_pairing_rule(skill_id, inner_force_id)
 
 func _resolve_strike_count(actor: Dictionary, skill_data: Dictionary) -> int:
 	if skill_data.is_empty():
 		return 1
+	var pairing_bonus := _resolve_pairing_bonus(actor, skill_data)
+	var pairing_delta := 0
+	if not pairing_bonus.is_empty() and typeof(pairing_bonus.get("effects", {})) == TYPE_DICTIONARY:
+		pairing_delta = int((pairing_bonus.get("effects", {}) as Dictionary).get("strike_count_delta", 0))
 	var strike_min := int(skill_data.get("strike_count_min", 0))
 	var strike_max := int(skill_data.get("strike_count_max", 0))
 	if strike_min > 0 or strike_max > 0:
@@ -1034,7 +1258,7 @@ func _resolve_strike_count(actor: Dictionary, skill_data: Dictionary) -> int:
 			var t = strike_min
 			strike_min = strike_max
 			strike_max = t
-		return maxi(randi_range(strike_min, strike_max), 1)
+		return maxi(randi_range(strike_min, strike_max) + pairing_delta, 1)
 	var strike_count := int(skill_data.get("strike_count", 0))
 	if strike_count <= 0:
 		strike_count = int(skill_data.get("attack_count", 0))
@@ -1042,12 +1266,81 @@ func _resolve_strike_count(actor: Dictionary, skill_data: Dictionary) -> int:
 		strike_count = int(skill_data.get("hit_count", 0))
 	if strike_count <= 0:
 		strike_count = int(skill_data.get("hits", 0))
-	var pairing_bonus := _resolve_pairing_bonus(actor, skill_data)
-	if not pairing_bonus.is_empty():
-		var effects = pairing_bonus.get("effects", {})
-		if typeof(effects) == TYPE_DICTIONARY:
-			strike_count += int((effects as Dictionary).get("strike_count_delta", 0))
+	strike_count += pairing_delta
 	return maxi(strike_count, 1)
+
+func _resolve_damage_skill_data(skill_data: Dictionary) -> Dictionary:
+	var effects = skill_data.get("effects", [])
+	if typeof(effects) != TYPE_ARRAY:
+		return skill_data
+	for entry in effects:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		if String(entry.get("type", "")) != "damage":
+			continue
+		var damage_skill_data := skill_data.duplicate(true)
+		damage_skill_data["power"] = float(entry.get("power", skill_data.get("power", 1.0)))
+		return damage_skill_data
+	return skill_data
+
+func _execute_single_target_strikes(
+		actor: Dictionary,
+		target: Dictionary,
+		skill_data: Dictionary,
+		inner_force: Dictionary
+	) -> Dictionary:
+	var damage_skill_data := _resolve_damage_skill_data(skill_data)
+	var pairing_bonus := _resolve_pairing_bonus(actor, skill_data)
+	var strike_count := _resolve_strike_count(actor, skill_data)
+	var result: Dictionary = {}
+	var combined_logs: Array = []
+	var total_damage := 0
+	var any_hit := false
+	var damage_prevention_logged := false
+	if not pairing_bonus.is_empty():
+		var combo_log := String(pairing_bonus.get("log", ""))
+		if combo_log != "":
+			combined_logs.append(combo_log.replace("{name}", String(actor.get("name", "俠士"))))
+	for i in range(strike_count):
+		if int(target.get("hp", 0)) <= 0:
+			break
+		var strike_skill_data := damage_skill_data.duplicate(true)
+		if i > 0:
+			strike_skill_data["_suppress_attack_opener"] = true
+		var strike_result: Dictionary = skill_executor.execute(actor, target, strike_skill_data, inner_force)
+		_play_attack_se_from_result(actor, target, strike_skill_data, strike_result)
+		_emit_dodge_actor_line(strike_result, target)
+		_emit_crit_admire_line(strike_result, actor)
+		_emit_major_hit_reaction_from_result(strike_result, target)
+		if i == 0:
+			result = strike_result
+		total_damage += int(strike_result.get("damage", 0))
+		any_hit = any_hit or bool(strike_result.get("hit", true))
+		var strike_logs: Array = strike_result.get("log", [])
+		if bool(strike_result.get("damage_prevented", false)):
+			if not damage_prevention_logged:
+				var blocked_log := String(strike_result.get("damage_prevention_log", ""))
+				if blocked_log != "":
+					combined_logs.append(blocked_log)
+				damage_prevention_logged = true
+			continue
+		if strike_count > 1:
+			combined_logs.append("—— 第 %d 段 ——" % [i + 1])
+		for line in strike_logs:
+			combined_logs.append(line)
+		if bool(strike_result.get("target_down", false)):
+			result["target_down"] = true
+			break
+	if result.is_empty():
+		result = {"log": [], "hit": false, "target_down": false, "damage": 0}
+	result["log"] = combined_logs
+	result["damage"] = total_damage
+	result["hit"] = any_hit
+	return {
+		"result": result,
+		"pairing_bonus": pairing_bonus,
+		"strike_count": strike_count,
+	}
 
 func _target_has_status_before_action(target: Dictionary, effect_id: String) -> bool:
 	if target.is_empty() or effect_id == "" or status_manager == null:
@@ -1181,7 +1474,7 @@ func _refresh_battle_actor_from_team_data(actor: Dictionary, force: Dictionary) 
 
 func _copy_long_term_actor_fields(target: Dictionary, source: Dictionary) -> void:
 	var keys := [
-		"id", "name", "display_name", "portrait", "level", "element",
+		"id", "name", "display_name", "portrait", "portrait_path", "level", "element",
 		"inner_force", "inner_force_id", "available_inner_forces", "known_inner_force_ids",
 		"str", "agi", "int", "con", "luck",
 		"max_hp", "max_mp", "atk", "def", "speed", "accuracy", "evasion", "crit_rate", "crit_rate_bonus",
@@ -1289,6 +1582,7 @@ func _on_round_started(round_number: int) -> void:
 		return
 	last_round_logged = round_number
 	_log("第 %d 回合開始！" % round_number)
+	_apply_encounter_round_start(round_number)
 
 func _on_round_ended(_round_number: int) -> void:
 	if battle_finished:
@@ -1297,6 +1591,100 @@ func _on_round_ended(_round_number: int) -> void:
 		return
 	last_round_regen = _round_number
 	_restore_mp_after_round()
+
+
+func _apply_encounter_round_start(_round_number: int) -> void:
+	if encounter_mechanic.is_empty():
+		return
+	var cycle_length := maxi(1, int(encounter_mechanic.get("cycle_length", 1)))
+	_encounter_cycle_round = posmod(_encounter_cycle_round, cycle_length) + 1
+	if _encounter_cycle_round != int(encounter_mechanic.get("shield_round", -1)):
+		return
+	var boss := _first_living_enemy()
+	if boss.is_empty() or status_manager == null:
+		return
+	var status_id := String(encounter_mechanic.get("shield_status_id", ""))
+	if status_id == "" or bool(status_manager.has_effect(boss, status_id)):
+		return
+	for line in encounter_mechanic.get("shield_round_lines", []):
+		_log_narration(String(line))
+	var applied := bool(status_manager.apply_effect(boss, status_id, {
+		"player_hp_damage_immunity": true,
+		"blocked_log": "紫黑色語魅驟然翻湧，將攻勢硬生生隔絕在墨鱗魘將身外！",
+	}, 1))
+	if not applied:
+		return
+	var system_log := String(encounter_mechanic.get("shield_applied_system_log", ""))
+	if system_log != "":
+		_log_system(system_log)
+	_update_ui_for_actor(boss)
+	if battle_ui:
+		battle_ui.update_enemy_panel()
+
+
+func run_round_end_encounter_actions(_round_number: int) -> void:
+	if battle_finished or _ending or scripted_guest.is_empty():
+		return
+	var actions = scripted_guest.get("actions", [])
+	if typeof(actions) != TYPE_ARRAY or (actions as Array).is_empty():
+		return
+	var action: Dictionary = (actions as Array)[posmod(_scripted_guest_cycle_step, (actions as Array).size())]
+	var guest_name := String(scripted_guest.get("display_name", "左飲"))
+	var action_name := String(action.get("display_name", ""))
+	if action_name != "":
+		_log_system("%s施展「%s」。" % [guest_name, action_name])
+	for line in _pick_guest_action_variant(action):
+		_log_narration(String(line))
+
+	var removed_status := false
+	var status_to_remove := String(action.get("removes_status", ""))
+	var boss := _first_living_enemy()
+	if status_to_remove != "" and not boss.is_empty() and status_manager != null \
+			and bool(status_manager.has_effect(boss, status_to_remove)):
+		status_manager.remove_effect(boss, status_to_remove)
+		removed_status = true
+		for line in action.get("shield_break_lines", []):
+			_log_narration(String(line))
+		var break_log := String(action.get("shield_break_system_log", ""))
+		if break_log != "":
+			_log_system(break_log)
+		_update_ui_for_actor(boss)
+		if battle_ui:
+			battle_ui.update_enemy_panel()
+
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+	await _await_log_stage_continue()
+	_scripted_guest_cycle_step = posmod(_scripted_guest_cycle_step + 1, (actions as Array).size())
+	if removed_status:
+		_encounter_cycle_round = 0
+
+
+func _pick_guest_action_variant(action: Dictionary, roll_override: int = -1) -> Array:
+	var variants = action.get("variants", [])
+	if typeof(variants) != TYPE_ARRAY or (variants as Array).is_empty():
+		return []
+	var action_id := String(action.get("id", ""))
+	var available_indices: Array[int] = []
+	var previous_index := int(_guest_last_variant_by_action.get(action_id, -1))
+	for index in range((variants as Array).size()):
+		if (variants as Array).size() > 1 and index == previous_index:
+			continue
+		available_indices.append(index)
+	if available_indices.is_empty():
+		available_indices.append(0)
+	var choice_position := roll_override if roll_override >= 0 else randi_range(0, available_indices.size() - 1)
+	var selected_index := available_indices[posmod(choice_position, available_indices.size())]
+	_guest_last_variant_by_action[action_id] = selected_index
+	var selected = (variants as Array)[selected_index]
+	return (selected as Array).duplicate() if typeof(selected) == TYPE_ARRAY else [String(selected)]
+
+
+func _first_living_enemy() -> Dictionary:
+	for enemy in enemy_party:
+		if typeof(enemy) == TYPE_DICTIONARY and int((enemy as Dictionary).get("hp", 0)) > 0:
+			return enemy as Dictionary
+	return {}
 
 func _restore_mp_after_round() -> void:
 	for a in (player_party + enemy_party):
@@ -1320,14 +1708,25 @@ func _restore_mp_after_round() -> void:
 func _build_battle_result(result: String) -> Dictionary:
 	var out := {
 		"result": result,
+		"battle_id": String(battle_context.get("battle_id", "")),
+		"battle_tag": String(battle_context.get("battle_tag", "")),
+		"scripted_phase_break": String(battle_context.get("scripted_phase_break", "")),
+		"player_resources": _snapshot_player_resources_for_result(),
 		"exp": 0,
 		"gold": 0,
 		"drops": [],
+		"reward_recipient_actor_ids": _context_actor_id_array("reward_recipient_actor_ids"),
+		"post_battle_companion_insight_source_actor_ids": _context_actor_id_array(
+			"post_battle_companion_insight_source_actor_ids"
+		),
 	}
 
 	if result != "victory":
 		return out
 	var no_rewards: bool = bool(battle_context.get("no_rewards", false))
+	var use_exact_enemy_rewards: bool = bool(
+		battle_context.get("use_exact_enemy_rewards", false)
+	)
 
 	var exp_total := 0
 	var gold_total := 0
@@ -1338,12 +1737,13 @@ func _build_battle_result(result: String) -> Dictionary:
 			continue
 
 		var exp_each := int(e.get("exp", 0))
-		if str(e.get("id", "")) == "tea_house_guest_guard":
-			exp_each = max(exp_each, 50)
-		elif exp_each <= 0:
-			exp_each = 25
-		# v1 測試模式：先保證每隻怪至少 25 EXP，方便兩場內升級驗收
-		exp_each = max(exp_each, 25)
+		if not use_exact_enemy_rewards:
+			if str(e.get("id", "")) == "tea_house_guest_guard":
+				exp_each = max(exp_each, 50)
+			elif exp_each <= 0:
+				exp_each = 25
+			# v1 測試模式：先保證每隻怪至少 25 EXP，方便兩場內升級驗收
+			exp_each = max(exp_each, 25)
 		exp_total += exp_each
 
 		if no_rewards:
@@ -1396,7 +1796,38 @@ func _build_battle_result(result: String) -> Dictionary:
 	for key in drops_acc.keys():
 		drops_out.append({"id": key, "count": int(drops_acc[key])})
 	out["drops"] = drops_out
+	var reward_messages = battle_context.get("reward_messages", [])
+	if typeof(reward_messages) == TYPE_ARRAY:
+		out["reward_messages"] = (reward_messages as Array).duplicate()
 
+	return out
+
+
+func _snapshot_player_resources_for_result() -> Dictionary:
+	var resources: Dictionary = {}
+	for actor_any in player_party:
+		if typeof(actor_any) != TYPE_DICTIONARY:
+			continue
+		var actor: Dictionary = actor_any
+		var actor_id := String(actor.get("id", "")).strip_edges()
+		if actor_id == "":
+			continue
+		resources[actor_id] = {
+			"hp": int(actor.get("hp", 0)),
+			"mp": int(actor.get("mp", 0)),
+		}
+	return resources
+
+
+func _context_actor_id_array(key: String) -> Array:
+	var raw_ids = battle_context.get(key, [])
+	if typeof(raw_ids) != TYPE_ARRAY:
+		return []
+	var out: Array = []
+	for raw_id in raw_ids:
+		var actor_id := String(raw_id).strip_edges()
+		if actor_id != "" and not out.has(actor_id):
+			out.append(actor_id)
 	return out
 
 func _calc_round_mp_regen(actor: Dictionary, policy: Dictionary, context: Dictionary) -> int:
@@ -1448,16 +1879,41 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	var skill = action.skill
 	var target = action.target
 	var scope := String(skill.get("target_scope", "single"))
-	if tone_map != null and tone_map.has_method("get_enemy_dialogue"):
-		var enemy_skill_line: String = String(tone_map.get_enemy_dialogue("skill", enemy))
-		if enemy_skill_line != "":
-			_emit_enemy_spoken_line(enemy, enemy_skill_line)
+	var tone_event := String(skill.get("tone_event", ""))
+	var action_kind := String(skill.get("action_kind", ""))
+	var used_profile_tone := action_kind == "state_transition"
+	if not used_profile_tone and tone_event != "" and tone_map != null and tone_map.has_method("get_enemy_profile_text"):
+		var profile_line := String(tone_map.get_enemy_profile_text(tone_event, enemy, {
+			"current_element": String(enemy.get("element", "")),
+		}))
+		if profile_line != "":
+			_log_narration(profile_line)
+			used_profile_tone = true
+	if not used_profile_tone and tone_map != null and tone_map.has_method("get_enemy_dialogue"):
+		var is_basic_attack := String(skill.get("id", "")) == "basic_attack"
+		var dialogue_event := "attack" if is_basic_attack else "skill"
+		var enemy_action_line: String = String(tone_map.get_enemy_dialogue(dialogue_event, enemy))
+		if enemy_action_line != "" \
+				and (not is_basic_attack or randf() <= ENEMY_ATTACK_DIALOGUE_CHANCE):
+			_emit_enemy_spoken_line(enemy, enemy_action_line)
+	if action_kind == "state_transition":
+		var transition_applied: Array = _apply_skill_effects(enemy, enemy, skill, [enemy])
+		_log_applied_statuses(transition_applied)
+		if transition_applied.size() > 0:
+			await _await_log_stage_continue()
+		await _complete_enemy_ai_action(enemy, String(skill.get("id", "")))
+		check_battle_status()
+		if battle_finished:
+			return
+		enemy["acted_this_turn"] = true
+		_maybe_end_turn()
+		return
+	if scope == "enemy_all":
+		await _perform_enemy_aoe_action(enemy, skill, inner_force)
+		return
 	target = _resolve_confuse_target(enemy, target, scope)
-	var result = skill_executor.execute(enemy, target, skill, inner_force)
-	_play_attack_se_from_result(enemy, target, skill, result)
-	_emit_dodge_actor_line(result, target)
-	_emit_crit_admire_line(result, enemy)
-	_emit_major_hit_reaction_from_result(result, target)
+	var strike_outcome := _execute_single_target_strikes(enemy, target, skill, inner_force)
+	var result: Dictionary = strike_outcome.get("result", {})
 
 	# 🎬 敵人出招：描述 → 動畫 → 傷害結果
 	var enemy_logs = await _play_attack_cinematic(enemy, target, skill, result)
@@ -1475,6 +1931,7 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	_emit_major_hit_reaction_from_applied_statuses(enemy_applied)
 	if enemy_applied.size() > 0:
 		await _await_log_stage_continue()
+	await _complete_enemy_ai_action(enemy, String(skill.get("id", "")))
 
 	check_battle_status()
 	if battle_finished:
@@ -1482,6 +1939,79 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	enemy["acted_this_turn"] = true
 	_maybe_end_turn()
 	print("🔚 %s 結束行動，交棒給下一位" % enemy.get("name", "???"))
+
+
+func _perform_enemy_aoe_action(enemy: Dictionary, skill: Dictionary, inner_force: Dictionary) -> void:
+	var results: Array = []
+	var hit_targets: Array = []
+	for actor in player_party:
+		if typeof(actor) != TYPE_DICTIONARY or int(actor.get("hp", 0)) <= 0:
+			continue
+		var actor_copy: Dictionary = actor.duplicate(true)
+		var aoe_skill: Dictionary = skill.duplicate(true)
+		aoe_skill["_suppress_attack_opener"] = true
+		var strike_outcome := _execute_single_target_strikes(enemy, actor_copy, aoe_skill, inner_force)
+		var result: Dictionary = strike_outcome.get("result", {})
+		results.append({"target": actor, "after_hp": int(actor_copy.get("hp", actor.get("hp", 0))), "result": result})
+		if bool(result.get("hit", true)):
+			hit_targets.append(actor)
+	if battle_ui and battle_ui.has_method("play_attack_motion"):
+		battle_ui.play_attack_motion(enemy)
+		await get_tree().create_timer(0.35).timeout
+	for row in results:
+		var effect_target: Dictionary = row.get("target", {})
+		var result: Dictionary = row.get("result", {})
+		effect_target["hp"] = int(row.get("after_hp", effect_target.get("hp", 0)))
+		_update_ui_for_actor(effect_target)
+		for line in result.get("log", []):
+			_log(String(line))
+		if bool(result.get("target_down", false)):
+			_mark_actor_down(effect_target)
+	# Resolve every confirmed hit independently. The UI methods create their own
+	# per-slot FX/Tweens, so LiuYu and Shumian can react at the same time.
+	if battle_ui and not hit_targets.is_empty():
+		if battle_ui.has_method("play_hit_fx_multi"):
+			battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
+		if battle_ui.has_method("play_damage_react_multi"):
+			battle_ui.play_damage_react_multi(hit_targets)
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+	if not results.is_empty():
+		await _await_log_stage_continue()
+	var applied: Array = _apply_skill_effects(enemy, {}, skill, hit_targets)
+	_log_applied_statuses(applied)
+	_emit_major_hit_reaction_from_applied_statuses(applied)
+	if not applied.is_empty():
+		await _await_log_stage_continue()
+	await _complete_enemy_ai_action(enemy, String(skill.get("id", "")))
+	check_battle_status()
+	if battle_finished:
+		return
+	enemy["acted_this_turn"] = true
+	_maybe_end_turn()
+
+
+func _complete_enemy_ai_action(enemy: Dictionary, skill_id: String) -> void:
+	if enemy_ai == null or not enemy_ai.has_method("complete_action"):
+		return
+	var has_living_player := player_party.any(func(actor):
+		return typeof(actor) == TYPE_DICTIONARY and int(actor.get("hp", 0)) > 0
+	)
+	var intent_result: Dictionary = enemy_ai.complete_action(enemy, skill_id, has_living_player)
+	if intent_result.is_empty():
+		return
+	var tone_event := String(intent_result.get("tone_event", ""))
+	if tone_event == "" or tone_map == null or not tone_map.has_method("get_enemy_profile_lines"):
+		return
+	var tell_lines: Array = tone_map.get_enemy_profile_lines(tone_event, enemy, {
+		"current_element": String(enemy.get("element", "")),
+	})
+	for line in tell_lines:
+		_log_narration(String(line))
+	if not tell_lines.is_empty():
+		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+			await action_log_ui.wait_for_all_logs()
+		await _await_log_stage_continue()
 
 
 func safe_end_turn() -> void:
@@ -1507,8 +2037,15 @@ func check_battle_status() -> void:
 		_begin_end_battle("defeat")
 		return
 	if enemy_party.all(func(e): return e["hp"] <= 0):
-		_begin_end_battle("victory")
+		if _should_trigger_scripted_phase_break():
+			_begin_end_battle("phase_break")
+		else:
+			_begin_end_battle("victory")
 		return
+
+
+func _should_trigger_scripted_phase_break() -> bool:
+	return String(battle_context.get("scripted_phase_break", "")).strip_edges() != ""
 
 func request_escape_from_item(_user: Dictionary, _item: Dictionary) -> void:
 	if battle_finished or _ending:
@@ -1552,7 +2089,11 @@ func _begin_end_battle(result: String) -> void:
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 
-	if result == "escape":
+	if result == "phase_break":
+		# Scripted multi-phase encounters return to their map intermission without
+		# presenting victory prose, rewards, growth, or the result panel.
+		pass
+	elif result == "escape":
 		_log("你們撤出戰圈，暫時脫離了危險。", true)
 		_log("此戰視為撤退，無戰利品可得。", true)
 	elif result == "defeat":
@@ -1572,16 +2113,27 @@ func _begin_end_battle(result: String) -> void:
 
 	var battle_result = _build_battle_result(result)
 	print("[BattleResult]", battle_result)
+	_clear_next_battle_modifiers_for_party()
 	if result == "victory" and battle_ui and battle_ui.has_method("show_battle_result"):
+		# Rewards must be resolved before the result UI so Growth displays the
+		# exact level/skill events produced by this battle, not an inferred diff.
+		InventorySync.apply_battle_result(battle_result)
 		battle_ui.show_battle_result(battle_result)
 		await battle_ui.battle_result_confirmed
+		if bool(battle_context.get("fade_to_black_after_victory", false)) \
+		and battle_ui.has_method("fade_to_black_for_battle_end"):
+			await battle_ui.fade_to_black_for_battle_end()
 
-	_restore_player_base_stats()
-	_clear_next_battle_modifiers_for_party()
+	# Phase transitions carry only HP/MP in battle_result. Other outcomes persist
+	# resources explicitly; battle-only dictionaries die with this battle scene.
+	if result != "phase_break":
+		_sync_player_resources_to_canonical(battle_result)
 
 	if victory_handler:
 		if result == "victory":
 			victory_handler.victory(battle_result)
+		elif result == "phase_break" and victory_handler.has_method("phase_break"):
+			victory_handler.phase_break(battle_result)
 		elif result == "escape" and victory_handler.has_method("escape"):
 			victory_handler.escape(battle_result)
 		else:
@@ -1612,7 +2164,10 @@ func _maybe_end_turn() -> void:
 		if String(event.get("type", "")) == "poison_tick":
 			var evt_actor: Dictionary = event.get("actor", {})
 			var dmg = int(event.get("damage", 0))
-			if not evt_actor.is_empty() and dmg > 0:
+			if not evt_actor.is_empty() and bool(event.get("damage_prevented", false)):
+				has_end_turn_logs = true
+				_log_narration(String(event.get("damage_prevention_log", "")))
+			elif not evt_actor.is_empty() and dmg > 0:
 				if int(evt_actor.get("hp", 0)) <= 0:
 					_mark_actor_down(evt_actor)
 				var remain = 0
@@ -1750,6 +2305,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 	var any_down := false
 	var any_hit := false
 	var hit_targets: Array = []
+	var damaged_targets: Array = []
 	var combined_logs: Array = []
 
 	if battle_ui and battle_ui.has_method("play_attack_motion"):
@@ -1775,6 +2331,8 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 			any_hit = true
 			if not hit_targets.has(pick):
 				hit_targets.append(pick)
+		if int(strike_result.get("damage", 0)) > 0:
+			damaged_targets.append(pick)
 		if bool(strike_result.get("target_down", false)):
 			_mark_actor_down(pick)
 			any_down = true
@@ -1791,6 +2349,8 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 	if not combined_logs.is_empty():
+		await _await_log_stage_continue()
+	if _log_yumei_suffer_for_targets(damaged_targets):
 		await _await_log_stage_continue()
 
 	var apply_targets: Array = hit_targets if any_hit else []
@@ -1812,6 +2372,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 	var any_down := false
 	var any_hit := false
 	var hit_targets: Array = []
+	var damaged_targets: Array = []
 	var combined_logs: Array = []
 
 	if battle_ui and battle_ui.has_method("play_attack_motion"):
@@ -1842,6 +2403,8 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 				any_hit = true
 				if not hit_targets.has(enemy):
 					hit_targets.append(enemy)
+			if int(strike_result.get("damage", 0)) > 0:
+				damaged_targets.append(enemy)
 			if bool(strike_result.get("target_down", false)):
 				_mark_actor_down(enemy)
 				any_down = true
@@ -1859,6 +2422,8 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 	if not combined_logs.is_empty():
+		await _await_log_stage_continue()
+	if _log_yumei_suffer_for_targets(damaged_targets):
 		await _await_log_stage_continue()
 
 	var apply_targets: Array = hit_targets if any_hit else []
@@ -1933,7 +2498,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 
 		# 🎭 顯示用的招式名稱（含 prefix）
 		var display_skill_name: String = str(skill_data.get("name", "???"))
-		if inner_force.has("prefix") and inner_force.has("boost_weapon"):
+		if not skill_data.has("coupling_tier") and inner_force.has("prefix") and inner_force.has("boost_weapon"):
 			var bw: String = str(inner_force.get("boost_weapon", ""))
 			var wt: String = str(skill_data.get("weapon_type", ""))
 			if bw == wt:
@@ -1976,6 +2541,7 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		var defeated_count := 0
 		var alive_targets: Array = []
 		var hit_targets: Array = []
+		var damaged_targets: Array = []
 
 		# 🌊 全場級起手描述（依武器類型選 AOE 敘事）
 		_log(_build_ally_aoe_opener(actor, display_skill_name, skill_data))
@@ -1988,6 +2554,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			alive_targets.append(enemy)
 			if bool(entry["result"].get("hit", true)):
 				hit_targets.append(enemy)
+			if int(entry["result"].get("damage", 0)) > 0:
+				damaged_targets.append(enemy)
 		# 💥 全體受擊動畫（同時播放）
 		if battle_ui and not hit_targets.is_empty():
 			if battle_ui.has_method("play_hit_fx_multi"):
@@ -2014,6 +2582,9 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 				_mark_actor_down(enemy)
 				defeated_count += 1
 				any_down = true
+
+		if _log_yumei_suffer_for_targets(damaged_targets):
+			await _await_log_stage_continue()
 
 		var aoe_applied: Array = _apply_skill_effects(actor, {}, skill_data, hit_targets)
 		_log_applied_statuses(aoe_applied)
@@ -2051,58 +2622,9 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var target_had_break_before_action := _target_has_status_before_action(actual_target, "break_def")
 
 	var inner_force_single = actor.get("inner_force", {})
-	var effects: Array = []
-	if skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
-		effects = skill_data.get("effects", [])
-
-	var damage_skill_data: Dictionary = skill_data
-	if not effects.is_empty():
-		for entry in effects:
-			if typeof(entry) != TYPE_DICTIONARY:
-				continue
-			if str(entry.get("type", "")) == "damage":
-				damage_skill_data = skill_data.duplicate(true)
-				damage_skill_data["power"] = float(entry.get("power", skill_data.get("power", 1.0)))
-				break
-
-	var pairing_bonus := _resolve_pairing_bonus(actor, skill_data)
-	var strike_count = _resolve_strike_count(actor, skill_data)
-	var result_single: Dictionary = {}
-	var combined_logs: Array = []
-	var total_damage := 0
-	var any_hit := false
-	if not pairing_bonus.is_empty():
-		var combo_log := String(pairing_bonus.get("log", ""))
-		if combo_log != "":
-			combined_logs.append(combo_log.replace("{name}", String(actor.get("name", "俠士"))))
-	for i in range(strike_count):
-		if int(actual_target.get("hp", 0)) <= 0:
-			break
-		var strike_skill_data := damage_skill_data.duplicate(true)
-		if i > 0:
-			strike_skill_data["_suppress_attack_opener"] = true
-		var strike_result = skill_executor.execute(actor, actual_target, strike_skill_data, inner_force_single)
-		_play_attack_se_from_result(actor, actual_target, strike_skill_data, strike_result)
-		_emit_dodge_actor_line(strike_result, actual_target)
-		_emit_crit_admire_line(strike_result, actor)
-		_emit_major_hit_reaction_from_result(strike_result, actual_target)
-		if i == 0:
-			result_single = strike_result
-		total_damage += int(strike_result.get("damage", 0))
-		any_hit = any_hit or bool(strike_result.get("hit", true))
-		var strike_logs: Array = strike_result.get("log", [])
-		if strike_count > 1:
-			combined_logs.append("—— 第 %d 段 ——" % [i + 1])
-		for line in strike_logs:
-			combined_logs.append(line)
-		if bool(strike_result.get("target_down", false)):
-			result_single["target_down"] = true
-			break
-	if result_single.is_empty():
-		result_single = {"log": [], "hit": false, "target_down": false, "damage": 0}
-	result_single["log"] = combined_logs
-	result_single["damage"] = total_damage
-	result_single["hit"] = any_hit
+	var strike_outcome := _execute_single_target_strikes(actor, actual_target, skill_data, inner_force_single)
+	var pairing_bonus: Dictionary = strike_outcome.get("pairing_bonus", {})
+	var result_single: Dictionary = strike_outcome.get("result", {})
 
 	# 🎬 單體：照舊跑 cinematic（描述＋動畫）
 	var attack_logs = await _play_attack_cinematic(actor, actual_target, skill_data, result_single)
@@ -2112,6 +2634,9 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 			_log(line)
 		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 			await action_log_ui.wait_for_all_logs()
+		await _await_log_stage_continue()
+
+	if int(result_single.get("damage", 0)) > 0 and _log_yumei_suffer_for_targets([actual_target]):
 		await _await_log_stage_continue()
 
 	var single_target_pool: Array = [actual_target] if bool(result_single.get("hit", true)) else []
@@ -2279,7 +2804,10 @@ func _enemy_defeat_line(enemy: Dictionary, attacker: Dictionary = {}) -> String:
 		var enemy_down_line: String = String(tone_map.get_enemy_dialogue("down", enemy))
 		if enemy_down_line != "":
 			_emit_enemy_spoken_line(enemy, enemy_down_line)
-			return "%s 倒下，傷勢過重，已無力再戰。" % name_e
+	if tone_map != null and tone_map.has_method("get_specific_enemy_defeat_text"):
+		var specific_defeat_line := String(tone_map.get_specific_enemy_defeat_text(enemy))
+		if specific_defeat_line != "":
+			return specific_defeat_line.replace("{name}", name_e)
 	if tone_map != null and typeof(attacker) == TYPE_DICTIONARY and not attacker.is_empty():
 		var attacker_id := str(attacker.get("id", ""))
 		if attacker_id != "" and not bool(attacker.get("is_enemy", false)):
@@ -2292,6 +2820,32 @@ func _enemy_defeat_line(enemy: Dictionary, attacker: Dictionary = {}) -> String:
 		if line != "":
 			return line.replace("{name}", name_e)
 	return "%s 倒下，傷勢過重，已無力再戰。" % name_e
+
+
+func _log_yumei_suffer_for_targets(targets: Array) -> bool:
+	if tone_map == null or not tone_map.has_method("get_yumei_suffer_text"):
+		return false
+	var logged := false
+	var seen := {}
+	for target in targets:
+		if typeof(target) != TYPE_DICTIONARY:
+			continue
+		var enemy_index := int((target as Dictionary).get("ui_index", -1))
+		if enemy_index < 0:
+			enemy_index = enemy_party.find(target)
+		if enemy_index < 0 or enemy_index >= enemy_party.size() \
+				or int((target as Dictionary).get("hp", 0)) <= 0:
+			continue
+		var target_key := "%d|%s" % [enemy_index, String((target as Dictionary).get("id", ""))]
+		if seen.has(target_key):
+			continue
+		seen[target_key] = true
+		var line := String(tone_map.get_yumei_suffer_text(target))
+		if line == "":
+			continue
+		_log(line)
+		logged = true
+	return logged
 
 func _ally_down_self_line(actor: Dictionary) -> String:
 	var actor_name := str(actor.get("name", "???"))
@@ -2520,6 +3074,9 @@ func _apply_skill_effects(user: Dictionary, primary_target: Dictionary, skill_da
 				continue
 			if int(t.get("hp", 0)) <= 0:
 				continue
+			var effect_chance := clampf(float(entry.get("chance", 1.0)), 0.0, 1.0)
+			if effect_chance < 1.0 and randf() >= effect_chance:
+				continue
 			var record := _apply_single_skill_effect(user, t, effect_type, entry, skill_data)
 			if record.is_empty():
 				continue
@@ -2529,10 +3086,36 @@ func _apply_skill_effects(user: Dictionary, primary_target: Dictionary, skill_da
 
 
 func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, effect_type: String, entry: Dictionary, skill_data: Dictionary) -> Dictionary:
+	if effect_type == "replace_element":
+		var new_element := String(entry.get("element", ""))
+		if new_element not in ["快", "柔", "遲", "剛"]:
+			push_warning("replace_element received unsupported element: %s" % new_element)
+			return {}
+		effect_target["element"] = new_element
+		var transition_event := String(skill_data.get("tone_event", ""))
+		var prelude := ""
+		var close := ""
+		if tone_map != null and tone_map.has_method("get_enemy_profile_text"):
+			prelude = String(tone_map.get_enemy_profile_text("%s_prelude" % transition_event, effect_target, {
+				"current_element": new_element,
+			}))
+			close = String(tone_map.get_enemy_profile_text("%s_close" % transition_event, effect_target, {
+				"current_element": new_element,
+			}))
+		return {
+			"effect_id": "replace_element",
+			"turns": 0,
+			"payload": {"element": new_element},
+			"target": effect_target,
+			"desc": "%s　屬性轉為「%s」" % [String(effect_target.get("display_name", effect_target.get("name", "敵人"))), new_element],
+			"tone_cast": prelude,
+			"tone_suffer": close,
+		}
 	var turns = int(entry.get("turns", _default_turns_for_status(effect_type)))
 	if turns <= 0:
 		turns = _default_turns_for_status(effect_type)
 	var payload := _build_status_payload_from_skill_effect(effect_type, entry)
+	payload["_source_is_enemy"] = bool(user.get("is_enemy", false))
 	var normalized_effect_id := _resolve_applied_status_effect_id(effect_type, payload)
 	match normalized_effect_id:
 		"buff_speed":
@@ -3289,7 +3872,10 @@ func _apply_bomb_damage_to_target(
 	if before_hp <= 0:
 		return
 
-	var after_hp: int = max(before_hp - power, 0)
+	var damage_guard: Dictionary = BattleDamageGuard.resolve_hp_damage(user, target, power)
+	var blocked := bool(damage_guard.get("blocked", false))
+	var resolved_power := int(damage_guard.get("damage", power))
+	var after_hp: int = max(before_hp - resolved_power, 0)
 
 	var dmg: int = before_hp - after_hp
 	target["hp"] = after_hp
@@ -3304,8 +3890,10 @@ func _apply_bomb_damage_to_target(
 		if battle_ui.has_method("play_damage_react"):
 			battle_ui.play_damage_react(target)
 
-	# 敘事：被炸到的感覺
-	if tone_map != null:
+	# 敘事：護體狀態優先於一般受擊描述。
+	if blocked:
+		_log_narration(String(damage_guard.get("log", "")))
+	elif tone_map != null:
 		var suffer_line = tone_map.get_tone_text("item_suffer", effect_key, tid)
 		if suffer_line != "":
 			_log(suffer_line)
@@ -3323,7 +3911,7 @@ func _apply_bomb_damage_to_target(
 
 	_update_ui_for_actor(target)
 
-func _calculate_bomb_damage(target: Dictionary, item: Dictionary) -> Dictionary:
+func _calculate_bomb_damage(user: Dictionary, target: Dictionary, item: Dictionary) -> Dictionary:
 	var power: int = int(item.get("amount", 0))
 	if power <= 0:
 		var warn_item_id = str(item.get("id", "unknown_item"))
@@ -3335,11 +3923,14 @@ func _calculate_bomb_damage(target: Dictionary, item: Dictionary) -> Dictionary:
 	if before_hp <= 0:
 		return {}
 
-	var after_hp: int = max(before_hp - power, 0)
+	var damage_guard: Dictionary = BattleDamageGuard.resolve_hp_damage(user, target, power)
+	var after_hp: int = max(before_hp - int(damage_guard.get("damage", power)), 0)
 	return {
 		"before_hp": before_hp,
 		"after_hp": after_hp,
-		"damage": before_hp - after_hp
+		"damage": before_hp - after_hp,
+		"damage_prevented": bool(damage_guard.get("blocked", false)),
+		"damage_prevention_log": String(damage_guard.get("log", "")),
 	}
 
 
@@ -3377,7 +3968,7 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 		if int(enemy.get("hp", 0)) <= 0:
 			continue
 
-		var result = _calculate_bomb_damage(enemy, item)
+		var result = _calculate_bomb_damage(user, enemy, item)
 		if result.is_empty():
 			continue
 		aoe_results.append({
@@ -3418,7 +4009,9 @@ func _apply_bomb_aoe(user: Dictionary, item: Dictionary) -> void:
 		var tname = str(enemy.get("name", "???"))
 		var tid = str(enemy.get("id", ""))
 
-		if tone_map != null:
+		if bool(result.get("damage_prevented", false)):
+			_log_narration(String(result.get("damage_prevention_log", "")))
+		elif tone_map != null:
 			var suffer_line = tone_map.get_tone_text("item_suffer", "bomb_aoe", tid)
 			if suffer_line != "":
 				_log(suffer_line)

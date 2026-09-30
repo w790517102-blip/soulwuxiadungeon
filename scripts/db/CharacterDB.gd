@@ -16,13 +16,6 @@ const DB := {
 		"subclass": "符咒師",
 		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
 	},
-	"su_mien": {
-		"display_name": "書眠",
-		"portrait_path": "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png",
-		"job": "詩人",
-		"subclass": "符咒師",
-		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
-	},
 	"lieshao": {
 		"display_name": "列霄",
 		"portrait_path": "res://assets/sprites/NPC/LieFong/LieShao_battle.png",
@@ -33,6 +26,7 @@ const DB := {
 }
 
 static func get_base_stats(actor_id: String) -> Dictionary:
+	actor_id = canonicalize_actor_id(actor_id)
 	var entry = DB.get(actor_id, {})
 	if typeof(entry) != TYPE_DICTIONARY:
 		return {}
@@ -42,18 +36,21 @@ static func get_base_stats(actor_id: String) -> Dictionary:
 	return (stats as Dictionary).duplicate(true)
 
 static func get_portrait_path(actor_id: String) -> String:
+	actor_id = canonicalize_actor_id(actor_id)
 	var entry = DB.get(actor_id, {})
 	if typeof(entry) != TYPE_DICTIONARY:
 		return ""
 	return String((entry as Dictionary).get("portrait_path", ""))
 
 static func get_display_name(actor_id: String) -> String:
+	actor_id = canonicalize_actor_id(actor_id)
 	var entry = DB.get(actor_id, {})
 	if typeof(entry) != TYPE_DICTIONARY:
 		return ""
 	return String((entry as Dictionary).get("display_name", ""))
 
 static func ensure_actor_stats(actor_id: String, actor_dict: Dictionary) -> Dictionary:
+	actor_id = canonicalize_actor_id(actor_id)
 	var out: Dictionary = actor_dict
 	if actor_id == "":
 		actor_id = String(out.get("id", ""))
@@ -90,3 +87,8 @@ static func ensure_actor_stats(actor_id: String, actor_dict: Dictionary) -> Dict
 			out["subclass"] = String(entry_dict.get("subclass", ""))
 
 	return out
+
+static func canonicalize_actor_id(actor_id: String) -> String:
+	if actor_id == "su_mien":
+		return "shumian"
+	return actor_id

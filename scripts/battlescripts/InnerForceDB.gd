@@ -1,5 +1,42 @@
 extends Node
 
+const ELEMENT_FINAL_STAT_MULTIPLIERS := {
+	"快": {"speed": 1.15, "def": 0.90},
+	"柔": {"evasion": 1.15, "crit_rate": 0.90},
+	"遲": {"accuracy": 1.15, "evasion": 0.90},
+	"剛": {"def": 1.15, "speed": 0.90},
+}
+
+const ELEMENT_ADVANTAGE_TARGETS := {
+	"快": "遲",
+	"遲": "柔",
+	"柔": "剛",
+	"剛": "快",
+}
+
+const ELEMENT_ADVANTAGE_MULTIPLIER := 1.5
+
+
+static func resolve_element_final_stat(element: String, stat_name: String, raw_value: float) -> float:
+	var element_rules = ELEMENT_FINAL_STAT_MULTIPLIERS.get(element, {})
+	if typeof(element_rules) != TYPE_DICTIONARY:
+		return raw_value
+	var rules: Dictionary = element_rules
+	if not rules.has(stat_name):
+		return raw_value
+	var resolved := raw_value * float(rules.get(stat_name, 1.0))
+	if stat_name == "crit_rate":
+		return clampf(resolved, 0.0, 0.95)
+	return float(round(resolved))
+
+
+static func resolve_element_advantage_multiplier(attacker_element: String, defender_element: String) -> float:
+	var advantaged_element := String(ELEMENT_ADVANTAGE_TARGETS.get(attacker_element, ""))
+	if advantaged_element != "" and advantaged_element == defender_element:
+		return ELEMENT_ADVANTAGE_MULTIPLIER
+	return 1.0
+
+
 static func _compute_runtime_effects(force: Dictionary, actor: Dictionary = {}) -> Dictionary:
 	if force.is_empty():
 		return {}
@@ -225,6 +262,8 @@ const INNER_FORCES := {
 		"type": "訣",
 		"boost_weapon": "拳",
 		"element": "快",
+		"boost_damage_pct": 0.20,
+		"weapon_accuracy_flat_bonus": 10,
 		"description": "靈風訣，輕身如燕，出拳若風行林梢。氣機不著痕跡，卻能在掠過之處留下一記暗勁。",
 		"available": "all",
 	},
@@ -245,6 +284,22 @@ const INNER_FORCES := {
 		"extra_effect_summary": "空手拳勢增幅，裸裝暴擊與減傷",
 		"available": ["liuyu"],
 	}, 
+	"chenchao_jue": {
+		"id": "chenchao_jue",
+		"prefix": "沉潮",
+		"type": "訣",
+		"element": "遲",
+		"boost_weapon": "槍",
+		"description": "沉氣如潮伏於深處，不迎其鋒，不逐其退。先定身勢，再循敵勢尋隙而發。",
+		"available": "all",
+		"required_weapon_aptitude": "槍",
+		"exclusive_skill_ids": ["skill_breaking_wave_spear"],
+		"str_flat_bonus": 3,
+		"con_flat_bonus": 2,
+		"accuracy_flat_bonus": 4,
+		"max_mp_flat_bonus": 6,
+		"skill_mp_cost_multiplier_by_weapon": {"槍": 0.90},
+	},
 	"tiancan_jue": {
 		"id": "tiancan_jue",
 		"prefix": "天殘",
@@ -265,26 +320,64 @@ const INNER_FORCES := {
 func get_force(force_id: String) -> Dictionary:
 	if not INNER_FORCES.has(force_id):
 		return {}
-	return (INNER_FORCES[force_id] as Dictionary).duplicate(true)
+	var force: Dictionary = (INNER_FORCES[force_id] as Dictionary).duplicate(true)
+	if not force.has("available"):
+		force["available"] = "all"
+	if not force.has("required_level"):
+		force["required_level"] = 1
+	return force
 
-func is_available_to_actor(force_id: String, actor_id: String) -> bool:
+func get_all_forces() -> Array:
+	var out: Array = []
+	for force_id in INNER_FORCES.keys():
+		out.append(get_force(String(force_id)))
+	return out
+
+func is_available_to_actor(force_id: String, actor_id: String, actor_override: Dictionary = {}) -> bool:
 	var force := get_force(force_id)
 	if force.is_empty():
 		return false
 	var available = force.get("available", "all")
+	var available_to_actor := false
 	if typeof(available) == TYPE_STRING:
-		return String(available) == "all"
-	if typeof(available) == TYPE_ARRAY:
-		return (available as Array).has(actor_id)
+		available_to_actor = String(available) == "all" or String(available) == actor_id
+	elif typeof(available) == TYPE_ARRAY:
+		available_to_actor = (available as Array).has(actor_id)
+	elif typeof(available) == TYPE_DICTIONARY:
+		var scope: Dictionary = available
+		var mode := String(scope.get("mode", "all"))
+		var actor_ids = scope.get("actor_ids", [])
+		available_to_actor = mode == "all" or (mode == "include" and typeof(actor_ids) == TYPE_ARRAY and (actor_ids as Array).has(actor_id))
+	if not available_to_actor:
+		return false
+	var required_weapon := String(force.get("required_weapon_aptitude", ""))
+	if required_weapon == "":
+		return true
+	if typeof(actor_override) == TYPE_DICTIONARY and not actor_override.is_empty():
+		var aptitudes = actor_override.get("weapon_aptitudes", [])
+		return typeof(aptitudes) == TYPE_ARRAY and (aptitudes as Array).has(required_weapon)
+	# Callers that only have an actor id can still use the legacy availability
+	# contract; the authoritative TeamData entry points pass the normalized actor
+	# dictionary above.  Keeping this script free of an autoload reference also
+	# preserves standalone DB/test loading.
 	return false
 
-func get_forces_for_actor(actor_id: String, ids: Array) -> Array:
+func get_required_level(force_id: String) -> int:
+	var force := get_force(force_id)
+	if force.is_empty():
+		return 1
+	return max(1, int(force.get("required_level", 1)))
+
+func is_level_eligible(force_id: String, actor_level: int) -> bool:
+	return actor_level >= get_required_level(force_id)
+
+func get_forces_for_actor(actor_id: String, ids: Array, actor_override: Dictionary = {}) -> Array:
 	var out: Array = []
 	for force_id in ids:
 		var id := String(force_id)
 		if id == "":
 			continue
-		if not is_available_to_actor(id, actor_id):
+		if not is_available_to_actor(id, actor_id, actor_override):
 			continue
 		var force := get_force(id)
 		if not force.is_empty():

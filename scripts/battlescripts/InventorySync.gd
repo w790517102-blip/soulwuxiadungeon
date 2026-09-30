@@ -44,7 +44,16 @@ const EQUIP_SLOTS := [
 ]
 
 func _ready() -> void:
+	ensure_canonical_initial_equipment_once()
 	_rebuild_ever_owned_from_inventory()
+
+func ensure_canonical_initial_equipment_once() -> void:
+	if bool(get_meta("canonical_initial_equipment_applied", false)):
+		return
+	set_meta("canonical_initial_equipment_applied", true)
+	var equipped := _get_equipped_ref("shumian")
+	if String(equipped.get("weapon_1", "")) == "" and has_item("ink_brush"):
+		equip_item_to_slot("ink_brush", "weapon_1", "shumian")
 
 func export_inventory_state() -> Dictionary:
 	return {
@@ -57,12 +66,15 @@ func export_inventory_state() -> Dictionary:
 func import_inventory_state(data: Dictionary) -> void:
 	if data.is_empty():
 		return
+	# Imported equipment is authoritative. If import happens before _ready in a
+	# test/tool context, the new-game initial card must not overwrite it later.
+	set_meta("canonical_initial_equipment_applied", true)
 	if typeof(data.get("party_inventory", null)) == TYPE_ARRAY:
 		party_inventory = (data.get("party_inventory", []) as Array).duplicate(true)
 	if typeof(data.get("party_gold", null)) in [TYPE_INT, TYPE_FLOAT]:
 		party_gold = int(data.get("party_gold", 0))
 	if typeof(data.get("equipped_by_actor", null)) == TYPE_DICTIONARY:
-		equipped_by_actor = (data.get("equipped_by_actor", {}) as Dictionary).duplicate(true)
+		equipped_by_actor = _canonicalize_equipped_actor_ids(data.get("equipped_by_actor", {}))
 		_migrate_equipped_data()
 	if typeof(data.get("ever_owned_item_ids", null)) == TYPE_DICTIONARY:
 		ever_owned_item_ids = (data.get("ever_owned_item_ids", {}) as Dictionary).duplicate(true)
@@ -299,10 +311,32 @@ func _migrate_equipped_entry(entry: Dictionary) -> void:
 
 func _resolve_actor_id(actor_id: String) -> String:
 	if actor_id != "":
-		return actor_id
+		return _canonicalize_actor_id(actor_id)
 	if TeamData and TeamData.current_team_ids.size() > 0:
 		return str(TeamData.current_team_ids[0])
 	return "liuyu"
+
+func _canonicalize_actor_id(actor_id: String) -> String:
+	if actor_id == "su_mien":
+		return "shumian"
+	return actor_id
+
+func _canonicalize_equipped_actor_ids(raw_map) -> Dictionary:
+	var out: Dictionary = {}
+	if typeof(raw_map) != TYPE_DICTIONARY:
+		return out
+	var source: Dictionary = raw_map
+	for raw_id in source.keys():
+		var actor_id := _canonicalize_actor_id(String(raw_id))
+		if actor_id == "" or out.has(actor_id) or typeof(source[raw_id]) != TYPE_DICTIONARY:
+			continue
+		out[actor_id] = (source[raw_id] as Dictionary).duplicate(true)
+	for raw_id in source.keys():
+		var actor_id := String(raw_id)
+		if actor_id != _canonicalize_actor_id(actor_id) or typeof(source[raw_id]) != TYPE_DICTIONARY:
+			continue
+		out[actor_id] = (source[raw_id] as Dictionary).duplicate(true)
+	return out
 
 func _add_item_stack_internal(id: String, amount: int) -> bool:
 	if id == "" or amount <= 0:
@@ -341,6 +375,8 @@ func _merge_ever_owned_from_runtime_data() -> void:
 func apply_battle_result(battle_result: Dictionary) -> void:
 	if battle_result.is_empty():
 		return
+	if bool(battle_result.get("_inventory_rewards_applied", false)):
+		return
 	var gold_gain = int(battle_result.get("gold", 0))
 	if gold_gain != 0:
 		party_gold += gold_gain
@@ -366,19 +402,65 @@ func apply_battle_result(battle_result: Dictionary) -> void:
 	if inventory_changed_local:
 		inventory_changed.emit()
 	var exp_gain = int(battle_result.get("exp", 0))
-	if exp_gain > 0:
+	var insight_sources: Array = []
+	if typeof(battle_result.get("post_battle_companion_insight_source_actor_ids", null)) == TYPE_ARRAY:
+		insight_sources = battle_result.get("post_battle_companion_insight_source_actor_ids", [])
+	if exp_gain > 0 or not insight_sources.is_empty():
 		print("[BattleResult] exp pending:", exp_gain)
-		_apply_level_growth(exp_gain)
+		battle_result["growth_result"] = _apply_level_growth(
+			exp_gain,
+			_resolve_reward_recipient_actor_ids(battle_result),
+			insight_sources
+		)
+	else:
+		battle_result["growth_result"] = {
+			"level_ups": [],
+			"skills_learned": [],
+		}
+	battle_result["_inventory_rewards_applied"] = true
 
 
-func _apply_level_growth(exp_gain: int) -> void:
-	if exp_gain <= 0:
-		return
+func _resolve_reward_recipient_actor_ids(battle_result: Dictionary) -> Array:
+	var raw_ids = battle_result.get("reward_recipient_actor_ids", [])
+	if typeof(raw_ids) == TYPE_ARRAY and not (raw_ids as Array).is_empty():
+		return (raw_ids as Array).duplicate()
+	if TeamData and typeof(TeamData.current_team_ids) == TYPE_ARRAY:
+		return TeamData.current_team_ids.duplicate()
+	return []
+
+
+func _apply_level_growth(
+	exp_gain: int,
+	recipient_actor_ids: Array,
+	extra_companion_insight_source_actor_ids: Array = []
+) -> Dictionary:
+	var growth_result := {
+		"level_ups": [],
+		"skills_learned": [],
+	}
+	if exp_gain < 0:
+		return growth_result
 	if TeamData == null:
-		return
-	if not TeamData.has_method("add_exp_to_active_party"):
-		return
-	var level_events = TeamData.add_exp_to_active_party(exp_gain)
+		return growth_result
+	var level_events: Array = []
+	if TeamData.has_method("add_exp_to_actor_ids_with_growth"):
+		growth_result = TeamData.add_exp_to_actor_ids_with_growth(
+			exp_gain,
+			recipient_actor_ids,
+			extra_companion_insight_source_actor_ids
+		)
+		var raw_events = growth_result.get("level_events", [])
+		if typeof(raw_events) == TYPE_ARRAY:
+			level_events = raw_events
+	elif TeamData.has_method("add_exp_to_active_party_with_growth"):
+		growth_result = TeamData.add_exp_to_active_party_with_growth(exp_gain)
+		var raw_events = growth_result.get("level_events", [])
+		if typeof(raw_events) == TYPE_ARRAY:
+			level_events = raw_events
+	elif TeamData.has_method("add_exp_to_active_party"):
+		level_events = TeamData.add_exp_to_active_party(exp_gain)
+	else:
+		return growth_result
 	for event in level_events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
@@ -387,6 +469,7 @@ func _apply_level_growth(exp_gain: int) -> void:
 			int(event.get("level", 1)),
 			String(event.get("stat_key", "")),
 		])
+	return growth_result
 
 func _make_item_list(source_inventory: Array) -> Array:
 	var items: Array = []

@@ -12,6 +12,7 @@ var _failures: Array[String] = []
 func _initialize() -> void:
 	_test_item_data()
 	_test_atk_up_status_affects_damage()
+	_test_equipment_baseline_is_used_with_and_without_status()
 	_test_atk_up_does_not_touch_resources_or_primary_stats()
 	_test_refresh_not_stack_and_duration()
 
@@ -56,6 +57,37 @@ func _test_atk_up_status_affects_damage() -> void:
 	_expect(int(after.get("atk_status_delta", 0)) == 15, "resolver reports atk status delta")
 	_expect(int(after.get("damage", 0)) == 35, "damage after buff uses effective atk")
 	status_manager.free()
+
+
+func _test_equipment_baseline_is_used_with_and_without_status() -> void:
+	var executor = SkillExecutorScript.new()
+	var skill := _make_attack_skill()
+	var actor := _make_actor(28)
+	actor["battle_base_atk"] = 32
+
+	seed(20260806)
+	var without_status := executor.execute(actor, _make_enemy(), skill, {})
+	_expect(int(without_status.get("base_atk", 0)) == 32, "equipment baseline is the no-status base atk")
+	_expect(int(without_status.get("effective_atk", 0)) == 32, "equipment baseline affects attacks before statuses")
+	_expect(int(without_status.get("damage", 0)) == 32, "equipment baseline affects no-status damage")
+
+	actor["status_effects"] = {
+		"weaken": {
+			"payload": {"atk_delta": -5},
+			"turns_left": 3,
+		}
+	}
+	seed(20260806)
+	var with_weaken := executor.execute(actor, _make_enemy(), skill, {})
+	_expect(int(with_weaken.get("base_atk", 0)) == 32, "weaken keeps the same equipment baseline")
+	_expect(int(with_weaken.get("effective_atk", 0)) == 27, "weaken subtracts five from equipment baseline")
+	_expect(int(with_weaken.get("damage", 0)) == 27, "weaken damage uses the unified effective atk")
+
+	actor["status_effects"] = {}
+	seed(20260806)
+	var after_expire := executor.execute(actor, _make_enemy(), skill, {})
+	_expect(int(after_expire.get("effective_atk", 0)) == 32, "effective atk returns to equipment baseline after expiry")
+	executor.free()
 
 
 func _test_atk_up_does_not_touch_resources_or_primary_stats() -> void:

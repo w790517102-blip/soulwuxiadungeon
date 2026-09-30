@@ -79,7 +79,9 @@ func show_skills(
 	for i in range(skills.size()):
 		var source_skill: Dictionary = skills[i]
 		var skill: Dictionary = source_skill
-		if skill_provider and skill_provider.has_method("resolve_runtime_skill"):
+		if skill_provider and skill_provider.has_method("resolve_effective_skill"):
+			skill = skill_provider.resolve_effective_skill(String(source_skill.get("id", "")), actor, {"inner_force": inner_force})
+		elif skill_provider and skill_provider.has_method("resolve_runtime_skill"):
 			skill = skill_provider.resolve_runtime_skill(source_skill, inner_force, actor)
 		var weapon_type: String = skill.get("weapon_type", "")
 		var category: String    = skill.get("category", "外功")  # 預設外功

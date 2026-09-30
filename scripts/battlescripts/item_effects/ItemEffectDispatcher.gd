@@ -1,6 +1,8 @@
 extends Node
 class_name ItemEffectDispatcher
 
+const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
+
 func apply(controller, user: Dictionary, item: Dictionary, target: Dictionary) -> bool:
 	var effect: String = item.get("effect", "")
 
@@ -615,14 +617,21 @@ func _handle_zhuge_crossbow(controller, user: Dictionary, item: Dictionary, targ
 		controller._log("箭矢不足，只射出 %d 發！" % hits)
 	InventorySync.consume_item(ammo_id, hits)
 	var total_damage = 0
+	var shield_log := ""
 	for _i in range(hits):
 		if int(target.get("hp", 0)) <= 0:
 			break
 		var before_hp = int(target.get("hp", 0))
-		var dealt = min(power, before_hp)
-		target["hp"] = max(0, before_hp - power)
+		var damage_guard: Dictionary = BattleDamageGuard.resolve_hp_damage(user, target, power)
+		var resolved_power := int(damage_guard.get("damage", power))
+		var dealt = min(resolved_power, before_hp)
+		target["hp"] = max(0, before_hp - resolved_power)
 		total_damage += dealt
+		if shield_log == "" and bool(damage_guard.get("blocked", false)):
+			shield_log = String(damage_guard.get("log", ""))
 	controller._log("%s 催動諸葛連弩，連射 %d 發！" % [user_name, hits])
+	if shield_log != "":
+		controller._log_narration(shield_log)
 	controller._log("對 %s 造成總計 [color=#ffd447]%d[/color] 傷害。" % [target_name, total_damage])
 	if int(target.get("hp", 0)) <= 0:
 		target["is_dead"] = true

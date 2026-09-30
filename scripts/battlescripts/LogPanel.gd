@@ -7,6 +7,10 @@ var _chars_per_sec: float = 30.0
 var _waiting_for_continue: bool = false
 var _lines_since_checkpoint: int = 0
 var _continue_hint_label: Label
+var managed_input: bool = false
+var _line_complete: bool = false
+var _hold_current: bool = false
+var _advance_requested: bool = false
 
 func _ready() -> void:
 	# 我們自己處理標籤，不靠內建 BBCode parser
@@ -15,7 +19,7 @@ func _ready() -> void:
 	set_process_input(true)
 	_continue_hint_label = Label.new()
 	_continue_hint_label.name = "ContinueHint"
-	_continue_hint_label.text = "▶ 按空白鍵/確認鍵/滑鼠左鍵繼續"
+	_continue_hint_label.text = "▶ Space / ESC / 滑鼠左鍵繼續"
 	_continue_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_continue_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_continue_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -68,15 +72,37 @@ func wait_for_continue() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not _waiting_for_continue:
+	if managed_input or not is_message_input(event):
 		return
-	if event.is_action_pressed("ui_accept"):
-		_waiting_for_continue = false
+	if handle_message_input():
 		get_viewport().set_input_as_handled()
-		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+
+static func is_message_input(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		return event.pressed and not event.echo and event.keycode in [KEY_SPACE, KEY_ESCAPE, KEY_ENTER, KEY_KP_ENTER]
+	if event is InputEventMouseButton:
+		return event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	return event.is_action_pressed("ui_accept")
+
+func is_typewriter_active() -> bool:
+	return _typing and not _line_complete
+
+func waiting_for_message_advance() -> bool:
+	return _typing and _line_complete and _hold_current
+
+func handle_message_input() -> bool:
+	if is_typewriter_active():
+		_line_complete = true
+		_hold_current = true
+		visible_characters = -1
+		return true
+	if waiting_for_message_advance():
+		_advance_requested = true
+		return true
+	if _waiting_for_continue:
 		_waiting_for_continue = false
-		get_viewport().set_input_as_handled()
+		return true
+	return false
 
 
 func _notification(what: int) -> void:
@@ -108,10 +134,20 @@ func _start_next() -> void:
 		return
 
 	_typing = true
+	_line_complete = false
+	_hold_current = false
+	_advance_requested = false
 	var line: String = _queue.pop_front()
 	await _type_line_with_tags(line)
+	while _hold_current and not _advance_requested:
+		await get_tree().process_frame
 	append_text("\n")
-	_lines_since_checkpoint += 1
+	if _hold_current and _queue.is_empty():
+		# The second press already advanced the final message in this group;
+		# do not require a redundant third press for the same checkpoint.
+		_lines_since_checkpoint = 0
+	else:
+		_lines_since_checkpoint += 1
 	# ✅ 每打一行，請 RichTextLabel 在下一幀把卷軸捲到底
 	call_deferred("_scroll_to_bottom")
 	_typing = false
@@ -219,7 +255,10 @@ func _type_line_with_tags(line: String) -> void:
 			"bold": bold
 		})
 
-	# 實際逐字顯示
+	# Append styled segments once, then reveal characters. This lets the first
+	# skip synchronously reveal ONLY this line without destroying the queue.
+	var initial_count := get_total_character_count()
+	visible_characters = initial_count
 	for seg in segments:
 		var seg_text: String = seg["text"]
 		var seg_color = seg["color"]
@@ -230,13 +269,17 @@ func _type_line_with_tags(line: String) -> void:
 		if seg_bold:
 			push_bold()
 
-		var j = 0
-		while j < seg_text.length():
-			append_text(seg_text.substr(j, 1))
-			j += 1
-			await get_tree().create_timer(1.0 / _chars_per_sec).timeout
+		append_text(seg_text)
 
 		if seg_bold:
 			pop() # pop bold
 		if seg_color != null:
 			pop() # pop color
+	var total_count := get_total_character_count()
+	var revealed: float = float(initial_count)
+	while not _line_complete and visible_characters < total_count:
+		await get_tree().process_frame
+		revealed += _chars_per_sec * get_process_delta_time()
+		visible_characters = mini(total_count, int(revealed))
+	_line_complete = true
+	visible_characters = -1

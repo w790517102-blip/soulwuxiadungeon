@@ -10,7 +10,14 @@ extends HBoxContainer
 @onready var mp_label   : Label            = $StatusUI/MPLabel
 @onready var fx_hit     : AnimatedSprite2D = $FxHit   # 💥 被擊中特效
 
+enum PresentationState {
+	EMPTY,
+	PARTY,
+	GUEST,
+}
+
 var actor_id: String = ""
+var _presentation_state: int = PresentationState.EMPTY
 var _base_scale: Vector2 = Vector2.ONE   # 目前這個 slot 的「基準大小」
 var _turn_tween: Tween   = null   # ⭐ 輪到自己行動時的白色呼吸
 var _target_tween: Tween = null   # ⭐ 被選為目標時的確認閃爍
@@ -18,12 +25,13 @@ var _dodge_tween: Tween = null
 
 func _ready() -> void:
 	_base_scale = self.scale
-	_reset_fx()
 	if fx_hit and not fx_hit.animation_finished.is_connected(_on_fx_hit_finished):
 		fx_hit.animation_finished.connect(_on_fx_hit_finished)
+	clear_slot()
 
 # 戰鬥開始時第一次塞資料用
 func setup_from_actor(actor: Dictionary) -> void:
+	_set_presentation_state(PresentationState.PARTY)
 	actor_id = str(actor.get("id", actor.get("name", "")))
 	_update_all(actor)
 	_reset_fx()
@@ -31,10 +39,90 @@ func setup_from_actor(actor: Dictionary) -> void:
 	self.modulate = Color(1, 1, 1, 1)
 	if portrait:
 		portrait.modulate = Color(1, 1, 1, 1)
+	show()
 
 # 每回合／受傷／回復時更新
 func update_from_actor(actor: Dictionary) -> void:
+	if _presentation_state == PresentationState.GUEST:
+		return
+	if _presentation_state != PresentationState.PARTY:
+		setup_from_actor(actor)
+		return
 	_update_all(actor)
+
+
+## Presentation-only card for a scripted support actor. It deliberately does
+## not expose HP/MP controls or enter the BattleController's ally array.
+func setup_guest_from_actor(actor: Dictionary) -> void:
+	_set_presentation_state(PresentationState.GUEST)
+	actor_id = str(actor.get("id", actor.get("name", "")))
+	name_label.text = "%s（支援）" % str(actor.get("display_name", actor.get("name", "左飲")))
+	name_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	if portrait:
+		portrait.texture = null
+		var portrait_path := String(actor.get("portrait_path", ""))
+		if portrait_path != "":
+			var tex = load(portrait_path)
+			if tex:
+				portrait.texture = tex
+		portrait.modulate = Color(1, 1, 1, 1)
+	_reset_fx()
+	self.modulate = Color(1, 1, 1, 1)
+	show()
+
+
+func clear_guest_presentation() -> void:
+	clear_slot()
+
+
+## Return this fixed layout slot to its empty presentation. The slot root and
+## decorative frame stay visible; only actor-specific content is removed.
+func clear_slot() -> void:
+	_set_presentation_state(PresentationState.EMPTY)
+	actor_id = ""
+	name_label.text = ""
+	name_label.remove_theme_color_override("font_color")
+	hp_label.text = ""
+	hp_bar.value = 0
+	mp_label.text = ""
+	mp_bar.value = 0
+	if portrait:
+		portrait.texture = null
+		portrait.modulate = Color(1, 1, 1, 1)
+	if _turn_tween:
+		_turn_tween.kill()
+		_turn_tween = null
+	if _target_tween:
+		_target_tween.kill()
+		_target_tween = null
+	if _dodge_tween:
+		_dodge_tween.kill()
+		_dodge_tween = null
+	_reset_fx()
+	self.modulate = Color(1, 1, 1, 1)
+	show()
+
+
+func _set_presentation_state(state: int) -> void:
+	_presentation_state = state
+	# Portrait and StatusUI remain layout participants in every state so the
+	# fixed three-slot panel never collapses. Empty content is hidden below.
+	show()
+	if portrait:
+		portrait.show()
+	if status_ui:
+		status_ui.show()
+	if name_label:
+		name_label.visible = state != PresentationState.EMPTY
+	var show_party_resources := state == PresentationState.PARTY
+	if hp_bar:
+		hp_bar.visible = show_party_resources
+	if hp_label:
+		hp_label.visible = show_party_resources
+	if mp_bar:
+		mp_bar.visible = show_party_resources
+	if mp_label:
+		mp_label.visible = show_party_resources
 
 # 🔧 內部共用：同步名字＋頭像＋HP/MP＋Label
 func _update_all(actor: Dictionary) -> void:
