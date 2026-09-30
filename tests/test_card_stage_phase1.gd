@@ -52,23 +52,26 @@ func _check_formation_table() -> void:
 				var side: float = 1.0 if enemy else -1.0
 				_expect(signf(slot.position.x) == side, "slot x stays on its own side (count %d rank %d)" % [count, rank])
 				if not previous.is_empty():
-					_expect(absf(slot.position.x) > absf(previous.position.x), "deeper ranks stand farther from the centre line")
-					_expect(slot.position.z < previous.position.z, "deeper ranks stand deeper in Z")
-					_expect(slot.position.y > previous.position.y, "deeper ranks stand higher (ground-plane reading)")
+					_expect(absf(slot.position.x) > absf(previous.position.x), "later ranks stand farther from the centre line along X")
+					_expect(is_equal_approx(slot.position.y, previous.position.y), "a row shares one ground line")
+					_expect(slot.position.z <= previous.position.z and previous.position.z - slot.position.z < 0.6, "the row stays at almost one depth; only a small poke for the fastest")
+				_expect(not slot.has("role_name") and not slot.has("role"), "slots carry no battle-role semantics")
 				previous = slot
 	var ally: Dictionary = Formation.slot(3, 0, false, 1.0)
-	var enemy_slot: Dictionary = Formation.slot(3, 0, true, -1.0)
-	_expect(is_equal_approx(ally.position.x, -enemy_slot.position.x) and is_equal_approx(ally.position.y, enemy_slot.position.y), "enemy formation mirrors the party in X and height")
-	_expect(ally.position.z > enemy_slot.position.z, "party vanguard is nearer the camera than the enemy vanguard")
-	_expect(ally.role_name == "vanguard" and Formation.slot(3, 2, false, 1.0).role_name == "support", "slot roles are named")
+	var enemy_slot: Dictionary = Formation.slot(3, 0, true, -2.0)
+	_expect(ally.position.z - enemy_slot.position.z > 2.5, "enemy row is clearly deeper than the party row")
+	_expect(is_equal_approx(ally.position.y, enemy_slot.position.y), "both rows share the same height")
+	var ally_span: float = absf(Formation.slot(3, 2, false, 1.0).position.x - Formation.slot(3, 0, false, 1.0).position.x)
+	_expect(is_equal_approx(ally_span, Formation.ALLY_SPACING * 2.0), "neighbour spacing is the data constant")
+	_expect(is_equal_approx(Formation.slot(1, 0, false, 1.0).position.x, -Formation.ALLY_LANE_X), "a lone party card centres in its lane")
 
 
 func _check_rank_assignment() -> void:
 	var actors: Array = [{"id": "a", "speed": 9}, {"id": "b", "speed": 14}, {"id": "c", "speed": 6}]
-	_expect(Formation.assign_ranks(actors) == [1, 0, 2], "fastest actor takes the vanguard slot")
+	_expect(Formation.assign_ranks(actors) == [1, 0, 2], "fastest actor takes the innermost slot")
 	_expect(Formation.assign_ranks([{"speed": 5}, {"speed": 5}, {"speed": 5}]) == [0, 1, 2], "equal speed keeps original order")
 	_expect(Formation.assign_ranks([{"speed": 1, "is_guest": true}, {"speed": 3}, {"speed": 2}]) == [2, 0, 1], "guests always stand last")
-	_expect(Formation.assign_ranks([{"speed": 20}, {"speed": 1, "formation": "vanguard"}]) == [1, 0], "explicit formation hint overrides speed")
+	_expect(Formation.assign_ranks([{"speed": 20}, {"speed": 1, "formation": "inner"}]) == [1, 0], "explicit formation hint overrides speed")
 	var before: Array = actors.duplicate(true)
 	Formation.assign_ranks(actors)
 	_expect(actors == before, "rank assignment does not modify actor dictionaries")
@@ -139,12 +142,25 @@ func _check_stage(fixture: Node) -> void:
 	var fast: Node3D = stage.card_for(allies[1])
 	var mid: Node3D = stage.card_for(allies[0])
 	var slow: Node3D = stage.card_for(allies[2])
-	_expect(fast.slot_role == "vanguard" and mid.slot_role == "mid" and slow.slot_role == "support", "party speed order maps to vanguard / mid / support")
+	_expect(fast.slot_rank == 0 and mid.slot_rank == 1 and slow.slot_rank == 2, "initial speed decides the left-to-right order")
 	_expect(absf(fast.home_position.x) < absf(mid.home_position.x) and absf(mid.home_position.x) < absf(slow.home_position.x), "faster party cards stand closer to the centre")
-	_expect(fast.home_position.z > mid.home_position.z and mid.home_position.z > slow.home_position.z, "faster party cards stand nearer the camera")
+	_expect(fast.home_position.z >= mid.home_position.z and mid.home_position.z >= slow.home_position.z, "faster cards poke slightly toward the camera")
+	var party_depths: Array = [fast.home_position.z, mid.home_position.z, slow.home_position.z]
+	_expect(party_depths.max() - party_depths.min() < 0.6, "the party stands in one row at nearly one depth")
+	_expect(is_equal_approx(fast.home_position.y, mid.home_position.y) and is_equal_approx(mid.home_position.y, slow.home_position.y), "the party shares one ground line")
 	var foe_fast: Node3D = stage.card_for(enemies[1])
-	_expect(foe_fast.slot_role == "vanguard" and foe_fast.home_position.x > 0.0, "enemy vanguard stands on the enemy side")
-	_expect(fast.home_position.z > foe_fast.home_position.z, "party depth band stays nearer than the enemy band")
+	_expect(foe_fast.slot_rank == 0 and foe_fast.home_position.x > 0.0, "enemy row is on the right")
+	for foe: Dictionary in enemies:
+		_expect(stage.card_for(foe).home_position.z < party_depths.min() - 2.0, "every enemy card is clearly deeper than the party row")
+	# Upright: the card's long axis is world up, and it is not a billboard.
+	_expect(fast.card_size.y / fast.card_size.x > 1.4 and fast.card_size.y / fast.card_size.x < 1.7, "cards are portrait proportioned")
+	_expect(is_equal_approx(fast.home_rotation.x, 0.0) and is_equal_approx(fast.home_rotation.z, 0.0), "resting cards have no pitch or roll")
+	_expect(fast.global_transform.basis.y.dot(Vector3.UP) > 0.999, "the card's long axis stays along world Y")
+	_expect(fast.card_mesh.mesh.size == fast.card_size, "mesh follows the data-driven card size")
+	# Current game information is still on the face.
+	_expect(fast.hp_label.visible and fast.mp_label.visible and fast.force_label.visible and fast.level_label.visible, "party card keeps HP, MP, inner force and level")
+	_expect(foe_fast.hp_label.visible and foe_fast.species_label.visible and foe_fast.element_label.visible and not foe_fast.mp_label.visible, "enemy card keeps HP, species and element")
+	_expect(fast.card_viewport.size_2d_override.y > fast.card_viewport.size_2d_override.x, "card face canvas is portrait")
 	_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(22.0)) and is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-22.0)), "yaw keeps the 22 degree baseline, mirrored")
 	_expect(fast.scale == Vector3.ONE and slow.scale == Vector3.ONE, "cards keep scale 1; depth comes from perspective")
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
@@ -229,7 +245,7 @@ func _check_stage(fixture: Node) -> void:
 	ui.set_stage_enabled(true)
 	ui.set_teams([allies[0]], [enemies[0]])
 	_expect(stage.cards.size() == 2, "empty slots are not drawn as cards")
-	_expect(stage.card_for(allies[0]).slot_role == "vanguard", "a lone actor takes the vanguard slot")
+	_expect(stage.card_for(allies[0]).slot_rank == 0, "a lone actor takes the only slot")
 
 
 func _present(stage: Node3D, attacker: Dictionary, target: Dictionary, done: Array) -> void:

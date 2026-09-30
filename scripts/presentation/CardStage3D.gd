@@ -1,13 +1,22 @@
 extends "res://scripts/presentation/CombatStage25D.gd"
 ## Card Stage: the same camera, background, FX volume and command tray as
-## STAGE_25D, with cards placed in formation slots (see CardStageFormation).
+## STAGE_25D, with upright portrait cards placed in one row per side (see
+## CardStageFormation). The enemy row is on the right and deeper in Z.
 ## Yaw stays at the inherited baseline; empty slots are not drawn.
 
 const CardStageActorCard = preload("res://scripts/presentation/CardStageActorCard.gd")
 const Formation = preload("res://scripts/presentation/CardStageFormation.gd")
 
-## actor key -> {rank, role, role_name, position}; read by tests and debug tools.
+## Enemy row depth: clearly deeper than the party row so perspective reads as distance.
+const CARD_STAGE_ENEMY_DEPTH: float = -2.0
+
+## actor key -> {rank, position}; read by tests and debug tools.
 var slots: Dictionary = {}
+
+
+func _ready() -> void:
+	enemy_depth = CARD_STAGE_ENEMY_DEPTH
+	super._ready()
 
 
 func set_teams(allies: Array, enemies: Array, guest: Dictionary = {}, status_source: Callable = Callable()) -> void:
@@ -42,8 +51,42 @@ func _place_side(actors: Array, enemy: bool) -> void:
 		var side: float = 1.0 if enemy else -1.0
 		card.set_home(slot.position, -side * card_yaw_degrees)
 		card.slot_rank = slot.rank
-		card.slot_role = slot.role_name
 		var key: String = actor_key(actor)
-		card.name = "Card_%s_%s" % [slot.role_name, key.replace("#", "_")]
+		card.name = "Card_%d_%s" % [slot.rank, key.replace("#", "_")]
 		cards[key] = card
 		slots[key] = slot
+
+
+# Cards here are portrait-sized, so picking and screen rectangles use each card's
+# own size instead of the landscape constant in the inherited implementation.
+func card_screen_rect(actor: Dictionary) -> Rect2:
+	var card := card_for(actor)
+	if not card:
+		return Rect2()
+	var half: Vector2 = card.card_size / 2.0
+	var result := Rect2(camera.unproject_position(card.to_global(Vector3.ZERO)), Vector2.ZERO)
+	for corner: Vector2 in [Vector2(-1, -1), Vector2(-1, 1), Vector2(1, -1), Vector2(1, 1)]:
+		result = result.expand(camera.unproject_position(card.to_global(Vector3(corner.x * half.x, corner.y * half.y, 0))))
+	return result
+
+
+func pick_actor(screen_position: Vector2, candidates: Array, include_dead: bool = false) -> Dictionary:
+	var origin := camera.project_ray_origin(screen_position)
+	var direction := camera.project_ray_normal(screen_position)
+	var nearest: float = INF
+	var selected: Dictionary = {}
+	for actor: Dictionary in candidates:
+		var card := card_for(actor)
+		if not card or (int(actor.get("hp", 0)) <= 0 and not include_dead):
+			continue
+		var inverse := card.global_transform.affine_inverse()
+		var local_origin: Vector3 = inverse * origin
+		var local_direction: Vector3 = inverse.basis * direction
+		if absf(local_direction.z) < 0.0001:
+			continue
+		var distance: float = -local_origin.z / local_direction.z
+		var point: Vector3 = local_origin + local_direction * distance
+		if distance > 0 and distance < nearest and absf(point.x) < card.card_size.x / 2.0 and absf(point.y) < card.card_size.y / 2.0:
+			nearest = distance
+			selected = actor
+	return selected

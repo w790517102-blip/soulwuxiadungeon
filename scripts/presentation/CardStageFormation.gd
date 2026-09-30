@@ -1,48 +1,46 @@
 extends RefCounted
-## Card Stage formation: a fixed, readable slot table. Presentation only.
+## Card Stage line-up. Presentation only; not a tactics grid and not a set of
+## battle roles.
 ##
-## Not a tactics grid. Each side has up to three slots that express
-## front/back (X toward the centre + Z toward the camera), fast/slow and
-## vanguard/support. Who stands where is decided once per set_teams() from the
-## actor's existing `speed` (optional `formation` hint); nothing is written back
-## to the actor dictionaries.
+## Each side is ONE row of upright cards along the X axis at almost the same
+## depth. The enemy row is simply deeper and on the right, so perspective makes
+## it look farther away. Speed only decides the initial left-to-right order
+## (an ATB-style "who is nearest the exchange zone"): the fastest card stands
+## closest to the centre and pokes out a few centimetres toward the camera.
+## Order is decided once in set_teams() and never reshuffles on speed buffs.
 
-enum Role { VANGUARD, MID, SUPPORT }
-const ROLE_NAMES: Array[String] = ["vanguard", "mid", "support"]
-
-# Per occupancy: Vector3(distance from centre line, height, depth offset from
-# the side's base depth). Index 0 is always the vanguard. The vanguard stands
-# nearest the centre exchange zone and nearest the camera; support stands
-# outermost and deepest. Height follows a ground plane (nearer = lower, deeper =
-# higher), so the slots read as one diagonal converging on the centre.
-const LAYOUTS: Dictionary = {
-	1: [Vector3(4.9, 0.3, 0.9)],
-	2: [Vector3(4.9, -1.0, 0.9), Vector3(6.3, 1.7, -0.7)],
-	3: [Vector3(4.8, -1.5, 0.9), Vector3(6.0, 0.85, -0.2), Vector3(6.7, 3.2, -1.2)],
-}
-const ROLES: Dictionary = {
-	1: [Role.VANGUARD],
-	2: [Role.VANGUARD, Role.SUPPORT],
-	3: [Role.VANGUARD, Role.MID, Role.SUPPORT],
-}
+## Distance between card centres along X (card width is 2.6, so neighbours
+## overlap slightly and the nearer one occludes the outer one's inner edge).
+const ALLY_SPACING: float = 2.1
+const ENEMY_SPACING: float = 2.45
+## Lane centre: distance from the centre line to the middle of each side's row.
+const ALLY_LANE_X: float = 5.3
+const ENEMY_LANE_X: float = 6.3
+## Row height (card centre). Same for everyone so the cards share a ground line.
+const ROW_Y: float = -0.2
+## Fastest card steps forward by this much in Z; each slower neighbour by half less.
+const FAST_POKE: float = 0.35
 
 
+## `rank` 0 is the slot nearest the centre. Returns {rank, position}.
 static func slot(count: int, rank: int, enemy: bool, base_depth: float) -> Dictionary:
 	count = clampi(count, 1, 3)
 	rank = clampi(rank, 0, count - 1)
-	var layout: Vector3 = LAYOUTS[count][rank]
 	var side: float = 1.0 if enemy else -1.0
-	var role: int = ROLES[count][rank]
+	var lane_x: float = ENEMY_LANE_X if enemy else ALLY_LANE_X
+	# Centre the row in its lane; rank 0 is the inner end.
+	var offset: float = (float(rank) - float(count - 1) / 2.0) * (ENEMY_SPACING if enemy else ALLY_SPACING)
+	var poke: float = FAST_POKE * (1.0 - float(rank) / 2.0) if count > 1 else FAST_POKE * 0.5
 	return {
 		"rank": rank,
-		"role": role,
-		"role_name": ROLE_NAMES[role],
-		"position": Vector3(side * layout.x, layout.y, base_depth + layout.z),
+		"position": Vector3(side * (lane_x + offset), ROW_Y, base_depth + poke),
 	}
 
 
-## Returns, for each actor index, the slot rank (0 = vanguard). Faster actors
-## take the front; ties keep their original order; guests always stand last.
+## Returns, for each actor index, the slot rank (0 = nearest the centre). Faster
+## actors take the inner slots; ties keep their original order; guests stand
+## outermost. An actor's optional `formation` hint ("inner" / "outer") wins over
+## speed.
 static func assign_ranks(actors: Array) -> Array[int]:
 	var order: Array[int] = []
 	for index: int in range(actors.size()):
@@ -73,6 +71,6 @@ static func assign_ranks(actors: Array) -> Array[int]:
 
 static func _hint(actor: Dictionary) -> int:
 	match String(actor.get("formation", "")):
-		"vanguard": return 1
-		"support": return -1
+		"inner": return 1
+		"outer": return -1
 	return 0
