@@ -9,6 +9,8 @@ const EnemyDBScript := preload("res://scripts/db/EnemyDB.gd")
 
 @export var auto_start: bool = true
 @export var stage_enabled: bool = true
+## View script for the preview battle; CardStagePrototype swaps in CARD_STAGE.
+@export var ui_script_path: String = "res://scripts/presentation/StageBattleUI.gd"
 
 var battle: Node
 var controller: Node
@@ -32,7 +34,8 @@ class PreviewBattleRoot extends "res://scripts/battlescripts/BattleScene.gd":
 	func _enter_tree() -> void:
 		# Do not inspect or consume a campaign's pending battle context.
 		get_node("BattleUILayer/BattleUI/LogPanel").set_script(load("res://scripts/presentation/StageLogPanel.gd"))
-		_replace_view_script(get_node("BattleUILayer/BattleUI"), load("res://scripts/presentation/StageBattleUI.gd"), ["tone"])
+		var ui_script: String = String(get_meta("presentation_ui_script", "res://scripts/presentation/StageBattleUI.gd"))
+		_replace_view_script(get_node("BattleUILayer/BattleUI"), load(ui_script), ["tone"])
 
 	func _try_start_from_pending_context() -> void:
 		pass
@@ -79,6 +82,7 @@ func _prepare_battle() -> void:
 	battle = BATTLE_SCENE.instantiate()
 	battle.set_script(PreviewBattleRoot)
 	battle.set_meta("presentation_preview_controller", true)
+	battle.set_meta("presentation_ui_script", ui_script_path)
 	controller = battle.get_node("BattleController")
 	PreviewBattleRoot._replace_view_script(controller, PreviewController, ["tone_map", "status_manager"])
 	add_child(battle)

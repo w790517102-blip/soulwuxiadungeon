@@ -31,7 +31,7 @@ func _ready() -> void:
 	_old_log_z = log_panel.z_index
 	_old_log_mouse_filter = log_panel.mouse_filter
 	_old_mouse_filter = mouse_filter
-	stage = StageScene.instantiate()
+	stage = _create_stage()
 	add_child(stage)
 	stage.bind_ui(self)
 	_build_stage_hud()
@@ -52,6 +52,11 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_layout_stage_hud)
 	preload("res://scripts/presentation/BattleTypography.gd").apply(self)
 	move_child(_message_input_router, get_child_count() - 1)
+
+
+func _create_stage() -> Node3D:
+	# Extension point for other stage presentations (CARD_STAGE overrides this).
+	return StageScene.instantiate()
 
 
 func _build_stage_hud() -> void:

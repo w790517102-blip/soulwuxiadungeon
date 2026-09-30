@@ -1,6 +1,6 @@
 extends Node
 
-enum BattlePresentationMode { LEGACY, STAGE_25D }
+enum BattlePresentationMode { LEGACY, STAGE_25D, CARD_STAGE }
 @export var presentation_mode: BattlePresentationMode = BattlePresentationMode.STAGE_25D
 
 @onready var battle_controller = $BattleController
@@ -15,9 +15,12 @@ func _enter_tree() -> void:
 			selected = int(context.get("presentation_mode", selected))
 	if "--legacy-battle" in OS.get_cmdline_user_args():
 		selected = BattlePresentationMode.LEGACY
-	if selected == BattlePresentationMode.STAGE_25D:
+	if "--card-stage" in OS.get_cmdline_user_args():
+		selected = BattlePresentationMode.CARD_STAGE
+	if selected == BattlePresentationMode.STAGE_25D or selected == BattlePresentationMode.CARD_STAGE:
+		var ui_script := "res://scripts/presentation/CardStageBattleUI.gd" if selected == BattlePresentationMode.CARD_STAGE else "res://scripts/presentation/StageBattleUI.gd"
 		get_node("BattleUILayer/BattleUI/LogPanel").set_script(load("res://scripts/presentation/StageLogPanel.gd"))
-		_replace_view_script(get_node("BattleUILayer/BattleUI"), load("res://scripts/presentation/StageBattleUI.gd"), ["tone"])
+		_replace_view_script(get_node("BattleUILayer/BattleUI"), load(ui_script), ["tone"])
 		if not has_meta("presentation_preview_controller"):
 			_replace_view_script(get_node("BattleController"), load("res://scripts/presentation/StageBattleController.gd"), ["tone_map", "status_manager"])
 
