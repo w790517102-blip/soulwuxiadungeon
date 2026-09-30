@@ -106,6 +106,25 @@ func _check_entry_modes() -> void:
 			_expect(stage_25d.get_script().resource_path.ends_with("/CombatStage25D.gd"), "STAGE_25D still builds the unchanged CombatStage25D")
 		battle.queue_free()
 		await process_frame
+	# Normal story entry: nothing is requested, so the default must be CARD_STAGE.
+	var default_battle: Node = scene.instantiate()
+	root.add_child(default_battle)
+	await process_frame
+	await process_frame
+	_expect(default_battle.get_node("BattleUILayer/BattleUI").get_script().resource_path.ends_with("/CardStageBattleUI.gd"), "default presentation is CARD_STAGE")
+	_expect(default_battle.active_presentation_name() == "CARD_STAGE", "the active presentation reports CARD_STAGE")
+	_expect(default_battle.has_node("PresentationBadgeLayer/PresentationBadge") == OS.is_debug_build(), "debug builds show the presentation badge")
+	default_battle.queue_free()
+	await process_frame
+	# A battle context can still ask for the previous stage explicitly.
+	state.set_meta("pending_battle_context", {"presentation_mode": 1})
+	var context_battle: Node = scene.instantiate()
+	root.add_child(context_battle)
+	await process_frame
+	_expect(context_battle.active_presentation_name() == "STAGE_25D", "context presentation_mode = 1 selects STAGE_25D")
+	context_battle.queue_free()
+	await process_frame
+	state.remove_meta("pending_battle_context")
 	if had_pending:
 		state.set_meta("pending_battle_context", prior)
 

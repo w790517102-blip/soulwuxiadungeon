@@ -6,7 +6,8 @@
 ## 啟用
 - `BattleScene.presentation_mode = CARD_STAGE`，或 battle context 的 `presentation_mode = 2`，或命令列 `-- --card-stage`。
 - 獨立預覽：`res://scenes/presentation/card_stage_prototype.tscn`（不發獎勵、不寫存檔）。
-- 預設仍為 `STAGE_25D`。
+- **正式遊戲預設為 `CARD_STAGE`**（正常劇情進戰鬥不需任何參數）。回退：`-- --stage-25d`、battle context `presentation_mode = 1`、`-- --legacy-battle`、戰鬥中 F8。
+- 戰鬥開始會在 console 印 `Battle Presentation: <模式>`；Debug build 左上角短暫顯示同樣文字（F8 切換時會更新為 `LEGACY (F8)`）。
 
 ## 檔案
 | 檔案 | 責任 |
