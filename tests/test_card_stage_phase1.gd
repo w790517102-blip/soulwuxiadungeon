@@ -304,6 +304,7 @@ func _check_stage(fixture: Node) -> void:
 	_expect(foe_fast.template_key == "enemy", "an ordinary enemy uses the enemy template")
 	_expect(Templates.key_for({"id": "molin_yanjiang"}, true) == "boss" and Templates.key_for({"id": "molin_yanjiang_phase2"}, true) == "boss" and Templates.key_for({"id": "x", "is_boss": true}, true) == "boss", "Molin Yanjiang (and flagged bosses) use the boss template")
 	_expect(Templates.key_for({"id": "zuoyin_stalactite_guest", "is_guest": true}, false) == "character", "the guest uses the character template")
+	_expect(Templates.key_for({"id": "bamboo_bobcat"}, true) == "beast" and Templates.key_for({"id": "bamboo_poison_snake"}, true) == "beast" and Templates.key_for({"id": "yumei_sewer_rat"}, true) == "enemy", "bamboo grove animals use the beast template, phantoms keep the enemy one")
 	_expect(Templates.key_for({"id": "x", "card_template": "boss"}, true) == "boss", "an actor can force a template")
 	for template_name: String in Templates.TEMPLATES.keys():
 		var spec: Dictionary = Templates.TEMPLATES[template_name]
@@ -504,7 +505,7 @@ func has_node_recursive_visible(root_node: Node, node_name: String) -> bool:
 
 
 func _check_enemy_art_table() -> void:
-	var expected: Array = ["molin_yanjiang", "molin_yanjiang_phase2", "fidgety_sewer_fish", "broken_string_tone_phantom", "turbid_tone_phantom", "broken_talisman_tone_phantom", "bitterness_tone_phantom", "echo_tone_phantom", "fixation_tone_phantom", "yumei_sewer_bat", "yumei_sewer_rat", "bamboo_wild_boar", "bamboo_macaque", "bamboo_poison_snake"]
+	var expected: Array = ["molin_yanjiang", "molin_yanjiang_phase2", "fidgety_sewer_fish", "broken_string_tone_phantom", "turbid_tone_phantom", "broken_talisman_tone_phantom", "bitterness_tone_phantom", "echo_tone_phantom", "fixation_tone_phantom", "yumei_sewer_bat", "yumei_sewer_rat", "bamboo_wild_boar", "bamboo_macaque", "bamboo_poison_snake", "bamboo_bobcat"]
 	for enemy_id: String in expected:
 		var entry: Dictionary = CardStageArtScript.entry_for({"id": enemy_id})
 		_expect(not entry.is_empty() and FileAccess.file_exists(entry.path), "%s has supplied art that exists" % enemy_id)

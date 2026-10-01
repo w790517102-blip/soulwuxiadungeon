@@ -47,6 +47,20 @@ const TEMPLATES: Dictionary = {
 		"status": Rect2(100, 1212, 824, 150),
 		"name_font": 68, "slot_font": 44, "row_font": 54, "status_font": 40,
 	},
+	# Animals (bamboo grove beasts): same layout as the enemy card, bamboo-vine frame.
+	"beast": {
+		"face": DIR + "card_beast_face.webp",
+		"ink": DIR + "card_beast_ink.webp",
+		"canvas": Vector2(1024, 1536),
+		"frame": Rect2(36, 38, 958, 1458),
+		"window": Rect2(76, 172, 872, 676),
+		"name": Rect2(84, 62, 856, 88),
+		"element": Rect2(100, 892, 824, 84),
+		"species": Rect2(100, 976, 824, 84),
+		"hp": Rect2(88, 1108, 848, 72),
+		"status": Rect2(100, 1212, 824, 150),
+		"name_font": 68, "slot_font": 44, "row_font": 54, "status_font": 40,
+	},
 	# Bosses (the supplied Molin Yanjiang card, with its decorations outside the frame).
 	"boss": {
 		"face": DIR + "card_boss_face.webp",
@@ -74,6 +88,8 @@ static func key_for(actor: Dictionary, enemy: bool) -> String:
 	var id: String = String(actor.get("id", ""))
 	if bool(actor.get("is_boss", false)) or id.begins_with("molin_yanjiang"):
 		return "boss"
+	if id.begins_with("bamboo_"):
+		return "beast"
 	return "enemy"
 
 

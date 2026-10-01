@@ -28,6 +28,7 @@ const ENTRIES: Dictionary = {
 	"yumei_sewer_bat": {"path": DIR + "enemy_bat.webp", "mode": "cover", "focus": Vector2(0.50, 0.50)},
 	"yumei_sewer_rat": {"path": DIR + "enemy_rat.webp", "mode": "cover", "focus": Vector2(0.40, 0.45)},
 	"bamboo_wild_boar": {"path": DIR + "enemy_boar.webp", "mode": "cover", "focus": Vector2(0.50, 0.55)},
+	"bamboo_bobcat": {"path": DIR + "enemy_bobcat.webp", "mode": "cover", "focus": Vector2(0.40, 0.42)},
 	"bamboo_macaque": {"path": DIR + "enemy_macaque.webp", "mode": "cover", "focus": Vector2(0.50, 0.50)},
 	"bamboo_poison_snake": {"path": DIR + "enemy_snake.webp", "mode": "cover", "focus": Vector2(0.55, 0.45)},
 }
