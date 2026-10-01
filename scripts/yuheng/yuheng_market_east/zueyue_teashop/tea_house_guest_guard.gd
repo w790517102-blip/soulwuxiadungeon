@@ -151,8 +151,9 @@ func _unhandled_input(event):
 		_mark_flag_after_close = not GlobalState.set_flag("met_yuheng_teahouse_guard", true)
 
 func _show_interaction_menu() -> void:
+	# 單步雷 no longer invites the player to spar: the 比武 option is dropped, while
+	# _choose_spar / _start_training_battle and the EnemyDB entry stay dormant.
 	dialog_manager.show_choice([
-		{ "text": "比武", "callback": Callable(self, "_choose_spar") },
 		{ "text": "閒聊", "callback": Callable(self, "_choose_chat") },
 	])
 
