@@ -133,6 +133,10 @@ func actor_has_effective_skill(actor_id: String, skill_id: String, actor = null)
 		return true
 	if not _skill_db.is_shareable(canonical_id):
 		return false
+	# Shared knowledge reaches party members only. A wild enemy (id not in the roster) must
+	# not borrow LiuYu's skills, or a 獼猴 ends up casting 鷹眼凝 as an attack on its own side.
+	if provider.has_method("get_character_by_id") and (provider.get_character_by_id(actor_id) as Dictionary).is_empty():
+		return false
 	# Only LiuYu's valid personal knowledge may become a shared source.
 	# Another actor's personal knowledge never propagates to teammates.
 	if not _skill_db.is_available_for_actor(canonical_id, "liuyu"):
