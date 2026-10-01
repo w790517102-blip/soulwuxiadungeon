@@ -15,6 +15,9 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 # Presentation-only hook: the UI is not told when an enemy's turn begins, so give a
 # view that wants to mark the acting enemy (CARD_STAGE) a chance to do so.
 func perform_enemy_action(enemy: Dictionary) -> void:
+	# Wait for the card line-up to finish reshuffling (CARD_STAGE) before this enemy acts.
+	if battle_ui and battle_ui.get("stage") and battle_ui.stage.has_method("wait_for_lineup_settled") and bool(battle_ui.get("stage_enabled")):
+		await battle_ui.stage.wait_for_lineup_settled()
 	if battle_ui and battle_ui.has_method("present_turn_marker"):
 		battle_ui.present_turn_marker(enemy)
 	await super.perform_enemy_action(enemy)

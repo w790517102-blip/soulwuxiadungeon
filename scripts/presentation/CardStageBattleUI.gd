@@ -118,7 +118,8 @@ func set_stage_enabled(value: bool) -> void:
 func _command_menu_allowed() -> bool:
 	return stage_enabled and on_action_selection and _menu.is_empty() \
 		and not (target_picker and target_picker.active) and not stage.busy \
-		and not _archive_open and not _battle_opening_locked and not battle_result_overlay.visible
+		and not _archive_open and not _battle_opening_locked and not battle_result_overlay.visible \
+		and not stage.is_lineup_moving()
 
 
 func _same_actor(first: Dictionary, second: Dictionary) -> bool:

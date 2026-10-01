@@ -930,3 +930,23 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 	await source.lunge_return(0.4)
 	await get_tree().create_timer(0.12).timeout
 	busy = false
+
+
+# --- Nothing acts while the line-up is being reshuffled ------------------------------------
+
+func is_lineup_moving() -> bool:
+	return _arrival_in_progress()
+
+
+## Applies any pending re-ordering NOW and waits until every card is at rest. Enemy actions and
+## the player's commands wait for this, so a hit never lands in the middle of a shuffle.
+func wait_for_lineup_settled() -> void:
+	var was_busy: bool = busy
+	busy = false
+	_order_clock = ORDER_POLL_SECONDS
+	_update_order(0.0)
+	busy = was_busy
+	var guard: int = 0
+	while guard < 900 and _arrival_in_progress():
+		await get_tree().process_frame
+		guard += 1

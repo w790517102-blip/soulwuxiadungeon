@@ -506,11 +506,15 @@ func _check_stage(fixture: Node) -> void:
 	_expect(wrapper.slot_rank == 2 and stage.cards[mid_key].slot_rank == 0 and stage.cards[slow_key].slot_rank == 1, "ranks follow the new order")
 	_expect(wrapper.is_relocating() and stage.cards[mid_key].is_relocating(), "cards animate to their new slots")
 	_expect(absf(wrapper.home_position.x) > absf(before_x) and absf(stage.cards[mid_key].home_position.x) < absf(stage.cards[slow_key].home_position.x), "the card that acted now stands outermost; the next to act is innermost")
-	var faded: bool = false
+	var always_visible: bool = true
+	var min_z: float = wrapper.position.z
+	var started_x: float = wrapper.position.x
 	for wrap_frame: int in range(60):
 		await process_frame
-		faded = faded or wrapper.card_mesh.transparency > 0.5
-	_expect(faded, "the card that acted fades out while it wraps around")
+		always_visible = always_visible and wrapper.card_mesh.transparency < 0.01
+		min_z = minf(min_z, wrapper.position.z)
+	_expect(always_visible, "the card that acted never vanishes: it walks back to the end of the row")
+	_expect(min_z < wrapper.home_position.z - 0.5, "on the way it passes behind the other cards (depth dip)")
 	for wrap_frame: int in range(40):
 		await process_frame
 	for card_key: String in stage.cards.keys():
@@ -574,7 +578,7 @@ func _check_motion(card: Node3D, other: Node3D, stage: Node3D, kind: String) -> 
 	_expect(card.position.is_equal_approx(home) and card.rotation.is_equal_approx(card.home_rotation), "%s motion returns the card to its slot" % kind)
 	match kind:
 		"attack":
-			_expect(peak_distance > 1.8 and peak_z_forward >= 0.5, "attack lunges toward the centre and swings out toward the viewer")
+			_expect(peak_distance > 2.0 and absf(peak_z_back) >= 1.0, "attack lunges toward the target with a clear Z movement (depth), not just sideways")
 		"hit":
 			_expect(peak_z_back <= -1.4, "heavy hit knocks the card back into depth")
 		"dodge":

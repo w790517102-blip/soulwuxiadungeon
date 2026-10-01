@@ -14,7 +14,7 @@ const CARD_THICKNESS := 0.04
 const LAYER_GAP := 0.05
 
 const WINDUP_DISTANCE := 0.45
-const LUNGE_FRACTION := 0.46
+const LUNGE_FRACTION := 0.6
 const LUNGE_LIFT := 0.6 # Z toward the camera at contact, so the swing reads in depth.
 const KNOCKBACK := Vector3(0.55, -0.12, -0.9)
 const KNOCKBACK_HEAVY := Vector3(1.0, -0.2, -1.6)
@@ -356,7 +356,9 @@ func attack_motion(target_position: Vector3) -> void:
 	var windup_position: Vector3 = home_position - line.normalized() * WINDUP_DISTANCE + Vector3(0.0, -0.06, -0.25)
 	# Travel sideways/up toward the target, but always swing OUT toward the viewer
 	# in Z: the opponent is deeper, so following line.z would pull the card back.
-	var strike_position: Vector3 = Vector3(home_position.x + line.x * LUNGE_FRACTION, home_position.y + line.y * LUNGE_FRACTION + 0.12, home_position.z + LUNGE_LIFT)
+	# Travel along the whole line to the target, depth included: toward a deeper enemy the
+	# card visibly goes away from the camera (and shrinks), toward a nearer one it comes out.
+	var strike_position: Vector3 = home_position + line * LUNGE_FRACTION + Vector3(0.0, 0.12, 0.0)
 	# Open the card toward the viewer at contact: half of the resting yaw.
 	var strike_rotation: Vector3 = Vector3(home_rotation.x + 0.10, home_rotation.y * 0.45, home_rotation.z - toward * 0.12)
 	_motion_tween = create_tween()
@@ -509,14 +511,14 @@ func relocate(new_home: Vector3, wrap: bool, time_scale: float = 1.0) -> void:
 	home_position = new_home
 	_relocate_tween = create_tween()
 	if wrap:
-		var exit_point: Vector3 = start + Vector3(_toward() * 1.3, 0.0, 0.0)
-		_relocate_tween.tween_property(self, "position", exit_point, 0.2 * time_scale).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		_relocate_tween.parallel().tween_method(set_fade, 0.0, 1.0, 0.2 * time_scale)
-		_relocate_tween.tween_callback(func() -> void:
-			position = new_home + Vector3(-_toward() * 1.3, 0.0, 0.0)
-		)
-		_relocate_tween.tween_property(self, "position", new_home, 0.24 * time_scale).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		_relocate_tween.parallel().tween_method(set_fade, 1.0, 0.0, 0.24 * time_scale)
+		# The card that just acted walks back along the row to the far end, passing BEHIND
+		# the others (a dip in Z) so it reads as going to the back of the queue.
+		var path := func(t: float) -> void:
+			var eased: float = t * t * (3.0 - 2.0 * t)
+			var along: Vector3 = start.lerp(new_home, eased)
+			along.z += -0.9 * sin(t * PI)
+			position = along
+		_relocate_tween.tween_method(path, 0.0, 1.0, 0.7 * time_scale)
 	else:
 		_relocate_tween.tween_property(self, "position", new_home, 0.4 * time_scale).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
@@ -563,7 +565,9 @@ func lunge_to(target_position: Vector3) -> void:
 	var toward: float = _toward()
 	var line: Vector3 = target_position - home_position
 	var windup_position: Vector3 = home_position - line.normalized() * WINDUP_DISTANCE + Vector3(0.0, -0.06, -0.25)
-	var strike_position: Vector3 = Vector3(home_position.x + line.x * LUNGE_FRACTION, home_position.y + line.y * LUNGE_FRACTION + 0.12, home_position.z + LUNGE_LIFT)
+	# Travel along the whole line to the target, depth included: toward a deeper enemy the
+	# card visibly goes away from the camera (and shrinks), toward a nearer one it comes out.
+	var strike_position: Vector3 = home_position + line * LUNGE_FRACTION + Vector3(0.0, 0.12, 0.0)
 	var strike_rotation: Vector3 = Vector3(home_rotation.x + 0.10, home_rotation.y * 0.45, home_rotation.z - toward * 0.12)
 	_motion_tween = create_tween()
 	_motion_tween.tween_property(self, "position", windup_position, 0.12)
