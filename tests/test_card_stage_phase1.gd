@@ -580,6 +580,19 @@ func _check_stage(fixture: Node) -> void:
 	ui.set_teams(allies, enemies)
 	stage = ui.stage
 
+	# --- The three-line message box keeps the log's colours ---------------------------
+	var colour_log: Node = ui.log_panel
+	colour_log._chars_per_sec = 1000000.0
+	colour_log.log_system("輪到「測試」行動。")
+	colour_log.log("擊中 測試，造成 [color=#ffd447]24[/color] 點傷害！")
+	for wait_frame: int in range(120):
+		await process_frame
+		if not colour_log._typing and colour_log._queue.is_empty():
+			break
+	var boxed: String = colour_log.recent_bbcode(colour_log.get_parsed_text(), 3)
+	_expect(boxed.contains("[color=#7fd0ff]輪到「測試」行動。[/color]"), "system lines keep their colour in the message box")
+	_expect(boxed.contains("[color=#ffd447]24[/color]"), "damage numbers keep their colour in the message box")
+
 	_stage_checks_completed = true
 
 

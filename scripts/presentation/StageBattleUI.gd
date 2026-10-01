@@ -71,6 +71,7 @@ func _build_stage_hud() -> void:
 	plate.add_theme_stylebox_override("panel", _plate_style())
 	_stage_hud.add_child(plate)
 	_recent_log = RichTextLabel.new()
+	_recent_log.bbcode_enabled = true
 	_recent_log.name = "RecentThreeLines"
 	_recent_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_recent_log.scroll_active = false
@@ -284,8 +285,12 @@ func _process(delta: float) -> void:
 		if box and box.visible: _position_bubble_on_portrait(slot, box)
 	var shown_text: String = log_panel.get_parsed_text()
 	if log_panel.visible_characters >= 0: shown_text = shown_text.left(log_panel.visible_characters)
-	var lines: PackedStringArray = shown_text.strip_edges().split("\n", false)
-	_recent_log.text = "\n".join(lines.slice(maxi(0, lines.size() - 3)))
+	if log_panel.has_method("recent_bbcode"):
+		# Same colours as the log itself (the box used to copy plain text only).
+		_recent_log.text = log_panel.recent_bbcode(shown_text, 3)
+	else:
+		var lines: PackedStringArray = shown_text.strip_edges().split("\n", false)
+		_recent_log.text = "\n".join(lines.slice(maxi(0, lines.size() - 3)))
 	_continue.visible = (log_panel._waiting_for_continue or log_panel.waiting_for_message_advance()) and not _archive_open and _menu.is_empty()
 	if log_panel.get("_continue_hint_label"):
 		log_panel.get("_continue_hint_label").hide()
