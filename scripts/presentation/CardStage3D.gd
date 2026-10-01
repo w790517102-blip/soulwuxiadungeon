@@ -2,7 +2,7 @@ extends "res://scripts/presentation/CombatStage25D.gd"
 ## Card Stage: the same camera, background, FX volume and command tray as
 ## STAGE_25D, with upright portrait cards placed in one row per camp (see
 ## CardStageFormation). The party camp stands in the foreground on the left and
-## fills about 4/5 of the screen height; the enemy camp stands far back on the
+## fills about 3/5 of the screen height; the enemy camp stands far back on the
 ## right at about 2/5. Both sizes come from the perspective camera (distance and
 ## FOV), never from scale. Party cards turn hard toward the enemy; enemy cards
 ## stay nearly frontal so their information remains easy to read.
@@ -14,7 +14,7 @@ const CAMERA_Z: float = 18.0
 ## Backdrop sits well behind the enemy camp so MISS ribbons dissipate in front of it.
 const CARD_STAGE_BACKGROUND_DEPTH: float = -11.0
 ## Party yaw presets in degrees (turned toward the enemy); F9 cycles in debug builds.
-const YAW_PRESETS: Array[float] = [45.0, 50.0, 55.0]
+const YAW_PRESETS: Array[float] = [35.0, 40.0, 45.0]
 const DEFAULT_YAW_PRESET: int = 1
 ## Enemy cards keep a slight inward turn only.
 const ENEMY_YAW_DEGREES: float = 12.0
@@ -42,7 +42,7 @@ func _ready() -> void:
 	super._ready()
 
 
-## Dev aid: cycles the party yaw 50 -> 55 -> 45 -> 50 and re-seats idle cards.
+## Dev aid: cycles the party yaw 40 -> 45 -> 35 -> 40 and re-seats idle cards.
 func cycle_yaw_preset() -> float:
 	if busy:
 		return card_yaw_degrees

@@ -8,6 +8,8 @@ const PORTRAIT_CANVAS := Vector2i(400, 600)
 const PORTRAIT_VIEWPORT := Vector2i(800, 1200)
 ## World size (2:3). Kept as data; CardStage3D reads card_size for picking.
 const PORTRAIT_SIZE := Vector2(2.3, 3.45)
+## Edge thickness behind the face (was 0.06; reduced by one third).
+const CARD_THICKNESS := 0.04
 
 const WINDUP_DISTANCE := 0.45
 const LUNGE_FRACTION := 0.46
@@ -112,14 +114,14 @@ func _build_card() -> void:
 	card_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_mesh)
 	var back_mesh := BoxMesh.new()
-	back_mesh.size = Vector3(card_size.x * 0.973, card_size.y * 0.973, 0.06)
+	back_mesh.size = Vector3(card_size.x * 0.973, card_size.y * 0.973, CARD_THICKNESS)
 	var back_material := StandardMaterial3D.new()
 	back_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	back_material.albedo_color = Color("675131")
 	card_back = MeshInstance3D.new()
 	card_back.name = "CardThickness"
 	card_back.mesh = back_mesh
-	card_back.position.z = -0.04
+	card_back.position.z = -(0.01 + CARD_THICKNESS / 2.0)
 	card_back.material_override = back_material
 	card_back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_back)
