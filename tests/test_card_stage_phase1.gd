@@ -23,6 +23,7 @@ func _expect(condition: bool, message: String) -> void:
 func _run() -> void:
 	_check_formation_table()
 	_check_rank_assignment()
+	_check_enemy_art_table()
 	await _check_entry_modes()
 	var fixture: Node = (load("res://scenes/presentation/card_stage_prototype.tscn") as PackedScene).instantiate()
 	fixture.auto_start = false
@@ -319,7 +320,9 @@ func _check_stage(fixture: Node) -> void:
 
 	# --- Character art layers ------------------------------------------------------
 	_expect(fast.art_layer.visible and not fast.portrait.visible, "an actor with new battle art shows it on its own layer instead of the old portrait")
-	_expect(not foe_fast.art_layer.visible and foe_fast.portrait.visible, "an actor without new art keeps its existing portrait")
+	_expect(foe_fast.art_layer.visible and not foe_fast.portrait.visible, "an enemy with supplied art uses the art layer")
+	var legacy_enemy_art: Dictionary = CardStageArtScript.entry_for({"id": "no_such_enemy"})
+	_expect(legacy_enemy_art.is_empty(), "an actor without supplied art keeps its existing portrait")
 	_expect(fast.ink_back != null and fast.ink_back.material_override is StandardMaterial3D and fast.ink_back.material_override.albedo_texture != null, "every card has the template ink-wash window behind its art")
 	_expect(fast.ink_back.position.z < fast.art_layer.position.z and fast.art_layer.position.z < fast.card_mesh.position.z, "layers stack ink < art < face, giving real parallax")
 	_expect(fast.card_back.position.z + fast.card_back.mesh.size.z / 2.0 < fast.ink_back.position.z, "the card edge sits behind every layer")
@@ -333,7 +336,7 @@ func _check_stage(fixture: Node) -> void:
 	_expect(is_equal_approx(CardStageArtScript.quad_center({"focus": Vector2(0.5, 0.5), "size": 2.0, "target": Vector2(0.3, 0.7)}).x, 0.3), "art placement lands the face focus on the target point")
 	var guest_entry: Dictionary = CardStageArtScript.entry_for({"id": "zuoyin_stalactite_guest"})
 	_expect(String(guest_entry.get("path", "")).ends_with("zuo_yin_battle_new.webp"), "the stalactite guest resolves to Zuo Yin's new art")
-	_expect(CardStageArtScript.entry_for({"id": "molin_yanjiang"}).is_empty(), "enemies without new art have no entry")
+	_expect(CardStageArtScript.entry_for({"id": "molin_yanjiang"}).mode == "cover", "Molin Yanjiang has landscape cover art")
 
 	# --- Target selection: the hovered card lifts, its camp-mates step aside -----
 	stage.set_hover_target({})
@@ -498,3 +501,18 @@ func _check_motion(card: Node3D, other: Node3D, stage: Node3D, kind: String) -> 
 func has_node_recursive_visible(root_node: Node, node_name: String) -> bool:
 	var found: Node = root_node.find_child(node_name, true, false)
 	return found != null and found is CanvasItem and (found as CanvasItem).visible
+
+
+func _check_enemy_art_table() -> void:
+	var expected: Array = ["molin_yanjiang", "molin_yanjiang_phase2", "fidgety_sewer_fish", "broken_string_tone_phantom", "turbid_tone_phantom", "broken_talisman_tone_phantom", "bitterness_tone_phantom", "echo_tone_phantom", "fixation_tone_phantom", "yumei_sewer_bat", "yumei_sewer_rat", "bamboo_wild_boar", "bamboo_macaque", "bamboo_poison_snake"]
+	for enemy_id: String in expected:
+		var entry: Dictionary = CardStageArtScript.entry_for({"id": enemy_id})
+		_expect(not entry.is_empty() and FileAccess.file_exists(entry.path), "%s has supplied art that exists" % enemy_id)
+		var texture: Texture2D = load(entry.path) as Texture2D
+		_expect(texture != null and texture.get_width() <= 1024, "%s art loads, at most 1024 px wide" % enemy_id)
+		for window: Vector2 in [Vector2(2.0, 1.55), Vector2(1.5, 1.15)]:
+			var layout: Dictionary = CardStageArtScript.cover_layout(entry, window, float(texture.get_width()) / float(texture.get_height()))
+			var half: Vector2 = layout.size / 2.0
+			_expect(layout.size.x >= window.x - 0.0001 and layout.size.y >= window.y - 0.0001, "%s art covers the whole window" % enemy_id)
+			_expect(absf(layout.center.x) + window.x / 2.0 <= half.x + 0.0001 and absf(layout.center.y) + window.y / 2.0 <= half.y + 0.0001, "%s art never exposes an empty edge" % enemy_id)
+	_expect(CardStageArtScript.entry_for({"id": "x", "portrait_path": "res://assets/Enemy/wild_boar.png"}).path.ends_with("enemy_boar.webp"), "portrait file names resolve to the new art")

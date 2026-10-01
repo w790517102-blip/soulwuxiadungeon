@@ -429,11 +429,19 @@ func _apply_art(actor: Dictionary) -> void:
 		art_key = key
 		var texture: Texture2D = load(key) as Texture2D
 		art_material.set_shader_parameter("art", texture)
-		(art_layer.mesh as QuadMesh).size = Vector2(float(entry.size), float(entry.size))
-		# `target` is measured from the window centre.
-		var centre: Vector2 = window_local.get_center() + CardStageArt.quad_center(entry)
+		var quad_size := Vector2(float(entry.get("size", 1.0)), float(entry.get("size", 1.0)))
+		var offset := Vector2.ZERO
+		if String(entry.get("mode", "fit")) == "cover":
+			var layout: Dictionary = CardStageArt.cover_layout(entry, window_local.size, float(texture.get_width()) / float(texture.get_height()))
+			quad_size = layout.size
+			offset = layout.center
+		else:
+			offset = CardStageArt.quad_center(entry)
+		(art_layer.mesh as QuadMesh).size = quad_size
+		# Offsets are measured from the window centre.
+		var centre: Vector2 = window_local.get_center() + offset
 		art_layer.position = Vector3(centre.x, centre.y, -LAYER_GAP)
-		art_material.set_shader_parameter("size", float(entry.size))
+		art_material.set_shader_parameter("size", quad_size)
 		art_material.set_shader_parameter("center", centre)
 	portrait.visible = false
 	art_layer.visible = true

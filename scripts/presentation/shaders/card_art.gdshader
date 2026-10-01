@@ -6,7 +6,7 @@ render_mode unshaded, cull_disabled;
 
 uniform sampler2D art : source_color, filter_linear_mipmap;
 uniform vec2 center = vec2(0.0);
-uniform float size = 3.0;
+uniform vec2 size = vec2(3.0);
 uniform vec4 clip_rect = vec4(-1.0, -1.0, 1.0, 1.0);
 
 void fragment() {
