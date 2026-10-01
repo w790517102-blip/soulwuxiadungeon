@@ -10,6 +10,15 @@ const PORTRAIT_VIEWPORT := Vector2i(800, 1200)
 const PORTRAIT_SIZE := Vector2(2.3, 3.45)
 ## Edge thickness behind the face (was 0.06; reduced by one third).
 const CARD_THICKNESS := 0.04
+## Distance between the face (z = 0), the art layer and the ink-wash layer behind it.
+const LAYER_GAP := 0.05
+## Card-local height of the information band top; the art is cut off below it.
+const ART_CLIP_Y := -0.24
+## The art is cut at the inner edge of the frame (card-local half width): no overflow.
+const ART_CLIP_X := 1.04
+## The art may not rise above the card top either.
+const ART_CLIP_TOP := 1.70
+const CardStageArt = preload("res://scripts/presentation/CardStageArt.gd")
 
 const WINDUP_DISTANCE := 0.45
 const LUNGE_FRACTION := 0.46
@@ -25,6 +34,10 @@ const TURN_PULSE_SECONDS := 1.5
 var card_size: Vector2 = PORTRAIT_SIZE
 var slot_rank: int = 0
 var turn_active: bool = false
+var ink_back: MeshInstance3D
+var art_layer: MeshInstance3D
+var art_material: ShaderMaterial
+var art_key: String = ""
 var _turn_overlay: ColorRect
 var _turn_tween: Tween
 
@@ -64,8 +77,13 @@ func _build_card() -> void:
 	root.size = Vector2(PORTRAIT_CANVAS)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card_viewport.add_child(root)
-	_panel(root, Rect2(8, 8, 384, 584), Color("0b1118"), GOLD, 4)
-	_panel(root, Rect2(18, 18, 364, 564), Color("101822"), Color("685432"), 1)
+	# The face is the FRONT layer: frame, name bar and information band. Its portrait
+	# window is transparent so the art layer and the ink-wash back layer show through.
+	_panel(root, Rect2(8, 8, 384, 584), Color.TRANSPARENT, GOLD, 4)
+	_panel(root, Rect2(18, 18, 364, 564), Color.TRANSPARENT, Color("685432"), 1)
+	_panel(root, Rect2(18, 18, 364, 52), Color(0.03, 0.04, 0.06, 0.58), Color.TRANSPARENT, 0)
+	_panel(root, Rect2(18, 342, 364, 240), Color(0.04, 0.055, 0.08, 0.95), Color("685432"), 1)
+	_corner_brackets(root, Rect2(26, 74, 348, 264))
 	_content = Control.new()
 	_content.name = "ActorContent"
 	_content.size = Vector2(PORTRAIT_CANVAS)
@@ -143,6 +161,36 @@ func _build_card() -> void:
 	card_mesh.material_override = material
 	card_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_mesh)
+	# Back layers, behind the face: ink-wash paper, then the character art. The gap
+	# between layers gives a little real parallax when the card turns or the camera
+	# drifts, and lets the art overflow the frame.
+	ink_back = MeshInstance3D.new()
+	ink_back.name = "InkWash"
+	var ink_mesh := QuadMesh.new()
+	ink_mesh.size = card_size * 0.97
+	ink_back.mesh = ink_mesh
+	var ink_material := ShaderMaterial.new()
+	ink_material.shader = load("res://scripts/presentation/shaders/card_ink_wash.gdshader")
+	ink_material.set_shader_parameter("seed", float(get_instance_id() % 97) / 97.0 * 6.0)
+	ink_back.material_override = ink_material
+	ink_back.position.z = -2.0 * LAYER_GAP
+	ink_back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(ink_back)
+	art_layer = MeshInstance3D.new()
+	art_layer.name = "CharacterArt"
+	art_layer.mesh = QuadMesh.new()
+	art_material = ShaderMaterial.new()
+	art_material.shader = load("res://scripts/presentation/shaders/card_art.gdshader")
+	art_material.set_shader_parameter("clip_y", ART_CLIP_Y)
+	art_material.set_shader_parameter("clip_x", ART_CLIP_X)
+	art_material.set_shader_parameter("clip_top", ART_CLIP_TOP)
+	art_layer.material_override = art_material
+	art_layer.position.z = -LAYER_GAP
+	# Transparent layers of ONE card must draw back to front: art behind the face.
+	art_layer.sorting_offset = -0.3
+	art_layer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	art_layer.visible = false
+	add_child(art_layer)
 	var back_mesh := BoxMesh.new()
 	back_mesh.size = Vector3(card_size.x * 0.973, card_size.y * 0.973, CARD_THICKNESS)
 	var back_material := StandardMaterial3D.new()
@@ -151,7 +199,7 @@ func _build_card() -> void:
 	card_back = MeshInstance3D.new()
 	card_back.name = "CardThickness"
 	card_back.mesh = back_mesh
-	card_back.position.z = -(0.01 + CARD_THICKNESS / 2.0)
+	card_back.position.z = -(2.0 * LAYER_GAP + 0.01 + CARD_THICKNESS / 2.0)
 	card_back.material_override = back_material
 	card_back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_back)
@@ -164,6 +212,8 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 		presentation_state = PresentationState.EMPTY
 		_content.hide()
 		portrait.texture = null
+		art_layer.visible = false
+		art_key = ""
 		_portrait_path = ""
 		for label: Label in [name_label, level_label, hp_label, mp_label, element_label, force_label, species_label, guest_label]:
 			label.text = ""
@@ -177,6 +227,7 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	presentation_state = PresentationState.ENEMY if is_enemy else (PresentationState.GUEST if guest else PresentationState.PARTY)
 	name_label.text = String(actor.get("display_name", actor.get("name", "未知")))
 	_update_portrait(String(actor.get("portrait_path", "")))
+	_apply_art(actor)
 	var force := _active_force(actor)
 	var element := String(actor.get("element", "")) if is_enemy else String(force.get("element", actor.get("element", "")))
 	if element.is_empty():
@@ -317,3 +368,81 @@ func guard_motion() -> void:
 	_motion_tween.tween_property(self, "position", home_position, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.24)
 	await _wait_for_motion(_motion_tween)
+
+
+# --- Art layer and ornaments -------------------------------------------------------
+
+func _apply_art(actor: Dictionary) -> void:
+	var entry: Dictionary = CardStageArt.entry_for(actor)
+	if entry.is_empty() or not ResourceLoader.exists(String(entry.path)):
+		art_layer.visible = false
+		art_key = ""
+		portrait.visible = true
+		return
+	var key: String = String(entry.path)
+	if key != art_key:
+		art_key = key
+		var texture: Texture2D = load(key) as Texture2D
+		art_material.set_shader_parameter("art", texture)
+		(art_layer.mesh as QuadMesh).size = Vector2(float(entry.size), float(entry.size))
+		var centre: Vector2 = CardStageArt.quad_center(entry)
+		art_layer.position = Vector3(centre.x, centre.y, -LAYER_GAP)
+		art_material.set_shader_parameter("size", float(entry.size))
+		art_material.set_shader_parameter("center_y", centre.y)
+		art_material.set_shader_parameter("center_x", centre.x)
+	portrait.visible = false
+	art_layer.visible = true
+
+
+## Small gold corner marks around the portrait window (placeholder ornament).
+func _corner_brackets(parent: Control, window: Rect2) -> void:
+	var length: float = 30.0
+	var thickness: float = 3.0
+	for corner: Vector2 in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
+		var anchor: Vector2 = window.position + window.size * corner
+		var horizontal := ColorRect.new()
+		horizontal.color = GOLD
+		horizontal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		horizontal.size = Vector2(length, thickness)
+		horizontal.position = Vector2(anchor.x - (length if corner.x == 1.0 else 0.0), anchor.y - (thickness if corner.y == 1.0 else 0.0))
+		parent.add_child(horizontal)
+		var vertical := ColorRect.new()
+		vertical.color = GOLD
+		vertical.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vertical.size = Vector2(thickness, length)
+		vertical.position = Vector2(anchor.x - (thickness if corner.x == 1.0 else 0.0), anchor.y - (length if corner.y == 1.0 else 0.0))
+		parent.add_child(vertical)
+
+
+# --- Target-selection hover: lift forward / step aside ------------------------------
+
+var fan_offset: Vector3 = Vector3.ZERO
+var _fan_tween: Tween
+
+
+## Slides the card to home + offset (used while a target is being chosen). Ignored
+## while an attack / hit / dodge motion owns the card.
+func fan_to(offset: Vector3, duration: float = 0.2, lifted: bool = false) -> void:
+	if _motion_tween and _motion_tween.is_valid() and _motion_tween.is_running():
+		return
+	if _fan_tween and _fan_tween.is_valid():
+		_fan_tween.kill()
+	fan_offset = offset
+	if position.is_equal_approx(home_position + offset):
+		_fan_tween = null
+		return
+	_fan_tween = create_tween()
+	_fan_tween.tween_property(self, "position", home_position + offset, duration).set_trans(Tween.TRANS_BACK if lifted else Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+func _kill_motion() -> void:
+	# Any motion (and reset_pose) takes over from wherever the fan left the card.
+	super._kill_motion()
+	if _fan_tween and _fan_tween.is_valid():
+		_fan_tween.kill()
+	_fan_tween = null
+
+
+func reset_pose() -> void:
+	super.reset_pose()
+	fan_offset = Vector3.ZERO

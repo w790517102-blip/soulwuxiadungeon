@@ -168,6 +168,7 @@ func set_teams(allies: Array, enemies: Array, guest: Dictionary = {}, status_sou
 	for card in cards.values():
 		card.queue_free()
 	cards.clear()
+	hover_key = ""
 	slots.clear()
 	var party: Array = allies.duplicate()
 	if not guest.is_empty() and party.size() < 3:
@@ -223,7 +224,9 @@ func pick_actor(screen_position: Vector2, candidates: Array, include_dead: bool 
 		var card := card_for(actor)
 		if not card or (int(actor.get("hp", 0)) <= 0 and not include_dead):
 			continue
-		var inverse := card.global_transform.affine_inverse()
+		# Hit-test the card where it STANDS (home), not where hover animation has moved
+		# it: otherwise a lifted card would slip from under the pointer and flicker.
+		var inverse: Transform3D = (actor_root.global_transform * Transform3D(Basis.from_euler(card.home_rotation), card.home_position)).affine_inverse()
 		var local_origin: Vector3 = inverse * origin
 		var local_direction: Vector3 = inverse.basis * direction
 		if absf(local_direction.z) < 0.0001:
@@ -234,3 +237,82 @@ func pick_actor(screen_position: Vector2, candidates: Array, include_dead: bool 
 			nearest = distance
 			selected = actor
 	return selected
+
+
+# --- Target selection: the hovered card lifts, its camp-mates step aside -------------
+
+## How far a hovered card comes toward the camera and up.
+const FAN_LIFT := Vector3(0.0, 0.10, 0.9)
+## Breathing room kept between the lifted card and the neighbours that make way.
+const FAN_MARGIN: float = 0.14
+## Neighbours also recede a little so the lifted card clearly leads.
+const FAN_RECEDE: float = 0.2
+
+var hover_key: String = ""
+
+
+## Called by the target picker with the card under the pointer ({} = none). Cards of
+## the hovered camp that would overlap it slide outward (like picking from a hand of
+## cards); everything returns when the pointer leaves or the selection closes.
+func set_hover_target(actor: Dictionary) -> void:
+	var key: String = "" if actor.is_empty() else actor_key(actor)
+	if key == hover_key:
+		return
+	hover_key = key
+	var offsets: Dictionary = fan_offsets_for(key)
+	for card_key: String in cards.keys():
+		var card: Node3D = cards[card_key]
+		card.fan_to(offsets.get(card_key, Vector3.ZERO), 0.2 if card_key == key else 0.24, card_key == key)
+
+
+## Pure layout of the fan: card key -> offset from its home position.
+func fan_offsets_for(key: String) -> Dictionary:
+	var result: Dictionary = {}
+	if key.is_empty() or not cards.has(key):
+		return result
+	var hovered: Node3D = cards[key]
+	result[key] = FAN_LIFT
+	var hovered_extent: float = _half_extent(hovered)
+	for side: float in [-1.0, 1.0]:
+		var neighbours: Array = []
+		for other_key: String in cards.keys():
+			var other: Node3D = cards[other_key]
+			if other_key == key or other.is_enemy != hovered.is_enemy:
+				continue
+			if signf(other.home_position.x - hovered.home_position.x) == side:
+				neighbours.append(other_key)
+		neighbours.sort_custom(func(a: String, b: String) -> bool:
+			return absf(cards[a].home_position.x - hovered.home_position.x) < absf(cards[b].home_position.x - hovered.home_position.x)
+		)
+		var inner_x: float = hovered.home_position.x
+		var inner_extent: float = hovered_extent
+		for other_key: String in neighbours:
+			var other: Node3D = cards[other_key]
+			var needed: float = inner_extent + _half_extent(other) + FAN_MARGIN
+			var gap: float = side * (other.home_position.x - inner_x)
+			var shift: float = maxf(0.0, needed - gap)
+			shift = _limit_shift_to_screen(other, side, shift)
+			result[other_key] = Vector3(side * shift, 0.0, -FAN_RECEDE if shift > 0.0 else 0.0)
+			inner_x = other.home_position.x + side * shift
+			inner_extent = _half_extent(other)
+	return result
+
+
+## Half of a card's sideways extent as seen from the camera (it is turned by yaw).
+func _half_extent(card: Node3D) -> float:
+	return card.card_size.x / 2.0 * absf(cos(card.home_rotation.y))
+
+
+## Never slide a card off the screen: shrink the shift until its edge is on screen.
+func _limit_shift_to_screen(card: Node3D, side: float, shift: float) -> float:
+	var screen_width: float = get_viewport().get_visible_rect().size.x
+	var margin: float = screen_width * 0.01
+	var extent: float = _half_extent(card)
+	for attempt: int in range(10):
+		var centre: Vector3 = card.home_position + Vector3(side * shift, 0.0, 0.0)
+		var edge: Vector3 = centre + Vector3(side * extent, 0.0, 0.0)
+		var x: float = camera.unproject_position(actor_root.to_global(edge)).x
+		if x >= margin and x <= screen_width - margin:
+			return shift
+		shift *= 0.7
+	return 0.0

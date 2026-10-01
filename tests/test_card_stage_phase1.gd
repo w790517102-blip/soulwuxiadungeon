@@ -3,9 +3,11 @@ extends SceneTree
 ## Run explicitly with --headless --path . --script tests/test_card_stage_phase1.gd.
 
 const Formation := preload("res://scripts/presentation/CardStageFormation.gd")
+const CardStageArtScript := preload("res://scripts/presentation/CardStageArt.gd")
 
 var _failures: Array[String] = []
 var _assertions: int = 0
+var _stage_checks_completed: bool = false
 
 
 func _initialize() -> void:
@@ -32,6 +34,7 @@ func _run() -> void:
 	_expect(fixture.prepared, "card stage preview prepares")
 	if fixture.prepared:
 		await _check_stage(fixture)
+		_expect(_stage_checks_completed, "the stage checks ran to the end (no silent script abort)")
 	fixture.queue_free()
 	await process_frame
 	if _failures.is_empty():
@@ -294,6 +297,71 @@ func _check_stage(fixture: Node) -> void:
 		_expect(endpoint.x > destination.home_position.x, "miss ribbon continues through to the far side (target %d)" % target_index)
 		_expect(not stage.busy and stage.fx_root.get_child_count() == 0 and allies + enemies == before, "miss completes cleanly (target %d)" % target_index)
 
+	# --- Character art layers ------------------------------------------------------
+	_expect(fast.art_layer.visible and not fast.portrait.visible, "an actor with new battle art shows it on its own layer instead of the old portrait")
+	_expect(not foe_fast.art_layer.visible and foe_fast.portrait.visible, "an actor without new art keeps its existing portrait")
+	_expect(fast.ink_back != null and fast.ink_back.material_override is ShaderMaterial, "every card has a procedural ink-wash back layer")
+	_expect(fast.ink_back.position.z < fast.art_layer.position.z and fast.art_layer.position.z < fast.card_mesh.position.z, "layers stack ink < art < face, giving real parallax")
+	_expect(fast.card_back.position.z + fast.card_back.mesh.size.z / 2.0 < fast.ink_back.position.z, "the card edge sits behind every layer")
+	var art_texture: Texture2D = fast.art_material.get_shader_parameter("art")
+	_expect(art_texture != null and maxi(art_texture.get_width(), art_texture.get_height()) <= 1024, "battle art is downscaled to at most 1024 px")
+	for art_path: String in ["liu_yu", "su_mien", "zuo_yin"]:
+		var art_file: String = "res://assets/sprites/battle_cards/%s_battle_new.webp" % art_path
+		_expect(FileAccess.file_exists(art_file) and FileAccess.get_file_as_bytes(art_file).size() < 1600000, "%s art is a lossless WebP under 1.6 MB (originals were 2.4-2.8 MB PNGs)" % art_path)
+	_expect(float(fast.art_material.get_shader_parameter("clip_y")) > fast.card_back.position.y - fast.card_size.y / 2.0, "art is clipped above the card bottom")
+	_expect(float(fast.art_material.get_shader_parameter("clip_x")) <= fast.card_size.x / 2.0 - 0.05 and float(fast.art_material.get_shader_parameter("clip_top")) <= fast.card_size.y / 2.0, "art is cropped inside the frame on both sides and the top (no overflow)")
+	_expect(is_equal_approx(CardStageArtScript.quad_center({"focus": Vector2(0.5, 0.5), "size": 2.0, "target": Vector2(0.3, 0.7)}).x, 0.3), "art placement lands the face focus on the target point")
+	var guest_entry: Dictionary = CardStageArtScript.entry_for({"id": "zuoyin_stalactite_guest"})
+	_expect(String(guest_entry.get("path", "")).ends_with("zuo_yin_battle_new.webp"), "the stalactite guest resolves to Zuo Yin's new art")
+	_expect(CardStageArtScript.entry_for({"id": "molin_yanjiang"}).is_empty(), "enemies without new art have no entry")
+
+	# --- Target selection: the hovered card lifts, its camp-mates step aside -----
+	stage.set_hover_target({})
+	await process_frame
+	var offsets: Dictionary = stage.fan_offsets_for(stage.actor_key(allies[1]))
+	_expect(offsets.has(stage.actor_key(allies[1])) and offsets[stage.actor_key(allies[1])].z >= 0.8, "the hovered card comes toward the camera")
+	_expect(not offsets.has(stage.actor_key(enemies[0])) and not offsets.has(stage.actor_key(enemies[1])), "the other camp is never moved by the hover")
+	var neighbour_offset: Vector3 = offsets.get(stage.actor_key(allies[0]), Vector3.ZERO)
+	_expect(neighbour_offset.x < 0.0 and neighbour_offset.z < 0.0, "a neighbour on the left makes way outward and recedes")
+	stage.set_hover_target(allies[1])
+	for fan_frame: int in range(40):
+		await process_frame
+	_expect(fast.position.is_equal_approx(fast.home_position + offsets[stage.actor_key(allies[1])]), "the hovered card settles lifted")
+	_expect(stage.card_for(allies[0]).position.x < stage.card_for(allies[0]).home_position.x, "the neighbour has stepped aside")
+	for foe_actor: Dictionary in enemies:
+		_expect(stage.card_for(foe_actor).position.is_equal_approx(stage.card_for(foe_actor).home_position), "enemy cards stay put while a party card is hovered")
+	for card_key: String in stage.cards.keys():
+		var settled: Rect2 = stage.card_screen_rect(_actor_of(stage.cards[card_key], stage, allies + enemies))
+		_expect(viewport_rect.grow(viewport_rect.size.x * 0.03).encloses(settled), "a fanned card never leaves the screen (%s)" % card_key)
+	# Hit-testing uses where the cards stand, so hovering does not make them flicker.
+	var home_point: Vector2 = stage.card_screen_rect(allies[1]).get_center()
+	_expect(String(stage.pick_actor(home_point, allies).get("battle_uid", "")) == String(allies[1].battle_uid), "picking is stable while a card is lifted")
+	# Moving the pointer to another card retargets the fan; leaving returns everyone.
+	stage.set_hover_target(allies[0])
+	_expect(stage.hover_key == stage.actor_key(allies[0]), "hover retargets to the new card")
+	stage.set_hover_target({})
+	for fan_frame: int in range(40):
+		await process_frame
+	for card_key: String in stage.cards.keys():
+		_expect(stage.cards[card_key].position.is_equal_approx(stage.cards[card_key].home_position), "%s returns home when the hover ends" % card_key)
+	# An attack takes over a fanned card and still lands it back home.
+	stage.set_hover_target(allies[1])
+	await process_frame
+	fast.hit_reaction()
+	for fan_frame: int in range(90):
+		await process_frame
+	_expect(fast.position.is_equal_approx(fast.home_position), "a motion started on a fanned card ends at the home slot")
+	stage.set_hover_target({})
+	await process_frame
+	# The real target picker drives the fan.
+	ui.target_picker.begin(allies[0], enemies)
+	ui.target_picker._update_pointer(stage.card_screen_rect(enemies[1]).get_center())
+	_expect(stage.hover_key == stage.actor_key(enemies[1]), "the target picker hovers the card under the pointer")
+	ui.target_picker.close()
+	_expect(stage.hover_key == "", "closing target selection ends the hover")
+	for fan_frame: int in range(40):
+		await process_frame
+
 	# --- Turn marker, white pulse and the card command pop-up -------------------
 	_expect(not stage.command_tray.get_node("CommandConsole").visible and not stage.command_tray.get_node("CommandPlaque").visible, "the bottom command console is hidden on Card Stage")
 	var tray_hit: bool = false
@@ -344,6 +412,7 @@ func _check_stage(fixture: Node) -> void:
 	_expect(not stage.turn_marker.visible and not foe_card.turn_active, "clearing removes the marker and the pulse")
 	_expect(not has_node_recursive_visible(ui, "CardCommandMenu"), "no pop-up outside the player's turn")
 
+
 	# --- Legacy switch and empty slots ------------------------------------------
 	ui.set_stage_enabled(false)
 	_expect(not stage.visible and ui.ally_panel.visible, "F8 path restores the legacy panels")
@@ -351,6 +420,7 @@ func _check_stage(fixture: Node) -> void:
 	ui.set_teams([allies[0]], [enemies[0]])
 	_expect(stage.cards.size() == 2, "empty slots are not drawn as cards")
 	_expect(stage.card_for(allies[0]).slot_rank == 0, "a lone actor takes the only slot")
+	_stage_checks_completed = true
 
 
 func _present(stage: Node3D, attacker: Dictionary, target: Dictionary, done: Array) -> void:

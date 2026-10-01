@@ -78,6 +78,7 @@ func begin(source: Dictionary, targets: Array, allow_dead: bool = false) -> void
 
 func close() -> void:
 	_clear_focus()
+	if stage and stage.has_method("set_hover_target"): stage.set_hover_target({})
 	state = State.CLOSED
 	selected = {}
 	caster = {}
@@ -169,6 +170,8 @@ func _update_focus(actor: Dictionary) -> void:
 	_clear_focus()
 	var card: Node3D = stage.card_for(actor)
 	if card: card.set_target_focus(true)
+	# Presentations that fan their cards (CARD_STAGE) react to the hovered card.
+	if stage.has_method("set_hover_target"): stage.set_hover_target(actor)
 
 
 func _update_pointer(point: Vector2) -> void:
