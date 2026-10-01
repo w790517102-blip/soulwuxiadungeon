@@ -1,32 +1,30 @@
 extends Node3D
-## One unbroken brush stroke drawn in 3D space (the 替身符 glyph). Soft-edged ink, not a
-## crayon line: the stroke swells and thins like a pressed brush, each part slowly
-## bleeds outward after it is laid down, and the whole mark then pulls back in.
-## Presentation only.
+## The 替身符 glyph, drawn in 3D space with TWO brushes laid down together: a dry black
+## brush (narrow, opaque, hard edged, never bleeds) and a wet brush (wider, soft edged,
+## bleeding outward as it ages). Presentation only.
+##
+## The glyph is the cursive (草書) character 韋, written in three strokes with the brush
+## lifted between them: a top stroke with a hooked flick, the long vertical that tapers to
+## a tail, and the big curved loop on the right. Points are in a -1..1 box (y up); the
+## pressure array is the brush weight at every point (0..1).
 
-## The supplied glyph, traced as ONE continuous stroke (-1..1 box, y up): a thin tail that
-## sweeps in from the left, the heavy triangle at the top right, the thick diagonal, a lower
-## swing, and a thin trailing flick. `WIDTHS` is the brush pressure at each point (0..1).
-const GLYPH: Array[Vector2] = [
-	Vector2(-0.94, 0.47), Vector2(-0.70, 0.36), Vector2(-0.39, 0.29), Vector2(-0.04, 0.29),
-	Vector2(0.36, 0.34), Vector2(0.71, 0.46), Vector2(0.81, 0.58), Vector2(0.68, 0.78),
-	Vector2(0.43, 0.89), Vector2(0.21, 0.96), Vector2(0.16, 0.81), Vector2(0.11, 0.59),
-	Vector2(-0.04, 0.28), Vector2(-0.20, 0.03), Vector2(-0.45, -0.14), Vector2(-0.51, -0.21),
-	Vector2(-0.26, -0.22), Vector2(0.11, -0.29), Vector2(0.33, -0.38), Vector2(0.30, -0.48),
-	Vector2(0.02, -0.54), Vector2(-0.23, -0.58), Vector2(-0.14, -0.69), Vector2(0.08, -0.81),
-	Vector2(0.23, -0.96),
+const STROKES: Array = [
+	{"points": [Vector2(-0.51, 0.59), Vector2(-0.22, 0.74), Vector2(0.07, 0.91), Vector2(0.25, 0.94), Vector2(0.44, 0.82), Vector2(0.63, 0.68)],
+	"pressure": [0.45, 0.8, 1.0, 0.9, 0.6, 0.2]},
+	{"points": [Vector2(0.25, 0.76), Vector2(0.16, 0.32), Vector2(0.10, -0.19), Vector2(0.07, -0.63), Vector2(-0.01, -0.97)],
+	"pressure": [0.85, 1.0, 1.0, 0.7, 0.06]},
+	{"points": [Vector2(-0.49, 0.03), Vector2(-0.15, 0.0), Vector2(0.22, 0.10), Vector2(0.54, 0.06), Vector2(0.66, -0.15), Vector2(0.49, -0.41), Vector2(0.15, -0.53), Vector2(-0.07, -0.59)],
+	"pressure": [0.15, 0.45, 0.7, 0.85, 0.85, 0.75, 0.5, 0.2]},
 ]
-const WIDTHS: Array[float] = [
-	0.08, 0.15, 0.25, 0.35, 0.5, 0.7, 0.9, 1.0, 1.0, 0.85, 0.9, 0.95, 1.0, 1.0, 1.0, 1.0,
-	0.75, 0.6, 0.5, 0.45, 0.45, 0.4, 0.3, 0.2, 0.05,
-]
-const SAMPLES: int = 150
+const SAMPLES_PER_STROKE: Array[int] = [55, 75, 80]
 const BLEED_SECONDS: float = 0.9
+## How long the whole glyph takes to be written (the bleed ages relative to this).
+const WRITE_SECONDS: float = 1.9
 
 var size: float = 3.0
-var _points: PackedVector2Array = PackedVector2Array()
-var _jitter: PackedFloat32Array = PackedFloat32Array()
-var _pressure: PackedFloat32Array = PackedFloat32Array()
+## Per stroke: {"points", "pressure", "jitter", "start"}.
+var _strokes: Array = []
+var _total_samples: int = 0
 var _mesh_instance: MeshInstance3D
 var _crisp_instance: MeshInstance3D
 var _material: StandardMaterial3D
@@ -62,21 +60,31 @@ func _ready() -> void:
 func _build_path() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	for sample: int in range(SAMPLES):
-		var t: float = float(sample) / float(SAMPLES - 1)
-		var scaled: float = t * float(GLYPH.size() - 1)
-		var index: int = mini(int(scaled), GLYPH.size() - 2)
-		var local: float = scaled - float(index)
-		var p0: Vector2 = GLYPH[maxi(index - 1, 0)]
-		var p1: Vector2 = GLYPH[index]
-		var p2: Vector2 = GLYPH[index + 1]
-		var p3: Vector2 = GLYPH[mini(index + 2, GLYPH.size() - 1)]
-		_points.append(0.5 * ((2.0 * p1) + (-p0 + p2) * local + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * local * local + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * local * local * local))
-		_jitter.append(rng.randf_range(0.9, 1.1))
-		_pressure.append(lerpf(WIDTHS[index], WIDTHS[index + 1], local))
+	_total_samples = 0
+	for stroke_index: int in range(STROKES.size()):
+		var control: Array = STROKES[stroke_index].points
+		var weights: Array = STROKES[stroke_index].pressure
+		var count: int = SAMPLES_PER_STROKE[stroke_index]
+		var points := PackedVector2Array()
+		var pressure := PackedFloat32Array()
+		var jitter := PackedFloat32Array()
+		for sample: int in range(count):
+			var t: float = float(sample) / float(count - 1)
+			var scaled: float = t * float(control.size() - 1)
+			var index: int = mini(int(scaled), control.size() - 2)
+			var local: float = scaled - float(index)
+			var p0: Vector2 = control[maxi(index - 1, 0)]
+			var p1: Vector2 = control[index]
+			var p2: Vector2 = control[index + 1]
+			var p3: Vector2 = control[mini(index + 2, control.size() - 1)]
+			points.append(0.5 * ((2.0 * p1) + (-p0 + p2) * local + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * local * local + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * local * local * local))
+			pressure.append(lerpf(float(weights[index]), float(weights[index + 1]), local))
+			jitter.append(rng.randf_range(0.9, 1.1))
+		_strokes.append({"points": points, "pressure": pressure, "jitter": jitter, "start": _total_samples})
+		_total_samples += count
 
 
-## Lays the stroke down over `seconds`, then returns.
+## Writes the glyph over `seconds`, then returns.
 func draw_stroke(seconds: float) -> void:
 	_clock = 0.0
 	var tween := create_tween()
@@ -99,6 +107,20 @@ func _set_fade(value: float) -> void:
 	_rebuild()
 
 
+## Gathers the mark before it bursts: it swells and draws in a few times, shakily.
+func tremble(seconds: float) -> void:
+	var tween := create_tween()
+	var steps: int = 7
+	var home: Vector3 = position
+	for step: int in range(steps):
+		var swell: float = 1.0 + (0.07 if step % 2 == 0 else -0.05) * (0.5 + float(step) / float(steps))
+		var shake := Vector3(randf_range(-0.04, 0.04), randf_range(-0.04, 0.04), 0.0)
+		tween.tween_property(self, "scale", Vector3(swell, swell, 1.0), seconds / float(steps)).set_trans(Tween.TRANS_SINE)
+		tween.parallel().tween_property(self, "position", home + shake, seconds / float(steps))
+	tween.tween_property(self, "position", home, 0.02)
+	await tween.finished
+
+
 ## The mark pulls in tight, then breaks away: used at the moment of the burst.
 func contract_and_fade(seconds: float) -> void:
 	var tween := create_tween().set_parallel(true)
@@ -116,62 +138,66 @@ func _process(delta: float) -> void:
 func _rebuild() -> void:
 	if _mesh_instance == null or _progress <= 0.0:
 		return
-	# Two brushes laid down together: a solid black one that never bleeds, and a wet one
-	# that spreads and softens over the top of it.
 	_mesh_instance.mesh = _build_brush(false)
 	if _crisp_instance:
 		_crisp_instance.mesh = _build_brush(true)
 
 
-## `crisp` = the dry black brush: narrow, fully opaque, hard edge, never bleeds or pulls in
-## softly. Otherwise the wet brush: wide, soft-edged, bleeds outward as it ages.
+## `crisp` = the dry black brush. Otherwise the wet brush.
 func _build_brush(crisp: bool) -> ArrayMesh:
-	var count: int = clampi(int(_progress * float(SAMPLES)), 2, SAMPLES)
+	var done: int = clampi(int(_progress * float(_total_samples)), 0, _total_samples)
 	var vertices := PackedVector3Array()
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
-	for i: int in range(count):
-		var t: float = float(i) / float(SAMPLES - 1)
-		var centre: Vector2 = _points[i] * (size * 0.5)
-		var ahead: Vector2 = _points[mini(i + 4, SAMPLES - 1)] * (size * 0.5)
-		var behind: Vector2 = _points[maxi(i - 4, 0)] * (size * 0.5)
-		var tangent: Vector2 = (ahead - behind).normalized()
-		var normal := Vector2(-tangent.y, tangent.x)
-		var pressure: float = _pressure[i]
-		var age: float = clampf(_clock - t * 0.9, 0.0, BLEED_SECONDS) / BLEED_SECONDS
-		var width: float
-		var core_alpha: float
-		var edge: float
-		if crisp:
-			# Fixed line: no bleed with age; it simply goes when the mark breaks.
-			width = size * 0.045 * maxf(pressure, 0.05)
-			core_alpha = 1.0 - _fade
-			edge = 1.0
-		else:
-			width = size * 0.052 * maxf(pressure, 0.1) * _jitter[i]
-			width *= (1.0 + 0.6 * age) * (1.0 - 0.45 * _pull_in)
-			core_alpha = (0.9 - 0.25 * age) * (1.0 - _fade)
-			edge = 1.45
-		var inner: float = 0.95 if not crisp else 1.0
-		var p_left: Vector2 = centre + normal * width * edge
-		var p_right: Vector2 = centre - normal * width * edge
-		var p_mid_l: Vector2 = centre + normal * width * inner
-		var p_mid_r: Vector2 = centre - normal * width * inner
-		var rim_alpha: float = core_alpha if crisp else 0.0
-		vertices.append(Vector3(p_left.x, p_left.y, 0.0))
-		colors.append(Color(0.0, 0.0, 0.0, rim_alpha))
-		vertices.append(Vector3(p_mid_l.x, p_mid_l.y, 0.0))
-		colors.append(Color(0.0, 0.0, 0.0, core_alpha))
-		vertices.append(Vector3(p_mid_r.x, p_mid_r.y, 0.0))
-		colors.append(Color(0.0, 0.0, 0.0, core_alpha))
-		vertices.append(Vector3(p_right.x, p_right.y, 0.0))
-		colors.append(Color(0.0, 0.0, 0.0, rim_alpha))
-		if i > 0:
-			var base: int = i * 4
-			for column: int in range(3):
-				var a: int = base - 4 + column
-				var b: int = base + column
-				indices.append_array(PackedInt32Array([a, a + 1, b, a + 1, b + 1, b]))
+	for stroke: Dictionary in _strokes:
+		var points: PackedVector2Array = stroke.points
+		var visible: int = clampi(done - int(stroke.start), 0, points.size())
+		if visible < 2:
+			continue
+		var first_vertex: int = vertices.size()
+		for i: int in range(visible):
+			var t: float = float(int(stroke.start) + i) / float(_total_samples - 1)
+			var centre: Vector2 = points[i] * (size * 0.5)
+			var ahead: Vector2 = points[mini(i + 4, points.size() - 1)] * (size * 0.5)
+			var behind: Vector2 = points[maxi(i - 4, 0)] * (size * 0.5)
+			var tangent: Vector2 = (ahead - behind).normalized()
+			var normal := Vector2(-tangent.y, tangent.x)
+			var pressure: float = stroke.pressure[i]
+			var age: float = clampf(_clock - t * WRITE_SECONDS, 0.0, BLEED_SECONDS) / BLEED_SECONDS
+			var width: float
+			var core_alpha: float
+			var edge: float
+			if crisp:
+				width = size * 0.04 * maxf(pressure, 0.05)
+				core_alpha = 1.0 - _fade
+				edge = 1.0
+			else:
+				width = size * 0.05 * maxf(pressure, 0.1) * float(stroke.jitter[i])
+				width *= (1.0 + 0.6 * age) * (1.0 - 0.45 * _pull_in)
+				core_alpha = (0.9 - 0.25 * age) * (1.0 - _fade)
+				edge = 1.45
+			var inner: float = 0.95 if not crisp else 1.0
+			var rim_alpha: float = core_alpha if crisp else 0.0
+			var p_left: Vector2 = centre + normal * width * edge
+			var p_right: Vector2 = centre - normal * width * edge
+			var p_mid_l: Vector2 = centre + normal * width * inner
+			var p_mid_r: Vector2 = centre - normal * width * inner
+			vertices.append(Vector3(p_left.x, p_left.y, 0.0))
+			colors.append(Color(0.0, 0.0, 0.0, rim_alpha))
+			vertices.append(Vector3(p_mid_l.x, p_mid_l.y, 0.0))
+			colors.append(Color(0.0, 0.0, 0.0, core_alpha))
+			vertices.append(Vector3(p_mid_r.x, p_mid_r.y, 0.0))
+			colors.append(Color(0.0, 0.0, 0.0, core_alpha))
+			vertices.append(Vector3(p_right.x, p_right.y, 0.0))
+			colors.append(Color(0.0, 0.0, 0.0, rim_alpha))
+			if i > 0:
+				var base: int = first_vertex + i * 4
+				for column: int in range(3):
+					var a: int = base - 4 + column
+					var b: int = base + column
+					indices.append_array(PackedInt32Array([a, a + 1, b, a + 1, b + 1, b]))
+	if vertices.is_empty():
+		return ArrayMesh.new()
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices

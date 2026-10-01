@@ -42,7 +42,10 @@ func splash(count: int = 4) -> void:
 	var screen: Vector2 = get_viewport_rect().size
 	for index: int in range(count):
 		var splat := Splat.new()
-		splat.centre = Vector2(rng.randf_range(screen.x * 0.22, screen.x * 0.78), rng.randf_range(screen.y * 0.1, screen.y * 0.42))
+		# Out at the sides of the screen, never in the middle where the action is.
+		var on_left: bool = index % 2 == 0
+		var side_x: float = rng.randf_range(0.03, 0.16) if on_left else rng.randf_range(0.84, 0.97)
+		splat.centre = Vector2(screen.x * side_x, rng.randf_range(screen.y * 0.1, screen.y * 0.55))
 		splat.radius = rng.randf_range(26.0, 54.0)
 		splat.delay = rng.randf_range(0.0, 0.18)
 		# Ragged radial outline: long thin spikes alternate with short lobes.

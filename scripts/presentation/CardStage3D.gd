@@ -742,8 +742,9 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 		_cast_stroke.size = 3.0
 		fx_root.add_child(_cast_stroke)
 		_cast_stroke.position = _cast_center
-		await _cast_stroke.draw_stroke(0.95)
-		await get_tree().create_timer(0.12).timeout
+		await _cast_stroke.draw_stroke(1.9)
+		# Gather before the burst: the mark swells and draws in, shaking.
+		await _cast_stroke.tremble(0.7)
 		# The mark pulls in, then bursts into ink; the burst is where the card appears.
 		_spawn_origin = _cast_center
 		_burst_ink(_cast_center)
