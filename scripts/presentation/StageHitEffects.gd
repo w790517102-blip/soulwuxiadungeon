@@ -2,12 +2,9 @@ extends RefCounted
 ## Short-lived attack effects for Card Stage, built from the slash and spark shaders.
 ## Both are plain nodes added under the stage's FX volume; they free themselves.
 
-const SlashShader = preload("res://scripts/presentation/shaders/slash_mark.gdshader")
 const SparkShader = preload("res://scripts/presentation/shaders/spark_burst.gdshader")
 
-const WHITE := Color(1.0, 1.0, 1.0)
-const BLUE := Color(0.12, 0.45, 1.0)
-const BLUE_FLASH := Color(0.7, 0.9, 1.0)
+
 
 
 static func _layer(shader: Shader, size: Vector2, priority: int) -> MeshInstance3D:
@@ -23,57 +20,54 @@ static func _layer(shader: Shader, size: Vector2, priority: int) -> MeshInstance
 	return instance
 
 
-## A diagonal cut (袈裟斬) across `centre`. `direction` is +1 for a cut that falls from the
-## upper left to the lower right, -1 for the mirror. Two brushes: soft white outside, hard
-## blue inside; the blue flickers once the cut is two thirds drawn. A faint white afterimage
-## lingers. Awaitable: returns when the mark has faded.
-static func slash(host: Node, centre: Vector3, length: float, direction: float, intensity: float = 1.0, draw_seconds: float = 0.16) -> void:
+## The supplied sword-slash animation (assets/fx/fx_slash_sword.png: 5 frames, 320 x 500 each,
+## the cut runs from lower left to upper right). Played once as a flat card in the FX volume,
+## frame by frame, then it fades. `direction` +1 keeps the sheet's slant, -1 mirrors it.
+const SLASH_SHEET := "res://assets/fx/fx_slash_sword.png"
+const SLASH_FRAMES: int = 5
+const SLASH_FRAME_SECONDS: float = 0.055
+
+
+static func slash(host: Node, centre: Vector3, length: float, direction: float, intensity: float = 1.0, _draw_seconds: float = 0.0) -> void:
+	var texture: Texture2D = load(SLASH_SHEET) as Texture2D
+	if texture == null:
+		return
 	var root := Node3D.new()
 	host.add_child(root)
 	root.position = centre
-	# +x of the quad is the blade's path: pointing down-right for direction = +1.
-	root.rotation = Vector3(0.0, 0.0, -deg_to_rad(52.0) * direction)
+	var frame_size := Vector2(float(texture.get_width()) / float(SLASH_FRAMES), float(texture.get_height()))
+	var height: float = length
+	var quad := QuadMesh.new()
+	quad.size = Vector2(height * frame_size.x / frame_size.y, height)
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = quad
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.no_depth_test = true
+	material.render_priority = 30
+	material.albedo_texture = texture
+	material.albedo_color = Color(1.0, 1.0, 1.0, intensity)
+	material.uv1_scale = Vector3(1.0 / float(SLASH_FRAMES), 1.0, 1.0)
+	mesh.material_override = material
+	root.add_child(mesh)
 	if direction < 0.0:
-		root.rotation.z = deg_to_rad(52.0)
 		root.scale.x = -1.0
-	var thickness: float = length * 0.2
-	var outer: MeshInstance3D = _layer(SlashShader, Vector2(length, thickness), 30)
-	var inner: MeshInstance3D = _layer(SlashShader, Vector2(length, thickness), 31)
-	root.add_child(outer)
-	root.add_child(inner)
-	var outer_material := outer.material_override as ShaderMaterial
-	var inner_material := inner.material_override as ShaderMaterial
-	outer_material.set_shader_parameter("color", WHITE)
-	outer_material.set_shader_parameter("width_scale", 0.95)
-	outer_material.set_shader_parameter("softness", 0.5)
-	outer_material.set_shader_parameter("alpha_mul", 0.9 * intensity)
-	inner_material.set_shader_parameter("color", BLUE)
-	inner_material.set_shader_parameter("width_scale", 0.38)
-	inner_material.set_shader_parameter("softness", 0.04)
-	inner_material.set_shader_parameter("alpha_mul", intensity)
-	var set_reveal := func(value: float) -> void:
-		outer_material.set_shader_parameter("reveal", value)
-		inner_material.set_shader_parameter("reveal", value)
-	var draw := host.create_tween()
-	draw.tween_method(set_reveal, 0.0, 1.12, draw_seconds).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	# At two thirds of the cut the blue flickers between its colour and a near-white flash.
-	var flicker := host.create_tween()
-	flicker.tween_interval(draw_seconds * (2.0 / 3.0))
-	for step: int in range(5):
-		var flash: bool = step % 2 == 0
-		flicker.tween_callback(func() -> void:
-			inner_material.set_shader_parameter("color", BLUE_FLASH if flash else BLUE)
+	var play := host.create_tween()
+	for frame: int in range(SLASH_FRAMES):
+		play.tween_callback(func() -> void:
+			material.uv1_offset = Vector3(float(frame) / float(SLASH_FRAMES), 0.0, 0.0)
 		)
-		flicker.tween_interval(0.035)
-	await draw.finished
-	await host.get_tree().create_timer(0.14).timeout
-	# After the cut: the blue goes, a pale afterimage of the white lingers and thins.
-	var after := host.create_tween().set_parallel(true)
-	after.tween_method(func(value: float) -> void: inner_material.set_shader_parameter("alpha_mul", value), intensity, 0.0, 0.12)
-	after.tween_method(func(value: float) -> void: outer_material.set_shader_parameter("alpha_mul", value), 0.9 * intensity, 0.0, 0.4)
-	after.tween_method(func(value: float) -> void: outer_material.set_shader_parameter("width_scale", value), 0.95, 0.4, 0.4)
-	await after.finished
-	root.queue_free()
+		play.tween_interval(SLASH_FRAME_SECONDS)
+	play.tween_callback(root.queue_free)
+
+
+## Total time the sheet takes to play.
+static func slash_duration() -> float:
+	return float(SLASH_FRAMES) * SLASH_FRAME_SECONDS
 
 
 ## A burst of jagged sparks at `centre`: thrown outward from the middle, then removed from

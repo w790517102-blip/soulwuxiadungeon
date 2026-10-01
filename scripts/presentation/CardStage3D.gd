@@ -920,7 +920,7 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 		else:
 			destination.hit_reaction(bool(result.get("crit", false)))
 		# Let the whole cut finish (drawn, blue flicker, held) before the attacker withdraws.
-		await get_tree().create_timer(0.24).timeout
+		await get_tree().create_timer(StageHitEffects.slash_duration() + 0.1).timeout
 	else:
 		destination.dodge_motion()
 		# The blade only finds air beside the target.
