@@ -30,6 +30,9 @@ var yaw_preset: int = DEFAULT_YAW_PRESET
 var enemy_yaw_degrees: float = ENEMY_YAW_DEGREES
 ## actor key -> layout + world position; read by tests and debug tools.
 var slots: Dictionary = {}
+## A guest is only drawn while the party has fewer cards than this (the game's current
+## party size rule, not a limit of the stage: any number of cards can be placed).
+var guest_party_limit: int = 3
 
 
 func _ready() -> void:
@@ -126,6 +129,7 @@ func _follow_marker() -> void:
 func _process(delta: float) -> void:
 	super._process(delta)
 	_update_order(delta)
+	_ensure_registry_bound()
 	if _active_card != null and not is_instance_valid(_active_card):
 		clear_active_actor()
 	elif turn_marker and turn_marker.visible:
@@ -176,7 +180,7 @@ func set_teams(allies: Array, enemies: Array, guest: Dictionary = {}, status_sou
 	_order_signature = ""
 	slots.clear()
 	var party: Array = allies.duplicate()
-	if not guest.is_empty() and party.size() < 3:
+	if not guest.is_empty() and party.size() < guest_party_limit:
 		var guest_view: Dictionary = guest.duplicate(true)
 		guest_view["is_guest"] = true
 		party.append(guest_view)
@@ -440,3 +444,129 @@ func _update_order(delta: float) -> void:
 	_order_signature = signature
 	hover_key = ""
 	apply_order(keys, not first)
+
+
+# --- Stage entities (echoes, cover, tarot... : cards that are not actors) -----------------
+# Presentation hooks only. A system registers a StageEntity in the controller's registry;
+# this node draws it, keeps it up to date and removes it. Nothing here limits how many
+# cards of any kind are on the stage.
+
+const EntityCard = preload("res://scripts/presentation/CardStageEntityCard.gd")
+
+## entity_id -> card node.
+var entity_cards: Dictionary = {}
+## card_kind -> Callable(entity) -> Node3D, to draw an entity with something other than
+## the default small card. The node needs: home_position, home_rotation, card_size,
+## interaction_priority, set_home(position, yaw), refresh(entity).
+var entity_card_factories: Dictionary = {}
+var _bound_registry: Object = null
+var _entity_objects: Dictionary = {}
+
+
+func spawn_stage_entity_card(entity: Object, home: Variant = null) -> Node3D:
+	var key: String = String(entity.get("entity_id"))
+	if entity_cards.has(key):
+		return entity_cards[key]
+	var card: Node3D
+	var factory: Variant = entity_card_factories.get(String(entity.get("card_kind")))
+	if factory is Callable and (factory as Callable).is_valid():
+		card = (factory as Callable).call(entity)
+	else:
+		card = EntityCard.new()
+	actor_root.add_child(card)
+	if card.has_method("configure"):
+		card.configure(entity)
+	var enemy_side: bool = String(entity.get("faction")) == "enemy"
+	var position: Vector3
+	if home is Vector3:
+		position = home
+	else:
+		var index: int = 0
+		for other: Object in _entity_objects.values():
+			if (String(other.get("faction")) == "enemy") == enemy_side:
+				index += 1
+		position = Formation.world_position(Formation.entity_slot(index, enemy_side), card.card_size.y, CAMERA_Z, camera_fov)
+	card.set_home(position, -enemy_yaw_degrees if enemy_side else card_yaw_degrees * 0.5)
+	entity_cards[key] = card
+	_entity_objects[key] = entity
+	if entity.has_signal("changed") and not entity.changed.is_connected(update_stage_entity_card):
+		entity.changed.connect(update_stage_entity_card)
+	return card
+
+
+func remove_stage_entity_card(entity: Object) -> void:
+	var key: String = String(entity.get("entity_id"))
+	if entity.has_signal("changed") and entity.changed.is_connected(update_stage_entity_card):
+		entity.changed.disconnect(update_stage_entity_card)
+	var card: Node3D = entity_cards.get(key)
+	entity_cards.erase(key)
+	_entity_objects.erase(key)
+	if card:
+		card.queue_free()
+
+
+func update_stage_entity_card(entity: Object) -> void:
+	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
+	if card and card.has_method("refresh"):
+		card.refresh(entity)
+
+
+## Follows a StageEntityRegistry: cards appear and disappear with its entities.
+func bind_entity_registry(registry: Object) -> void:
+	if registry == null or registry == _bound_registry:
+		return
+	_bound_registry = registry
+	registry.entity_registered.connect(spawn_stage_entity_card)
+	registry.entity_unregistered.connect(remove_stage_entity_card)
+	for entity: Object in registry.get_stage_entities():
+		spawn_stage_entity_card(entity)
+
+
+func _ensure_registry_bound() -> void:
+	if _bound_registry != null or _ui == null:
+		return
+	var controller: Variant = _ui.get("combat_controller")
+	if controller != null and controller.get("stage_entities") != null:
+		bind_entity_registry(controller.stage_entities)
+
+
+## The card standing for a target: an actor dictionary or a stage entity.
+func target_card(target: Variant) -> Node3D:
+	if target is Dictionary:
+		return card_for(target)
+	if target is Object:
+		return entity_cards.get(String((target as Object).get("entity_id")))
+	return null
+
+
+## Like pick_actor, but the candidates may be actors AND stage entities. The nearest card
+## under the pointer wins; at equal distance the higher interaction_priority does.
+func pick_target(screen_position: Vector2, candidates: Array, include_dead: bool = false) -> Variant:
+	var origin := camera.project_ray_origin(screen_position)
+	var direction := camera.project_ray_normal(screen_position)
+	var nearest: float = INF
+	var best_priority: int = -2147483648
+	var selected: Variant = null
+	for target: Variant in candidates:
+		var card := target_card(target)
+		if card == null:
+			continue
+		if target is Dictionary and int(target.get("hp", 0)) <= 0 and not include_dead:
+			continue
+		if target is Object and not include_dead and not (target as Object).is_alive():
+			continue
+		var inverse: Transform3D = (actor_root.global_transform * Transform3D(Basis.from_euler(card.home_rotation), card.home_position)).affine_inverse()
+		var local_origin: Vector3 = inverse * origin
+		var local_direction: Vector3 = inverse.basis * direction
+		if absf(local_direction.z) < 0.0001:
+			continue
+		var distance: float = -local_origin.z / local_direction.z
+		var point: Vector3 = local_origin + local_direction * distance
+		if distance <= 0.0 or absf(point.x) >= card.card_size.x / 2.0 or absf(point.y) >= card.card_size.y / 2.0:
+			continue
+		var priority: int = int(card.get("interaction_priority")) if card.get("interaction_priority") != null else 0
+		if distance < nearest - 0.0005 or (absf(distance - nearest) <= 0.0005 and priority > best_priority):
+			nearest = distance
+			best_priority = priority
+			selected = target
+	return selected if selected != null else {}

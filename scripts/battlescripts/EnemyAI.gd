@@ -4,6 +4,8 @@ class_name EnemyAI
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
 var _skill_db := SkillDBScript.new()
 var _runtime_state: Dictionary = {}
+## Set by the controller. Stage entities (cover, decoys...) may add weight to a target.
+var stage_entities = null
 
 func begin_battle(enemies: Array) -> void:
 	_runtime_state.clear()
@@ -547,3 +549,32 @@ func _any_target_match_status(targets: Array, check_set, should_have: bool) -> b
 		if _match_status_set(t, check_set, should_have):
 			return true
 	return false
+
+
+# --- Stage entity target priority (not wired into the existing target choice) ----------
+
+## Score of one candidate target (an actor dictionary or a stage entity). With no
+## entities this is just `base_score`, so it cannot change today's behaviour.
+func target_score(enemy: Dictionary, candidate: Variant, base_score: float = 1.0) -> float:
+	if stage_entities == null:
+		return base_score
+	return stage_entities.modify_target_score(enemy, candidate, base_score)
+
+
+## Weighted random pick over `candidates` (actors and/or entities) by target_score. A
+## future caller would use this where _choose_target_for_entry picks uniformly today.
+func pick_weighted_target(enemy: Dictionary, candidates: Array) -> Variant:
+	var weights: Array = []
+	var total: float = 0.0
+	for candidate: Variant in candidates:
+		var weight: float = maxf(target_score(enemy, candidate), 0.0)
+		weights.append(weight)
+		total += weight
+	if candidates.is_empty() or total <= 0.0:
+		return null
+	var roll: float = randf() * total
+	for index: int in range(candidates.size()):
+		roll -= float(weights[index])
+		if roll <= 0.0:
+			return candidates[index]
+	return candidates[-1]

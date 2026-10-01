@@ -7,6 +7,11 @@ const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 const CharacterSkillScript = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const StatusEffectManagerScript = preload("res://scripts/battle/StatusEffectManager.gd")
 const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
+const StageEntityRegistryScript = preload("res://scripts/battlescripts/StageEntityRegistry.gd")
+const StageTargeting = preload("res://scripts/battlescripts/StageTargeting.gd")
+## Non-actor things standing on the battlefield (echoes, cover, tarot...). Empty by
+## default; see StageEntity.gd. Lifecycle events below are no-ops while it is empty.
+var stage_entities = StageEntityRegistryScript.new()
 var tone_map = ToneMapScript.new()
 var status_manager = StatusEffectManagerScript.new()
 
@@ -261,6 +266,8 @@ func start_battle(context: Dictionary) -> void:
 		_mark_enemy_lore_encounter(e)
 		print("[EnemyInit]", e.get("id", ""), " exp=", e.get("exp", 0), " gold=", e.get("gold", {}), " drops=", e.get("drops", []))
 
+	if enemy_ai and "stage_entities" in enemy_ai:
+		enemy_ai.stage_entities = stage_entities
 	if enemy_ai and enemy_ai.has_method("begin_battle"):
 		enemy_ai.begin_battle(enemy_party)
 
@@ -1517,6 +1524,7 @@ func _is_rule_allowed(rule_key: String, default_value: bool) -> bool:
 
 
 func _on_turn_started(actor: Dictionary) -> void:
+	stage_entities.dispatch("on_turn_start", {"actor": actor, "round": turn_manager.round_count})
 	# 🛡️ 如果上一輪你是選防禦，那現在輪到你新的回合，就把防禦狀態解除
 	if bool(actor.get("defending", false)):
 		actor["defending"] = false
@@ -1570,6 +1578,7 @@ func _end_turn_due_to_stun() -> void:
 	call_deferred("safe_end_turn")
 
 func _on_turn_ended(actor: Dictionary) -> void:
+	stage_entities.dispatch("on_turn_end", {"actor": actor, "round": turn_manager.round_count})
 	# ❌ 不在這裡清 defending，單純交棒就好
 	if battle_finished or _ending:
 		return
@@ -2015,6 +2024,8 @@ func _complete_enemy_ai_action(enemy: Dictionary, skill_id: String) -> void:
 
 
 func safe_end_turn() -> void:
+	# The acting character's turn is over (also reached when a turn is skipped).
+	stage_entities.dispatch("on_after_action", {"actor": turn_manager.get_current_actor(), "round": turn_manager.round_count})
 	if battle_finished or _ending:
 		return
 	if turn_manager and status_manager and status_manager.has_method("tick_after_owner_action"):
@@ -2443,6 +2454,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 
 
 func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionary = {}) -> void:
+	stage_entities.dispatch("on_before_action", {"actor": actor, "skill": skill_data, "target": target})
 	var effect: String = str(skill_data.get("effect", ""))
 	if effect == "" and skill_data.has("effects") and typeof(skill_data.get("effects")) == TYPE_ARRAY:
 		var arr: Array = skill_data.get("effects", [])
@@ -4139,3 +4151,53 @@ func _clear_next_battle_modifiers_for_party() -> void:
 		team_data_manager.clear_next_battle_modifiers(actor_id)
 		actor["battle_modifiers"] = {}
 		cleared[actor_id] = true
+
+
+# --- Stage entity extension points (nothing in the existing flow calls these) ------------
+
+## Faction label of a user, for target filtering ("player" / "enemy").
+func faction_of(actor: Dictionary) -> String:
+	return "enemy" if enemy_party.has(actor) or bool(actor.get("is_enemy", false)) else "player"
+
+
+## Target candidates by kind (StageTargeting.Kind): actors and/or stage entities.
+## Actor kinds return exactly what get_valid_targets_for_* would for the same side.
+func get_targets_by_type(kind: int, user: Dictionary, include_dead: bool = false) -> Array:
+	var user_faction: String = faction_of(user)
+	var allies: Array = enemy_party if user_faction == "enemy" else player_party
+	var opponents: Array = player_party if user_faction == "enemy" else enemy_party
+	return StageTargeting.resolve(kind, user_faction, allies, opponents, stage_entities, include_dead)
+
+
+## One entry for damage on "anything targetable". Entities take damage through their own
+## interface and trigger on_damage_taken / on_destroyed; actors get the same HP rule the
+## executor uses (including BattleDamageGuard). Existing skills do NOT go through here.
+func apply_damage_to_target(target: Variant, amount: int, context: Dictionary = {}) -> Dictionary:
+	if target is Dictionary:
+		var source: Dictionary = context.get("source", {})
+		var guard: Dictionary = BattleDamageGuard.resolve_hp_damage(source, target, amount)
+		var dealt: int = int(guard.get("damage", 0))
+		target["hp"] = int(target.get("hp", 0)) - dealt
+		return {"damage": dealt, "blocked": bool(guard.get("blocked", false)), "destroyed": int(target.get("hp", 0)) <= 0}
+	var result: Dictionary = target.take_damage(amount, context)
+	if int(result.get("damage", 0)) > 0:
+		var event_context: Dictionary = context.duplicate()
+		event_context["damage"] = result.damage
+		stage_entities.dispatch_to(target, "on_damage_taken", event_context)
+		if bool(result.get("destroyed", false)):
+			stage_entities.destroy_entity(target, event_context)
+	return result
+
+
+## One entry for healing "anything targetable"; entities trigger on_healed.
+func apply_heal_to_target(target: Variant, amount: int, context: Dictionary = {}) -> Dictionary:
+	if target is Dictionary:
+		var before: int = int(target.get("hp", 0))
+		target["hp"] = mini(before + maxi(amount, 0), int(target.get("max_hp", before)))
+		return {"healed": int(target.hp) - before}
+	var result: Dictionary = target.heal(amount, context)
+	if int(result.get("healed", 0)) > 0:
+		var event_context: Dictionary = context.duplicate()
+		event_context["healed"] = result.healed
+		stage_entities.dispatch_to(target, "on_healed", event_context)
+	return result

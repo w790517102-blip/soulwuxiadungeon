@@ -34,7 +34,7 @@ const Z_STACK: float = 0.25
 
 ## `rank` 0 is the slot nearest the centre. Returns screen-space layout data.
 static func slot(count: int, rank: int, enemy: bool) -> Dictionary:
-	count = clampi(count, 1, 3)
+	count = maxi(count, 1)
 	rank = clampi(rank, 0, count - 1)
 	var spacing: float = ENEMY_SPACING if enemy else ALLY_SPACING
 	var lane: float = ENEMY_LANE if enemy else ALLY_LANE
@@ -45,7 +45,8 @@ static func slot(count: int, rank: int, enemy: bool) -> Dictionary:
 	# Same ground plane for both rows: apparent feet offset from the horizon (0.5)
 	# shrinks in proportion to the card's apparent size.
 	var feet: float = 0.5 + (ALLY_FEET - 0.5) * (height / ALLY_HEIGHT)
-	var z_stack: float = Z_STACK * (float(rank) / 2.0 if enemy else 1.0 - float(rank) / 2.0)
+	var depth_t: float = clampf(float(rank) / 2.0, 0.0, 1.0)
+	var z_stack: float = Z_STACK * (depth_t if enemy else 1.0 - depth_t)
 	if count == 1:
 		z_stack = Z_STACK * 0.5
 	return {"rank": rank, "enemy": enemy, "screen_x": screen_x, "height": height, "feet": feet, "z_stack": z_stack}
@@ -105,3 +106,17 @@ static func _hint(actor: Dictionary) -> int:
 		"inner": return 1
 		"outer": return -1
 	return 0
+
+
+## Placeholder slot for a stage entity card (small, in its own row below the actors).
+## Real layouts (entities that queue in the turn row, covers in front of a camp...) come
+## with the systems that need them; this only keeps a variable number of cards apart.
+const ENTITY_HEIGHT: float = 0.2
+const ENTITY_FEET: float = 0.96
+const ENTITY_SPACING: float = 0.07
+
+
+static func entity_slot(index: int, enemy: bool) -> Dictionary:
+	var lane: float = ENEMY_LANE if enemy else ALLY_LANE
+	var direction: float = 1.0 if enemy else -1.0
+	return {"index": index, "enemy": enemy, "screen_x": lane + direction * float(index) * ENTITY_SPACING, "height": ENTITY_HEIGHT, "feet": ENTITY_FEET, "z_stack": 0.5}
