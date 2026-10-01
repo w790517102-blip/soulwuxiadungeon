@@ -229,13 +229,13 @@ func _place_side(actors: Array, enemy: bool) -> void:
 	var ranks: Array[int] = Formation.assign_ranks(present)
 	for index: int in range(present.size()):
 		var actor: Dictionary = present[index]
-		var layout: Dictionary = Formation.slot(present.size(), ranks[index], enemy)
 		var card: Node3D = CardStageActorCard.new()
 		# The card template (character / enemy / boss) must be known before it builds.
 		card.prepare_for(actor, enemy)
 		actor_root.add_child(card)
 		card.configure(actor, enemy, _status_text(actor))
 		card.scale = Vector3.ONE
+		var layout: Dictionary = Formation.slot(present.size(), ranks[index], enemy, _actor_height_ratio(card))
 		var position: Vector3 = Formation.world_position(layout, card.card_size.y, CAMERA_Z, camera_fov)
 		card.set_home(position, _yaw_for(enemy))
 		card.slot_rank = layout.rank
@@ -459,7 +459,7 @@ func apply_order(keys: Array[String], animated: bool) -> void:
 		card.slot_rank = rank
 		if is_actor_card:
 			card.name = "Card_%d_%s" % [rank, key.replace("#", "_")]
-			var layout: Dictionary = Formation.slot(counts[card.is_enemy], rank, card.is_enemy)
+			var layout: Dictionary = Formation.slot(counts[card.is_enemy], rank, card.is_enemy, _actor_height_ratio(card))
 			layout["position"] = position
 			slots[key] = layout
 		if animated:
@@ -686,13 +686,21 @@ func _entity_signature() -> String:
 	return ",".join(parts)
 
 
+## A boss stands a third larger than an ordinary enemy, for presence.
+const BOSS_HEIGHT_RATIO: float = 1.33
+
+
+func _actor_height_ratio(card: Node3D) -> float:
+	return BOSS_HEIGHT_RATIO if card.get("template_key") == "boss" else 1.0
+
+
 ## The card size of a row entity relative to an actor card (a smaller sub card).
 func _size_ratio(card: Node3D) -> float:
 	return clampf(card.card_size.y / Templates.card_world_size("character").y, 0.2, 1.0)
 
 
 func _row_position(card: Node3D, count: int, rank: int, enemy_side: bool, gaps: Array = []) -> Vector3:
-	var layout: Dictionary = Formation.slot(count, rank, enemy_side, 1.0, gaps)
+	var layout: Dictionary = Formation.slot(count, rank, enemy_side, _actor_height_ratio(card), gaps)
 	if card is TokenCard or not card.has_method("cast_step_forward"):
 		layout = Formation.slot(count, rank, enemy_side, _size_ratio(card), gaps)
 	var world: Vector3 = Formation.world_position(layout, card.card_size.y, CAMERA_Z, camera_fov)
@@ -721,7 +729,7 @@ func _place_row_entity(entity: Object, card: Node3D, animate_in: bool) -> void:
 		# slid in once the row is ready (settle_entity_arrival).
 		var outer: Vector3 = _row_position(card, count, count - 1, enemy_side, [])
 		outer.x += (1.4 if enemy_side else -1.4)
-		outer.z += 0.25
+		outer.z = player_depth + CAST_FRONT - 0.4
 		card.play_spawn(_spawn_origin, outer)
 	_spawn_origin = null
 	# The actors re-space around it once nothing is moving (see _update_order).
@@ -779,21 +787,20 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 	if phase == "windup":
 		busy = true
 		command_tray.set_enabled(false)
-		_cast_center = Vector3(0.2, 0.9, (player_depth + enemy_depth) * 0.5 + 1.5)
+		_cast_center = Vector3(0.2, 0.9, player_depth + CAST_FRONT)
 		await card.cast_step_forward()
+		# 1. The green ink swirl (the twin dragons) opens first, centred where the glyph will be.
+		#    The sheet is sized so its ring is as tall as the glyph (the dragons reach beyond).
+		await play_swirl_at(_cast_center, CAST_GLYPH_SIZE / SWIRL_RING_FRACTION)
+		# 2. Then the talisman glyph is drawn.
 		_cast_stroke = InkStroke.new()
-		_cast_stroke.size = 3.4
+		_cast_stroke.size = CAST_GLYPH_SIZE
 		fx_root.add_child(_cast_stroke)
 		_cast_stroke.position = _cast_center
 		await _cast_stroke.draw_stroke(2.2)
 		# Heartbeat before the burst: two beats, each throwing a ghost image outward.
 		await _cast_stroke.heartbeat(2, 0.8)
-		# The mark pulls in, then bursts into ink; the burst is where the card appears.
-		# The green ink swirl blooms from the glyph, then the burst unfolds the card.
-		# Same centre and the same visual size as the glyph: size the sheet so its ring is as
-		# tall as the glyph (the dragons then reach beyond it).
-		play_swirl_at(_cast_center, _cast_stroke.size / SWIRL_RING_FRACTION)
-		await get_tree().create_timer(0.45).timeout
+		# 3. The glyph bursts into ink; the card is born from it (white, spinning about Y).
 		_spawn_origin = _cast_center
 		_burst_ink(_cast_center)
 		_splash_camera_ink()
@@ -851,7 +858,11 @@ func _splash_camera_ink() -> void:
 
 ## Extra room beside a sub card (a charm between characters would otherwise be hidden).
 const ENTITY_GAP: float = 1.5
-const SUB_CARD_FRONT: float = 0.45
+const SUB_CARD_FRONT: float = 1.0
+## The cast and the new card's entrance happen this far in front of the party row, so
+## nothing (a turned character included) can hide it.
+const CAST_FRONT: float = 2.2
+const CAST_GLYPH_SIZE: float = 3.4
 
 
 ## Boundary gap multipliers for one row, from a rank map (see Formation.slot).

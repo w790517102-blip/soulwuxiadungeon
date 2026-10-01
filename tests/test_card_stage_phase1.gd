@@ -165,6 +165,7 @@ func _check_stage(fixture: Node) -> void:
 	var stage: Node3D = ui.stage
 	_expect(stage.get_script().resource_path.ends_with("/CardStage3D.gd"), "preview uses the card stage")
 	_expect(stage.cards.size() == 6, "3v3 creates six cards")
+
 	# --- Log colours -------------------------------------------------------------
 	var colour_log: Node = ui.log_panel
 	_expect(colour_log.has_method("colorize"), "the stage log panel colours its lines")
@@ -549,8 +550,12 @@ func _check_stage(fixture: Node) -> void:
 		min_z = minf(min_z, wrapper.position.z)
 	_expect(always_visible, "the card that acted never vanishes: it walks back to the end of the row")
 	_expect(min_z < wrapper.home_position.z - 0.5, "on the way it passes behind the other cards (depth dip)")
-	for wrap_frame: int in range(40):
+	# Wait for the slides to finish (by state, not by a frame count that depends on the frame rate).
+	var settle_guard: int = 0
+	while settle_guard < 1200 and stage.is_lineup_moving():
 		await process_frame
+		settle_guard += 1
+	await process_frame
 	for card_key: String in stage.cards.keys():
 		_expect(stage.cards[card_key].position.is_equal_approx(stage.cards[card_key].home_position) and is_equal_approx(stage.cards[card_key].card_mesh.transparency, 0.0), "%s settles at its slot, fully visible" % card_key)
 	_expect(not has_node_recursive_visible(ui, "CardCommandMenu"), "reordering opens nothing")
@@ -576,6 +581,17 @@ func _check_stage(fixture: Node) -> void:
 	ui.set_teams([allies[0]], [enemies[0]])
 	_expect(stage.cards.size() == 2, "empty slots are not drawn as cards")
 	_expect(stage.card_for(allies[0]).slot_rank == 0, "a lone actor takes the only slot")
+	# --- Boss presence ---------------------------------------------------------
+	var boss_actor: Dictionary = enemies[0].duplicate(true)
+	boss_actor["id"] = "molin_yanjiang"
+	boss_actor["battle_uid"] = "molin_yanjiang#0"
+	var plain_height: float = stage.card_screen_rect(enemies[0]).size.y
+	ui.set_teams(allies, [boss_actor])
+	var boss_height: float = ui.stage.card_screen_rect(boss_actor).size.y
+	_expect(boss_height > plain_height * 1.25, "a boss card stands about a third larger than an ordinary enemy")
+	ui.set_teams(allies, enemies)
+	stage = ui.stage
+
 	_stage_checks_completed = true
 
 
