@@ -447,6 +447,90 @@ func _check_stage(fixture: Node) -> void:
 	_expect(not has_node_recursive_visible(ui, "CardCommandMenu"), "no pop-up outside the player's turn")
 
 
+	# --- Turn-order line-up: rows follow the REAL queue -------------------------------
+	var manager: Node = controller.turn_manager
+	manager.player_party = allies
+	manager.enemy_party = enemies
+	manager.turn_queue = (allies + enemies).duplicate()
+	manager.turn_queue.sort_custom(Callable(manager, "_compare_speed"))
+	manager.current_index = 0
+	var ally_keys: Callable = func() -> Array:
+		var row: Array = []
+		for key: String in stage.order_keys():
+			if not stage.cards[key].is_enemy:
+				row.append(key)
+		return row
+	var enemy_keys: Callable = func() -> Array:
+		var row: Array = []
+		for key: String in stage.order_keys():
+			if stage.cards[key].is_enemy:
+				row.append(key)
+		return row
+	var fast_key: String = stage.actor_key(allies[1])
+	var mid_key: String = stage.actor_key(allies[0])
+	var slow_key: String = stage.actor_key(allies[2])
+	_expect(ally_keys.call() == [fast_key, mid_key, slow_key], "round start: the party row is the real queue order (fastest acts next)")
+	_expect(enemy_keys.call() == [stage.actor_key(enemies[1]), stage.actor_key(enemies[0]), stage.actor_key(enemies[2])], "round start: the enemy row is the real queue order")
+	# The fastest ally finishes acting: they go to the back of the row.
+	manager.current_index = manager.turn_queue.find(allies[1]) + 1
+	_expect(ally_keys.call() == [mid_key, slow_key, fast_key], "after acting, a card goes to the far end of its row")
+	# Everyone acted: the row is the next round's order (sorted by current speed).
+	manager.current_index = manager.turn_queue.size()
+	_expect(ally_keys.call() == [fast_key, mid_key, slow_key], "after the whole round, the row is the next round's order")
+	# A speed change mid-round must NOT reorder the characters who have yet to act ...
+	manager.current_index = manager.turn_queue.find(allies[1]) + 1
+	allies[2]["speed"] = 99
+	_expect(ally_keys.call() == [mid_key, slow_key, fast_key], "a mid-round speed-up does not move anyone who is still waiting (the real queue is fixed)")
+	allies[2]["speed"] = 6
+	# ... but it does reorder those who already acted, as the next round will.
+	manager.current_index = manager.turn_queue.size()
+	allies[0]["speed"] = 1
+	_expect(ally_keys.call() == [fast_key, slow_key, mid_key], "a slowed character who already acted drops back for the next round")
+	allies[0]["speed"] = 9
+	# Defeated characters leave the queue; the row closes up.
+	manager.current_index = 0
+	allies[0]["hp"] = 0
+	_expect(not ally_keys.call().has(mid_key) and ally_keys.call() == [fast_key, slow_key], "a defeated character leaves the line-up")
+	allies[0]["hp"] = int(base_ally.hp)
+	# Applying an order moves cards: the one that just acted wraps around, the rest slide.
+	stage.hover_key = ""
+	manager.current_index = 0
+	stage._order_signature = ""
+	stage.apply_order(stage.order_keys(), false)
+	await process_frame
+	var before_x: float = stage.cards[fast_key].home_position.x
+	manager.current_index = manager.turn_queue.find(allies[1]) + 1
+	stage._order_signature = "|".join(stage.order_keys())
+	stage.apply_order(stage.order_keys(), true)
+	var wrapper: Node3D = stage.cards[fast_key]
+	_expect(wrapper.slot_rank == 2 and stage.cards[mid_key].slot_rank == 0 and stage.cards[slow_key].slot_rank == 1, "ranks follow the new order")
+	_expect(wrapper.is_relocating() and stage.cards[mid_key].is_relocating(), "cards animate to their new slots")
+	_expect(absf(wrapper.home_position.x) > absf(before_x) and absf(stage.cards[mid_key].home_position.x) < absf(stage.cards[slow_key].home_position.x), "the card that acted now stands outermost; the next to act is innermost")
+	var faded: bool = false
+	for wrap_frame: int in range(60):
+		await process_frame
+		faded = faded or wrapper.card_mesh.transparency > 0.5
+	_expect(faded, "the card that acted fades out while it wraps around")
+	for wrap_frame: int in range(40):
+		await process_frame
+	for card_key: String in stage.cards.keys():
+		_expect(stage.cards[card_key].position.is_equal_approx(stage.cards[card_key].home_position) and is_equal_approx(stage.cards[card_key].card_mesh.transparency, 0.0), "%s settles at its slot, fully visible" % card_key)
+	_expect(not has_node_recursive_visible(ui, "CardCommandMenu"), "reordering opens nothing")
+	# The row is only rearranged while nothing is moving or attacking.
+	stage.busy = true
+	stage._order_signature = ""
+	manager.current_index = 0
+	stage._order_clock = 1.0
+	stage._update_order(0.0)
+	_expect(stage._order_signature.is_empty(), "no re-ordering while an action is being presented")
+	stage.busy = false
+	manager.turn_queue = []
+	manager.current_index = 0
+	stage._order_signature = ""
+	var restore_order: Array[String] = [fast_key, mid_key, slow_key]
+	stage.apply_order(restore_order, false)
+	await process_frame
+
 	# --- Legacy switch and empty slots ------------------------------------------
 	ui.set_stage_enabled(false)
 	_expect(not stage.visible and ui.ally_panel.visible, "F8 path restores the legacy panels")

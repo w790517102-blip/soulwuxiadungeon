@@ -479,3 +479,50 @@ func _kill_motion() -> void:
 func reset_pose() -> void:
 	super.reset_pose()
 	fan_offset = Vector3.ZERO
+
+
+# --- Line-up changes (turn order) -----------------------------------------------------
+
+var _relocate_tween: Tween
+
+
+func is_relocating() -> bool:
+	return _relocate_tween != null and _relocate_tween.is_valid() and _relocate_tween.is_running()
+
+
+## Fades the whole card (0 = solid, 1 = gone). Presentation only.
+func set_fade(amount: float) -> void:
+	for mesh: GeometryInstance3D in [card_mesh, ink_back, art_layer, card_back]:
+		if mesh:
+			mesh.transparency = amount
+
+
+## Moves the card to a new line-up slot. `wrap` is the card that just acted: it leaves
+## toward the exchange zone, vanishes, and reappears at the far end of its row.
+## Otherwise the card simply slides. `home_position` changes at once, so picking and
+## later motions already use the new slot.
+func relocate(new_home: Vector3, wrap: bool) -> void:
+	if _relocate_tween and _relocate_tween.is_valid():
+		_relocate_tween.kill()
+	var start: Vector3 = position
+	home_position = new_home
+	_relocate_tween = create_tween()
+	if wrap:
+		var exit_point: Vector3 = start + Vector3(_toward() * 1.3, 0.0, 0.0)
+		_relocate_tween.tween_property(self, "position", exit_point, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		_relocate_tween.parallel().tween_method(set_fade, 0.0, 1.0, 0.2)
+		_relocate_tween.tween_callback(func() -> void:
+			position = new_home + Vector3(-_toward() * 1.3, 0.0, 0.0)
+		)
+		_relocate_tween.tween_property(self, "position", new_home, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_relocate_tween.parallel().tween_method(set_fade, 1.0, 0.0, 0.24)
+	else:
+		_relocate_tween.tween_property(self, "position", new_home, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func settle_relocation() -> void:
+	if _relocate_tween and _relocate_tween.is_valid():
+		_relocate_tween.kill()
+	_relocate_tween = null
+	position = home_position
+	set_fade(0.0)

@@ -125,6 +125,7 @@ func _follow_marker() -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	_update_order(delta)
 	if _active_card != null and not is_instance_valid(_active_card):
 		clear_active_actor()
 	elif turn_marker and turn_marker.visible:
@@ -172,6 +173,7 @@ func set_teams(allies: Array, enemies: Array, guest: Dictionary = {}, status_sou
 		card.queue_free()
 	cards.clear()
 	hover_key = ""
+	_order_signature = ""
 	slots.clear()
 	var party: Array = allies.duplicate()
 	if not guest.is_empty() and party.size() < 3:
@@ -321,3 +323,120 @@ func _limit_shift_to_screen(card: Node3D, side: float, shift: float) -> float:
 			return shift
 		shift *= 0.7
 	return 0.0
+
+
+# --- Turn-order line-up ---------------------------------------------------------------
+# Each camp's row mirrors the REAL action order: the card nearest the exchange zone acts
+# next. Whoever finished acting goes to the far end; the rest of the row follows the
+# real queue. Speed changes made mid-round only show from the next round, because the
+# round's queue is fixed at its start (nothing here changes any combat rule).
+
+const ORDER_POLL_SECONDS: float = 0.1
+var _order_clock: float = 0.0
+var _order_signature: String = ""
+
+
+func _turn_manager() -> Node:
+	var controller: Variant = _ui.get("combat_controller") if _ui else null
+	if controller == null:
+		return null
+	return controller.get("turn_manager") as Node
+
+
+## Next-to-act first, as card keys: the rest of this round in queue order, then the
+## characters who already acted, sorted the way the next round will sort them.
+func order_keys() -> Array[String]:
+	var manager: Node = _turn_manager()
+	var keys: Array[String] = []
+	if manager == null or manager.get("turn_queue") == null:
+		return keys
+	var queue: Array = manager.turn_queue
+	var index: int = clampi(int(manager.current_index), 0, queue.size())
+	var alive_all: Array = []
+	for actor: Dictionary in manager.player_party + manager.enemy_party:
+		if int(actor.get("hp", 0)) > 0 and manager._is_actor_alive(actor):
+			alive_all.append(actor)
+	var remaining: Array = []
+	for actor: Dictionary in queue.slice(index):
+		if alive_all.has(actor):
+			remaining.append(actor)
+	var acted: Array = []
+	for actor: Dictionary in alive_all:
+		if not remaining.has(actor):
+			acted.append(actor)
+	acted.sort_custom(Callable(manager, "_compare_speed"))
+	for actor: Dictionary in remaining + acted:
+		var key: String = actor_key(actor)
+		if cards.has(key):
+			keys.append(key)
+	return keys
+
+
+## Rank (0 = nearest the exchange zone) for every card, from the real order. Guests and
+## defeated characters keep the outer positions, in their previous relative order.
+func ranks_from_order(keys: Array[String]) -> Dictionary:
+	var ranks: Dictionary = {}
+	for enemy_side: bool in [false, true]:
+		var row: Array[String] = []
+		for key: String in keys:
+			if cards[key].is_enemy == enemy_side:
+				row.append(key)
+		var rest: Array = []
+		for key: String in cards.keys():
+			if cards[key].is_enemy == enemy_side and not row.has(key):
+				rest.append(key)
+		rest.sort_custom(func(a: String, b: String) -> bool: return cards[a].slot_rank < cards[b].slot_rank)
+		for key: String in rest:
+			row.append(key)
+		for rank: int in range(row.size()):
+			ranks[row[rank]] = rank
+	return ranks
+
+
+func apply_order(keys: Array[String], animated: bool) -> void:
+	var ranks: Dictionary = ranks_from_order(keys)
+	var counts: Dictionary = {false: 0, true: 0}
+	for card: Node3D in cards.values():
+		counts[card.is_enemy] += 1
+	for key: String in ranks.keys():
+		var card: Node3D = cards[key]
+		var rank: int = ranks[key]
+		if rank == card.slot_rank:
+			continue
+		var layout: Dictionary = Formation.slot(counts[card.is_enemy], rank, card.is_enemy)
+		var position: Vector3 = Formation.world_position(layout, card.card_size.y, CAMERA_Z, camera_fov)
+		var was_front: bool = card.slot_rank == 0
+		card.slot_rank = rank
+		card.name = "Card_%d_%s" % [rank, key.replace("#", "_")]
+		layout["position"] = position
+		slots[key] = layout
+		if animated:
+			card.relocate(position, was_front and rank > 0)
+		else:
+			card.set_home(position, _yaw_for(card.is_enemy))
+
+
+func _cards_idle() -> bool:
+	if busy:
+		return false
+	for card: Node3D in cards.values():
+		if card._motion_tween != null and card._motion_tween.is_valid() and card._motion_tween.is_running():
+			return false
+	return true
+
+
+func _update_order(delta: float) -> void:
+	_order_clock += delta
+	if _order_clock < ORDER_POLL_SECONDS or cards.is_empty():
+		return
+	_order_clock = 0.0
+	var keys: Array[String] = order_keys()
+	if keys.is_empty():
+		return
+	var signature: String = "|".join(keys)
+	if signature == _order_signature or not _cards_idle():
+		return
+	var first: bool = _order_signature.is_empty()
+	_order_signature = signature
+	hover_key = ""
+	apply_order(keys, not first)
