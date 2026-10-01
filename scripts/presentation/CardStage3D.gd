@@ -717,7 +717,12 @@ func _place_row_entity(entity: Object, card: Node3D, animate_in: bool) -> void:
 	card.slot_rank = rank
 	card.set_home(_row_position(card, count, rank, enemy_side, _row_gaps(ranks, enemy_side, count)), -enemy_yaw_degrees if enemy_side else card_yaw_degrees * 0.5)
 	if animate_in and _spawn_origin is Vector3 and card.has_method("play_spawn"):
-		card.play_spawn(_spawn_origin)
+		# It first walks to the outer end of its row (the far left for the party), then is
+		# slid in once the row is ready (settle_entity_arrival).
+		var outer: Vector3 = _row_position(card, count, count - 1, enemy_side, [])
+		outer.x += (1.4 if enemy_side else -1.4)
+		outer.z += 0.25
+		card.play_spawn(_spawn_origin, outer)
 	_spawn_origin = null
 	# The actors re-space around it once nothing is moving (see _update_order).
 	_order_signature = ""
@@ -864,6 +869,15 @@ func _row_gaps(ranks: Dictionary, enemy_side: bool, count: int) -> Array:
 ## Waits until every row entity has finished unfolding and every card has slid to its final
 ## slot (the characters shifting to make room included).
 func settle_entity_arrival() -> void:
+	# The new card first plays its entrance (white spin, walk to the outer end of its row).
+	var wait_guard: int = 0
+	while wait_guard < 900 and _entrance_playing():
+		await get_tree().process_frame
+		wait_guard += 1
+	# Then it is slid slowly into its slot while the row makes room around it.
+	for card: Node3D in entity_cards.values():
+		if card.has_method("is_staged") and card.is_staged():
+			card.insert_into_slot(0.4 * INSERT_TIME_SCALE)
 	# `busy` held the line-up still during the cast; release it so the row re-spaces now.
 	var was_busy: bool = busy
 	busy = false
@@ -877,6 +891,14 @@ func settle_entity_arrival() -> void:
 	while guard < 600 and _arrival_in_progress():
 		await get_tree().process_frame
 		guard += 1
+
+
+## An entity card that is still playing its entrance (not yet waiting at the row's end).
+func _entrance_playing() -> bool:
+	for card: Node3D in entity_cards.values():
+		if card.has_method("is_staged") and card.has_method("is_spawning") and card.is_spawning() and not card.is_staged():
+			return true
+	return false
 
 
 func _arrival_in_progress() -> bool:

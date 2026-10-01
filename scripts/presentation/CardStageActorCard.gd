@@ -656,19 +656,28 @@ func drink_shakes() -> void:
 	await _wait_for_motion(_motion_tween)
 
 
-## 醉拳: two lurching steps to the left, then slowly two steps back to the right.
+## 醉拳: leans slowly left, lurches two steps left as if falling, leans slowly right, then two small steps back.
 func drunken_sway() -> void:
 	_kill_motion()
 	_motion_tween = create_tween()
+	var lean: float = 0.34
+	# 1. Lean slowly and steadily to the left, as if about to topple.
+	_motion_tween.tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, lean), 1.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_motion_tween.parallel().tween_property(self, "position", home_position + Vector3(-0.1, 0.0, 0.05), 1.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	# 2. Nearly falling: two quick lurching steps to the left, catching the tilt each time.
 	for step: int in range(2):
-		var x: float = -0.45 * float(step + 1)
-		_motion_tween.tween_property(self, "position", home_position + Vector3(x, 0.0, 0.2), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, 0.16), 0.3)
-		_motion_tween.tween_interval(0.12)
+		var x: float = -0.4 * float(step + 1)
+		_motion_tween.tween_property(self, "position", home_position + Vector3(x, 0.0, 0.2), 0.17).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, lean * (0.55 if step == 0 else 0.25)), 0.17)
+		_motion_tween.tween_interval(0.08)
+	# 3. Then lean slowly the other way, to the right.
+	_motion_tween.tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, -lean), 1.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_motion_tween.parallel().tween_property(self, "position", home_position + Vector3(-0.7, 0.0, 0.2), 1.3)
+	# 4. Nearly falling again: two small steps to the right, back to where it began.
 	for step: int in range(2):
-		var x: float = -0.45 * float(1 - step)
-		_motion_tween.tween_property(self, "position", home_position + Vector3(x, 0.0, 0.2), 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, -0.1 if step == 0 else 0.0), 0.7)
+		var x: float = -0.4 * float(1 - step)
+		_motion_tween.tween_property(self, "position", home_position + Vector3(x, 0.0, 0.2 if step == 0 else 0.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, -lean * (0.5 if step == 0 else 0.0)), 0.2)
 		_motion_tween.tween_interval(0.1)
 	_motion_tween.tween_property(self, "position", home_position, 0.25)
 	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.25)

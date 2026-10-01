@@ -165,6 +165,18 @@ func _check_stage(fixture: Node) -> void:
 	var stage: Node3D = ui.stage
 	_expect(stage.get_script().resource_path.ends_with("/CardStage3D.gd"), "preview uses the card stage")
 	_expect(stage.cards.size() == 6, "3v3 creates six cards")
+	# --- Log colours -------------------------------------------------------------
+	var colour_log: Node = ui.log_panel
+	_expect(colour_log.has_method("colorize"), "the stage log panel colours its lines")
+	if colour_log.has_method("colorize"):
+		colour_log.set_color_names([{"name": "劉語塵"}], [{"name": "獼猴"}])
+		var painted: String = colour_log.colorize("劉語塵 使用 鷹眼凝，獼猴 受創：擊中 獼猴，造成 [color=#ffd447]24[/color] 點傷害！這一擊竟是會心一擊")
+		_expect(painted.contains("[color=#6ec6ff]劉語塵[/color]"), "our characters are sky blue")
+		_expect(painted.contains("[color=#f2d46b]鷹眼凝[/color]"), "skills are gold")
+		_expect(painted.contains("[color=#c7a6ff]獼猴[/color]"), "enemies are lavender")
+		_expect(painted.contains("[color=#ff5a5a]24[/color]") and painted.contains("[color=#ff5a5a]會心一擊[/color]"), "damage and critical hits are red")
+		_expect(colour_log.colorize("[color=#80ff80]12[/color]").contains("#80ff80"), "healing keeps its green")
+
 	# --- Defeat exits ----------------------------------------------------------
 	var beast: Node3D = stage.card_for(enemies[0])
 	var spirit: Node3D = stage.card_for(enemies[1])

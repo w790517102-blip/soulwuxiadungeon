@@ -453,6 +453,8 @@ func _close_menu() -> void:
 
 func set_teams(allies_data: Array, enemies_data: Array) -> void:
 	super.set_teams(allies_data, enemies_data)
+	if log_panel and log_panel.has_method("set_color_names"):
+		log_panel.set_color_names(allies_data, enemies_data)
 	if stage:
 		stage.set_teams(allies, enemies, guest_actor, _build_status_abbrev_text)
 		var context: Dictionary = combat_controller.battle_context if combat_controller else {}

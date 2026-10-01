@@ -155,10 +155,54 @@ func set_home(position_value: Vector3, yaw_degrees: float = 0.0) -> void:
 	rotation = home_rotation
 
 
+var _awaiting_insert: bool = false
+var _staged_target: Vector3 = Vector3.ZERO
+
+
+## True through the whole entrance: the white spin, the walk to the row's outer end, and the
+## wait there for the row to make room.
 func is_spawning() -> bool:
-	return _tween != null and _tween.is_valid() and _tween.is_running() and scale.x < 0.999
+	return _awaiting_insert or (_tween != null and _tween.is_valid() and _tween.is_running() and scale.x < 0.999)
 
 
+## True once the entrance has reached the outer end and waits to be inserted.
+func is_staged() -> bool:
+	return _awaiting_insert and not (_tween != null and _tween.is_valid() and _tween.is_running())
+
+
+## The card appears at the burst glowing white and spinning; the white drains away and it
+## returns to its own look, then it walks to `staging` (the outer end of its row) and waits.
+func play_spawn(origin: Vector3, staging: Vector3 = Vector3.ZERO) -> void:
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	_staged_target = staging if staging != Vector3.ZERO else home_position
+	position = origin
+	scale = Vector3.ONE * 0.04
+	set_fade(1.0)
+	_flash.color = Color(1.0, 1.0, 1.0, 1.0)
+	_awaiting_insert = true
+	_tween = create_tween()
+	_tween.tween_property(self, "scale", Vector3.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween.parallel().tween_method(set_fade, 1.0, 0.0, 0.2)
+	_tween.parallel().tween_property(self, "rotation:y", home_rotation.y + TAU * 2.0, 1.3).from(home_rotation.y).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween.parallel().tween_property(_flash, "color:a", 0.0, 1.2).set_delay(0.15)
+	_tween.tween_property(self, "rotation:y", home_rotation.y + TAU * 2.0, 0.0)
+	_tween.tween_interval(0.1)
+	_tween.tween_property(self, "position", _staged_target, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tween.tween_callback(func() -> void:
+		rotation = home_rotation
+	)
+
+
+## Slides from the outer end into the card's slot (slowly: the row is making room).
+func insert_into_slot(seconds: float) -> void:
+	if not _awaiting_insert:
+		return
+	_awaiting_insert = false
+	if _relocate_tween and _relocate_tween.is_valid():
+		_relocate_tween.kill()
+	_relocate_tween = create_tween()
+	_relocate_tween.tween_property(self, "position", home_position, seconds).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 func is_relocating() -> bool:
 	return _relocate_tween != null and _relocate_tween.is_valid() and _relocate_tween.is_running()
 
@@ -175,20 +219,6 @@ func set_fade(amount: float) -> void:
 	for mesh: GeometryInstance3D in [card_mesh, card_back]:
 		if mesh:
 			mesh.transparency = amount
-
-
-## The card unfolds out of the burst: it grows from a point in space into its slot.
-func play_spawn(origin: Vector3) -> void:
-	if _tween and _tween.is_valid():
-		_tween.kill()
-	var target: Vector3 = home_position
-	position = origin
-	scale = Vector3.ONE * 0.04
-	set_fade(1.0)
-	_tween = create_tween().set_parallel(true)
-	_tween.tween_property(self, "position", target, 0.75).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(self, "scale", Vector3.ONE, 0.75).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_method(set_fade, 1.0, 0.0, 0.375)
 
 
 func hit_shake() -> void:
