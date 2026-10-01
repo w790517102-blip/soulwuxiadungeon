@@ -385,11 +385,21 @@ func ranks_from_order(keys: Array[String]) -> Dictionary:
 		for key: String in keys:
 			if cards[key].is_enemy == enemy_side:
 				row.append(key)
+		var actor_count: int = row.size()
 		var rest: Array = []
 		for key: String in cards.keys():
 			if cards[key].is_enemy == enemy_side and not row.has(key):
 				rest.append(key)
 		rest.sort_custom(func(a: String, b: String) -> bool: return cards[a].slot_rank < cards[b].slot_rank)
+		# Row entities sit between the acting order and the outer extras (guests, the
+		# fallen): `row_edge_distance` counts positions in from the outer end.
+		var inserts: Array = []
+		for entity: Object in _row_entities(enemy_side):
+			var index: int = clampi(actor_count - int(entity.get("row_edge_distance")), 0, actor_count)
+			inserts.append([index, _row_key(entity)])
+		inserts.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0] or (a[0] == b[0] and a[1] > b[1]))
+		for insert: Array in inserts:
+			row.insert(insert[0], insert[1])
 		for key: String in rest:
 			row.append(key)
 		for rank: int in range(row.size()):
@@ -400,24 +410,28 @@ func ranks_from_order(keys: Array[String]) -> Dictionary:
 func apply_order(keys: Array[String], animated: bool) -> void:
 	var ranks: Dictionary = ranks_from_order(keys)
 	var counts: Dictionary = {false: 0, true: 0}
-	for card: Node3D in cards.values():
-		counts[card.is_enemy] += 1
 	for key: String in ranks.keys():
-		var card: Node3D = cards[key]
+		counts[_row_card(key).is_enemy] += 1
+	for key: String in ranks.keys():
+		var card: Node3D = _row_card(key)
 		var rank: int = ranks[key]
-		if rank == card.slot_rank:
+		var gaps: Array = _row_gaps(ranks, card.is_enemy, counts[card.is_enemy])
+		var position: Vector3 = _row_position(card, counts[card.is_enemy], rank, card.is_enemy, gaps)
+		# Re-centring when the row grows or shrinks moves cards even if their rank stays.
+		if rank == card.slot_rank and position.is_equal_approx(card.home_position):
 			continue
-		var layout: Dictionary = Formation.slot(counts[card.is_enemy], rank, card.is_enemy)
-		var position: Vector3 = Formation.world_position(layout, card.card_size.y, CAMERA_Z, camera_fov)
+		var is_actor_card: bool = cards.has(key)
 		var was_front: bool = card.slot_rank == 0
 		card.slot_rank = rank
-		card.name = "Card_%d_%s" % [rank, key.replace("#", "_")]
-		layout["position"] = position
-		slots[key] = layout
+		if is_actor_card:
+			card.name = "Card_%d_%s" % [rank, key.replace("#", "_")]
+			var layout: Dictionary = Formation.slot(counts[card.is_enemy], rank, card.is_enemy)
+			layout["position"] = position
+			slots[key] = layout
 		if animated:
-			card.relocate(position, was_front and rank > 0)
+			card.relocate(position, is_actor_card and was_front and rank > 0)
 		else:
-			card.set_home(position, _yaw_for(card.is_enemy))
+			card.set_home(position, _yaw_for(card.is_enemy) if is_actor_card else (-enemy_yaw_degrees if card.is_enemy else card_yaw_degrees * 0.5))
 
 
 func _cards_idle() -> bool:
@@ -437,7 +451,7 @@ func _update_order(delta: float) -> void:
 	var keys: Array[String] = order_keys()
 	if keys.is_empty():
 		return
-	var signature: String = "|".join(keys)
+	var signature: String = "|".join(keys) + "#" + _entity_signature()
 	if signature == _order_signature or not _cards_idle():
 		return
 	var first: bool = _order_signature.is_empty()
@@ -472,7 +486,7 @@ func spawn_stage_entity_card(entity: Object, home: Variant = null) -> Node3D:
 	if factory is Callable and (factory as Callable).is_valid():
 		card = (factory as Callable).call(entity)
 	else:
-		card = EntityCard.new()
+		card = TokenCard.new() if String(entity.get("card_kind")) == "token" else EntityCard.new()
 	actor_root.add_child(card)
 	if card.has_method("configure"):
 		card.configure(entity)
@@ -486,11 +500,14 @@ func spawn_stage_entity_card(entity: Object, home: Variant = null) -> Node3D:
 			if (String(other.get("faction")) == "enemy") == enemy_side:
 				index += 1
 		position = Formation.world_position(Formation.entity_slot(index, enemy_side), card.card_size.y, CAMERA_Z, camera_fov)
-	card.set_home(position, -enemy_yaw_degrees if enemy_side else card_yaw_degrees * 0.5)
 	entity_cards[key] = card
 	_entity_objects[key] = entity
 	if entity.has_signal("changed") and not entity.changed.is_connected(update_stage_entity_card):
 		entity.changed.connect(update_stage_entity_card)
+	if _entity_row_side(entity) > 0 and not home is Vector3:
+		_place_row_entity(entity, card, true)
+	else:
+		card.set_home(position, -enemy_yaw_degrees if enemy_side else card_yaw_degrees * 0.5)
 	return card
 
 
@@ -501,7 +518,15 @@ func remove_stage_entity_card(entity: Object) -> void:
 	var card: Node3D = entity_cards.get(key)
 	entity_cards.erase(key)
 	_entity_objects.erase(key)
-	if card:
+	_order_signature = ""
+	if card == null:
+		return
+	# A card that is still showing (it expired rather than broke) fades before it is freed.
+	if card.has_method("set_fade") and card.get("card_mesh") != null and card.card_mesh.transparency < 0.9:
+		var tween := create_tween()
+		tween.tween_method(card.set_fade, 0.0, 1.0, 0.4)
+		tween.tween_callback(card.queue_free)
+	else:
 		card.queue_free()
 
 
@@ -570,3 +595,251 @@ func pick_target(screen_position: Vector2, candidates: Array, include_dead: bool
 			best_priority = priority
 			selected = target
 	return selected if selected != null else {}
+
+
+# --- Stage entities standing IN a card row (替身符...) ---------------------------------------
+# A row entity has `row` = "party" / "enemy" and `row_edge_distance` (positions from the
+# outer end, guests not counted). It is laid out together with the actors, so the row
+# squeezes a little and the actors keep their real order around it.
+
+const TokenCard = preload("res://scripts/presentation/CardStageTokenCard.gd")
+const InkStroke = preload("res://scripts/presentation/InkStroke3D.gd")
+const InkDrops = preload("res://scripts/presentation/InkDrops2D.gd")
+
+var _spawn_origin: Variant = null
+var _cast_stroke: Node3D = null
+var _cast_center: Vector3 = Vector3.ZERO
+var _drop_layer: CanvasLayer = null
+
+
+func _entity_row_side(entity: Object) -> int:
+	# 0 = not in a row, 1 = party row, 2 = enemy row
+	match String(entity.get("row")):
+		"party": return 1
+		"enemy": return 2
+	return 0
+
+
+func _row_entities(enemy_side: bool) -> Array:
+	var wanted: int = 2 if enemy_side else 1
+	var result: Array = []
+	for key: String in _entity_objects.keys():
+		var entity: Object = _entity_objects[key]
+		if _entity_row_side(entity) == wanted and entity_cards.has(key):
+			result.append(entity)
+	return result
+
+
+func _row_key(entity: Object) -> String:
+	return "ent:%s" % String(entity.get("entity_id"))
+
+
+func _row_card(key: String) -> Node3D:
+	if key.begins_with("ent:"):
+		return entity_cards.get(key.trim_prefix("ent:"))
+	return cards.get(key)
+
+
+func _entity_signature() -> String:
+	var parts: Array[String] = []
+	for key: String in entity_cards.keys():
+		var entity: Object = _entity_objects.get(key)
+		if entity != null and _entity_row_side(entity) > 0:
+			parts.append("%s@%d" % [key, int(entity.get("row_edge_distance"))])
+	parts.sort()
+	return ",".join(parts)
+
+
+## The card size of a row entity relative to an actor card (a smaller sub card).
+func _size_ratio(card: Node3D) -> float:
+	return clampf(card.card_size.y / Templates.card_world_size("character").y, 0.2, 1.0)
+
+
+func _row_position(card: Node3D, count: int, rank: int, enemy_side: bool, gaps: Array = []) -> Vector3:
+	var layout: Dictionary = Formation.slot(count, rank, enemy_side, 1.0, gaps)
+	if card is TokenCard or not card.has_method("cast_step_forward"):
+		layout = Formation.slot(count, rank, enemy_side, _size_ratio(card), gaps)
+	var world: Vector3 = Formation.world_position(layout, card.card_size.y, CAMERA_Z, camera_fov)
+	# A sub card stands a little in front of the characters so a turned neighbour never hides it.
+	if card is TokenCard:
+		world.z += SUB_CARD_FRONT
+	return world
+
+
+## Where the row entities will stand: the new card is placed straight into its slot.
+func _place_row_entity(entity: Object, card: Node3D, animate_in: bool) -> void:
+	var enemy_side: bool = _entity_row_side(entity) == 2
+	var keys: Array[String] = order_keys()
+	var ranks: Dictionary = ranks_from_order(keys)
+	var key: String = _row_key(entity)
+	var count: int = 0
+	for other: Node3D in cards.values():
+		if other.is_enemy == enemy_side:
+			count += 1
+	count += _row_entities(enemy_side).size()
+	var rank: int = int(ranks.get(key, count - 1))
+	card.slot_rank = rank
+	card.set_home(_row_position(card, count, rank, enemy_side, _row_gaps(ranks, enemy_side, count)), -enemy_yaw_degrees if enemy_side else card_yaw_degrees * 0.5)
+	if animate_in and _spawn_origin is Vector3 and card.has_method("play_spawn"):
+		card.play_spawn(_spawn_origin)
+	_spawn_origin = null
+	# The actors re-space around it once nothing is moving (see _update_order).
+	_order_signature = ""
+
+
+## Fades a row entity out of its slot (expiry), then frees the card.
+func fade_out_stage_entity_card(entity: Object) -> void:
+	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
+	if card == null or not card.has_method("set_fade"):
+		return
+	var tween := create_tween()
+	tween.tween_method(card.set_fade, 0.0, 1.0, 0.45)
+
+
+# --- Presentation: an attack on a stage entity ---------------------------------------------
+
+func present_entity_attack(attacker: Dictionary, entity: Object, destroyed: bool, attacker_motion: bool = true) -> void:
+	var source: Node3D = card_for(attacker)
+	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
+	if source == null or card == null:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	if attacker_motion:
+		source.attack_motion(card.home_position)
+		await get_tree().create_timer(0.14).timeout
+	var trail: Node3D = SwordTrail.new()
+	fx_root.add_child(trail)
+	var shake_later := get_tree().create_timer(0.3)
+	shake_later.timeout.connect(func() -> void:
+		if is_instance_valid(card):
+			card.hit_shake()
+	)
+	await trail.play(source.position, card.home_position, true)
+	trail.queue_free()
+	# A short hit-stop, then the charm tears apart if that was its last charge.
+	await get_tree().create_timer(0.08).timeout
+	if destroyed and is_instance_valid(card):
+		await card.play_break()
+	await get_tree().create_timer(0.18).timeout
+	busy = false
+
+
+# --- Presentation: casting 替身符 (one brush stroke, a burst, the card unfolds) ------------
+
+## phase "windup": step forward, draw the stroke, burst, (the controller then registers the
+## entity, whose card unfolds from the burst). phase "finish": settle and step back.
+func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
+	var card: Node3D = card_for(caster)
+	if card == null:
+		return
+	if phase == "windup":
+		busy = true
+		command_tray.set_enabled(false)
+		_cast_center = Vector3(0.2, 0.9, (player_depth + enemy_depth) * 0.5 + 1.5)
+		await card.cast_step_forward()
+		_cast_stroke = InkStroke.new()
+		_cast_stroke.size = 3.0
+		fx_root.add_child(_cast_stroke)
+		_cast_stroke.position = _cast_center
+		await _cast_stroke.draw_stroke(0.95)
+		await get_tree().create_timer(0.12).timeout
+		# The mark pulls in, then bursts into ink; the burst is where the card appears.
+		_spawn_origin = _cast_center
+		_burst_ink(_cast_center)
+		_splash_camera_ink()
+		var stroke: Node3D = _cast_stroke
+		_cast_stroke = null
+		stroke.contract_and_fade(0.3)
+		get_tree().create_timer(0.6).timeout.connect(stroke.queue_free)
+	else:
+		# The burst has happened and the card is unfolding. Wait for it to land, let the
+		# characters make room around it, and only then end the cast: nothing may act while
+		# the card is still on its way into the row.
+		await settle_entity_arrival()
+		await card.cast_return()
+		busy = false
+
+
+func _burst_ink(centre: Vector3) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var holder := Node3D.new()
+	fx_root.add_child(holder)
+	holder.position = centre
+	for index: int in range(52):
+		var drop := MeshInstance3D.new()
+		var sphere := SphereMesh.new()
+		sphere.radius = rng.randf_range(0.012, 0.055)
+		sphere.height = sphere.radius * 2.0 * rng.randf_range(1.0, 2.6)
+		drop.mesh = sphere
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.albedo_color = Color(0.015, 0.015, 0.02, 0.96)
+		material.no_depth_test = true
+		material.render_priority = 21
+		drop.material_override = material
+		holder.add_child(drop)
+		var direction := Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.5, 1.0), rng.randf_range(-0.2, 1.0)).normalized()
+		var reach: float = rng.randf_range(1.0, 2.6)
+		var tween := create_tween().set_parallel(true)
+		tween.tween_property(drop, "position", direction * reach + Vector3(0.0, -0.5, 0.0), 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(drop, "scale", Vector3.ONE * rng.randf_range(0.4, 0.9), 0.7)
+		tween.tween_property(material, "albedo_color:a", 0.0, 0.5).set_delay(0.3)
+	get_tree().create_timer(1.0).timeout.connect(holder.queue_free)
+
+
+func _splash_camera_ink() -> void:
+	if _drop_layer == null or not is_instance_valid(_drop_layer):
+		_drop_layer = CanvasLayer.new()
+		_drop_layer.layer = 60
+		add_child(_drop_layer)
+	var drops: Control = InkDrops.new()
+	_drop_layer.add_child(drops)
+	drops.splash(4)
+
+
+## Extra room beside a sub card (a charm between characters would otherwise be hidden).
+const ENTITY_GAP: float = 1.5
+const SUB_CARD_FRONT: float = 0.45
+
+
+## Boundary gap multipliers for one row, from a rank map (see Formation.slot).
+func _row_gaps(ranks: Dictionary, enemy_side: bool, count: int) -> Array:
+	var entity_ranks: Dictionary = {}
+	for key: String in ranks.keys():
+		if key.begins_with("ent:") and entity_cards.has(key.trim_prefix("ent:")) and entity_cards[key.trim_prefix("ent:")].is_enemy == enemy_side:
+			entity_ranks[int(ranks[key])] = true
+	var gaps: Array = []
+	for boundary: int in range(1, count):
+		gaps.append(ENTITY_GAP if entity_ranks.has(boundary) or entity_ranks.has(boundary - 1) else 1.0)
+	return gaps
+
+
+## Waits until every row entity has finished unfolding and every card has slid to its final
+## slot (the characters shifting to make room included).
+func settle_entity_arrival() -> void:
+	# `busy` held the line-up still during the cast; release it so the row re-spaces now.
+	var was_busy: bool = busy
+	busy = false
+	_order_clock = ORDER_POLL_SECONDS
+	_order_signature = ""
+	_update_order(0.0)
+	busy = was_busy
+	var guard: int = 0
+	while guard < 600 and _arrival_in_progress():
+		await get_tree().process_frame
+		guard += 1
+
+
+func _arrival_in_progress() -> bool:
+	for card: Node3D in entity_cards.values():
+		if card.has_method("is_spawning") and card.is_spawning():
+			return true
+		if card.has_method("is_relocating") and card.is_relocating():
+			return true
+	for card: Node3D in cards.values():
+		if card.is_relocating():
+			return true
+	return false

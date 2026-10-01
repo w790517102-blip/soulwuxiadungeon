@@ -2121,6 +2121,12 @@ func _on_btn_skill_pressed() -> void:
 
 # ⭐ 根據技能的 effect / target_scope / target_side 來決定候選目標
 func _start_target_select_for_skill(user: Dictionary, skill_data: Dictionary) -> void:
+	# Skills that put a card on the stage (替身符) have no target to pick.
+	if skill_data.has("stage_entity"):
+		_apply_skill_and_finish_turn(user, skill_data, user)
+		pending_skill = {}
+		pending_skill_user = {}
+		return
 	var effect = str(skill_data.get("effect", "damage"))
 	var scope  = str(skill_data.get("target_scope", "single"))  # "single" / "ally_all" / ...
 	var side   = str(skill_data.get("target_side", ""))         # "ally" / "enemy" / "self"

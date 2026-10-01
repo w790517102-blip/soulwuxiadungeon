@@ -9,6 +9,7 @@ const StatusEffectManagerScript = preload("res://scripts/battle/StatusEffectMana
 const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 const StageEntityRegistryScript = preload("res://scripts/battlescripts/StageEntityRegistry.gd")
 const StageTargeting = preload("res://scripts/battlescripts/StageTargeting.gd")
+const StageEntityFactory = preload("res://scripts/battlescripts/StageEntityFactory.gd")
 ## Non-actor things standing on the battlefield (echoes, cover, tarot...). Empty by
 ## default; see StageEntity.gd. Lifecycle events below are no-ops while it is empty.
 var stage_entities = StageEntityRegistryScript.new()
@@ -165,6 +166,8 @@ func _ready() -> void:
 		push_error("❌ VictoryHandler missing in battle scene!")
 	else:
 		print("[BattleController] VictoryHandler=", victory_handler)
+	if enemy_ai and "stage_entities" in enemy_ai:
+		enemy_ai.stage_entities = stage_entities
 	call_deferred("_init_battle_safe")
 
 
@@ -1599,6 +1602,7 @@ func _on_round_ended(_round_number: int) -> void:
 	if last_round_regen == _round_number:
 		return
 	last_round_regen = _round_number
+	_advance_stage_entities()
 	_restore_mp_after_round()
 
 
@@ -1920,6 +1924,11 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	if scope == "enemy_all":
 		await _perform_enemy_aoe_action(enemy, skill, inner_force)
 		return
+	# A stage entity that draws single-target attacks (替身符, later cover...) takes the blow.
+	var drawn_to: Object = _priority_stage_entity_for(enemy, skill)
+	if drawn_to != null:
+		await _perform_enemy_attack_on_entity(enemy, skill, drawn_to)
+		return
 	target = _resolve_confuse_target(enemy, target, scope)
 	var strike_outcome := _execute_single_target_strikes(enemy, target, skill, inner_force)
 	var result: Dictionary = strike_outcome.get("result", {})
@@ -1983,6 +1992,8 @@ func _perform_enemy_aoe_action(enemy: Dictionary, skill: Dictionary, inner_force
 			battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
 		if battle_ui.has_method("play_damage_react_multi"):
 			battle_ui.play_damage_react_multi(hit_targets)
+	# The same blow also reaches any stage entity on the target camp (it breaks too).
+	await _hit_stage_entities_with_aoe(enemy, skill)
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 	if not results.is_empty():
@@ -2477,6 +2488,16 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		_update_ui_for_actor(actor)
 
 	await _apply_skill_self_hp_cost(actor, skill_data)
+
+	# A skill that leaves a card on the stage instead of acting on a target (替身符...).
+	if skill_data.has("stage_entity"):
+		await _execute_stage_entity_skill(actor, skill_data)
+		check_battle_status()
+		if battle_finished:
+			return
+		actor["acted_this_turn"] = true
+		_maybe_end_turn()
+		return
 
 	# =========================
 	# 0️⃣ 支援 / 補血技能分流（保持你現在的回血邏輯）
@@ -4180,12 +4201,7 @@ func apply_damage_to_target(target: Variant, amount: int, context: Dictionary = 
 		target["hp"] = int(target.get("hp", 0)) - dealt
 		return {"damage": dealt, "blocked": bool(guard.get("blocked", false)), "destroyed": int(target.get("hp", 0)) <= 0}
 	var result: Dictionary = target.take_damage(amount, context)
-	if int(result.get("damage", 0)) > 0:
-		var event_context: Dictionary = context.duplicate()
-		event_context["damage"] = result.damage
-		stage_entities.dispatch_to(target, "on_damage_taken", event_context)
-		if bool(result.get("destroyed", false)):
-			stage_entities.destroy_entity(target, event_context)
+	_finish_entity_damage(target, result, context)
 	return result
 
 
@@ -4201,3 +4217,120 @@ func apply_heal_to_target(target: Variant, amount: int, context: Dictionary = {}
 		event_context["healed"] = result.healed
 		stage_entities.dispatch_to(target, "on_healed", event_context)
 	return result
+
+
+## Second half of damaging an entity: events, then removal if it was destroyed. Split from
+## take_damage so a presentation can run between "it was hit" and "it is gone".
+func _finish_entity_damage(target: Object, result: Dictionary, context: Dictionary) -> void:
+	if int(result.get("damage", 0)) <= 0:
+		return
+	var event_context: Dictionary = context.duplicate()
+	event_context["damage"] = result.damage
+	stage_entities.dispatch_to(target, "on_damage_taken", event_context)
+	if bool(result.get("destroyed", false)):
+		stage_entities.destroy_entity(target, event_context)
+
+
+# --- Skills that leave a card on the stage ------------------------------------------------
+
+## Data-driven: any skill with a `stage_entity` block spawns that entity (no target).
+func _execute_stage_entity_skill(actor: Dictionary, skill_data: Dictionary) -> void:
+	var config: Dictionary = skill_data.get("stage_entity", {})
+	var entity_name: String = String(config.get("display_name", skill_data.get("name", "")))
+	_log("%s 凝神運筆，一筆畫成「%s」。" % [String(actor.get("name", "???")), entity_name])
+	if battle_ui and battle_ui.has_method("play_stage_entity_cast"):
+		await battle_ui.play_stage_entity_cast(actor, skill_data, "windup")
+	var entity: RefCounted = StageEntityFactory.create(config, String(actor.get("id", "")))
+	stage_entities.register_stage_entity(entity)
+	_log("【%s】現身於我方陣列最左。" % entity_name)
+	if battle_ui and battle_ui.has_method("play_stage_entity_cast"):
+		await battle_ui.play_stage_entity_cast(actor, skill_data, "finish")
+	_update_ui_for_actor(actor)
+
+
+## Row entities advance when a round ends and leave once they pass the exchange zone.
+func _advance_stage_entities() -> void:
+	for entity: Object in stage_entities.get_stage_entities():
+		if String(entity.get("advance_policy")) != "round_end":
+			continue
+		entity.row_edge_distance += int(entity.get("advance_amount"))
+		var camp: Array = enemy_party if String(entity.get("faction")) == "enemy" else player_party
+		var capacity: int = camp.filter(func(actor: Variant) -> bool:
+			return typeof(actor) == TYPE_DICTIONARY and int((actor as Dictionary).get("hp", 0)) > 0
+		).size()
+		if bool(entity.get("expire_at_edge")) and entity.row_edge_distance > capacity:
+			_log("【%s】未被擊中，符力散盡。" % String(entity.get("display_name")))
+			stage_entities.expire_entity(entity, {"reason": "edge"})
+		else:
+			entity.changed.emit(entity)
+
+
+# --- Enemy attacks and stage entities ---------------------------------------------------------
+
+func _skill_deals_damage(skill: Dictionary) -> bool:
+	if String(skill.get("id", "")) == "basic_attack":
+		return true
+	var effects: Variant = skill.get("effects", null)
+	if typeof(effects) == TYPE_ARRAY:
+		for effect: Variant in effects:
+			if typeof(effect) == TYPE_DICTIONARY and String((effect as Dictionary).get("type", "")) == "damage":
+				return true
+		return false
+	var effect_name: String = String(skill.get("effect", "damage"))
+	return effect_name == "damage"
+
+
+## The stage entity an enemy's single-target attack is drawn to, or null. Skills marked
+## `ignore_stage_entity_priority` bypass it; non-damaging skills are never redirected.
+func _priority_stage_entity_for(enemy: Dictionary, skill: Dictionary) -> Object:
+	if stage_entities.is_empty() or bool(skill.get("ignore_stage_entity_priority", false)):
+		return null
+	if not _skill_deals_damage(skill) or String(skill.get("target_scope", "")) == "enemy_all":
+		return null
+	var best: Object = null
+	var best_score: float = 1.0
+	for entity: Object in stage_entities.get_targetable_entities():
+		var score: float = enemy_ai.target_score(enemy, entity, 1.0) if enemy_ai else 1.0
+		if score > best_score:
+			best = entity
+			best_score = score
+	return best
+
+
+func _attack_strength(enemy: Dictionary) -> int:
+	return maxi(1, int(enemy.get("atk", 1)))
+
+
+func _perform_enemy_attack_on_entity(enemy: Dictionary, skill: Dictionary, entity: Object) -> void:
+	var entity_name: String = String(entity.get("display_name"))
+	_log("%s 使出「%s」，目標竟被「%s」引去！" % [String(enemy.get("name", "???")), String(skill.get("name", "攻擊")), entity_name])
+	var result: Dictionary = entity.take_damage(_attack_strength(enemy), {"source": enemy, "skill": skill})
+	if battle_ui and battle_ui.has_method("play_stage_entity_hit"):
+		await battle_ui.play_stage_entity_hit(enemy, entity, bool(result.get("destroyed", false)), true)
+	_finish_entity_damage(entity, result, {"source": enemy, "skill": skill})
+	if bool(result.get("destroyed", false)):
+		_log("【%s】應聲裂開，墨痕散作飛灰，這一擊落空了。" % entity_name)
+	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
+	await _await_log_stage_continue()
+	await _complete_enemy_ai_action(enemy, String(skill.get("id", "")))
+	check_battle_status()
+	if battle_finished:
+		return
+	enemy["acted_this_turn"] = true
+	_maybe_end_turn()
+
+
+## An enemy area attack also reaches the stage entities of the camp it hits.
+func _hit_stage_entities_with_aoe(enemy: Dictionary, skill: Dictionary) -> void:
+	if stage_entities.is_empty() or not _skill_deals_damage(skill):
+		return
+	for entity: Object in stage_entities.get_targetable_entities():
+		if String(entity.get("faction")) == faction_of(enemy):
+			continue
+		var result: Dictionary = entity.take_damage(_attack_strength(enemy), {"source": enemy, "skill": skill, "aoe": true})
+		if battle_ui and battle_ui.has_method("play_stage_entity_hit"):
+			await battle_ui.play_stage_entity_hit(enemy, entity, bool(result.get("destroyed", false)), false)
+		_finish_entity_damage(entity, result, {"source": enemy, "skill": skill, "aoe": true})
+		if bool(result.get("destroyed", false)):
+			_log("【%s】也被波及，隨即裂開消散。" % String(entity.get("display_name")))

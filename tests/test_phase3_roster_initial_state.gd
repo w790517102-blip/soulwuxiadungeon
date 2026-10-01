@@ -9,6 +9,7 @@ const SHUMIAN_INITIAL_SKILLS := [
 	"skill_smoky_ink_blind",
 	"skill_linfu_humai",
 	"skill_zhengxinquan",
+	"skill_substitute_talisman",
 ]
 
 var _failures: Array[String] = []
@@ -77,7 +78,7 @@ func _test_shumian_canonical_initial_card() -> void:
 	_expect(int(actor.get("exp", -1)) == 0, "new canonical Shumian starts with zero EXP")
 	_expect(int(actor.get("base_max_hp", 0)) == 190, "Lv6 base HP is produced by five spellcaster growth steps")
 	_expect(int(actor.get("base_max_mp", 0)) == 160, "Lv6 base MP is produced by five spellcaster growth steps")
-	_expect(team.get_known_skill_ids("shumian") == SHUMIAN_INITIAL_SKILLS, "new Shumian has exactly the five initial Personal Known skills")
+	_expect(team.get_known_skill_ids("shumian") == SHUMIAN_INITIAL_SKILLS, "new Shumian has exactly the six initial Personal Known skills")
 	_expect(actor.get("known_inner_force_ids", []) == ["meng_ying_xinfa", "ling_feng_jue"], "new Shumian knows both initial inner forces")
 	_expect(String(actor.get("inner_force_id", "")) == "meng_ying_xinfa", "Meng Ying Xinfa is the initial current inner force")
 	_expect(String(actor.get("weapon_2", "occupied")) == "", "canonical Shumian has no secondary weapon")

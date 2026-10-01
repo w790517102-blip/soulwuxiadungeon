@@ -29,6 +29,7 @@ const SHUMIAN_INITIAL_SKILL_IDS := [
 	"skill_smoky_ink_blind",
 	"skill_linfu_humai",
 	"skill_zhengxinquan",
+	"skill_substitute_talisman",
 ]
 
 # === 所有可用角色（包含未上場） ===

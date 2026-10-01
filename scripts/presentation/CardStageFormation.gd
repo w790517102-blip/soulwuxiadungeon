@@ -27,24 +27,46 @@ const ENEMY_LANE: float = 0.82
 const ALLY_SPACING: float = 0.145
 const ENEMY_SPACING: float = 0.085
 const ASPECT: float = 16.0 / 9.0
+## A row that carries sub cards keeps its outermost card centre at least this far (screen
+## fraction) from the screen edge.
+const OUTER_MARGIN: float = 0.19
 ## Tiny Z offset that orders overlapping cards: the party's fastest steps toward
 ## the camera; the enemy row stacks outer-in-front so every name stays readable.
 const Z_STACK: float = 0.25
 
 
 ## `rank` 0 is the slot nearest the centre. Returns screen-space layout data.
-static func slot(count: int, rank: int, enemy: bool) -> Dictionary:
+## `size_ratio` shrinks a smaller card (a stage entity) while keeping its feet on the same
+## ground line, so its apparent size comes from the card itself, never from scale.
+static func slot(count: int, rank: int, enemy: bool, size_ratio: float = 1.0, gaps: Array = []) -> Dictionary:
 	count = maxi(count, 1)
 	rank = clampi(rank, 0, count - 1)
 	var spacing: float = ENEMY_SPACING if enemy else ALLY_SPACING
+	# A crowded row (4+ cards: actors plus row entities) squeezes to the width a row of 3 uses.
+	if count > 3:
+		spacing *= 2.0 / float(count - 1)
 	var lane: float = ENEMY_LANE if enemy else ALLY_LANE
 	var inner_first: float = float(count - 1) / 2.0 - float(rank)
-	# Allies: rank 0 is the right-most; enemies: rank 0 is the left-most.
 	var screen_x: float = lane - inner_first * spacing if enemy else lane + inner_first * spacing
-	var height: float = ENEMY_HEIGHT if enemy else ALLY_HEIGHT
+	# Optional per-boundary gap multipliers (gaps[r - 1] sits between rank r - 1 and rank r): a
+	# sub card beside actors needs more room. The innermost card keeps its usual place; the
+	# row grows outward, and if it would leave the screen it is squeezed to fit instead of
+	# shoving the characters about.
+	if gaps.size() == count - 1 and count > 1:
+		var anchor: float = lane + float(maxi(count, 3) - 1) / 2.0 * spacing if not enemy else lane - float(maxi(count, 3) - 1) / 2.0 * spacing
+		var total: float = 0.0
+		for gap: Variant in gaps:
+			total += float(gap)
+		var offset: float = 0.0
+		for step: int in range(rank):
+			offset += float(gaps[step])
+		var room: float = (anchor - OUTER_MARGIN) if not enemy else ((1.0 - OUTER_MARGIN) - anchor)
+		var squeeze: float = minf(1.0, room / maxf(total * spacing, 0.0001))
+		screen_x = anchor - offset * spacing * squeeze if not enemy else anchor + offset * spacing * squeeze
+	var height: float = (ENEMY_HEIGHT if enemy else ALLY_HEIGHT) * size_ratio
 	# Same ground plane for both rows: apparent feet offset from the horizon (0.5)
 	# shrinks in proportion to the card's apparent size.
-	var feet: float = 0.5 + (ALLY_FEET - 0.5) * (height / ALLY_HEIGHT)
+	var feet: float = 0.5 + (ALLY_FEET - 0.5) * ((ENEMY_HEIGHT if enemy else ALLY_HEIGHT) / ALLY_HEIGHT)
 	var depth_t: float = clampf(float(rank) / 2.0, 0.0, 1.0)
 	var z_stack: float = Z_STACK * (depth_t if enemy else 1.0 - depth_t)
 	if count == 1:

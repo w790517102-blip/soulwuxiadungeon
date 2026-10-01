@@ -172,6 +172,43 @@ const SKILLS := {
 		"available": {"mode": "all"},
 		"companion_insight": {"enabled": true},
 	},
+	"skill_substitute_talisman": {
+		"id": "skill_substitute_talisman",
+		"name": "替身符",
+		"category": "舞台符",
+		"description": "書眠一筆畫成替身符，立於我方陣列最左。符紙隨回合逐步向右推進，抵達最右端離場前，敵方的單體攻擊會優先打向它，並抵擋一次攻擊。全體攻擊仍會傷及其他人。",
+		"weapon_type": "筆",
+		"menu_usable": false,
+		"mp_cost": 20,
+		"target_scope": "self",
+		"target_side": "self",
+		"shareable": false,
+		"required_level": 1,
+		"effects": [],
+		"available": {"mode": "include", "actor_ids": ["shumian"]},
+		# Data-driven stage entity (see StageEntity.gd / StageEntityFactory.gd). Spawning is
+		# generic: any skill with a "stage_entity" block makes that entity instead of a target.
+		"stage_entity": {
+			"entity_type": "substitute_talisman",
+			"display_name": "替身符",
+			"faction": "player",
+			"targetable": true,
+			"damageable": true,
+			"healable": false,
+			"guard_charges": 1,
+			"card_kind": "token",
+			"row": "party",
+			"advance_policy": "round_end",
+			"advance_amount": 1,
+			"expire_at_edge": true,
+			"card_config": {
+				"art": "res://assets/sprites/battle_cards/substitute_talisman.webp",
+				"card_size": Vector2(1.955, 3.1912), # 85% of a character card body (2.3 x 3.754)
+				"badge_prefix": "×",
+			},
+		},
+		"cast_animation": "ink_talisman",
+	},
 	"skill_zhengxinquan": {
 		"id": "skill_zhengxinquan",
 		"name": "正心拳",
@@ -1122,6 +1159,7 @@ const LEGACY_NAME_TO_ID := {
 	"翔龍十八掌": "skill_xianglong18",
 	"筆掃煙霞": "skill_bisaoyanxia",
 	"落筆成詩": "skill_luobichengshi",
+	"替身符": "skill_substitute_talisman",
 	"正心拳": "skill_zhengxinquan",
 	"天驚拳": "skill_tianjingquan",
 	"提氣輕身": "skill_buff_speed_test",
@@ -1168,7 +1206,7 @@ const LEGACY_NAME_TO_ID := {
 
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
 	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
-	"shumian": ["skill_luobichengshi", "skill_mobishuxin", "skill_smoky_ink_blind", "skill_linfu_humai", "skill_zhengxinquan"],
+	"shumian": ["skill_luobichengshi", "skill_mobishuxin", "skill_smoky_ink_blind", "skill_linfu_humai", "skill_zhengxinquan", "skill_substitute_talisman"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus", "skill_luanxian_banying"],
 	"enemy1": ["skill_enemy_zhishui_yinzhang"],
 	"enemy2": ["skill_enemy_panshi_gangquan"],

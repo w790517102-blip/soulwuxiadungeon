@@ -559,7 +559,7 @@ func _popup_shortcuts(event: InputEvent, popup: Window) -> void:
 
 
 func _start_target_select_for_skill(user: Dictionary, skill_data: Dictionary) -> void:
-	if not stage_enabled:
+	if not stage_enabled or skill_data.has("stage_entity"):
 		super._start_target_select_for_skill(user, skill_data)
 		return
 	_target_return_menu = "skill"

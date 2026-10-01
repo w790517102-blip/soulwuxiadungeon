@@ -259,3 +259,17 @@ func _layout_stage_hud() -> void:
 	archive.size = Vector2(width * 0.113, height * 0.26)
 	_continue.position = Vector2(plate.position.x + width - 176.0, plate.position.y - 42.0)
 	_continue.size = Vector2(160, 35)
+
+
+# --- Stage entity presentation entry points (called by BattleController) ------------------
+
+## Casting a skill that leaves a card on the stage. phase: "windup" / "finish".
+func play_stage_entity_cast(actor: Dictionary, _skill_data: Dictionary, phase: String) -> void:
+	if stage_enabled and stage:
+		await stage.present_stage_entity_cast(actor, phase)
+
+
+## An enemy blow (or the shared part of an area blow) lands on a stage entity.
+func play_stage_entity_hit(attacker: Dictionary, entity: Object, destroyed: bool, attacker_motion: bool) -> void:
+	if stage_enabled and stage:
+		await stage.present_entity_attack(attacker, entity, destroyed, attacker_motion)

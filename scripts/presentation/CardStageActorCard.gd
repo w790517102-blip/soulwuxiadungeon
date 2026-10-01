@@ -526,3 +526,24 @@ func settle_relocation() -> void:
 	_relocate_tween = null
 	position = home_position
 	set_fade(0.0)
+
+
+# --- Casting a stage skill (replaces nothing: attacks keep their own motions) ----------------
+
+## One step forward toward the centre and the viewer, then hold while the glyph is drawn.
+func cast_step_forward() -> void:
+	_kill_motion()
+	var step := Vector3(_toward() * 0.9, 0.06, 0.8)
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", home_position + step, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(-0.03, -_toward() * 0.12, 0.0), 0.28)
+	await _wait_for_motion(_motion_tween)
+
+
+## Back to the slot after the cast.
+func cast_return() -> void:
+	_kill_motion()
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", home_position, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.32)
+	await _wait_for_motion(_motion_tween)

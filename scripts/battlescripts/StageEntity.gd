@@ -28,6 +28,15 @@ var duration_turns: int = -1
 ## Interaction / scheduling priority (higher = earlier); free to use.
 var priority: int = 0
 var tags: Array[String] = []
+## "party" / "enemy": the entity stands IN that camp's card row (counted in positions from
+## the outer/left end, guests excluded) instead of floating on its own. "" = not in a row.
+var row: String = ""
+var row_edge_distance: int = 0
+## "none" or "round_end": a row entity advances `advance_amount` positions toward the
+## exchange zone when a round ends, and leaves the stage past the edge if expire_at_edge.
+var advance_policy: String = "none"
+var advance_amount: int = 1
+var expire_at_edge: bool = false
 var card_kind: String = "default"
 var card_config: Dictionary = {}
 ## Free-form data for the entity's own behaviour.
@@ -41,13 +50,13 @@ static func from_dict(config: Dictionary) -> RefCounted:
 
 
 func apply_config(config: Dictionary) -> void:
-	for key: String in ["entity_id", "entity_type", "display_name", "owner_id", "faction", "card_kind"]:
+	for key: String in ["entity_id", "entity_type", "display_name", "owner_id", "faction", "card_kind", "row", "advance_policy"]:
 		if config.has(key):
 			set(key, String(config[key]))
-	for key: String in ["targetable", "damageable", "healable"]:
+	for key: String in ["targetable", "damageable", "healable", "expire_at_edge"]:
 		if config.has(key):
 			set(key, bool(config[key]))
-	for key: String in ["max_hp", "current_hp", "duration_turns", "priority"]:
+	for key: String in ["max_hp", "current_hp", "duration_turns", "priority", "row_edge_distance", "advance_amount"]:
 		if config.has(key):
 			set(key, int(config[key]))
 	if config.has("max_hp") and not config.has("current_hp"):
