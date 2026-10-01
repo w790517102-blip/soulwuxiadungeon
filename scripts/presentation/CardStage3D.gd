@@ -9,6 +9,12 @@ extends "res://scripts/presentation/CombatStage25D.gd"
 
 const CardStageActorCard = preload("res://scripts/presentation/CardStageActorCard.gd")
 const Formation = preload("res://scripts/presentation/CardStageFormation.gd")
+const CardStageCommandTray = preload("res://scripts/presentation/CardStageCommandTray.gd")
+const CardStageTurnMarker = preload("res://scripts/presentation/CardStageTurnMarker.gd")
+## Turn marker size (an ornament, not a character, so scaling it is fine) and the
+## gap between its tip and the card top.
+const MARKER_SCALE: float = 0.8
+const MARKER_GAP: float = 0.05
 
 const CAMERA_Z: float = 18.0
 ## Backdrop sits well behind the enemy camp so MISS ribbons dissipate in front of it.
@@ -40,6 +46,100 @@ func _ready() -> void:
 			enemy_yaw_degrees = clampf(float(argument.trim_prefix("--enemy-yaw=")), 0.0, 40.0)
 	card_yaw_degrees = YAW_PRESETS[yaw_preset]
 	super._ready()
+	_install_card_stage_extras()
+
+
+## The pointer-picked active card was clicked (the UI decides what that opens).
+signal active_card_clicked(actor: Dictionary)
+
+var turn_marker: Node3D
+var _active_actor: Dictionary = {}
+var _active_card: Node3D
+
+
+func _install_card_stage_extras() -> void:
+	# Main commands pop up from the active card; the bottom tray keeps only its
+	# expanded option pages. Swap the inherited tray for the reduced one.
+	var old_tray: Node3D = command_tray
+	remove_child(old_tray)
+	old_tray.free()
+	command_tray = CardStageCommandTray.new()
+	command_tray.name = "FrontCommandBand"
+	add_child(command_tray)
+	command_tray.command_requested.connect(_on_command)
+	command_tray.option_requested.connect(_on_option)
+	# A real light + ambient so the lacquered/brass turn marker has form. Cards,
+	# backdrop and FX are unshaded and unaffected.
+	var light := DirectionalLight3D.new()
+	light.name = "MarkerLight"
+	light.rotation_degrees = Vector3(-50.0, -25.0, 0.0)
+	light.light_energy = 1.3
+	add_child(light)
+	var environment: Environment = camera.environment
+	if environment:
+		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		environment.ambient_light_color = Color(0.62, 0.62, 0.68)
+		environment.ambient_light_energy = 0.9
+	turn_marker = CardStageTurnMarker.new()
+	turn_marker.name = "TurnMarker"
+	turn_marker.scale = Vector3.ONE * MARKER_SCALE
+	turn_marker.visible = false
+	add_child(turn_marker)
+
+
+## Marks whose turn it is: the card pulses white and a brass arrow hangs above it.
+func set_active_actor(actor: Dictionary) -> void:
+	clear_active_actor()
+	_active_actor = actor
+	var card: Node3D = card_for(actor)
+	if card == null:
+		return
+	_active_card = card
+	card.set_turn_active(true)
+	turn_marker.visible = true
+	_follow_marker()
+
+
+func clear_active_actor() -> void:
+	if is_instance_valid(_active_card):
+		_active_card.set_turn_active(false)
+	_active_card = null
+	_active_actor = {}
+	if turn_marker:
+		turn_marker.visible = false
+
+
+func active_actor() -> Dictionary:
+	return _active_actor
+
+
+func _follow_marker() -> void:
+	if not is_instance_valid(_active_card):
+		return
+	# The arrow tip rests just above the card's top edge and follows its motion.
+	turn_marker.position = _active_card.position + Vector3(0.0, _active_card.card_size.y / 2.0 + MARKER_GAP, 0.05)
+
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	if _active_card != null and not is_instance_valid(_active_card):
+		clear_active_actor()
+	elif turn_marker and turn_marker.visible:
+		_follow_marker()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	super._unhandled_input(event)
+	if not enabled or not input_enabled or busy or _active_actor.is_empty():
+		return
+	if _ui and _ui.get("target_picker") and _ui.target_picker.active:
+		return
+	if get_viewport().is_input_handled():
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if not pick_actor(event.position, [_active_actor], true).is_empty():
+			active_card_clicked.emit(_active_actor)
+			get_viewport().set_input_as_handled()
 
 
 ## Dev aid: cycles the party yaw 50 -> 55 -> 45 -> 50 and re-seats idle cards.
@@ -64,6 +164,7 @@ func _yaw_for(enemy: bool) -> float:
 
 func set_teams(allies: Array, enemies: Array, guest: Dictionary = {}, status_source: Callable = Callable()) -> void:
 	_status_source = status_source
+	clear_active_actor()
 	for card in cards.values():
 		card.queue_free()
 	cards.clear()

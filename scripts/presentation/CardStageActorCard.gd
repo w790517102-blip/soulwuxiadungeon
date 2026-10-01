@@ -19,8 +19,29 @@ const KNOCKBACK_HEAVY := Vector3(1.0, -0.2, -1.6)
 const DODGE_SLIP := Vector3(0.5, 0.35, -1.25)
 const GUARD_BRACE := Vector3(0.12, -0.05, -0.35)
 
+const TURN_PULSE_PEAK := 0.42
+const TURN_PULSE_SECONDS := 1.5
+
 var card_size: Vector2 = PORTRAIT_SIZE
 var slot_rank: int = 0
+var turn_active: bool = false
+var _turn_overlay: ColorRect
+var _turn_tween: Tween
+
+
+## Slow white pulse while it is this card's turn. Presentation only.
+func set_turn_active(active: bool) -> void:
+	_build_card()
+	turn_active = active
+	if _turn_tween and _turn_tween.is_valid():
+		_turn_tween.kill()
+	_turn_tween = null
+	_turn_overlay.color = Color(1.0, 1.0, 1.0, 0.0)
+	if not active:
+		return
+	_turn_tween = create_tween().set_loops()
+	_turn_tween.tween_property(_turn_overlay, "color:a", TURN_PULSE_PEAK, TURN_PULSE_SECONDS / 2.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_turn_tween.tween_property(_turn_overlay, "color:a", 0.0, TURN_PULSE_SECONDS / 2.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 # --- Portrait face -------------------------------------------------------------
@@ -54,15 +75,16 @@ func _build_card() -> void:
 	portrait = TextureRect.new()
 	portrait.name = "Portrait"
 	portrait.position = Vector2(26, 70)
-	portrait.size = Vector2(348, 274)
+	portrait.size = Vector2(348, 270)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content.add_child(portrait)
 	name_label = _label("Name", Rect2(28, 20, 344, 50), 42, PAPER)
 	name_label.add_theme_font_override("font", TITLE_FONT)
-	# Information band: LV + status, HP, MP / species, element + inner force.
+	# Information band: element + inner force, HP, MP / species, status words (no LV).
 	level_label = _label("Level", Rect2(28, 346, 124, 44), 34, GOLD)
+	level_label.hide() # LV is intentionally not shown on Card Stage cards.
 	status_label = RichTextLabel.new()
 	status_label.name = "StatusWords"
 	status_label.bbcode_enabled = true
@@ -73,21 +95,29 @@ func _build_card() -> void:
 	status_label.add_theme_font_override("normal_font", BODY_FONT)
 	status_label.add_theme_font_size_override("normal_font_size", 32)
 	status_label.add_theme_color_override("default_color", PAPER)
-	status_label.position = Vector2(154, 348)
-	status_label.size = Vector2(218, 38)
+	status_label.position = Vector2(28, 522)
+	status_label.size = Vector2(344, 50)
 	_content.add_child(status_label)
-	hp_label = _label("HP", Rect2(28, 390, 344, 44), 35, PAPER)
-	hp_bar = _bar("HPBar", Rect2(28, 440, 344, 14), Color("bb413b"))
-	mp_label = _label("MP", Rect2(28, 456, 344, 44), 35, PAPER)
-	mp_bar = _bar("MPBar", Rect2(28, 503, 344, 14), Color("4dacca"))
-	species_label = _label("Species", Rect2(28, 456, 344, 44), 35, PAPER)
-	guest_label = _label("Guest", Rect2(28, 420, 344, 50), 34, GOLD)
-	_element_badge = _panel(_content, Rect2(28, 522, 50, 54), Color("161921"), GOLD, 2)
-	element_label = _label("Element", Rect2(32, 525, 42, 48), 36, GOLD)
-	_force_strip = _panel(_content, Rect2(84, 522, 288, 54), Color("11151b"), Color("685432"), 1)
-	force_label = _label("ActiveInnerForce", Rect2(90, 525, 276, 48), 32, GOLD)
+	hp_label = _label("HP", Rect2(28, 402, 344, 42), 35, PAPER)
+	hp_bar = _bar("HPBar", Rect2(28, 446, 344, 13), Color("bb413b"))
+	mp_label = _label("MP", Rect2(28, 463, 344, 42), 35, PAPER)
+	mp_bar = _bar("MPBar", Rect2(28, 507, 344, 13), Color("4dacca"))
+	species_label = _label("Species", Rect2(28, 463, 344, 42), 35, PAPER)
+	guest_label = _label("Guest", Rect2(28, 348, 344, 50), 34, GOLD)
+	_element_badge = _panel(_content, Rect2(28, 346, 50, 52), Color("161921"), GOLD, 2)
+	element_label = _label("Element", Rect2(32, 349, 42, 46), 36, GOLD)
+	_force_strip = _panel(_content, Rect2(84, 346, 288, 52), Color("11151b"), Color("685432"), 1)
+	force_label = _label("ActiveInnerForce", Rect2(90, 349, 276, 46), 32, GOLD)
 	force_label.add_theme_font_override("font", TITLE_FONT)
 	force_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Slow white pulse that marks whose turn it is (see set_turn_active).
+	_turn_overlay = ColorRect.new()
+	_turn_overlay.name = "TurnPulse"
+	_turn_overlay.position = Vector2(18, 18)
+	_turn_overlay.size = Vector2(364, 564)
+	_turn_overlay.color = Color(1.0, 1.0, 1.0, 0.0)
+	_turn_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_turn_overlay)
 	_hit_overlay = ColorRect.new()
 	_hit_overlay.name = "LocalHitFlash"
 	_hit_overlay.position = Vector2(18, 18)
@@ -154,9 +184,18 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	# Enemies print "屬性：X" in the wide slot; party shows the element badge.
 	element_label.text = ("屬性：%s" % element) if is_enemy else element
 	element_label.add_theme_color_override("font_color", _element_color(element))
-	_element_badge.visible = not is_enemy
+	# An element of "無" (none) is not shown at all.
+	var has_element: bool = element != "無"
+	_element_badge.visible = not is_enemy and not guest and has_element
+	element_label.visible = not guest and has_element
 	_force_strip.visible = not is_enemy and not guest
 	force_label.visible = not is_enemy and not guest
+	# Without a badge the inner-force strip takes the whole row.
+	var strip_left: float = 84.0 if has_element else 28.0
+	_force_strip.position = Vector2(strip_left, 346)
+	_force_strip.size = Vector2(372.0 - strip_left, 52)
+	force_label.position = Vector2(strip_left + 6.0, 349)
+	force_label.size = Vector2(366.0 - strip_left, 46)
 	var force_name := String(force.get("name", ""))
 	if force_name.is_empty():
 		force_name = String(force.get("prefix", "")) + String(force.get("type", ""))
@@ -165,23 +204,23 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	force_label.text = force_name
 	force_label.add_theme_font_size_override("font_size", 32 if force_name.length() <= 5 else 24)
 	level_label.text = "LV %d" % int(actor.get("level", 1))
-	level_label.visible = not is_enemy and not guest
+	level_label.visible = false
 	status_label.text = status_bbcode
-	# Enemies have no LV, so their status words use the whole row.
-	status_label.position = Vector2(28, 348) if (is_enemy or guest) else Vector2(154, 348)
-	status_label.size = Vector2(344, 38) if (is_enemy or guest) else Vector2(218, 38)
+	# Status words sit in the bottom band for everyone.
+	status_label.position = Vector2(28, 522)
+	status_label.size = Vector2(344, 50)
 	guest_label.visible = guest
 	guest_label.text = "支援・客座" if guest else ""
 	species_label.visible = is_enemy
 	species_label.text = "種族：%s" % _species_name(actor) if is_enemy else ""
 	if is_enemy:
-		element_label.position = Vector2(28, 522)
-		element_label.size = Vector2(344, 50)
+		element_label.position = Vector2(28, 346)
+		element_label.size = Vector2(344, 52)
 		element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		element_label.add_theme_font_size_override("font_size", 36)
 	else:
-		element_label.position = Vector2(32, 525)
-		element_label.size = Vector2(42, 48)
+		element_label.position = Vector2(32, 349)
+		element_label.size = Vector2(42, 46)
 		element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		element_label.add_theme_font_size_override("font_size", 36)
 	hp_label.visible = not guest

@@ -44,3 +44,14 @@
 
 ## 測試
 `--headless --path . --script tests/test_card_stage_phase1.gd`
+
+## 回合提示與指令入口
+- 輪到某位角色時（我方由 `begin_turn`，敵方由 `StageBattleController.perform_enemy_action` 的 hook），該卡**緩慢亮白閃爍**（`TURN_PULSE_SECONDS 1.5`、峰值 `TURN_PULSE_PEAK 0.42`），頭上掛一支**紅漆黃銅箭頭**（`CardStageTurnMarker`：四面紅漆箭頭＋黃銅襯板、頸環、環與頂珠；真實 3D 物件，有方向光，會上下浮動並緩慢旋轉）。戰鬥結束或重排隊伍時清除。
+- **指令不再放在畫面下方。** 底部指令板（`CardStageCommandTray`）只保留展開後的招式／內功／道具頁；四個主指令改成：**點選正在行動的我方卡 → 在卡片右側彈出 出招／內功／道具／防禦**。
+  - 只有行動中的卡可點；選單開啟時 ESC／右鍵關閉；選項與原本相同（沿用既有 Popup ItemList、目標選擇、確認流程）。
+  - 內功／道具依 `can_switch_inner_force()` / `can_use_items()` 停用。
+  - 待命時左下角顯示提示「點選閃爍的角色卡，下達指令」。
+
+## 卡面資訊（Card Stage）
+- 已移除 LV。原 LV 那一行改為：**內功屬性徽章＋內功心法名稱**（敵方為「屬性：X」）。屬性為「無」時不顯示徽章與文字，心法欄位撐滿整行。
+- 狀態字移到卡片下緣。

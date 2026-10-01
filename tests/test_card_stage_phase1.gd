@@ -183,7 +183,7 @@ func _check_stage(fixture: Node) -> void:
 	_expect(is_equal_approx(fast.card_back.mesh.size.z, 0.04), "card thickness is 0.04 (one third thinner than 0.06)")
 	_expect(fast.card_back.position.z + fast.card_back.mesh.size.z / 2.0 < 0.0, "the card edge stays behind the face")
 	# Current game information is still on the face.
-	_expect(fast.hp_label.visible and fast.mp_label.visible and fast.force_label.visible and fast.level_label.visible, "party card keeps HP, MP, inner force and level")
+	_expect(fast.hp_label.visible and fast.mp_label.visible and fast.force_label.visible and fast.element_label.visible and not fast.level_label.visible, "party card keeps HP, MP, inner-force element and name; LV is removed")
 	_expect(foe_fast.hp_label.visible and foe_fast.species_label.visible and foe_fast.element_label.visible and not foe_fast.mp_label.visible, "enemy card keeps HP, species and element")
 	_expect(fast.card_viewport.size_2d_override.y > fast.card_viewport.size_2d_override.x, "card face canvas is portrait")
 	_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(50.0)), "party cards default to a 50 degree turn toward the enemy")
@@ -294,6 +294,56 @@ func _check_stage(fixture: Node) -> void:
 		_expect(endpoint.x > destination.home_position.x, "miss ribbon continues through to the far side (target %d)" % target_index)
 		_expect(not stage.busy and stage.fx_root.get_child_count() == 0 and allies + enemies == before, "miss completes cleanly (target %d)" % target_index)
 
+	# --- Turn marker, white pulse and the card command pop-up -------------------
+	_expect(not stage.command_tray.get_node("CommandConsole").visible and not stage.command_tray.get_node("CommandPlaque").visible, "the bottom command console is hidden on Card Stage")
+	var tray_hit: bool = false
+	for rect: Rect2 in stage.command_tray.get_button_screen_rects(stage.camera):
+		tray_hit = tray_hit or stage.command_tray.pick(stage.camera, rect.get_center()) >= 0
+	_expect(not tray_hit, "the hidden bottom command buttons can never be picked")
+	_expect(stage.turn_marker != null and not stage.turn_marker.visible and stage.active_actor().is_empty(), "no turn marker before anyone acts")
+	ui.begin_turn(allies[0])
+	await process_frame
+	var active_card: Node3D = stage.card_for(allies[0])
+	_expect(stage.turn_marker.visible and active_card.turn_active and not stage.card_for(allies[1]).turn_active, "begin_turn marks exactly the acting card")
+	_expect(stage.turn_marker.position.y > active_card.position.y + active_card.card_size.y / 2.0, "the brass arrow hangs above the active card")
+	_expect(absf(stage.turn_marker.position.x - active_card.position.x) < 0.01, "the arrow stays centred over its card")
+	_expect(stage.turn_marker.body.get_child_count() >= 4, "the arrow is a built 3D object (head, trim, collar, finial)")
+	var peak: float = 0.0
+	for pulse_frame: int in range(100):
+		await process_frame
+		peak = maxf(peak, active_card._turn_overlay.color.a)
+	_expect(peak > 0.05 and peak <= active_card.TURN_PULSE_PEAK + 0.001, "the active card pulses white slowly (peak %.2f)" % peak)
+	_expect(is_equal_approx(active_card._turn_overlay.color.r, 1.0) and is_equal_approx(active_card._turn_overlay.color.b, 1.0), "the pulse is white")
+	# The pop-up opens only from the active card; the bottom has no commands.
+	_expect(not ui.command_menu.visible, "no command pop-up until the card is clicked")
+	stage.active_card_clicked.emit(allies[1])
+	_expect(not ui.command_menu.visible, "clicking a card that is not acting opens nothing")
+	stage.active_card_clicked.emit(allies[0])
+	_expect(ui.command_menu.visible and ui.command_menu.get_child(0).get_child_count() == 4, "clicking the active card opens the four main commands")
+	_expect(ui._command_buttons.keys().size() == 4 and ui._command_buttons["skill"].text == "出招" and ui._command_buttons["defend"].text == "防禦", "the pop-up offers 出招 / 內功 / 道具 / 防禦")
+	var menu_rect := Rect2(ui.command_menu.global_position, ui.command_menu.size)
+	_expect(viewport_rect.encloses(menu_rect) and menu_rect.position.x >= stage.card_screen_rect(allies[0]).end.x, "the pop-up sits beside the active card, inside the screen")
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	root.push_input(escape, true)
+	await process_frame
+	_expect(not ui.command_menu.visible, "ESC closes the pop-up")
+	stage.active_card_clicked.emit(allies[0])
+	ui._command_buttons["skill"].pressed.emit()
+	await process_frame
+	_expect(not ui.command_menu.visible and ui._menu == "skill", "choosing 出招 closes the pop-up and opens the same skill list as before")
+	ui._cancel_menu()
+	await process_frame
+	# Enemy turns are marked through the controller hook.
+	ui.present_turn_marker(enemies[1])
+	_expect(stage.card_for(enemies[1]).turn_active and not stage.card_for(allies[0]).turn_active and stage.turn_marker.visible, "an enemy turn moves the marker and pulse to the enemy card")
+	var foe_card: Node3D = stage.card_for(enemies[1])
+	_expect(stage.turn_marker.position.y > foe_card.position.y + foe_card.card_size.y / 2.0, "the marker hangs above the enemy card")
+	stage.clear_active_actor()
+	_expect(not stage.turn_marker.visible and not foe_card.turn_active, "clearing removes the marker and the pulse")
+	_expect(not has_node_recursive_visible(ui, "CardCommandMenu"), "no pop-up outside the player's turn")
+
 	# --- Legacy switch and empty slots ------------------------------------------
 	ui.set_stage_enabled(false)
 	_expect(not stage.visible and ui.ally_panel.visible, "F8 path restores the legacy panels")
@@ -343,3 +393,8 @@ func _check_motion(card: Node3D, other: Node3D, stage: Node3D, kind: String) -> 
 			_expect(peak_z_back <= -1.0 and peak_distance > 1.0, "dodge slips sideways and deeper")
 		"guard":
 			_expect(peak_z_back <= -0.3 and peak_distance < 0.6, "guard braces in place")
+
+
+func has_node_recursive_visible(root_node: Node, node_name: String) -> bool:
+	var found: Node = root_node.find_child(node_name, true, false)
+	return found != null and found is CanvasItem and (found as CanvasItem).visible
