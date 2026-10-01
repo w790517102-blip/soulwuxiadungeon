@@ -296,3 +296,9 @@ func play_stage_status_event(kind: String, actor: Dictionary) -> void:
 func play_guest_action(guest: Dictionary, action_id: String, boss: Dictionary, removes: bool) -> void:
 	if stage_enabled and stage:
 		await stage.present_guest_action(guest, action_id, boss, removes)
+
+
+## The green ink swirl (supplied 4 x 3 sheet) over each target card.
+func play_ink_swirl(targets: Array) -> void:
+	if stage_enabled and stage:
+		await stage.present_ink_swirl(targets)

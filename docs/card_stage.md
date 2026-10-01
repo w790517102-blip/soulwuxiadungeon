@@ -90,3 +90,7 @@
 - **規則限制：** 一輪的隊列在該輪開始時就固定，所以輪到一半的加速／減速不會改變「還沒行動的人」的先後，要到下一輪才反映；已行動的人則會立即依新速度重排。這是為了不改動戰鬥規則，畫面只顯示真實順序。
 - 倒下的角色離開隊列，其餘補位；被暈眩跳過的視為已行動；客座固定在最外側。
 - 只在沒有任何動作演出進行時才換位（輪詢間隔 0.1 秒），不會打斷攻擊或受擊。
+
+## 戰鬥場景與綠色墨旋
+- 背景依戰鬥 context 自動選（`StageBattleUI.resolve_stage_background`，明確指定 `stage_background` 優先）：鐘乳石洞（`molin_yanjiang`/`stalactite`）、**演武台**（`old_fighter`、`teashop_training`）、**下水道**（`sewer`）、**竹林**（`bamboo`），其餘用預設。圖在 `assets/presentation/bg_*.webp`。
+- 綠色墨旋（`assets/fx/ink_swirl_sheet.webp`，4×3＝12 格）：書眠的 **臨符** 系列技能（名稱以「臨符」開頭，或技能資料 `cast_animation = "ink_swirl"`）會在每個目標卡上播放；**替身符**則是畫完符、爆開前先綻放一次。

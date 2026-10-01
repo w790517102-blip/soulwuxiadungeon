@@ -751,6 +751,9 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 		# Heartbeat before the burst: two beats, each throwing a ghost image outward.
 		await _cast_stroke.heartbeat(2, 0.8)
 		# The mark pulls in, then bursts into ink; the burst is where the card appears.
+		# The green ink swirl blooms from the glyph, then the burst unfolds the card.
+		play_swirl_at(_cast_center, 3.4)
+		await get_tree().create_timer(0.45).timeout
 		_spawn_origin = _cast_center
 		_burst_ink(_cast_center)
 		_splash_camera_ink()
@@ -1016,4 +1019,56 @@ func present_guest_action(guest: Dictionary, action_id: String, boss: Dictionary
 					present_entangle_break(boss)
 			await get_tree().create_timer(0.45).timeout
 			card.set_tint("")
+	busy = false
+
+
+# --- Green ink swirl (臨符 buffs, and the burst of 替身符) ----------------------------------
+
+const SWIRL_SHEET := "res://assets/fx/ink_swirl_sheet.webp"
+const SWIRL_COLUMNS: int = 4
+const SWIRL_ROWS: int = 3
+const SWIRL_FRAME_SECONDS: float = 0.075
+
+
+## Plays the 12-frame swirl at a point (world space in the FX volume). Returns when it ends.
+func play_swirl_at(point: Vector3, height: float = 2.6) -> void:
+	var texture: Texture2D = load(SWIRL_SHEET) as Texture2D
+	if texture == null:
+		return
+	var quad := QuadMesh.new()
+	quad.size = Vector2(height, height)
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = quad
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.no_depth_test = true
+	material.render_priority = 31
+	material.albedo_texture = texture
+	material.uv1_scale = Vector3(1.0 / float(SWIRL_COLUMNS), 1.0 / float(SWIRL_ROWS), 1.0)
+	mesh.material_override = material
+	fx_root.add_child(mesh)
+	mesh.position = point
+	for frame: int in range(SWIRL_COLUMNS * SWIRL_ROWS):
+		material.uv1_offset = Vector3(float(frame % SWIRL_COLUMNS) / float(SWIRL_COLUMNS), float(frame / SWIRL_COLUMNS) / float(SWIRL_ROWS), 0.0)
+		await get_tree().create_timer(SWIRL_FRAME_SECONDS).timeout
+	mesh.queue_free()
+
+
+func present_ink_swirl(targets: Array) -> void:
+	busy = true
+	command_tray.set_enabled(false)
+	var plays: int = 0
+	for target: Variant in targets:
+		if typeof(target) != TYPE_DICTIONARY:
+			continue
+		var card: Node3D = card_for(target)
+		if card == null:
+			continue
+		play_swirl_at(_fx_point(card, 0.3), card.card_size.y * 0.8)
+		plays += 1
+	if plays > 0:
+		await get_tree().create_timer(float(SWIRL_COLUMNS * SWIRL_ROWS) * SWIRL_FRAME_SECONDS + 0.1).timeout
 	busy = false

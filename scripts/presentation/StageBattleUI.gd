@@ -458,7 +458,7 @@ func set_teams(allies_data: Array, enemies_data: Array) -> void:
 		var context: Dictionary = combat_controller.battle_context if combat_controller else {}
 		var path: String = String(context.get("stage_background", ""))
 		if path.is_empty():
-			path = stage.STAGE_BACKGROUND if String(context.get("battle_id", "")).contains("molin_yanjiang") else stage.DEFAULT_BACKGROUND
+			path = resolve_stage_background(context)
 		stage.set_background(path)
 
 
@@ -645,3 +645,24 @@ func _position_bubble_on_portrait(slot: Control, box: PanelContainer) -> void:
 	box.size = Vector2(240, 82)
 	var point := Vector2(rect.position.x - box.size.x - 12 if enemy else rect.end.x + 12, rect.get_center().y - box.size.y / 2.0)
 	box.global_position = point.clamp(Vector2(12, 60), get_viewport_rect().size - box.size - Vector2(12, 160))
+
+
+## Battle backdrop by place, from the battle context (an explicit `stage_background` wins).
+## First matching rule wins; the default is the generic backdrop.
+const BACKGROUND_RULES: Array = [
+	{"any": ["molin_yanjiang", "stalactite"], "path": "res://assets/presentation/stalactite_stage.png"},
+	{"any": ["old_fighter", "teashop_training"], "path": "res://assets/presentation/bg_yuheng_arena.webp"},
+	{"any": ["sewer"], "path": "res://assets/presentation/bg_sewer.webp"},
+	{"any": ["bamboo"], "path": "res://assets/presentation/bg_bamboo.webp"},
+]
+
+
+static func resolve_stage_background(context: Dictionary) -> String:
+	var haystack: String = ""
+	for key: String in ["battle_id", "battle_tag", "zone_id", "map_id", "scene_name"]:
+		haystack += " " + String(context.get(key, "")).to_lower()
+	for rule: Dictionary in BACKGROUND_RULES:
+		for token: String in rule.any:
+			if haystack.contains(token):
+				return String(rule.path)
+	return "res://assets/background/battleUI/defult/Background_defult.jpg"

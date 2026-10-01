@@ -3629,6 +3629,8 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 
 	if battle_ui and battle_ui.has_method("play_attack_motion"):
 		_play_support_motion(user, targets)
+		if _uses_ink_swirl(skill_data) and battle_ui.has_method("play_ink_swirl"):
+			await battle_ui.play_ink_swirl(targets)
 		if battle_ui.has_method("play_hit_fx_on_target"):
 			var fx_id = _get_fx_id_for_skill(skill_data, user)
 			if fx_id != "":
@@ -4370,3 +4372,9 @@ func _play_support_motion(user: Dictionary, targets: Array) -> void:
 		battle_ui.play_support_motion(user)
 	elif battle_ui.has_method("play_attack_motion"):
 		battle_ui.play_attack_motion(user)
+
+
+## 臨符 (talisman) skills and anything tagged `cast_animation = "ink_swirl"` play the green
+## ink swirl on their targets.
+func _uses_ink_swirl(skill_data: Dictionary) -> bool:
+	return String(skill_data.get("cast_animation", "")) == "ink_swirl" or String(skill_data.get("name", "")).begins_with("臨符")

@@ -24,6 +24,7 @@ func _run() -> void:
 	_check_formation_table()
 	_check_rank_assignment()
 	_check_enemy_art_table()
+	_check_backgrounds()
 	await _check_entry_modes()
 	var fixture: Node = (load("res://scenes/presentation/card_stage_prototype.tscn") as PackedScene).instantiate()
 	fixture.auto_start = false
@@ -605,3 +606,17 @@ func _check_enemy_art_table() -> void:
 			_expect(layout.size.x >= window.x - 0.0001 and layout.size.y >= window.y - 0.0001, "%s art covers the whole window" % enemy_id)
 			_expect(absf(layout.center.x) + window.x / 2.0 <= half.x + 0.0001 and absf(layout.center.y) + window.y / 2.0 <= half.y + 0.0001, "%s art never exposes an empty edge" % enemy_id)
 	_expect(CardStageArtScript.entry_for({"id": "x", "portrait_path": "res://assets/Enemy/wild_boar.png"}).path.ends_with("enemy_boar.webp"), "portrait file names resolve to the new art")
+
+
+func _check_backgrounds() -> void:
+	var script: Script = load("res://scripts/presentation/StageBattleUI.gd")
+	var cases: Dictionary = {
+		{"battle_tag": "yuheng_old_fighter_spar", "zone_id": "yuheng_old_fighter_spar"}: "bg_yuheng_arena.webp",
+		{"battle_tag": "yuheng_sewer_random", "zone_id": "yuheng_sewer"}: "bg_sewer.webp",
+		{"zone_id": "yuheng_bamboo_outskirts"}: "bg_bamboo.webp",
+		{"battle_id": "boss_yuheng_molin_yanjiang_phase1"}: "stalactite_stage.png",
+		{"battle_tag": "something_else"}: "Background_defult.jpg",
+	}
+	for context: Dictionary in cases.keys():
+		var path: String = script.resolve_stage_background(context)
+		_expect(path.ends_with(String(cases[context])) and ResourceLoader.exists(path), "background for %s is %s" % [str(context), cases[context]])
