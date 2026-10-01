@@ -6,12 +6,12 @@ extends RefCounted
 ##
 ## `focus`  : where the face is in the image (0..1, y down).
 ## `size`   : world size of the (square) art quad on a 2.3 x 3.45 card.
-## `target` : card-local point where the face should land.
+## `target` : offset from the art-window centre where the face should land.
 
 const ENTRIES: Dictionary = {
-	"liuyu": {"path": "res://assets/sprites/battle_cards/liu_yu_battle_new.webp", "focus": Vector2(0.64, 0.27), "size": 2.6, "target": Vector2(-0.22, 0.70)},
-	"shumian": {"path": "res://assets/sprites/battle_cards/su_mien_battle_new.webp", "focus": Vector2(0.55, 0.30), "size": 2.6, "target": Vector2(-0.24, 0.70)},
-	"zuoyin": {"path": "res://assets/sprites/battle_cards/zuo_yin_battle_new.webp", "focus": Vector2(0.62, 0.27), "size": 2.6, "target": Vector2(-0.22, 0.70)},
+	"liuyu": {"path": "res://assets/sprites/battle_cards/liu_yu_battle_new.webp", "focus": Vector2(0.64, 0.27), "size": 2.6, "target": Vector2(-0.22, 0.15)},
+	"shumian": {"path": "res://assets/sprites/battle_cards/su_mien_battle_new.webp", "focus": Vector2(0.55, 0.30), "size": 2.6, "target": Vector2(-0.24, 0.15)},
+	"zuoyin": {"path": "res://assets/sprites/battle_cards/zuo_yin_battle_new.webp", "focus": Vector2(0.62, 0.27), "size": 2.6, "target": Vector2(-0.22, 0.15)},
 }
 const ALIASES: Dictionary = {
 	"liu_yu": "liuyu", "su_mien": "shumian", "zuo_yin": "zuoyin",

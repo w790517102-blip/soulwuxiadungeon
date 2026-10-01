@@ -1,24 +1,17 @@
 extends "res://scripts/presentation/StageActorCard.gd"
-## Card Stage character card: an upright portrait card that IS the actor on the
-## stage. Same data fields and public nodes as the STAGE_25D card (so the UI can
-## keep refreshing status/HP/MP the same way); only the face is re-laid out as a
-## tall card and the motion is spatial. Combat values are never written here.
+## Card Stage character card: an upright card that IS the actor on the stage, built
+## from the supplied card templates (see CardStageTemplates). Same data fields and
+## public nodes as the STAGE_25D card, so the UI keeps refreshing status/HP/MP the
+## same way. Layers, back to front: card edge, ink-wash window, character art, face
+## (frame + information slots + ornaments). Combat values are never written here.
 
-const PORTRAIT_CANVAS := Vector2i(400, 600)
-const PORTRAIT_VIEWPORT := Vector2i(800, 1200)
-## World size (2:3). Kept as data; CardStage3D reads card_size for picking.
-const PORTRAIT_SIZE := Vector2(2.3, 3.45)
+const Templates = preload("res://scripts/presentation/CardStageTemplates.gd")
+const CardStageArt = preload("res://scripts/presentation/CardStageArt.gd")
+
 ## Edge thickness behind the face (was 0.06; reduced by one third).
 const CARD_THICKNESS := 0.04
 ## Distance between the face (z = 0), the art layer and the ink-wash layer behind it.
 const LAYER_GAP := 0.05
-## Card-local height of the information band top; the art is cut off below it.
-const ART_CLIP_Y := -0.24
-## The art is cut at the inner edge of the frame (card-local half width): no overflow.
-const ART_CLIP_X := 1.04
-## The art may not rise above the card top either.
-const ART_CLIP_TOP := 1.70
-const CardStageArt = preload("res://scripts/presentation/CardStageArt.gd")
 
 const WINDUP_DISTANCE := 0.45
 const LUNGE_FRACTION := 0.46
@@ -31,15 +24,30 @@ const GUARD_BRACE := Vector3(0.12, -0.05, -0.35)
 const TURN_PULSE_PEAK := 0.42
 const TURN_PULSE_SECONDS := 1.5
 
-var card_size: Vector2 = PORTRAIT_SIZE
+## Set BEFORE the card enters the tree (configure() does it): character / enemy / boss.
+var template_key: String = "character"
+var template: Dictionary = {}
+## World size of the card BODY (the frame); used for picking and screen rectangles.
+var card_size: Vector2 = Templates.card_world_size("character")
+## World size of the whole face image (frame plus ornaments).
+var face_size: Vector2 = Vector2.ZERO
 var slot_rank: int = 0
 var turn_active: bool = false
 var ink_back: MeshInstance3D
 var art_layer: MeshInstance3D
 var art_material: ShaderMaterial
 var art_key: String = ""
+var window_local: Rect2 = Rect2()
 var _turn_overlay: ColorRect
 var _turn_tween: Tween
+
+
+## Picks the template from the actor, then builds the card.
+func prepare_for(actor: Dictionary, enemy: bool) -> void:
+	if card_viewport == null:
+		template_key = Templates.key_for(actor, enemy)
+		is_enemy = enemy
+		card_size = Templates.card_world_size(template_key)
 
 
 ## Slow white pulse while it is this card's turn. Presentation only.
@@ -57,15 +65,20 @@ func set_turn_active(active: bool) -> void:
 	_turn_tween.tween_property(_turn_overlay, "color:a", 0.0, TURN_PULSE_SECONDS / 2.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
-# --- Portrait face -------------------------------------------------------------
+# --- Card construction -------------------------------------------------------------
 
 func _build_card() -> void:
 	if card_viewport:
 		return
+	template = Templates.get_template(template_key)
+	var canvas: Vector2 = template.canvas
+	var world: float = Templates.world_per_pixel(template_key)
+	card_size = Templates.card_world_size(template_key)
+	face_size = canvas * world
 	card_viewport = SubViewport.new()
 	card_viewport.name = "CardViewport"
-	card_viewport.size = PORTRAIT_VIEWPORT
-	card_viewport.size_2d_override = PORTRAIT_CANVAS
+	card_viewport.size = Vector2i((canvas * Templates.FACE_SCALE).round())
+	card_viewport.size_2d_override = Vector2i(canvas)
 	card_viewport.size_2d_override_stretch = true
 	card_viewport.transparent_bg = true
 	card_viewport.disable_3d = true
@@ -74,35 +87,58 @@ func _build_card() -> void:
 	add_child(card_viewport)
 	var root := Control.new()
 	root.name = "CardCanvas"
-	root.size = Vector2(PORTRAIT_CANVAS)
+	root.size = canvas
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card_viewport.add_child(root)
-	# The face is the FRONT layer: frame, name bar and information band. Its portrait
-	# window is transparent so the art layer and the ink-wash back layer show through.
-	_panel(root, Rect2(8, 8, 384, 584), Color.TRANSPARENT, GOLD, 4)
-	_panel(root, Rect2(18, 18, 364, 564), Color.TRANSPARENT, Color("685432"), 1)
-	_panel(root, Rect2(18, 18, 364, 52), Color(0.03, 0.04, 0.06, 0.58), Color.TRANSPARENT, 0)
-	_panel(root, Rect2(18, 342, 364, 240), Color(0.04, 0.055, 0.08, 0.95), Color("685432"), 1)
-	_corner_brackets(root, Rect2(26, 74, 348, 264))
+	# The template face (window already cut out) is the bottom of the 2D stack.
+	var face := TextureRect.new()
+	face.name = "TemplateFace"
+	face.texture = load(String(template.face)) as Texture2D
+	face.size = canvas
+	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	face.stretch_mode = TextureRect.STRETCH_SCALE
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(face)
 	_content = Control.new()
 	_content.name = "ActorContent"
-	_content.size = Vector2(PORTRAIT_CANVAS)
+	_content.size = canvas
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_content)
-	# Portrait fills the upper card; information sits in a band below it.
+	var window: Rect2 = template.window
+	# Portrait for actors that have no layered art; sits in the (transparent) window.
 	portrait = TextureRect.new()
 	portrait.name = "Portrait"
-	portrait.position = Vector2(26, 70)
-	portrait.size = Vector2(348, 270)
+	portrait.position = window.position
+	portrait.size = window.size
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content.add_child(portrait)
-	name_label = _label("Name", Rect2(28, 20, 344, 50), 42, PAPER)
+	name_label = _label("Name", template.name, int(template.name_font), PAPER)
 	name_label.add_theme_font_override("font", TITLE_FONT)
-	# Information band: element + inner force, HP, MP / species, status words (no LV).
-	level_label = _label("Level", Rect2(28, 346, 124, 44), 34, GOLD)
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_outline(name_label, 8)
+	# Bars first so their text can sit on top of them.
+	hp_bar = _slot_bar("HPBar", template.hp, Color(0.75, 0.2, 0.18, 0.92))
+	mp_bar = _slot_bar("MPBar", template.get("mp", Rect2()), Color(0.2, 0.62, 0.8, 0.92))
+	hp_label = _slot_label("HP", template.hp)
+	mp_label = _slot_label("MP", template.get("mp", Rect2()))
+	element_label = _label("Element", template.get("badge", template.get("element", Rect2())), int(template.get("badge_font", template.get("row_font", 40))), GOLD)
+	element_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_outline(element_label, 6)
+	species_label = _label("Species", template.get("species", Rect2()), int(template.get("row_font", 40)), PAPER)
+	species_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_outline(species_label, 6)
+	force_label = _label("ActiveInnerForce", _inset(template.get("force", Rect2()), 20, 0), int(template.get("force_font", 40)), GOLD)
+	force_label.add_theme_font_override("font", TITLE_FONT)
+	force_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	guest_label = _label("Guest", _inset(template.get("force", Rect2()), 20, 0), int(template.get("force_font", 40)), GOLD)
+	guest_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	level_label = _label("Level", Rect2(0, 0, 1, 1), 10, GOLD)
 	level_label.hide() # LV is intentionally not shown on Card Stage cards.
+	# Dummies keep the inherited visibility API; the real frames are in the face image.
+	_element_badge = _panel(_content, template.get("badge", Rect2()), Color.TRANSPARENT, Color.TRANSPARENT, 0)
+	_force_strip = _panel(_content, template.get("force", Rect2()), Color.TRANSPARENT, Color.TRANSPARENT, 0)
 	status_label = RichTextLabel.new()
 	status_label.name = "StatusWords"
 	status_label.bbcode_enabled = true
@@ -111,43 +147,40 @@ func _build_card() -> void:
 	status_label.clip_contents = true
 	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	status_label.add_theme_font_override("normal_font", BODY_FONT)
-	status_label.add_theme_font_size_override("normal_font_size", 32)
+	status_label.add_theme_font_size_override("normal_font_size", int(template.status_font))
 	status_label.add_theme_color_override("default_color", PAPER)
-	status_label.position = Vector2(28, 522)
-	status_label.size = Vector2(344, 50)
+	var status_rect: Rect2 = template.status
+	status_label.position = status_rect.position
+	status_label.size = status_rect.size
 	_content.add_child(status_label)
-	hp_label = _label("HP", Rect2(28, 402, 344, 42), 35, PAPER)
-	hp_bar = _bar("HPBar", Rect2(28, 446, 344, 13), Color("bb413b"))
-	mp_label = _label("MP", Rect2(28, 463, 344, 42), 35, PAPER)
-	mp_bar = _bar("MPBar", Rect2(28, 507, 344, 13), Color("4dacca"))
-	species_label = _label("Species", Rect2(28, 463, 344, 42), 35, PAPER)
-	guest_label = _label("Guest", Rect2(28, 348, 344, 50), 34, GOLD)
-	_element_badge = _panel(_content, Rect2(28, 346, 50, 52), Color("161921"), GOLD, 2)
-	element_label = _label("Element", Rect2(32, 349, 42, 46), 36, GOLD)
-	_force_strip = _panel(_content, Rect2(84, 346, 288, 52), Color("11151b"), Color("685432"), 1)
-	force_label = _label("ActiveInnerForce", Rect2(90, 349, 276, 46), 32, GOLD)
-	force_label.add_theme_font_override("font", TITLE_FONT)
-	force_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var frame: Rect2 = (template.frame as Rect2).grow(-8)
 	# Slow white pulse that marks whose turn it is (see set_turn_active).
 	_turn_overlay = ColorRect.new()
 	_turn_overlay.name = "TurnPulse"
-	_turn_overlay.position = Vector2(18, 18)
-	_turn_overlay.size = Vector2(364, 564)
+	_turn_overlay.position = frame.position
+	_turn_overlay.size = frame.size
 	_turn_overlay.color = Color(1.0, 1.0, 1.0, 0.0)
 	_turn_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_turn_overlay)
 	_hit_overlay = ColorRect.new()
 	_hit_overlay.name = "LocalHitFlash"
-	_hit_overlay.position = Vector2(18, 18)
-	_hit_overlay.size = Vector2(364, 564)
+	_hit_overlay.position = frame.position
+	_hit_overlay.size = frame.size
 	_hit_overlay.color = Color.TRANSPARENT
 	_hit_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_hit_overlay)
-	_target_frame = _panel(root, Rect2(4, 4, 392, 592), Color.TRANSPARENT, Color("fff0a0"), 6)
+	_target_frame = _panel(root, (template.frame as Rect2).grow(10), Color.TRANSPARENT, Color("fff0a0"), 10)
 	_target_frame.hide()
 	_content.hide()
-	var mesh := QuadMesh.new()
-	mesh.size = card_size
+	_build_layers(world)
+
+
+func _build_layers(world: float) -> void:
+	var canvas: Vector2 = template.canvas
+	var frame: Rect2 = template.frame
+	# Face quad: the whole template image, offset so the FRAME is centred on the node.
+	var face_mesh := QuadMesh.new()
+	face_mesh.size = face_size
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -157,33 +190,33 @@ func _build_card() -> void:
 	# No billboard: yaw/pitch/roll are the card's body.
 	card_mesh = MeshInstance3D.new()
 	card_mesh.name = "CardFace"
-	card_mesh.mesh = mesh
+	card_mesh.mesh = face_mesh
 	card_mesh.material_override = material
+	card_mesh.position = Vector3((canvas.x / 2.0 - frame.get_center().x) * world, -(canvas.y / 2.0 - frame.get_center().y) * world, 0.0)
 	card_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_mesh)
-	# Back layers, behind the face: ink-wash paper, then the character art. The gap
-	# between layers gives a little real parallax when the card turns or the camera
-	# drifts, and lets the art overflow the frame.
+	# Ink-wash window painted in the template, behind the art.
+	window_local = Templates.to_local_rect(template_key, template.window)
 	ink_back = MeshInstance3D.new()
 	ink_back.name = "InkWash"
 	var ink_mesh := QuadMesh.new()
-	ink_mesh.size = card_size * 0.97
+	ink_mesh.size = window_local.size
 	ink_back.mesh = ink_mesh
-	var ink_material := ShaderMaterial.new()
-	ink_material.shader = load("res://scripts/presentation/shaders/card_ink_wash.gdshader")
-	ink_material.set_shader_parameter("seed", float(get_instance_id() % 97) / 97.0 * 6.0)
+	var ink_material := StandardMaterial3D.new()
+	ink_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ink_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	ink_material.albedo_texture = load(String(template.ink)) as Texture2D
 	ink_back.material_override = ink_material
-	ink_back.position.z = -2.0 * LAYER_GAP
+	ink_back.position = Vector3(window_local.get_center().x, window_local.get_center().y, -2.0 * LAYER_GAP)
 	ink_back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(ink_back)
+	# Character art between the ink and the face, cropped to the window.
 	art_layer = MeshInstance3D.new()
 	art_layer.name = "CharacterArt"
 	art_layer.mesh = QuadMesh.new()
 	art_material = ShaderMaterial.new()
 	art_material.shader = load("res://scripts/presentation/shaders/card_art.gdshader")
-	art_material.set_shader_parameter("clip_y", ART_CLIP_Y)
-	art_material.set_shader_parameter("clip_x", ART_CLIP_X)
-	art_material.set_shader_parameter("clip_top", ART_CLIP_TOP)
+	art_material.set_shader_parameter("clip_rect", Vector4(window_local.position.x, window_local.position.y, window_local.end.x, window_local.end.y))
 	art_layer.material_override = art_material
 	art_layer.position.z = -LAYER_GAP
 	# Transparent layers of ONE card must draw back to front: art behind the face.
@@ -195,7 +228,7 @@ func _build_card() -> void:
 	back_mesh.size = Vector3(card_size.x * 0.973, card_size.y * 0.973, CARD_THICKNESS)
 	var back_material := StandardMaterial3D.new()
 	back_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	back_material.albedo_color = Color("675131")
+	back_material.albedo_color = Color("2a1f14")
 	card_back = MeshInstance3D.new()
 	card_back.name = "CardThickness"
 	card_back.mesh = back_mesh
@@ -204,6 +237,36 @@ func _build_card() -> void:
 	card_back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_back)
 
+
+func _inset(rect: Rect2, horizontal: float, vertical: float) -> Rect2:
+	return rect.grow_individual(-horizontal, -vertical, -horizontal, -vertical)
+
+
+func _outline(label: Control, size: int) -> void:
+	label.add_theme_constant_override("outline_size", size)
+	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
+
+
+## Text that sits inside one of the template's information slots.
+func _slot_label(node_name: String, slot: Rect2) -> Label:
+	var label: Label = _label(node_name, _inset(slot, 26, 0), int(template.slot_font), PAPER)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_outline(label, 8)
+	return label
+
+
+## A bar whose track is the template slot itself; only the fill is drawn here.
+func _slot_bar(node_name: String, slot: Rect2, colour: Color) -> ProgressBar:
+	var bar: ProgressBar = _bar(node_name, _inset(slot, 14, slot.size.y * 0.2), colour)
+	bar.add_theme_stylebox_override("background", StyleBoxEmpty.new())
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = colour
+	fill.set_corner_radius_all(6)
+	bar.add_theme_stylebox_override("fill", fill)
+	return bar
+
+
+# --- Data binding --------------------------------------------------------------------
 
 func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	_build_card()
@@ -225,6 +288,7 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	_content.show()
 	var guest := bool(actor.get("is_guest", false)) or String(actor.get("presentation_state", "")).to_lower() == "guest" or String(actor.get("role", "")) == "guest"
 	presentation_state = PresentationState.ENEMY if is_enemy else (PresentationState.GUEST if guest else PresentationState.PARTY)
+	var is_character: bool = template_key == "character"
 	name_label.text = String(actor.get("display_name", actor.get("name", "未知")))
 	_update_portrait(String(actor.get("portrait_path", "")))
 	_apply_art(actor)
@@ -232,52 +296,33 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	var element := String(actor.get("element", "")) if is_enemy else String(force.get("element", actor.get("element", "")))
 	if element.is_empty():
 		element = "無"
-	# Enemies print "屬性：X" in the wide slot; party shows the element badge.
-	element_label.text = ("屬性：%s" % element) if is_enemy else element
+	# Party shows the element glyph in the badge; enemies print "屬性：X".
+	element_label.text = ("屬性：%s" % element) if not is_character else element
 	element_label.add_theme_color_override("font_color", _element_color(element))
 	# An element of "無" (none) is not shown at all.
 	var has_element: bool = element != "無"
-	_element_badge.visible = not is_enemy and not guest and has_element
 	element_label.visible = not guest and has_element
-	_force_strip.visible = not is_enemy and not guest
-	force_label.visible = not is_enemy and not guest
-	# Without a badge the inner-force strip takes the whole row.
-	var strip_left: float = 84.0 if has_element else 28.0
-	_force_strip.position = Vector2(strip_left, 346)
-	_force_strip.size = Vector2(372.0 - strip_left, 52)
-	force_label.position = Vector2(strip_left + 6.0, 349)
-	force_label.size = Vector2(366.0 - strip_left, 46)
+	_element_badge.visible = is_character and not guest and has_element
+	_force_strip.visible = is_character and not guest
+	force_label.visible = is_character and not guest
 	var force_name := String(force.get("name", ""))
 	if force_name.is_empty():
 		force_name = String(force.get("prefix", "")) + String(force.get("type", ""))
 	if force_name.is_empty():
 		force_name = "未運行"
 	force_label.text = force_name
-	force_label.add_theme_font_size_override("font_size", 32 if force_name.length() <= 5 else 24)
+	force_label.add_theme_font_size_override("font_size", int(template.get("force_font", 40)) if force_name.length() <= 5 else int(template.get("force_font", 40)) - 18)
 	level_label.text = "LV %d" % int(actor.get("level", 1))
 	level_label.visible = false
 	status_label.text = status_bbcode
-	# Status words sit in the bottom band for everyone.
-	status_label.position = Vector2(28, 522)
-	status_label.size = Vector2(344, 50)
 	guest_label.visible = guest
 	guest_label.text = "支援・客座" if guest else ""
-	species_label.visible = is_enemy
-	species_label.text = "種族：%s" % _species_name(actor) if is_enemy else ""
-	if is_enemy:
-		element_label.position = Vector2(28, 346)
-		element_label.size = Vector2(344, 52)
-		element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		element_label.add_theme_font_size_override("font_size", 36)
-	else:
-		element_label.position = Vector2(32, 349)
-		element_label.size = Vector2(42, 46)
-		element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		element_label.add_theme_font_size_override("font_size", 36)
+	species_label.visible = not is_character
+	species_label.text = "種族：%s" % _species_name(actor) if not is_character else ""
 	hp_label.visible = not guest
 	hp_bar.visible = not guest
-	mp_label.visible = not is_enemy and not guest
-	mp_bar.visible = not is_enemy and not guest
+	mp_label.visible = is_character and not guest
+	mp_bar.visible = is_character and not guest
 	var hp := int(actor.get("hp", 0))
 	var max_hp := maxi(1, int(actor.get("max_hp", hp)))
 	var mp := int(actor.get("mp", 0))
@@ -292,10 +337,9 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	# Overlapping cards hide the side facing the neighbour that stands in front:
 	# the party's RIGHT edge, the enemy's LEFT edge. Keep the text on the other side.
 	var text_side: int = HORIZONTAL_ALIGNMENT_RIGHT if is_enemy else HORIZONTAL_ALIGNMENT_LEFT
-	for label: Label in [name_label, hp_label, species_label]:
+	for label: Label in [name_label, hp_label, mp_label, species_label]:
 		label.horizontal_alignment = text_side
-	if is_enemy:
-		element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if is_character else text_side
 
 
 # --- Spatial motion --------------------------------------------------------------
@@ -370,7 +414,8 @@ func guard_motion() -> void:
 	await _wait_for_motion(_motion_tween)
 
 
-# --- Art layer and ornaments -------------------------------------------------------
+
+# --- Character art -------------------------------------------------------------------
 
 func _apply_art(actor: Dictionary) -> void:
 	var entry: Dictionary = CardStageArt.entry_for(actor)
@@ -385,33 +430,13 @@ func _apply_art(actor: Dictionary) -> void:
 		var texture: Texture2D = load(key) as Texture2D
 		art_material.set_shader_parameter("art", texture)
 		(art_layer.mesh as QuadMesh).size = Vector2(float(entry.size), float(entry.size))
-		var centre: Vector2 = CardStageArt.quad_center(entry)
+		# `target` is measured from the window centre.
+		var centre: Vector2 = window_local.get_center() + CardStageArt.quad_center(entry)
 		art_layer.position = Vector3(centre.x, centre.y, -LAYER_GAP)
 		art_material.set_shader_parameter("size", float(entry.size))
-		art_material.set_shader_parameter("center_y", centre.y)
-		art_material.set_shader_parameter("center_x", centre.x)
+		art_material.set_shader_parameter("center", centre)
 	portrait.visible = false
 	art_layer.visible = true
-
-
-## Small gold corner marks around the portrait window (placeholder ornament).
-func _corner_brackets(parent: Control, window: Rect2) -> void:
-	var length: float = 30.0
-	var thickness: float = 3.0
-	for corner: Vector2 in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
-		var anchor: Vector2 = window.position + window.size * corner
-		var horizontal := ColorRect.new()
-		horizontal.color = GOLD
-		horizontal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		horizontal.size = Vector2(length, thickness)
-		horizontal.position = Vector2(anchor.x - (length if corner.x == 1.0 else 0.0), anchor.y - (thickness if corner.y == 1.0 else 0.0))
-		parent.add_child(horizontal)
-		var vertical := ColorRect.new()
-		vertical.color = GOLD
-		vertical.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		vertical.size = Vector2(thickness, length)
-		vertical.position = Vector2(anchor.x - (thickness if corner.x == 1.0 else 0.0), anchor.y - (length if corner.y == 1.0 else 0.0))
-		parent.add_child(vertical)
 
 
 # --- Target-selection hover: lift forward / step aside ------------------------------

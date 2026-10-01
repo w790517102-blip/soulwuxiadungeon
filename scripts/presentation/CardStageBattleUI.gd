@@ -5,7 +5,11 @@ extends "res://scripts/presentation/StageBattleUI.gd"
 ## character card instead of sitting at the bottom of the screen.
 
 const CardStageScene = preload("res://scenes/presentation/card_stage_3d.tscn")
-const MAIN_COMMANDS: Array = [["skill", "出招"], ["inner_force", "內功"], ["item", "道具"], ["defend", "防禦"]]
+## [id, label, art name, implemented]. 逃跑 and 機關 are placeholders: they do nothing yet.
+const MAIN_COMMANDS: Array = [["skill", "出招", "btn_skill", true], ["inner_force", "內功", "btn_inner_force", true], ["item", "道具", "btn_item", true], ["defend", "防禦", "btn_defend", true], ["flee", "逃跑", "btn_flee", false], ["mechanism", "機關", "btn_mechanism", false]]
+const BUTTON_DIR := "res://assets/UI/card_stage/"
+const BUTTON_SIZE := Vector2(150, 108)
+const LOG_BAR_TEXTURE := "res://assets/UI/card_stage/log_bar.webp"
 
 var command_menu: PanelContainer
 var command_hint: Label
@@ -20,26 +24,40 @@ func _ready() -> void:
 	super._ready()
 	stage.active_card_clicked.connect(_on_active_card_clicked)
 	_build_command_menu()
+	_install_log_bar()
 
 
 func _build_command_menu() -> void:
 	command_menu = PanelContainer.new()
 	command_menu.name = "CardCommandMenu"
 	command_menu.mouse_filter = Control.MOUSE_FILTER_STOP
-	command_menu.add_theme_stylebox_override("panel", _plate_style())
+	# The button art is the plate; the container itself draws nothing.
+	command_menu.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	command_menu.hide()
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	command_menu.add_child(column)
+	var grid := GridContainer.new()
+	grid.name = "Buttons"
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 2)
+	command_menu.add_child(grid)
 	for entry: Array in MAIN_COMMANDS:
-		var button := Button.new()
+		var button := TextureButton.new()
 		button.name = String(entry[0])
-		button.text = String(entry[1])
-		button.custom_minimum_size = Vector2(150, 50)
-		button.add_theme_font_override("font", MenuUIFont)
-		button.add_theme_font_size_override("font_size", 26)
-		button.pressed.connect(_on_card_command.bind(String(entry[0])))
-		column.add_child(button)
+		button.tooltip_text = String(entry[1])
+		button.texture_normal = load(BUTTON_DIR + String(entry[2]) + ".webp") as Texture2D
+		var glow: Texture2D = load(BUTTON_DIR + String(entry[2]) + "_glow.webp") as Texture2D
+		button.texture_hover = glow
+		button.texture_pressed = glow
+		button.texture_focused = glow
+		button.ignore_texture_size = true
+		button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		button.custom_minimum_size = BUTTON_SIZE
+		if bool(entry[3]):
+			button.pressed.connect(_on_card_command.bind(String(entry[0])))
+		else:
+			# Not implemented yet (逃跑 / 機關): clickable, but nothing happens.
+			button.pressed.connect(_on_unimplemented_command.bind(String(entry[0])))
+		grid.add_child(button)
 		_command_buttons[String(entry[0])] = button
 	_stage_hud.add_child(command_menu)
 	command_hint = Label.new()
@@ -124,7 +142,9 @@ func _on_active_card_clicked(actor: Dictionary) -> void:
 func _show_command_menu() -> void:
 	if combat_controller:
 		_command_buttons["item"].disabled = not combat_controller.can_use_items()
+		_command_buttons["item"].modulate = Color.WHITE if combat_controller.can_use_items() else Color(0.45, 0.45, 0.45)
 		_command_buttons["inner_force"].disabled = not combat_controller.can_switch_inner_force()
+		_command_buttons["inner_force"].modulate = Color.WHITE if combat_controller.can_switch_inner_force() else Color(0.45, 0.45, 0.45)
 	command_menu.show()
 	command_menu.reset_size()
 	var rect: Rect2 = stage.card_screen_rect(current_actor)
@@ -175,3 +195,67 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	super._unhandled_input(event)
+
+
+## 逃跑 / 機關: placeholders for features that are not implemented yet.
+func _on_unimplemented_command(_command: String) -> void:
+	pass
+
+
+# --- Log bar ---------------------------------------------------------------------
+
+var _log_bar_art: TextureRect
+
+
+## The supplied long bar replaces the plain recent-log plate. 「紀錄」sits in the bar's
+## small slot; text goes in its dark panel.
+func _install_log_bar() -> void:
+	var plate: Control = _stage_hud.get_node_or_null("RecentLogPlate")
+	var texture: Texture2D = load(LOG_BAR_TEXTURE) as Texture2D
+	if plate == null or texture == null:
+		return
+	if plate is Panel:
+		(plate as Panel).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_log_bar_art = TextureRect.new()
+	_log_bar_art.name = "LogBarArt"
+	_log_bar_art.texture = texture
+	_log_bar_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_log_bar_art.stretch_mode = TextureRect.STRETCH_SCALE
+	_log_bar_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.add_child(_log_bar_art)
+	var archive: Button = _stage_hud.get_node_or_null("Archive")
+	if archive:
+		archive.text = "紀錄"
+		for state: String in ["normal", "pressed", "focus", "disabled"]:
+			archive.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		var hover := StyleBoxFlat.new()
+		hover.bg_color = Color(1.0, 0.85, 0.45, 0.16)
+		hover.set_corner_radius_all(6)
+		archive.add_theme_stylebox_override("hover", hover)
+		archive.add_theme_color_override("font_color", Color("e8d6a8"))
+		archive.add_theme_font_size_override("font_size", 17)
+	_recent_log.add_theme_font_size_override("normal_font_size", 16)
+	_layout_stage_hud()
+
+
+func _layout_stage_hud() -> void:
+	super._layout_stage_hud()
+	if _log_bar_art == null or not is_instance_valid(_stage_hud):
+		return
+	var plate: Control = _stage_hud.get_node("RecentLogPlate")
+	var screen: Vector2 = get_viewport_rect().size
+	var texture_size: Vector2 = _log_bar_art.texture.get_size()
+	var width: float = screen.x * 0.56
+	var height: float = width * texture_size.y / texture_size.x
+	plate.position = Vector2(screen.x - width - 10.0, screen.y - height - 8.0)
+	plate.size = Vector2(width, height)
+	_log_bar_art.position = Vector2.ZERO
+	_log_bar_art.size = plate.size
+	# Fractions measured on the supplied bar: dark text panel and the small slot.
+	_recent_log.position = plate.position + Vector2(width * 0.066, height * 0.33)
+	_recent_log.size = Vector2(width * 0.73, height * 0.52)
+	var archive: Control = _stage_hud.get_node("Archive")
+	archive.position = plate.position + Vector2(width * 0.822, height * 0.60)
+	archive.size = Vector2(width * 0.113, height * 0.26)
+	_continue.position = Vector2(plate.position.x + width - 176.0, plate.position.y - 42.0)
+	_continue.size = Vector2(160, 35)

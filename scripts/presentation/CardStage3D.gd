@@ -8,6 +8,7 @@ extends "res://scripts/presentation/CombatStage25D.gd"
 ## stay nearly frontal so their information remains easy to read.
 
 const CardStageActorCard = preload("res://scripts/presentation/CardStageActorCard.gd")
+const Templates = preload("res://scripts/presentation/CardStageTemplates.gd")
 const Formation = preload("res://scripts/presentation/CardStageFormation.gd")
 const CardStageCommandTray = preload("res://scripts/presentation/CardStageCommandTray.gd")
 const CardStageTurnMarker = preload("res://scripts/presentation/CardStageTurnMarker.gd")
@@ -32,9 +33,11 @@ var slots: Dictionary = {}
 
 
 func _ready() -> void:
-	var card_height: float = CardStageActorCard.PORTRAIT_SIZE.y
-	player_depth = CAMERA_Z - Formation.distance_for_fraction(card_height, Formation.ALLY_HEIGHT, camera_fov)
-	enemy_depth = CAMERA_Z - Formation.distance_for_fraction(card_height, Formation.ENEMY_HEIGHT, camera_fov)
+	# Camp depth is derived from the camp's template card height (character / enemy).
+	var ally_height: float = Templates.card_world_size("character").y
+	var enemy_height: float = Templates.card_world_size("enemy").y
+	player_depth = CAMERA_Z - Formation.distance_for_fraction(ally_height, Formation.ALLY_HEIGHT, camera_fov)
+	enemy_depth = CAMERA_Z - Formation.distance_for_fraction(enemy_height, Formation.ENEMY_HEIGHT, camera_fov)
 	background_depth = CARD_STAGE_BACKGROUND_DEPTH
 	yaw_preset = DEFAULT_YAW_PRESET
 	for argument: String in OS.get_cmdline_user_args():
@@ -189,6 +192,8 @@ func _place_side(actors: Array, enemy: bool) -> void:
 		var actor: Dictionary = present[index]
 		var layout: Dictionary = Formation.slot(present.size(), ranks[index], enemy)
 		var card: Node3D = CardStageActorCard.new()
+		# The card template (character / enemy / boss) must be known before it builds.
+		card.prepare_for(actor, enemy)
 		actor_root.add_child(card)
 		card.configure(actor, enemy, _status_text(actor))
 		card.scale = Vector3.ONE

@@ -182,7 +182,7 @@ func _check_stage(fixture: Node) -> void:
 	_expect(fast.card_size.y / fast.card_size.x > 1.4 and fast.card_size.y / fast.card_size.x < 1.7, "cards are portrait proportioned")
 	_expect(is_equal_approx(fast.home_rotation.x, 0.0) and is_equal_approx(fast.home_rotation.z, 0.0), "resting cards have no pitch or roll")
 	_expect(fast.global_transform.basis.y.dot(Vector3.UP) > 0.999, "the card's long axis stays along world Y")
-	_expect(fast.card_mesh.mesh.size == fast.card_size, "mesh follows the data-driven card size")
+	_expect(fast.card_mesh.mesh.size == fast.face_size and fast.face_size.x > fast.card_size.x, "the face quad is the whole template (frame plus ornaments); the card body is its frame")
 	_expect(is_equal_approx(fast.card_back.mesh.size.z, 0.04), "card thickness is 0.04 (one third thinner than 0.06)")
 	_expect(fast.card_back.position.z + fast.card_back.mesh.size.z / 2.0 < 0.0, "the card edge stays behind the face")
 	# Current game information is still on the face.
@@ -297,10 +297,30 @@ func _check_stage(fixture: Node) -> void:
 		_expect(endpoint.x > destination.home_position.x, "miss ribbon continues through to the far side (target %d)" % target_index)
 		_expect(not stage.busy and stage.fx_root.get_child_count() == 0 and allies + enemies == before, "miss completes cleanly (target %d)" % target_index)
 
+	# --- Card templates ------------------------------------------------------------
+	var Templates = load("res://scripts/presentation/CardStageTemplates.gd")
+	_expect(fast.template_key == "character" and slow.template_key == "character", "party members use the character template")
+	_expect(foe_fast.template_key == "enemy", "an ordinary enemy uses the enemy template")
+	_expect(Templates.key_for({"id": "molin_yanjiang"}, true) == "boss" and Templates.key_for({"id": "molin_yanjiang_phase2"}, true) == "boss" and Templates.key_for({"id": "x", "is_boss": true}, true) == "boss", "Molin Yanjiang (and flagged bosses) use the boss template")
+	_expect(Templates.key_for({"id": "zuoyin_stalactite_guest", "is_guest": true}, false) == "character", "the guest uses the character template")
+	_expect(Templates.key_for({"id": "x", "card_template": "boss"}, true) == "boss", "an actor can force a template")
+	for template_name: String in Templates.TEMPLATES.keys():
+		var spec: Dictionary = Templates.TEMPLATES[template_name]
+		_expect(FileAccess.file_exists(spec.face) and FileAccess.file_exists(spec.ink), "%s template files exist" % template_name)
+		_expect(is_equal_approx(Templates.card_world_size(template_name).x, Templates.CARD_WORLD_WIDTH), "%s card body is as wide as every other card" % template_name)
+		var canvas_rect := Rect2(Vector2.ZERO, spec.canvas)
+		for slot_name: String in ["name", "window", "hp", "status"]:
+			_expect(canvas_rect.encloses(spec[slot_name]) and (spec.frame as Rect2).encloses(spec[slot_name]), "%s: %s slot lies inside the card frame" % [template_name, slot_name])
+		_expect((spec.window as Rect2).position.y > (spec.name as Rect2).end.y and (spec.hp as Rect2).position.y > (spec.window as Rect2).end.y, "%s: name above the window above the information slots" % template_name)
+	_expect(fast.hp_bar.get_parent() == fast._content and fast.hp_label.get_index() > fast.hp_bar.get_index(), "HP text is drawn over its bar")
+	_expect(Rect2(fast.hp_bar.position, fast.hp_bar.size).intersects(Rect2(fast.hp_label.position, fast.hp_label.size)) and (fast.template.hp as Rect2).encloses(Rect2(fast.hp_bar.position, fast.hp_bar.size)), "the HP bar fills the template's HP slot")
+	_expect(not fast.mp_bar.get_parent().get_child(0) == null and (fast.template.mp as Rect2).encloses(Rect2(fast.mp_bar.position, fast.mp_bar.size)), "the MP bar fills the template's MP slot")
+	_expect(not foe_fast.mp_label.visible and foe_fast.species_label.visible and foe_fast.hp_label.visible, "enemy cards show element / species / HP in their template slots")
+
 	# --- Character art layers ------------------------------------------------------
 	_expect(fast.art_layer.visible and not fast.portrait.visible, "an actor with new battle art shows it on its own layer instead of the old portrait")
 	_expect(not foe_fast.art_layer.visible and foe_fast.portrait.visible, "an actor without new art keeps its existing portrait")
-	_expect(fast.ink_back != null and fast.ink_back.material_override is ShaderMaterial, "every card has a procedural ink-wash back layer")
+	_expect(fast.ink_back != null and fast.ink_back.material_override is StandardMaterial3D and fast.ink_back.material_override.albedo_texture != null, "every card has the template ink-wash window behind its art")
 	_expect(fast.ink_back.position.z < fast.art_layer.position.z and fast.art_layer.position.z < fast.card_mesh.position.z, "layers stack ink < art < face, giving real parallax")
 	_expect(fast.card_back.position.z + fast.card_back.mesh.size.z / 2.0 < fast.ink_back.position.z, "the card edge sits behind every layer")
 	var art_texture: Texture2D = fast.art_material.get_shader_parameter("art")
@@ -308,8 +328,8 @@ func _check_stage(fixture: Node) -> void:
 	for art_path: String in ["liu_yu", "su_mien", "zuo_yin"]:
 		var art_file: String = "res://assets/sprites/battle_cards/%s_battle_new.webp" % art_path
 		_expect(FileAccess.file_exists(art_file) and FileAccess.get_file_as_bytes(art_file).size() < 1600000, "%s art is a lossless WebP under 1.6 MB (originals were 2.4-2.8 MB PNGs)" % art_path)
-	_expect(float(fast.art_material.get_shader_parameter("clip_y")) > fast.card_back.position.y - fast.card_size.y / 2.0, "art is clipped above the card bottom")
-	_expect(float(fast.art_material.get_shader_parameter("clip_x")) <= fast.card_size.x / 2.0 - 0.05 and float(fast.art_material.get_shader_parameter("clip_top")) <= fast.card_size.y / 2.0, "art is cropped inside the frame on both sides and the top (no overflow)")
+	_expect(fast.art_material.get_shader_parameter("clip_rect") == Vector4(fast.window_local.position.x, fast.window_local.position.y, fast.window_local.end.x, fast.window_local.end.y), "art is cropped to the template window")
+	_expect(fast.window_local.position.x >= -fast.card_size.x / 2.0 and fast.window_local.end.x <= fast.card_size.x / 2.0 and fast.window_local.end.y <= fast.card_size.y / 2.0, "the art window lies inside the card frame (no overflow)")
 	_expect(is_equal_approx(CardStageArtScript.quad_center({"focus": Vector2(0.5, 0.5), "size": 2.0, "target": Vector2(0.3, 0.7)}).x, 0.3), "art placement lands the face focus on the target point")
 	var guest_entry: Dictionary = CardStageArtScript.entry_for({"id": "zuoyin_stalactite_guest"})
 	_expect(String(guest_entry.get("path", "")).ends_with("zuo_yin_battle_new.webp"), "the stalactite guest resolves to Zuo Yin's new art")
@@ -387,10 +407,20 @@ func _check_stage(fixture: Node) -> void:
 	stage.active_card_clicked.emit(allies[1])
 	_expect(not ui.command_menu.visible, "clicking a card that is not acting opens nothing")
 	stage.active_card_clicked.emit(allies[0])
-	_expect(ui.command_menu.visible and ui.command_menu.get_child(0).get_child_count() == 4, "clicking the active card opens the four main commands")
-	_expect(ui._command_buttons.keys().size() == 4 and ui._command_buttons["skill"].text == "出招" and ui._command_buttons["defend"].text == "防禦", "the pop-up offers 出招 / 內功 / 道具 / 防禦")
+	_expect(ui.command_menu.visible and ui.command_menu.get_child(0).get_child_count() == 6, "clicking the active card opens the command buttons (4 working + 逃跑 + 機關)")
+	_expect(ui._command_buttons.keys().size() == 6 and ui._command_buttons["skill"].tooltip_text == "出招" and ui._command_buttons["mechanism"].tooltip_text == "機關" and ui._command_buttons["skill"].texture_hover != ui._command_buttons["skill"].texture_normal, "each button has art with a separate glow state")
 	var menu_rect := Rect2(ui.command_menu.global_position, ui.command_menu.size)
 	_expect(viewport_rect.encloses(menu_rect) and menu_rect.position.x >= stage.card_screen_rect(allies[0]).end.x, "the pop-up sits beside the active card, inside the screen")
+	# 逃跑 / 機關 are placeholders: they must do nothing at all.
+	var before_flee: Dictionary = {"menu": ui._menu, "on_action": ui.on_action_selection, "log": ui.log_panel.get_parsed_text()}
+	ui._command_buttons["flee"].pressed.emit()
+	ui._command_buttons["mechanism"].pressed.emit()
+	await process_frame
+	_expect(ui.command_menu.visible and ui._menu == before_flee.menu and ui.on_action_selection == before_flee.on_action and ui.log_panel.get_parsed_text() == before_flee.log, "逃跑 and 機關 do nothing when pressed")
+	var log_plate: Control = ui._stage_hud.get_node("RecentLogPlate")
+	_expect(log_plate.get_node("LogBarArt").texture != null and viewport_rect.encloses(Rect2(log_plate.position, log_plate.size)), "the supplied long bar frames the recent log, inside the screen")
+	var archive_rect := Rect2(ui._stage_hud.get_node("Archive").position, ui._stage_hud.get_node("Archive").size)
+	_expect(Rect2(log_plate.position, log_plate.size).encloses(archive_rect), "the 紀錄 button sits in the bar's slot")
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.pressed = true
