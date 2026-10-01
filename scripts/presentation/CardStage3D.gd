@@ -206,6 +206,7 @@ func _place_side(actors: Array, enemy: bool) -> void:
 		var position: Vector3 = Formation.world_position(layout, card.card_size.y, CAMERA_Z, camera_fov)
 		card.set_home(position, _yaw_for(enemy))
 		card.slot_rank = layout.rank
+		card.hit_landed.connect(_on_card_hit_landed)
 		var key: String = actor_key(actor)
 		card.name = "Card_%d_%s" % [layout.rank, key.replace("#", "_")]
 		cards[key] = card
@@ -429,7 +430,7 @@ func apply_order(keys: Array[String], animated: bool) -> void:
 			layout["position"] = position
 			slots[key] = layout
 		if animated:
-			card.relocate(position, is_actor_card and was_front and rank > 0)
+			card.relocate(position, is_actor_card and was_front and rank > 0, _relocate_time_scale)
 		else:
 			card.set_home(position, _yaw_for(card.is_enemy) if is_actor_card else (-enemy_yaw_degrees if card.is_enemy else card_yaw_degrees * 0.5))
 
@@ -475,6 +476,8 @@ var entity_cards: Dictionary = {}
 var entity_card_factories: Dictionary = {}
 var _bound_registry: Object = null
 var _entity_objects: Dictionary = {}
+## Slows card slides while a new sub card is being inserted (2/3 speed = 1.5x time).
+var _relocate_time_scale: float = 1.0
 
 
 func spawn_stage_entity_card(entity: Object, home: Variant = null) -> Node3D:
@@ -714,6 +717,7 @@ func present_entity_attack(attacker: Dictionary, entity: Object, destroyed: bool
 	shake_later.timeout.connect(func() -> void:
 		if is_instance_valid(card):
 			card.hit_shake()
+			StageHitEffects.spark(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.6, false)
 	)
 	await trail.play(source.position, card.home_position, true)
 	trail.queue_free()
@@ -826,7 +830,9 @@ func settle_entity_arrival() -> void:
 	busy = false
 	_order_clock = ORDER_POLL_SECONDS
 	_order_signature = ""
+	_relocate_time_scale = INSERT_TIME_SCALE
 	_update_order(0.0)
+	_relocate_time_scale = 1.0
 	busy = was_busy
 	var guard: int = 0
 	while guard < 600 and _arrival_in_progress():
@@ -844,3 +850,83 @@ func _arrival_in_progress() -> bool:
 		if card.is_relocating():
 			return true
 	return false
+
+
+# --- Attack choreography -------------------------------------------------------------------
+
+const INSERT_TIME_SCALE: float = 1.5
+const StageHitEffects = preload("res://scripts/presentation/StageHitEffects.gd")
+
+
+func _opposing_centre(card: Node3D) -> Vector3:
+	var total := Vector3.ZERO
+	var count: int = 0
+	for other: Node3D in cards.values():
+		if other.is_enemy != card.is_enemy and other.actor_id != "":
+			total += other.home_position
+			count += 1
+	if count == 0:
+		return Vector3(-card.home_position.x, card.home_position.y, -card.home_position.z)
+	return total / float(count)
+
+
+## Area attacks (no single target) press toward the middle of the opposing camp, not just
+## sideways across the screen.
+func attack_motion(actor: Dictionary) -> void:
+	var card := card_for(actor)
+	if card:
+		card.attack_motion(_opposing_centre(card))
+
+
+## Support actions (heal, buff, ...) on teammates or oneself: step forward, hold, return slowly.
+func support_motion(actor: Dictionary) -> void:
+	var card := card_for(actor)
+	if card:
+		card.support_step_hold()
+
+
+func _on_card_hit_landed(card: Node3D, heavy: bool) -> void:
+	StageHitEffects.spark(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.8, heavy)
+
+
+func _is_sword_attack(skill: Dictionary) -> bool:
+	return String(skill.get("weapon_type", "")) == "劍"
+
+
+## Sword attacks: the attacker thrusts at the target and HOLDS; at contact a diagonal cut
+## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
+## Other weapons keep the ribbon trail.
+func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if not _is_sword_attack(skill):
+		await super.present_attack(attacker, target, skill, result)
+		return
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	await source.lunge_to(destination.home_position)
+	var hit: bool = bool(result.get("hit", true))
+	var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	var cut_centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.4)
+	var cut_length: float = destination.card_size.y * 1.15
+	if hit:
+		StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
+		# The target is struck as the cut lands (late in the draw), then reacts.
+		await get_tree().create_timer(0.1).timeout
+		if bool(target.get("defending", false)):
+			destination.guard_motion()
+		else:
+			destination.hit_reaction(bool(result.get("crit", false)))
+		# Let the whole cut finish (drawn, blue flicker, held) before the attacker withdraws.
+		await get_tree().create_timer(0.24).timeout
+	else:
+		destination.dodge_motion()
+		# The blade only finds air beside the target.
+		var miss_centre: Vector3 = cut_centre + Vector3(direction * 0.9, 0.2, -0.6)
+		StageHitEffects.slash(fx_root, miss_centre, cut_length, direction, 0.55)
+		await get_tree().create_timer(0.34).timeout
+	await source.lunge_return(0.4)
+	await get_tree().create_timer(0.12).timeout
+	busy = false

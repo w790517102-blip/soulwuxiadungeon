@@ -273,3 +273,11 @@ func play_stage_entity_cast(actor: Dictionary, _skill_data: Dictionary, phase: S
 func play_stage_entity_hit(attacker: Dictionary, entity: Object, destroyed: bool, attacker_motion: bool) -> void:
 	if stage_enabled and stage:
 		await stage.present_entity_attack(attacker, entity, destroyed, attacker_motion)
+
+
+## Support action on teammates: step forward, hold, return slowly.
+func play_support_motion(actor: Dictionary) -> void:
+	if stage_enabled and stage:
+		stage.support_motion(actor)
+	else:
+		play_attack_motion(actor)

@@ -3515,8 +3515,7 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 
 	# 🎞️ 動畫：施術者前傾，目標播補血特效
 	if battle_ui:
-		if battle_ui.has_method("play_attack_motion"):
-			battle_ui.play_attack_motion(user)
+		_play_support_motion(user, targets)
 		if battle_ui.has_method("play_heal_react"):
 			for t in targets:
 				battle_ui.play_heal_react(t)
@@ -3621,7 +3620,7 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 	var positive_buff := _is_positive_buff_skill(skill_data, effect)
 
 	if battle_ui and battle_ui.has_method("play_attack_motion"):
-		battle_ui.play_attack_motion(user)
+		_play_support_motion(user, targets)
 		if battle_ui.has_method("play_hit_fx_on_target"):
 			var fx_id = _get_fx_id_for_skill(skill_data, user)
 			if fx_id != "":
@@ -4334,3 +4333,19 @@ func _hit_stage_entities_with_aoe(enemy: Dictionary, skill: Dictionary) -> void:
 		_finish_entity_damage(entity, result, {"source": enemy, "skill": skill, "aoe": true})
 		if bool(result.get("destroyed", false)):
 			_log("【%s】也被波及，隨即裂開消散。" % String(entity.get("display_name")))
+
+
+## Motion for a support action: on teammates (or oneself) a presentation may "step forward and
+## hold" instead of attacking; against enemies it attacks as usual.
+func _play_support_motion(user: Dictionary, targets: Array) -> void:
+	if battle_ui == null:
+		return
+	var friendly: bool = not targets.is_empty()
+	var user_faction: String = faction_of(user)
+	for target: Variant in targets:
+		if typeof(target) != TYPE_DICTIONARY or faction_of(target) != user_faction:
+			friendly = false
+	if friendly and battle_ui.has_method("play_support_motion"):
+		battle_ui.play_support_motion(user)
+	elif battle_ui.has_method("play_attack_motion"):
+		battle_ui.play_attack_motion(user)

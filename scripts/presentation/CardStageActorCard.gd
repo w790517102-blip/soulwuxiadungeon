@@ -372,6 +372,7 @@ func attack_motion(target_position: Vector3) -> void:
 
 func hit_reaction(heavy: bool = false) -> void:
 	_kill_motion()
+	hit_landed.emit(self, heavy)
 	_flash(Color(0.8, 0.08, 0.035, 0.52))
 	var away: float = -_toward()
 	var push: Vector3 = KNOCKBACK_HEAVY if heavy else KNOCKBACK
@@ -501,7 +502,7 @@ func set_fade(amount: float) -> void:
 ## toward the exchange zone, vanishes, and reappears at the far end of its row.
 ## Otherwise the card simply slides. `home_position` changes at once, so picking and
 ## later motions already use the new slot.
-func relocate(new_home: Vector3, wrap: bool) -> void:
+func relocate(new_home: Vector3, wrap: bool, time_scale: float = 1.0) -> void:
 	if _relocate_tween and _relocate_tween.is_valid():
 		_relocate_tween.kill()
 	var start: Vector3 = position
@@ -509,15 +510,15 @@ func relocate(new_home: Vector3, wrap: bool) -> void:
 	_relocate_tween = create_tween()
 	if wrap:
 		var exit_point: Vector3 = start + Vector3(_toward() * 1.3, 0.0, 0.0)
-		_relocate_tween.tween_property(self, "position", exit_point, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		_relocate_tween.parallel().tween_method(set_fade, 0.0, 1.0, 0.2)
+		_relocate_tween.tween_property(self, "position", exit_point, 0.2 * time_scale).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		_relocate_tween.parallel().tween_method(set_fade, 0.0, 1.0, 0.2 * time_scale)
 		_relocate_tween.tween_callback(func() -> void:
 			position = new_home + Vector3(-_toward() * 1.3, 0.0, 0.0)
 		)
-		_relocate_tween.tween_property(self, "position", new_home, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		_relocate_tween.parallel().tween_method(set_fade, 1.0, 0.0, 0.24)
+		_relocate_tween.tween_property(self, "position", new_home, 0.24 * time_scale).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_relocate_tween.parallel().tween_method(set_fade, 1.0, 0.0, 0.24 * time_scale)
 	else:
-		_relocate_tween.tween_property(self, "position", new_home, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_relocate_tween.tween_property(self, "position", new_home, 0.4 * time_scale).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func settle_relocation() -> void:
@@ -546,4 +547,48 @@ func cast_return() -> void:
 	_motion_tween = create_tween()
 	_motion_tween.tween_property(self, "position", home_position, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.32)
+	await _wait_for_motion(_motion_tween)
+
+
+# --- Attack and support choreography -------------------------------------------------------
+
+## Emitted the moment a hit reaction starts, wherever it came from (single, area, support...).
+signal hit_landed(card, heavy)
+
+
+## Thrusts toward the target and STAYS there at the peak (the caller strikes while the card
+## holds, then calls lunge_return). Returns when the peak is reached.
+func lunge_to(target_position: Vector3) -> void:
+	_kill_motion()
+	var toward: float = _toward()
+	var line: Vector3 = target_position - home_position
+	var windup_position: Vector3 = home_position - line.normalized() * WINDUP_DISTANCE + Vector3(0.0, -0.06, -0.25)
+	var strike_position: Vector3 = Vector3(home_position.x + line.x * LUNGE_FRACTION, home_position.y + line.y * LUNGE_FRACTION + 0.12, home_position.z + LUNGE_LIFT)
+	var strike_rotation: Vector3 = Vector3(home_rotation.x + 0.10, home_rotation.y * 0.45, home_rotation.z - toward * 0.12)
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", windup_position, 0.12)
+	_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(-0.07, -toward * 0.10, toward * 0.05), 0.12)
+	_motion_tween.tween_property(self, "position", strike_position, 0.17).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_motion_tween.parallel().tween_property(self, "rotation", strike_rotation, 0.17)
+	await _wait_for_motion(_motion_tween)
+
+
+## Back to the slot after a lunge (or a held step).
+func lunge_return(seconds: float = 0.36) -> void:
+	_kill_motion()
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", home_position, seconds).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, seconds).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await _wait_for_motion(_motion_tween)
+
+
+## A kindly action on a teammate (or oneself): one step forward, HOLD, then slowly back,
+## so it never looks like hitting the teammate.
+func support_step_hold(hold_seconds: float = 0.7, return_seconds: float = 0.65) -> void:
+	_kill_motion()
+	var step := Vector3(_toward() * 0.15, 0.05, 0.9)
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", home_position + step, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_motion_tween.tween_interval(hold_seconds)
+	_motion_tween.tween_property(self, "position", home_position, return_seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await _wait_for_motion(_motion_tween)

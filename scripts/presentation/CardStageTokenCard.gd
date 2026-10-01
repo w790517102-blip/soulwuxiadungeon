@@ -163,12 +163,12 @@ func is_relocating() -> bool:
 	return _relocate_tween != null and _relocate_tween.is_valid() and _relocate_tween.is_running()
 
 
-func relocate(new_home: Vector3, _wrap: bool = false) -> void:
+func relocate(new_home: Vector3, _wrap: bool = false, time_scale: float = 1.0) -> void:
 	if _relocate_tween and _relocate_tween.is_valid():
 		_relocate_tween.kill()
 	home_position = new_home
 	_relocate_tween = create_tween()
-	_relocate_tween.tween_property(self, "position", new_home, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_relocate_tween.tween_property(self, "position", new_home, 0.4 * time_scale).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func set_fade(amount: float) -> void:
@@ -186,9 +186,9 @@ func play_spawn(origin: Vector3) -> void:
 	scale = Vector3.ONE * 0.04
 	set_fade(1.0)
 	_tween = create_tween().set_parallel(true)
-	_tween.tween_property(self, "position", target, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(self, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_method(set_fade, 1.0, 0.0, 0.25)
+	_tween.tween_property(self, "position", target, 0.75).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(self, "scale", Vector3.ONE, 0.75).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween.tween_method(set_fade, 1.0, 0.0, 0.375)
 
 
 func hit_shake() -> void:
