@@ -29,7 +29,7 @@ const ENEMY_SPACING: float = 0.085
 const ASPECT: float = 16.0 / 9.0
 ## A row that carries sub cards keeps its outermost card centre at least this far (screen
 ## fraction) from the screen edge.
-const OUTER_MARGIN: float = 0.19
+const OUTER_MARGIN: float = 0.12
 ## Tiny Z offset that orders overlapping cards: the party's fastest steps toward
 ## the camera; the enemy row stacks outer-in-front so every name stays readable.
 const Z_STACK: float = 0.25
@@ -42,6 +42,7 @@ static func slot(count: int, rank: int, enemy: bool, size_ratio: float = 1.0, ga
 	count = maxi(count, 1)
 	rank = clampi(rank, 0, count - 1)
 	var spacing: float = ENEMY_SPACING if enemy else ALLY_SPACING
+	var base_spacing: float = spacing
 	# A crowded row (4+ cards: actors plus row entities) squeezes to the width a row of 3 uses.
 	if count > 3:
 		spacing *= 2.0 / float(count - 1)
@@ -53,6 +54,8 @@ static func slot(count: int, rank: int, enemy: bool, size_ratio: float = 1.0, ga
 	# row grows outward, and if it would leave the screen it is squeezed to fit instead of
 	# shoving the characters about.
 	if gaps.size() == count - 1 and count > 1:
+		# A row with a sub card keeps the full spacing and is squeezed only if it runs out of room.
+		spacing = base_spacing
 		var anchor: float = lane + float(maxi(count, 3) - 1) / 2.0 * spacing if not enemy else lane - float(maxi(count, 3) - 1) / 2.0 * spacing
 		var total: float = 0.0
 		for gap: Variant in gaps:

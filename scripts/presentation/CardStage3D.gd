@@ -465,7 +465,7 @@ func apply_order(keys: Array[String], animated: bool) -> void:
 		if animated:
 			card.relocate(position, is_actor_card and was_front and rank > 0, _relocate_time_scale)
 		else:
-			card.set_home(position, _yaw_for(card.is_enemy) if is_actor_card else (-enemy_yaw_degrees if card.is_enemy else card_yaw_degrees * 0.5))
+			card.set_home(position, _yaw_for(card.is_enemy))
 
 
 func _cards_idle() -> bool:
@@ -543,7 +543,7 @@ func spawn_stage_entity_card(entity: Object, home: Variant = null) -> Node3D:
 	if _entity_row_side(entity) > 0 and not home is Vector3:
 		_place_row_entity(entity, card, true)
 	else:
-		card.set_home(position, -enemy_yaw_degrees if enemy_side else card_yaw_degrees * 0.5)
+		card.set_home(position, _yaw_for(enemy_side))
 	return card
 
 
@@ -723,7 +723,7 @@ func _place_row_entity(entity: Object, card: Node3D, animate_in: bool) -> void:
 	count += _row_entities(enemy_side).size()
 	var rank: int = int(ranks.get(key, count - 1))
 	card.slot_rank = rank
-	card.set_home(_row_position(card, count, rank, enemy_side, _row_gaps(ranks, enemy_side, count)), -enemy_yaw_degrees if enemy_side else card_yaw_degrees * 0.5)
+	card.set_home(_row_position(card, count, rank, enemy_side, _row_gaps(ranks, enemy_side, count)), _yaw_for(enemy_side))
 	if animate_in and _spawn_origin is Vector3 and card.has_method("play_spawn"):
 		# It first walks to the outer end of its row (the far left for the party), then is
 		# slid in once the row is ready (settle_entity_arrival).
@@ -858,7 +858,7 @@ func _splash_camera_ink() -> void:
 
 ## Extra room beside a sub card (a charm between characters would otherwise be hidden).
 const ENTITY_GAP: float = 1.5
-const SUB_CARD_FRONT: float = 1.0
+const SUB_CARD_FRONT: float = -0.35
 ## The cast and the new card's entrance happen this far in front of the party row, so
 ## nothing (a turned character included) can hide it.
 const CAST_FRONT: float = 2.2

@@ -255,7 +255,8 @@ func _check_row_layout() -> void:
 	_expect(is_equal_approx(card.card_size.x / ally_cards[0].card_size.x, 0.85) and absf(card.card_size.y / ally_cards[0].card_size.y - 0.85) < 0.001, "the talisman card is 85% of a character card")
 	_expect(card.home_position.x < ally_cards[0].home_position.x and card.home_position.x < ally_cards[1].home_position.x, "it stands to the left of the characters")
 	var nearest_ally_z: float = maxf(ally_cards[0].home_position.z, ally_cards[1].home_position.z)
-	_expect(card.home_position.z > nearest_ally_z + 0.5, "the sub card stands clearly nearer the camera than the characters")
+	_expect(card.home_position.z <= nearest_ally_z, "once inserted the sub card is tucked in beside the characters, never in front of them")
+	_expect(is_equal_approx(card.home_rotation.y, ally_cards[0].home_rotation.y), "it is inserted at the same angle as the characters")
 	_expect(card.badge_label.text == "×1", "it shows ×1, not an HP bar")
 	# The cast waits for the card to land and the characters to make room.
 	await stage.settle_entity_arrival()
