@@ -141,6 +141,8 @@ func _check_controller_flow() -> void:
 	enemy["crit_rate"] = 0.0
 	for member: Dictionary in party:
 		member["evasion"] = -100000
+	# Hit chance is capped at 95%, so pin the random seed: the test checks the rule, not luck.
+	seed(12345)
 	var aoe: Dictionary = {"id": "aoe_test", "name": "橫掃", "target_scope": "enemy_all", "effects": [{"type": "damage", "power": 1.0}], "power": 1.0}
 	hp_before = [party[0].hp, party[1].hp]
 	await controller._perform_enemy_aoe_action(enemy, aoe, {})

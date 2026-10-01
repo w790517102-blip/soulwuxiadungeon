@@ -1,12 +1,14 @@
 extends Node2D
 
+@export var yuheng_market_east_night: String = "res://scenes/yuheng/yuheng_market_east/yuheng_market_east_night.tscn"
 @export var overlay_path: NodePath = "BlackOverlay"
 @export var fade_duration := 0.6
-@export var music_tag := ""
+@export var music_tag := "yuheng_night"
 @export var music_fade_duration := 0.2
 @export var release_player_after_fade := true
 @export var handoff_node_path: NodePath
 @export var handoff_method := "start_after_entry_fade"
+@onready var overlay := $BlackOverlay
 
 func _ready() -> void:
 	var overlay := get_node_or_null(overlay_path) as ColorRect
@@ -63,3 +65,14 @@ func _ready() -> void:
 		GlobalState.set_meta("yinpingyu_cutscene_busy", false)
 		# 白箋居是上一場過場鎖的明確交接點；淡出完成後不保留殘留 ESC 鎖。
 		GlobalState.set_meta("menu_locked", false)
+
+
+func _on_to_yuheng_market_east_night_body_entered(body: Node2D) -> void:
+	if body.name == "LiuYu":
+		overlay.visible = true
+		overlay.modulate.a = 0.0
+		var tween = overlay.create_tween()
+		tween.tween_property(overlay, "modulate:a", 1.0, 0.5)
+		await tween.finished
+		get_node("/root/GameRoot").spawn_point_name = "from_yuheng_market_west_night"
+		get_node("/root/GameRoot").change_map_to(yuheng_market_east_night)

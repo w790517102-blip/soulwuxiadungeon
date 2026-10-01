@@ -1,5 +1,4 @@
 extends Node
-class_name MusicRoomManager
 
 signal music_puzzle_solved
 signal sequence_changed(current_sequence: Array[String])

@@ -64,7 +64,7 @@ func _build_lines() -> Array:
 		"sugar_kid":
 			return [
 				_l("大哥哥，你剛剛好帥喔！"),
-				_l("那個有錢大叔的臉一下紅、一下白，比糖畫還精彩！"),
+				_l("那個有錢大叔的臉一下紅、一下白，好像一隻捏麵人喔！"),
 			]
 		"scholar":
 			return [

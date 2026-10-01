@@ -282,3 +282,17 @@ func play_support_motion(actor: Dictionary) -> void:
 		stage.support_motion(actor)
 	else:
 		play_attack_motion(actor)
+
+
+## Boss story actions (called by BattleController).
+func play_stage_status_event(kind: String, actor: Dictionary) -> void:
+	if not (stage_enabled and stage):
+		return
+	match kind:
+		"entangle": await stage.present_entangle(actor)
+		"entangle_break": stage.present_entangle_break(actor)
+
+
+func play_guest_action(guest: Dictionary, action_id: String, boss: Dictionary, removes: bool) -> void:
+	if stage_enabled and stage:
+		await stage.present_guest_action(guest, action_id, boss, removes)

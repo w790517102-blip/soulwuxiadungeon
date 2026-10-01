@@ -6,7 +6,7 @@
 extends CharacterBody2D
 
 @export var z_index_offset := 0
-@export var portrait_path := "res://assets/sprites/Huiyin/Huiyin_headshot.png"
+@export var portrait_path := "res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin_headshot.png"
 @export var liuyu_portrait_path := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 @export var empty_portrait_path := "res://assets/sprites/empty.png"
 
@@ -204,10 +204,10 @@ func _build_dabao_branch_lines() -> Array:
 		_l("有些痛，大人不肯承認，孩子會先夢到。", speaker_id, portrait_path),
 		_l("他用繩索告訴我，有一口井能通往下水道。", liuyu_speaker_id, liuyu_portrait_path),
 		_n("紅徽音沉默。她的指尖無意識地按住一根琴弦，那根弦沒有響，卻像壓著一聲嘆息。"),
-		_l("那口井，和我要告訴你的路，是同一條。", speaker_id, portrait_path),
-		_l("同一條？", liuyu_speaker_id, liuyu_portrait_path),
-		_l("密道只是它還乾淨時的名字。", speaker_id, portrait_path),
-		_l("如今，它也是污染最深處的一道裂口。", speaker_id, portrait_path),
+		_l("……那口井，正是我要告訴你的入口。", speaker_id, portrait_path),
+		_l("妳也知道？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("知道入口。", speaker_id, portrait_path),
+		_l("至於下面如今變成什麼樣……我不知道。", speaker_id, portrait_path),
 	]
 
 
@@ -218,25 +218,41 @@ func _build_no_dabao_branch_lines() -> Array:
 		_n("紅徽音望向茶坊後方。那裡隔著一扇小門，門外是後巷，井聲與水氣皆藏在夜裡。"),
 		_l("醉月茶坊後方有一口舊井。", speaker_id, portrait_path),
 		_l("外人只當那是廢井，其實是早年藥師取水與避火用的暗道。", speaker_id, portrait_path),
-		_l("井下連著舊水道，其中一條支路，可以通往白箋居下方的地窖。", speaker_id, portrait_path),
+		_l("井下連著玉衡鎮早年的舊水道。", speaker_id, portrait_path),
+		_l("至於下面如今變成什麼樣……我不知道。", speaker_id, portrait_path),
 	]
 
 
 func _build_request_and_key_lines() -> Array:
 	return [
-		_l("你懷疑書眠夜裡會從那裡離開？", liuyu_speaker_id, liuyu_portrait_path),
-		_l("不是懷疑。", speaker_id, portrait_path),
-		_l("我聽見過她的腳步。", speaker_id, portrait_path),
-		_n("劉語塵看向紅徽音。"),
-		_n("茶坊和白箋居隔著街，也隔著井下水聲。若連腳步都能聽見，聽見的便未必只是聲音。"),
-		_l("她每次經過密道時，心音都太重。", speaker_id, portrait_path),
-		_l("我想不聽見也難。", speaker_id, portrait_path),
+		_l("還有一件事。", speaker_id, portrait_path),
+		_l("我的琴能把人的情緒暫時壓下去，卻不能讓它真的消失。", speaker_id, portrait_path),
+		_l("白日裡那些被琴聲壓下去的情緒，到了夜裡……仍有一些片段，會透過夢境重新浮現。", speaker_id, portrait_path),
+		_l("我原以為，那只是人心自己在慢慢消化。", speaker_id, portrait_path),
+		_l("睡過一夜、做過一場夢，醒來以後，多少會淡一些。", speaker_id, portrait_path),
+		_l("可是最近……我開始覺得，也許沒有那麼簡單。", speaker_id, portrait_path),
+		_l("這些日子，每到夜深，我總會聽見那口舊井下面傳來腳步聲。", speaker_id, portrait_path),
+		_l("井下？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("嗯。", speaker_id, portrait_path),
+		_l("三步稍急，第四步會慢半拍；遇到轉角，右腳落地總比左腳輕一些。", speaker_id, portrait_path),
+		_n("紅徽音沉默了一下。"),
+		_l("很像書眠。", speaker_id, portrait_path),
+		_l("……這也聽得出來？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("聽久了，自然認得。", speaker_id, portrait_path),
+		_l("妳看見她下井？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("沒有。", speaker_id, portrait_path),
+		_l("我只聽見地下的聲音。", speaker_id, portrait_path),
+		_l("她去下面做什麼？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("不知道。", speaker_id, portrait_path),
 		_l("為什麼不告訴左飲？", liuyu_speaker_id, liuyu_portrait_path),
-		_l("左飲若知道，會直接介入。", speaker_id, portrait_path),
-		_l("他習慣把事情斬斷。", speaker_id, portrait_path),
-		_l("可書眠現在最怕的，就是被人當成必須立刻處理的異常。", speaker_id, portrait_path),
-		_n("她說到這裡，聲音低了些。"),
-		_n("那不是責備左飲，而是對三人如今各守一方、卻漸漸無法互相靠近的無奈。"),
+		_l("因為我現在有的，只有幾夜的腳步聲。", speaker_id, portrait_path),
+		_l("還不夠。", speaker_id, portrait_path),
+		_l("妳怕他介入？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("我知道他的性子。", speaker_id, portrait_path),
+		_l("若知道地下真有異常，他不可能放著不管。", speaker_id, portrait_path),
+		_l("可飲月山莊一旦動起來，鎮上的人也會察覺。", speaker_id, portrait_path),
+		_l("現在多一分猜疑，我便得再多壓下一分。", speaker_id, portrait_path),
+		_l("所以在弄清楚以前……我不想再添一層恐慌。", speaker_id, portrait_path),
 		_l("你不是玉衡鎮的人。", speaker_id, portrait_path),
 		_l("也不是左飲的人。", speaker_id, portrait_path),
 		_l("你今日讀懂了她的空白，也替她擋過粗鄙之言。", speaker_id, portrait_path),
@@ -244,6 +260,12 @@ func _build_request_and_key_lines() -> Array:
 		_l("但她至少不會立刻把你關在門外。", speaker_id, portrait_path),
 		_l("你想要我調查書眠。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("我想請你，先找到她到底把自己帶去了哪裡。", speaker_id, portrait_path),
+		_l("妳既然知道入口，也有能開路的東西……為何不自己去看看？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("因為我走不了。", speaker_id, portrait_path),
+		_l("琴？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("嗯。", speaker_id, portrait_path),
+		_l("我若離開太久，琴聲便會停。", speaker_id, portrait_path),
+		_l("現在的玉衡鎮，還承受不起這個空隙。", speaker_id, portrait_path),
 		_l("如果她不想讓人知道呢？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("那就不要逼她。", speaker_id, portrait_path),
 		_l("只要在她快走到回不了頭的地方以前，替她點一盞燈。", speaker_id, portrait_path),

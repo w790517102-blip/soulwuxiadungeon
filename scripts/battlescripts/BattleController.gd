@@ -1594,7 +1594,7 @@ func _on_round_started(round_number: int) -> void:
 		return
 	last_round_logged = round_number
 	_log("第 %d 回合開始！" % round_number)
-	_apply_encounter_round_start(round_number)
+	await _apply_encounter_round_start(round_number)
 
 func _on_round_ended(_round_number: int) -> void:
 	if battle_finished:
@@ -1633,6 +1633,8 @@ func _apply_encounter_round_start(_round_number: int) -> void:
 	_update_ui_for_actor(boss)
 	if battle_ui:
 		battle_ui.update_enemy_panel()
+	if battle_ui and battle_ui.has_method("play_stage_status_event"):
+		await battle_ui.play_stage_status_event("entangle", boss)
 
 
 func run_round_end_encounter_actions(_round_number: int) -> void:
@@ -1649,6 +1651,12 @@ func run_round_end_encounter_actions(_round_number: int) -> void:
 	for line in _pick_guest_action_variant(action):
 		_log_narration(String(line))
 
+	# Scripted presentation of this guest action (before its effect resolves).
+	if battle_ui and battle_ui.has_method("play_guest_action"):
+		var presentation_boss := _first_living_enemy()
+		var removes_id := String(action.get("removes_status", ""))
+		var will_remove: bool = removes_id != "" and not presentation_boss.is_empty() and status_manager != null and bool(status_manager.has_effect(presentation_boss, removes_id))
+		await battle_ui.play_guest_action(scripted_guest, String(action.get("id", "")), presentation_boss, will_remove)
 	var removed_status := false
 	var status_to_remove := String(action.get("removes_status", ""))
 	var boss := _first_living_enemy()

@@ -3,6 +3,7 @@ extends Node2D
 const EMPTY_PORTRAIT := "res://assets/sprites/empty.png"
 const LIUYU_PORTRAIT := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 const RICHMAN_PORTRAIT := EMPTY_PORTRAIT
+const NARRATION_SPEAKER := 0
 const LIUYU_SPEAKER := 2
 const NPC_SPEAKER := 1
 const F_MANOR_CLOSED := "main_yh_manor_closed"
@@ -100,8 +101,8 @@ func _run_player_approach() -> void:
 
 func _play_hidden_richman_intro() -> void:
 	await _play_dialog([
-		_l("……！", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		_unknown("哼！跩什麼跩？！"),
+		_l("……！", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 	])
 
 
@@ -402,8 +403,8 @@ func _play_forbidden_flow(body: CharacterBody2D, forbidden_area: Area2D, return_
 	body.set("can_move", false)
 	body.velocity = Vector2.ZERO
 	await _play_dialog([
-		_l("劉語塵心想：現在不是往這裡去的時候。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("劉語塵心想：方才白箋居鬧出那麼大動靜，得先看看書眠是否無恙。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("(現在不是往這裡去的時候。)", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("(方才白箋居鬧出那麼大動靜，得先看看書眠是否無恙。)", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 	], false)
 	body.set("can_move", false)
 	await _fade_overlay_to(1.0)
@@ -469,11 +470,31 @@ func _build_confrontation_lines() -> Array:
 		_l("閣下誤會了。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		_l("她不賣，不是因為價錢不夠。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		_r("那是為什麼？"),
-		_l("因為那是她的詩。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("賣與不賣，該由她自己決定。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_n("你忽然想起方才讀過的《臨風寄影》。"),
+		_n("那些原本連千言萬語也難以說清的感受，曾在短短幾行詩裡，被你真真切切地接住。"),
+		_n("而那份才剛泛起的酸楚與悸動，又曾被街上那道琴聲一點一點按回沉寂。"),
+		_l("因為她寫下的，從來不只是幾張紙、幾行字。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("若只是把它買回去，當成尋常筆墨收藏，或拿來襯托自己有幾分雅致——", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("那你買到的，也只是紙上的字。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("真正留在詩裡的東西，是要有人願意讀、願意感受，才接得住的。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("至少我讀過之後，是這麼想的。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_n("你始終壓著語氣，不疾不徐地向眼前的暴發戶說明。"),
+		_n("你原只是希望他多少能聽懂一些——白書眠的拒絕從來不是價碼的多寡，更不是故作清高。"),
+		_n("她已在這座鎮子裡承受了太多無聲的委屈。至少這一次，不該連自己珍而重之的文字，都被旁人曲解成待價而沽的玩物。"),
+		_n("你原以為，話說到這裡，他多少會聽進去一些。"),
+		_n("誰知那暴發戶聽罷，只是不屑地撇了撇嘴，目光又在你身上來回打量一番，彷彿方才那番話根本不值得放在心上。"),
 		_r("哼！我肯花銀子買她的字，是看得起她！"),
+		_n("你怔了一下。"),
+		_n("原本放鬆的指尖，不知何時已微微發僵；一股細麻沿著脊背竄上後頸，連頭皮都隱隱發緊。"),
+		_n("那不是畏懼。"),
+		_n("你很清楚——那是怒意。"),
+		_n("《臨風寄影》的字句重新浮上心頭；書眠安靜的神情、那些被琴聲壓回胸口的感動，以及書客談起往事時逐漸麻木的臉，也一一掠過眼前。"),
+		_n("你本就不是容易動怒的人。"),
+		_n("可眼前之人明明能恣意宣洩自己的不滿，卻偏偏將另一個人的真心踩在腳下，還把那叫作『抬舉』。"),
+		_n("你緩緩吐出一口氣。"),
+		_n("再開口時，聲音依舊平穩，只是那雙眼裡，已再沒有半分退讓。"),
 		_l("你那不是誠意。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("只是聲音太大的銀子。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("只是毫無品味可言的銀子。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		_r("你——！"),
 		_l("你要的也不是字。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		_l("是旁人看你時，多敬你半寸的眼神。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
@@ -487,9 +508,9 @@ func _build_confrontation_lines() -> Array:
 		_l("你買不到別人願意。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		{"wait": 0.35},
 		_r("今日她不賣，來日自有人求著我買！"),
-		_l("你可以等。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("我也覺得你等得到。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		_r("算你識相。"),
-		_l("等到書懂得嫌人。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("等到書都成精了懂得嫌你這個人。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 		_r("你——！"),
 		_r("哼！山水有相逢，咱們走著瞧！"),
 	]
@@ -501,6 +522,10 @@ func _l(text: String, speaker: int, portrait: String) -> Dictionary:
 
 func _r(text: String) -> Dictionary:
 	return {"text": "暴發戶：「%s」" % text, "speaker": NPC_SPEAKER, "portrait": RICHMAN_PORTRAIT}
+
+
+func _n(text: String) -> Dictionary:
+	return {"text": text, "speaker": NARRATION_SPEAKER, "portrait": EMPTY_PORTRAIT}
 
 
 func _unknown(text: String) -> Dictionary:

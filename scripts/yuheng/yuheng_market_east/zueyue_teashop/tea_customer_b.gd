@@ -4,6 +4,12 @@
 # ==============================
 extends CharacterBody2D
 
+const F_GO_TO_ZUIYUE_HUIYIN := "main_yh_go_to_zuiyue_huiyin"
+const F_HUIYIN_FIRST_TALK_DONE := "event_huiyin_first_talk_done"
+const F_CUSTOMER_B_WAITING_LINE_HEARD := "event_zuiyue_customer_b_waiting_line_heard"
+const NIGHT_TEASHOP_SCENE_PATH := "res://scenes/yuheng/zueyue_teashop/zueyue_teashop_night.tscn"
+const MAIN_QUEST_ID := "main_001"
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/NPC/Yuheng/Teahouse_Boss_headshot.png"
 @export var speaker_id := 1
@@ -26,6 +32,7 @@ var has_recently_talked: bool = false
 var path_ref: PathFollow2D = null
 var previous_position: Vector2 = Vector2.ZERO
 var _mark_flag_after_close := false
+var _mark_waiting_line_heard_after_close := false
 
 func _ready():
 	dialog_manager = get_node("/root/GameRoot/DialogManager")
@@ -44,6 +51,31 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	var met := GlobalState.get_flag("met_yuheng_teahouse_lady")
 	var observed := GlobalState.get_flag("event_market_choice_observe")
 	var heard_qin := GlobalState.get_flag("event_yuheng_market_melody")
+
+	if _is_huiyin_night_story_window():
+		if not GlobalState.get_flag(F_HUIYIN_FIRST_TALK_DONE):
+			return [
+				{
+					"text": "「你也聽出來了？曲子明明不急，我卻總覺得有一句話，非得在今晚說出口不可。」",
+					"speaker": speaker_id,
+					"portrait": portrait_path,
+				},
+			]
+		if GlobalState.get_flag(F_CUSTOMER_B_WAITING_LINE_HEARD):
+			return [
+				{
+					"text": "「先前那句非得說出口的話，似乎已經傳到了。如今聽來，倒像終於有人願意替她把那份盼望帶走。」",
+					"speaker": speaker_id,
+					"portrait": portrait_path,
+				},
+			]
+		return [
+			{
+				"text": "「這曲子聽來不像尋常演奏，倒像有人剛把心裡的話送了出去，也把剩下的盼望交給了願意承接的人。」",
+				"speaker": speaker_id,
+				"portrait": portrait_path,
+			},
+		]
 
 	if not met:
 		if observed and heard_qin:
@@ -76,6 +108,18 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 
 	return [ { "text": "「改日再談。」", "speaker": speaker_id, "portrait": portrait_path } ]
 
+
+func _is_huiyin_night_story_window() -> bool:
+	var scene_root := get_parent()
+	if scene_root == null or scene_root.scene_file_path != NIGHT_TEASHOP_SCENE_PATH:
+		return false
+	var main_state := _get_main_quest_state_safely()
+	return (
+		String(main_state.get("id", "")) == MAIN_QUEST_ID
+		and GlobalState.get_flag(F_GO_TO_ZUIYUE_HUIYIN)
+	)
+
+
 func _process(delta):
 	z_index = int(global_position.y + z_index_offset)
 
@@ -101,6 +145,11 @@ func _unhandled_input(event):
 
 		# ✅ 這行是關鍵：在互動瞬間依目前旗標/主線重新組台詞
 		var main_stage := _get_main_stage_safely()
+		_mark_waiting_line_heard_after_close = (
+			_is_huiyin_night_story_window()
+			and not GlobalState.get_flag(F_HUIYIN_FIRST_TALK_DONE)
+			and not GlobalState.get_flag(F_CUSTOMER_B_WAITING_LINE_HEARD)
+		)
 		dialog_lines = _build_lines_for_stage(main_stage)
 
 		dialog_manager.show_dialog_sequence(dialog_lines, self)
@@ -110,6 +159,9 @@ func _unhandled_input(event):
 func reset_dialog_state():
 	get_node("/root/GameRoot/LiuYu").can_move = true
 	is_talking = false
+	if _mark_waiting_line_heard_after_close:
+		_mark_waiting_line_heard_after_close = false
+		_commit_waiting_line_heard.call_deferred()
 	if _mark_flag_after_close:
 		GlobalState.set_flag("met_yuheng_teahouse_lady", true)
 		_mark_flag_after_close = false
@@ -118,16 +170,23 @@ func reset_dialog_state():
 		animated_sprite.play("idle")
 			
 
+func _commit_waiting_line_heard() -> void:
+	GlobalState.set_flag(F_CUSTOMER_B_WAITING_LINE_HEARD, true)
+
+
 func _get_main_stage_safely() -> int:
+	var state := _get_main_quest_state_safely()
+	return int(state.get("stage", 1))
+
+
+func _get_main_quest_state_safely() -> Dictionary:
 	var qm := get_node_or_null("/root/QuestManager")
 	if qm and qm.has_method("get_main_quest_state"):
-		var s: Dictionary = qm.get_main_quest_state()
-		return int(s.get("stage", 1))
+		return qm.get_main_quest_state()
 	qm = get_node_or_null("/root/GameRoot/QuestManager")
 	if qm and qm.has_method("get_main_quest_state"):
-		var s2: Dictionary = qm.get_main_quest_state()
-		return int(s2.get("stage", 1))
-	return 1
+		return qm.get_main_quest_state()
+	return {}
 
 func face_towards(target_position: Vector2) -> void:
 	var direction = (target_position - global_position).normalized()

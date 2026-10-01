@@ -3,7 +3,7 @@ extends Node2D
 @export var Bamboo_Grove_Suburb: String = "res://scenes/yuheng/Bamboo_Grove_Suburb/Bamboo_Grove_Suburb.tscn"
 @export var YinYueManor: String = "res://scenes/yuheng/YinYueManor/yin_yue_manor.tscn"
 @onready var overlay := $BlackOverlay
-@export var music_tag := "station_stillwind"
+@export var music_tag := "wind_through_bamboo"
 @export var battle_bgm_path := "res://assets/BGM/battle_1.ogg"
 @export var map_display_name: String = "郊外竹林叢"
 

@@ -468,8 +468,12 @@ func _build_resonance_lines() -> Array:
 		_l("當話快要抵達心底時，它便會來。", speaker_id, portrait_path),
 		_l("不是惡意。", speaker_id, portrait_path),
 		_l("可它總會把那些剛要浮上來的東西……重新壓回去。", speaker_id, portrait_path),
+		_l("...", liuyu_speaker_id, liuyu_portrait_path),
+		_l("...等等", liuyu_speaker_id, liuyu_portrait_path),
+		_l("不對", liuyu_speaker_id, liuyu_portrait_path),
 		_l("這次不同。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("他沒有大聲說話，卻像在心裡將某個地方按住。"),
+		_n("你沒有大聲說話，而是仔細地感受"),
+		_n("那個來自琴聲中，那股蓋住心裡的力量。"),
 		_n("不是壓下情緒，而是不讓情緒被奪走。"),
 	]
 
@@ -495,13 +499,14 @@ func _build_resonance_lines() -> Array:
 
 	lines.append_array([
 		_l("是她在愧疚吧？", liuyu_speaker_id, liuyu_portrait_path),
-		_l("紅徽音？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("醉月茶坊的女伶？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("……", speaker_id, portrait_path),
+		_l("對不起……", speaker_id, portrait_path),
 		_l("可為什麼，你也在道歉？", liuyu_speaker_id, liuyu_portrait_path),
 		_n("書眠垂下眼，指尖按在詩卷封底的空白處。"),
 		_n("那片空白像一盞未點亮的燈，也像一句遲遲未出口的歉意。"),
 		_l("因為……我本該讓大家說出話。", speaker_id, portrait_path),
-		_l("可我的詩，沒有穿過她的琴。", speaker_id, portrait_path),
+		_l("可我的詩，沒有接住她的琴聲。", speaker_id, portrait_path),
 		_l("她的琴？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("她不是錯。", speaker_id, portrait_path),
 		_l("她只是不得不。", speaker_id, portrait_path),

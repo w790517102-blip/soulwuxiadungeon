@@ -12,24 +12,8 @@ var can_move := true
 @export var z_index_offset := 0
 @export var random_encounter_enabled := true
 const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
-const ZONE_CONFIG := {
-	"yuheng_sewer": {
-		"distance_threshold": 240.0,
-		"chance": 0.30,
-		"cooldown_distance": 280.0,
-		"intro_key": "yuheng_sewer_random"
-	}
-}
-
-const ENCOUNTER_POOLS := {
-	"yuheng_sewer": [
-		{"w": 35, "enemies": ["sewer_rat_swarm"]},
-		{"w": 30, "enemies": ["sewer_thug", "sewer_thug"]},
-		{"w": 20, "enemies": ["sewer_thug", "sewer_rat_swarm"]},
-		{"w": 10, "enemies": ["sewer_ooze_slime"]},
-		{"w": 5, "enemies": ["sewer_drowned_wight"]}
-	]
-}
+const EncounterProfiles = preload("res://scripts/encounter/EncounterProfiles.gd")
+const RandomEncounterController = preload("res://scripts/encounter/RandomEncounterController.gd")
 const ENCOUNTER_TRANSITION_FONT_PATH := "res://assets/fonts/YuWeiShuFaXingShuFanTi-1.ttf"
 const ENCOUNTER_IMPACT_SFX_PATH := "res://assets/sound/encounter.ogg"
 const ENCOUNTER_ZOOM_SCALE := 0.88
@@ -95,9 +79,8 @@ var current_zone_id := ""
 var _zone_overrides := {}
 var _current_zone_config := {}
 var _current_encounter_table: Array = []
-var _encounter_distance_accum := 0.0
-var _encounter_cooldown_distance := 0.0
 var _encounter_rng := RandomNumberGenerator.new()
+var _random_encounter := RandomEncounterController.new()
 var _encounter_paused := false
 var _encounter_transition_playing := false
 
@@ -138,8 +121,9 @@ func _physics_process(delta):
 		if not override_idle_animation:
 			animated_sprite.play(get_idle_anim_name(last_direction))
 
+	var position_before_move := global_position
 	move_and_slide()
-	_update_random_encounter(delta)
+	_update_random_encounter(global_position.distance_to(position_before_move))
 func get_anim_name(dir: Vector2, prefix: String) -> String:
 	return _get_anim_by_vector(dir, prefix)
 
@@ -188,7 +172,7 @@ func play_idle_direction(direction_name: String):
 func restore_idle_control():
 	override_idle_animation = false
 
-func _update_random_encounter(delta: float) -> void:
+func _update_random_encounter(moved_distance: float) -> void:
 	if not random_encounter_enabled:
 		return
 	if _encounter_paused:
@@ -196,42 +180,17 @@ func _update_random_encounter(delta: float) -> void:
 	if _is_battle_active():
 		return
 	if not in_danger_zone:
-		_encounter_distance_accum = 0.0
 		return
 	if current_zone_id == "":
 		return
 	if _is_random_encounter_suppressed(current_zone_id):
-		# 裝備期間不累積距離；卸下後會從正常遭遇距離重新開始。
-		_encounter_distance_accum = 0.0
-		_encounter_cooldown_distance = 0.0
+		# 裝備期間不累積距離；卸下後會重新取得該 profile 的安全距離。
+		_random_encounter.reset_pressure()
 		return
-	if direction == Vector2.ZERO:
+	if moved_distance <= 0.0:
 		return
-
-	var config = _get_current_zone_config()
-	var distance_threshold = _resolve_zone_value(config, "distance_threshold", 0.0)
-	var cooldown_distance = _resolve_zone_value(config, "cooldown_distance", 0.0)
-	var chance = _resolve_zone_value(config, "chance", 0.0)
-
-	if _encounter_cooldown_distance > 0.0:
-		_encounter_cooldown_distance = max(
-			_encounter_cooldown_distance - velocity.length() * delta,
-			0.0
-		)
-		return
-
-	if distance_threshold > 0.0:
-		_encounter_distance_accum += velocity.length() * delta
-
-	if _encounter_distance_accum < distance_threshold:
-		return
-
-	_encounter_distance_accum = 0.0
-
-	if _encounter_rng.randf() <= chance:
+	if _random_encounter.advance_distance(moved_distance, _encounter_rng):
 		_trigger_random_battle()
-	else:
-		_encounter_cooldown_distance = cooldown_distance
 
 func _is_random_encounter_suppressed(region_id: String) -> bool:
 	return InventorySync \
@@ -308,11 +267,6 @@ func _trigger_random_battle() -> void:
 		game_root.change_map_to("res://scenes/battle_scene.tscn")
 	else:
 		push_warning("❗ 找不到 GameRoot，無法切換到戰鬥場景。")
-	_encounter_cooldown_distance = _resolve_zone_value(
-		_get_current_zone_config(),
-		"cooldown_distance",
-		0.0
-	)
 
 func _weighted_pick(pool: Array) -> Dictionary:
 	var total := 0
@@ -334,7 +288,7 @@ func _build_enemies_from_zone(
 ) -> Array:
 	var pool: Array = _current_encounter_table
 	if pool.is_empty():
-		pool = ENCOUNTER_POOLS.get(zone_id, [])
+		pool = EncounterProfiles.get_legacy_encounter_pool(zone_id)
 	if pool.is_empty():
 		push_warning("Encounter pool empty for zone_id=%s" % zone_id)
 		return []
@@ -365,6 +319,7 @@ func enter_danger_zone(
 	_current_encounter_table = encounter_table.duplicate(true)
 	_current_zone_config = zone_config.duplicate(true)
 	in_danger_zone = true
+	_random_encounter.enter_region(zone_id, _current_zone_config, _zone_overrides)
 
 func exit_danger_zone(zone_id: String) -> void:
 	if zone_id == current_zone_id:
@@ -373,7 +328,15 @@ func exit_danger_zone(zone_id: String) -> void:
 		_zone_overrides = {}
 		_current_encounter_table = []
 		_current_zone_config = {}
-		_encounter_distance_accum = 0.0
+		_random_encounter.leave_region(zone_id)
+
+func suspend_encounter_for_scene_change() -> void:
+	in_danger_zone = false
+	current_zone_id = ""
+	_zone_overrides = {}
+	_current_encounter_table = []
+	_current_zone_config = {}
+	_random_encounter.suspend()
 
 func reset_encounter_state() -> void:
 	in_danger_zone = false
@@ -381,8 +344,7 @@ func reset_encounter_state() -> void:
 	_zone_overrides = {}
 	_current_encounter_table = []
 	_current_zone_config = {}
-	_encounter_distance_accum = 0.0
-	_encounter_cooldown_distance = 0.0
+	_random_encounter.reset_all()
 	_encounter_paused = false
 	_restore_idle_animation()
 
@@ -390,7 +352,7 @@ func set_encounter_paused(paused: bool) -> void:
 	_encounter_paused = paused
 
 func set_encounter_cooldown(distance: float) -> void:
-	_encounter_cooldown_distance = max(distance, 0.0)
+	_random_encounter.set_legacy_cooldown(distance)
 
 func refresh_danger_zone_from_position(start_delay_sec: float = 0.7) -> void:
 	var was_paused := _encounter_paused
@@ -424,10 +386,19 @@ func refresh_danger_zone_from_position(start_delay_sec: float = 0.7) -> void:
 	if matched_zone != null:
 		var zone_id := str(_zone_prop_or(matched_zone, "zone_id", ""))
 		var overrides := {}
+		var region_override = str(_zone_prop_or(matched_zone, "encounter_region_id", ""))
+		var profile_id_override = str(_zone_prop_or(matched_zone, "encounter_profile_id", ""))
+		var profile_override = _zone_prop_or(matched_zone, "encounter_profile", {})
 		var dist_override = float(_zone_prop_or(matched_zone, "distance_threshold_override", -1.0))
 		var chance_override = float(_zone_prop_or(matched_zone, "chance_override", -1.0))
 		var cooldown_override = float(_zone_prop_or(matched_zone, "cooldown_distance_override", -1.0))
 		var intro_override = str(_zone_prop_or(matched_zone, "intro_key_override", ""))
+		if region_override != "":
+			overrides["encounter_region_id"] = region_override
+		if profile_id_override != "":
+			overrides["encounter_profile_id"] = profile_id_override
+		if typeof(profile_override) == TYPE_DICTIONARY and not (profile_override as Dictionary).is_empty():
+			overrides["encounter_profile"] = (profile_override as Dictionary).duplicate(true)
 		if dist_override >= 0.0:
 			overrides["distance_threshold"] = dist_override
 		if chance_override >= 0.0:
@@ -443,17 +414,14 @@ func refresh_danger_zone_from_position(start_delay_sec: float = 0.7) -> void:
 			map_config.get("encounter_table", []),
 			map_config.get("zone_config", {})
 		)
-		_encounter_distance_accum = 0.0
-		var config = _get_current_zone_config()
-		var soft_cooldown = _resolve_zone_value(config, "distance_threshold", 0.0) * 0.35
-		_encounter_cooldown_distance = max(_encounter_cooldown_distance, soft_cooldown)
+		_random_encounter.apply_legacy_refresh_cooldown()
 	else:
 		in_danger_zone = false
 		current_zone_id = ""
 		_zone_overrides = {}
 		_current_encounter_table = []
 		_current_zone_config = {}
-		_encounter_distance_accum = 0.0
+		_random_encounter.suspend()
 
 	_encounter_paused = was_paused
 
@@ -466,7 +434,7 @@ func _zone_prop_or(area: Object, prop: String, fallback):
 func _get_current_zone_config() -> Dictionary:
 	if not _current_zone_config.is_empty():
 		return _current_zone_config
-	return ZONE_CONFIG.get(current_zone_id, {})
+	return EncounterProfiles.get_legacy_zone_config(current_zone_id)
 
 func _get_danger_zone_map_config(area: Area2D, zone_id: String) -> Dictionary:
 	var map_node := _find_map_config_provider(area)
@@ -497,11 +465,11 @@ func _find_map_config_provider(start: Node) -> Node:
 func _pause_for_battle() -> void:
 	lock_for_battle()
 
-func lock_for_battle() -> void:
+func lock_for_battle(stop_current_animation: bool = true) -> void:
 	can_move = false
 	velocity = Vector2.ZERO
 	_encounter_paused = true
-	if animated_sprite:
+	if animated_sprite and stop_current_animation:
 		animated_sprite.stop()
 
 func restore_after_battle() -> void:

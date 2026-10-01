@@ -2,8 +2,28 @@ extends Node2D
 
 @onready var yuheng_sewer_center: String = "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_center.tscn"
 @onready var overlay := $BlackOverlay
-@export var music_tag := "yuheng"
+@export var music_tag := "yuheng_sewer"
 @export var map_display_name: String = "玉衡鎮下水道密室"
+
+const SEWER_ZONE_ID := "yuheng_sewer"
+const SEWER_SECRET_ROOM_ENCOUNTER_CONFIG := {
+	"encounter_region_id": "yuheng_sewer",
+	"encounter_profile_id": "yuheng_sewer_pressure_v1",
+	"distance_threshold": 240.0,
+	"chance": 0.30,
+	"cooldown_distance": 280.0,
+	"intro_key": "yuheng_sewer_secret_random"
+}
+const SEWER_SECRET_ROOM_ENCOUNTER_TABLE := [
+	{"w": 28, "enemies": ["yumei_sewer_rat", "yumei_sewer_rat"]},
+	{"w": 22, "enemies": ["yumei_sewer_rat", "yumei_sewer_bat"]},
+	{"w": 14, "enemies": ["yumei_sewer_bat", "yumei_sewer_bat"]},
+	{"w": 12, "enemies": ["yumei_sewer_rat", "yumei_sewer_rat", "yumei_sewer_rat"]},
+	{"w": 10, "enemies": ["yumei_sewer_rat", "yumei_sewer_rat", "yumei_sewer_bat"]},
+	{"w": 8, "enemies": ["turbid_tone_phantom", "yumei_sewer_rat"]},
+	{"w": 4, "enemies": ["turbid_tone_phantom", "yumei_sewer_bat"]},
+	{"w": 2, "enemies": ["turbid_tone_phantom"]}
+]
 
 
 func _ready():
@@ -16,6 +36,16 @@ func _ready():
 
 func get_map_display_name() -> String:
 	return map_display_name
+
+func get_encounter_zone_config(zone_id: String) -> Dictionary:
+	if zone_id == SEWER_ZONE_ID:
+		return SEWER_SECRET_ROOM_ENCOUNTER_CONFIG.duplicate(true)
+	return {}
+
+func get_encounter_table(zone_id: String) -> Array:
+	if zone_id == SEWER_ZONE_ID:
+		return SEWER_SECRET_ROOM_ENCOUNTER_TABLE.duplicate(true)
+	return []
 
 func show_map_name():
 	var map_popup = get_node_or_null("CanvasLayer/MapNamePopup")

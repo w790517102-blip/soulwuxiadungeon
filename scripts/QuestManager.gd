@@ -13,6 +13,15 @@ const STAGE_YH_STALACTITE_CAVE := 9
 const STAGE_YH_NIGHT_MEETING := 10
 const STAGE_YH_LIEFENG_STARTED := 11
 
+const F_YH_SEWER_INTRO_DONE := "event_yuheng_sewer_final_room_intro_done"
+const F_YH_SEWER_MUSIC_SOLVED := "sewer_music_solved"
+const F_YH_SEWER_TALISMAN_SOLVED := "sewer_talisman_solved"
+const F_YH_SEWER_ALCHEMY_SOLVED := "sewer_alchemy_solved"
+const F_YH_SEWER_FINAL_SEAL_OPENED := "sewer_final_seal_opened"
+const F_YH_SEWER_MUSIC_HINT_READ := "sewer_music_hint_read"
+const F_YH_SEWER_TALISMAN_HINT_READ := "sewer_talisman_hint_read"
+const F_YH_SEWER_ALCHEMY_RECIPE_READ := "sewer_alchemy_recipe_read"
+
 const MAIN_QUEST_DEFS := {
 	"main_001": {
 		"chapter_title": "靜默的琴聲",
@@ -57,7 +66,7 @@ const MAIN_QUEST_DEFS := {
 			},
 			{
 				"flag": "event_baijianju_richman_done",
-				"text": "銀子能買下詩稿，卻買不到書眠的願意。玉衡鎮的人失去的，也許不只是情緒，還有辨認他人心意與界線的能力。",
+				"text": "外鄉人也只相信價碼、聽不進他人意願；琴聲是否讓執念壓過了其他聲音？",
 			},
 			{
 				"flag": "event_huiyin_voice_done",
@@ -157,6 +166,15 @@ func set_main_objective(text: String) -> void:
 	main_quest["notes"] = display_data.get("notes", [])
 	print("[任務] 主線目標已更新：%s" % objective)
 
+func refresh_main_quest_notes() -> void:
+	var quest_id := String(main_quest.get("id", "main_001"))
+	main_quest["notes"] = _build_main_quest_notes(quest_id)
+
+func refresh_sewer_puzzle_note() -> void:
+	# 下水道 Note 仍由同一套主線 notes_rules／display builder 保存與顯示；
+	# 此入口只負責在機關旗標改變後立即重建目前的正式 Note 快照。
+	refresh_main_quest_notes()
+
 func _build_main_quest_notes(quest_id: String) -> Array:
 	var notes: Array = []
 	var def: Dictionary = MAIN_QUEST_DEFS.get(quest_id, {})
@@ -170,6 +188,75 @@ func _build_main_quest_notes(quest_id: String) -> Array:
 		var flag_name := String(rule.get("flag", ""))
 		if flag_name == "":
 			continue
+		if rule.has("stage") and get_main_stage() != int(rule.get("stage", -1)):
+			continue
+		var unless_flag := String(rule.get("unless_flag", ""))
+		if unless_flag != "" and GlobalState and GlobalState.has_method("get_flag") and bool(GlobalState.get_flag(unless_flag)):
+			continue
 		if GlobalState and GlobalState.has_method("get_flag") and bool(GlobalState.get_flag(flag_name)):
 			notes.append(String(rule.get("text", "")))
+	var sewer_note := _resolve_sewer_puzzle_note(quest_id)
+	if sewer_note != "":
+		notes.append(sewer_note)
 	return notes
+
+func _resolve_sewer_puzzle_note(quest_id: String) -> String:
+	if quest_id != "main_001" or get_main_stage() != STAGE_YH_SEWER_MECHANISMS:
+		return ""
+	if not _quest_flag_is_true(F_YH_SEWER_INTRO_DONE):
+		return ""
+
+	var music_done: bool = _quest_flag_is_true(F_YH_SEWER_MUSIC_SOLVED)
+	var talisman_done: bool = _quest_flag_is_true(F_YH_SEWER_TALISMAN_SOLVED)
+	var alchemy_done: bool = _quest_flag_is_true(F_YH_SEWER_ALCHEMY_SOLVED)
+	var final_seal_opened: bool = _quest_flag_is_true(F_YH_SEWER_FINAL_SEAL_OPENED)
+
+	if final_seal_opened:
+		return "封印已解。前往門後查探。"
+	if music_done and talisman_done and alchemy_done:
+		return "三處機關皆已解。回終端房查看封印。"
+
+	# 房間詳細 Note 的優先權高於總體剩餘機關 Note。
+	if not alchemy_done:
+		var alchemy_state: Dictionary = GlobalState.get_alchemy_puzzle_state() \
+			if GlobalState and GlobalState.has_method("get_alchemy_puzzle_state") else {}
+		var alchemy_phase := String(alchemy_state.get("phase", ""))
+		var confirmed := bool(alchemy_state.get("herbs_confirmed", false))
+		var methods_value = alchemy_state.get("processing_methods", [])
+		var method_count := (methods_value as Array).size() if methods_value is Array else 0
+		if alchemy_phase == "retry_needed":
+			return "依殘方重新挑選三味藥材。"
+		if confirmed:
+			if method_count == 0:
+				return "將選好的三味藥材帶到調香台。"
+			if method_count == 1:
+				return "第一味藥材已處理。繼續處理其餘兩味。"
+			if method_count == 2:
+				return "尚餘最後一味藥材需要處理。"
+			return "三味藥材皆已處理。確認配方後點燃藥香。"
+		if _quest_flag_is_true(F_YH_SEWER_ALCHEMY_RECIPE_READ):
+			return "依殘方從藥櫃挑出三味藥材。"
+	if not talisman_done and _quest_flag_is_true(F_YH_SEWER_TALISMAN_HINT_READ):
+		return "找齊圖樣，依「心」、「語」、「水」的順序重新貼符。"
+	if not music_done and _quest_flag_is_true(F_YH_SEWER_MUSIC_HINT_READ):
+		return "依「宮、角、羽」的順序踏過調音室石板。"
+
+	var solved_count := int(music_done) + int(talisman_done) + int(alchemy_done)
+	if solved_count == 0:
+		return "出口受符陣封鎖。尋找琴、符、藥三處機關。"
+	if solved_count == 1:
+		if music_done:
+			return "琴音機關已解。尚餘符、藥兩處機關。"
+		if talisman_done:
+			return "符咒機關已解。尚餘琴、藥兩處機關。"
+		return "調香機關已解。尚餘琴、符兩處機關。"
+	if not music_done:
+		return "尚餘琴音機關未解。"
+	if not talisman_done:
+		return "尚餘符咒機關未解。"
+	return "尚餘調香機關未解。"
+
+func _quest_flag_is_true(flag_name: String) -> bool:
+	return GlobalState != null \
+		and GlobalState.has_method("get_flag") \
+		and bool(GlobalState.get_flag(flag_name))

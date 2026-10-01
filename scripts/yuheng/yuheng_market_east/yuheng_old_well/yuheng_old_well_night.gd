@@ -8,16 +8,34 @@ extends Node2D
 @onready var well_barrier_collision: CollisionShape2D = get_node_or_null("well_locked/WellBarrier/CollisionShape2D") as CollisionShape2D
 @onready var well_keyhole: Area2D = get_node_or_null("well_locked/well_keyhole") as Area2D
 @onready var well_locked_sprite: Sprite2D = get_node_or_null("well_locked/old_well_locked") as Sprite2D
-@export var music_tag := ""
+@export var music_tag := "yuheng_old_well"
 @export var map_display_name: String = "醉月茶坊後巷廢井"
 
 const F_OLD_WELL_UNLOCKED := "event_yuheng_old_well_unlocked"
+const F_GOT_HALF_STRING_BUTTON := "main_yh_got_half_string_copper_button"
+const F_DABAO_MAP_SHOWN := "yh_side_dabao_map_shown"
+const F_DABAO_COIN_HINT := "yh_side_dabao_01_coin_hint"
+const F_DABAO_COIN_TAKEN := "yh_side_dabao_01_coin_taken"
+const F_FISH_BOSS_WON := "battle_stalactite_fish_boss_won"
+const ITEM_HALF_STRING_BUTTON := "item_half_string_copper_button"
+const DABAO_QUEST_ID := "yh_side_dabao_01"
+const MAIN_QUEST_ID := "main_001"
+const OPEN_WELL_OBJECTIVE := "進入已開啟的廢井，調查玉衡鎮舊水道。"
 const LIUYU_PORTRAIT_PATH := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 const LIUYU_SPEAKER_ID := 2
+const NARRATION_SPEAKER_ID := 0
+
+enum KeyholeAction {
+	NONE,
+	CLAIM_TREASURE,
+	UNLOCK_WELL,
+	CLAIM_TREASURE_AND_UNLOCK,
+}
 
 var _player_at_keyhole := false
 var _keyhole_busy := false
 var _keyhole_menu_was_locked := false
+var _sewer_transition_busy := false
 
 
 func _ready():
@@ -63,9 +81,13 @@ func _on_to_yuheng_market_east_body_entered(body: Node2D):
 
 
 func _on_to_yuheng_sewer_center_body_entered(body: Node2D) -> void:
+	if _sewer_transition_busy:
+		return
 	if not _is_sewer_route_unlocked():
 		return
 	if MapTransitionGuard.can_transition(body, sewer_transition):
+		_sewer_transition_busy = true
+		_advance_main_quest_to_sewer_mechanisms()
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -103,14 +125,46 @@ func _on_well_keyhole_body_exited(body: Node2D) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _keyhole_busy or not _player_at_keyhole or _is_sewer_route_unlocked():
+	if _keyhole_busy or not _player_at_keyhole:
 		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-		await _play_initial_keyhole_investigation()
+		await _run_keyhole_interaction()
 		get_viewport().set_input_as_handled()
 
 
-func _play_initial_keyhole_investigation() -> void:
+func _run_keyhole_interaction() -> void:
+	if _is_sewer_route_unlocked():
+		if _can_claim_dabao_treasure():
+			await _play_keyhole_sequence(
+				_build_dabao_treasure_lines(),
+				KeyholeAction.CLAIM_TREASURE
+			)
+		else:
+			await _play_keyhole_sequence(_build_unlocked_keyhole_lines())
+		return
+
+	var treasure_available := _can_claim_dabao_treasure()
+	var can_unlock := _can_unlock_well()
+	if treasure_available and can_unlock:
+		await _play_keyhole_sequence(
+			_build_treasure_and_unlock_lines(),
+			KeyholeAction.CLAIM_TREASURE_AND_UNLOCK
+		)
+	elif treasure_available:
+		await _play_keyhole_sequence(
+			_build_dabao_treasure_lines(),
+			KeyholeAction.CLAIM_TREASURE
+		)
+	elif can_unlock:
+		await _play_keyhole_sequence(
+			_build_unlock_well_lines(),
+			KeyholeAction.UNLOCK_WELL
+		)
+	else:
+		await _play_keyhole_sequence(_build_missing_keyhole_item_lines())
+
+
+func _play_keyhole_sequence(lines: Array, action_after_close: int = KeyholeAction.NONE) -> void:
 	var player := get_node_or_null("/root/GameRoot/LiuYu") as Node2D
 	var dialog_manager := get_node_or_null("/root/GameRoot/DialogManager")
 	if player == null or dialog_manager == null or bool(dialog_manager.get("dialog_active")):
@@ -124,20 +178,155 @@ func _play_initial_keyhole_investigation() -> void:
 	GlobalState.set_meta("menu_locked", true)
 	player.set("can_move", false)
 
-	dialog_manager.show_dialog_sequence(_build_initial_keyhole_lines(), self)
+	dialog_manager.show_dialog_sequence(lines, self)
 	await dialog_manager.dialog_sequence_finished
+
+	match action_after_close:
+		KeyholeAction.CLAIM_TREASURE:
+			_claim_dabao_treasure()
+		KeyholeAction.UNLOCK_WELL:
+			_unlock_well_with_button()
+		KeyholeAction.CLAIM_TREASURE_AND_UNLOCK:
+			_claim_dabao_treasure()
+			_unlock_well_with_button()
 
 	player.set("can_move", true)
 	GlobalState.set_meta("menu_locked", _keyhole_menu_was_locked)
 	_keyhole_busy = false
 
 
-func _build_initial_keyhole_lines() -> Array:
+func _has_dabao_treasure_clue() -> bool:
+	return (
+		GlobalState.get_flag(F_DABAO_MAP_SHOWN)
+		or GlobalState.get_flag(F_DABAO_COIN_HINT)
+	)
+
+
+func _can_claim_dabao_treasure() -> bool:
+	return (
+		_has_dabao_treasure_clue()
+		and not GlobalState.get_flag(F_DABAO_COIN_TAKEN)
+		and not GlobalState.get_flag(F_FISH_BOSS_WON)
+	)
+
+
+func _claim_dabao_treasure() -> bool:
+	if not _can_claim_dabao_treasure():
+		return false
+	InventorySync.add_gold(50, true)
+	GlobalState.set_flag(F_DABAO_COIN_TAKEN, true)
+	if not SideQuestManager.is_quest_finished(DABAO_QUEST_ID):
+		SideQuestManager.complete_quest(DABAO_QUEST_ID)
+	return true
+
+
+func _can_unlock_well() -> bool:
+	return (
+		not _is_sewer_route_unlocked()
+		and GlobalState.get_flag(F_GOT_HALF_STRING_BUTTON)
+		and InventorySync.has_item(ITEM_HALF_STRING_BUTTON, 1)
+		and _is_main_quest_stage(QuestManager.STAGE_YH_SEWER_STARTED)
+	)
+
+
+func _unlock_well_with_button() -> bool:
+	if not _can_unlock_well():
+		return false
+	var count_before := InventorySync.get_item_count(ITEM_HALF_STRING_BUTTON)
+	InventorySync.consume_item(ITEM_HALF_STRING_BUTTON, 1, true)
+	var count_after := InventorySync.get_item_count(ITEM_HALF_STRING_BUTTON)
+	if count_after != count_before - 1:
+		push_warning("[OldWellNight] 半弦銅釦移除失敗，未開啟廢井。")
+		return false
+
+	GlobalState.set_flag(F_OLD_WELL_UNLOCKED, true)
+	_apply_sewer_route_state()
+	_set_open_well_objective()
+	return true
+
+
+func _is_main_quest_stage(stage_value: int) -> bool:
+	var state := _get_main_quest_state()
+	return (
+		str(state.get("id", "")) == MAIN_QUEST_ID
+		and int(state.get("stage", 0)) == stage_value
+	)
+
+
+func _get_main_quest_state() -> Dictionary:
+	var quest_manager := _get_quest_manager()
+	if quest_manager and quest_manager.has_method("get_main_quest_state"):
+		return quest_manager.get_main_quest_state()
+	return {}
+
+
+func _get_quest_manager() -> Node:
+	var quest_manager := get_node_or_null("/root/QuestManager")
+	if quest_manager == null:
+		quest_manager = get_node_or_null("/root/GameRoot/QuestManager")
+	return quest_manager
+
+
+func _set_open_well_objective() -> void:
+	if not _is_main_quest_stage(QuestManager.STAGE_YH_SEWER_STARTED):
+		return
+	var quest_manager := _get_quest_manager()
+	if quest_manager and quest_manager.has_method("set_main_objective"):
+		quest_manager.set_main_objective(OPEN_WELL_OBJECTIVE)
+
+
+func _advance_main_quest_to_sewer_mechanisms() -> void:
+	if not _is_main_quest_stage(QuestManager.STAGE_YH_SEWER_STARTED):
+		return
+	var quest_manager := _get_quest_manager()
+	if quest_manager and quest_manager.has_method("advance_main_quest"):
+		quest_manager.advance_main_quest(QuestManager.STAGE_YH_SEWER_MECHANISMS)
+
+
+func _build_missing_keyhole_item_lines() -> Array:
 	return [
-		_l("劉語塵端詳井旁怪異的銅製孔洞，心想："),
-		_l("「這個孔洞的用途是什麼呢？看起來不像是掛水桶用的……」"),
-		_l("「算了，眼下先去打聽左飲的情報要緊……」"),
+		_l("(井身上嵌著一個形狀奇特的金屬扣孔。)"),
+		_l("此處似乎另藏機關，只是眼下還缺了能與之契合的東西。"),
 	]
+
+
+func _build_dabao_treasure_lines() -> Array:
+	return [
+		_n("井旁的土石有些鬆動，正是大寶以細線指出的位置。"),
+		_l("……亮光就在這下面。"),
+		_n("劉語塵移開石塊，從泥土中取出一小串銅錢。"),
+	]
+
+
+func _build_unlock_well_lines() -> Array:
+	return [
+		_n("劉語塵取出半弦銅釦，將它嵌入井沿的扣孔。"),
+		_n("銅釦與扣孔嚴絲合縫。下一瞬，井身傳來一陣細微震動。"),
+		_n("封住入口的磚石依次下沉，露出一段通往地下的石階。"),
+		_l("……果然是它。"),
+	]
+
+
+func _build_treasure_and_unlock_lines() -> Array:
+	var lines := _build_dabao_treasure_lines()
+	lines.append(_n("收好銅錢後，劉語塵重新看向井沿那道奇異扣孔。"))
+	lines.append_array(_build_unlock_well_lines())
+	return lines
+
+
+func _build_unlocked_keyhole_lines() -> Array:
+	return [
+		_n("劉語塵看著嵌在井身上的半弦銅釦。銅釦與扣孔嚴絲合縫。"),
+		_l("沒想到這口看似尋常的廢井，竟藏著如此精巧的機關。"),
+	]
+
+
+func _n(text: String) -> Dictionary:
+	return {
+		"text": text,
+		"speaker": NARRATION_SPEAKER_ID,
+		"portrait": "",
+	}
 
 
 func _l(text: String) -> Dictionary:

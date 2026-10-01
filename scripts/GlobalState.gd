@@ -32,6 +32,16 @@ var triggered_flags := {
 
 var is_loading: bool = false
 var shop_runtime_stock := {}
+var alchemy_puzzle_state: Dictionary = {}
+
+func get_alchemy_puzzle_state() -> Dictionary:
+	return alchemy_puzzle_state.duplicate(true)
+
+func set_alchemy_puzzle_state(value: Dictionary) -> void:
+	alchemy_puzzle_state = value.duplicate(true)
+
+func clear_alchemy_puzzle_state() -> void:
+	alchemy_puzzle_state.clear()
 
 func begin_load() -> void:
 	is_loading = true
@@ -43,6 +53,7 @@ func reset_for_load() -> void:
 	flags.clear()
 	triggered_flags.clear()
 	shop_runtime_stock.clear()
+	alchemy_puzzle_state.clear()
 
 
 

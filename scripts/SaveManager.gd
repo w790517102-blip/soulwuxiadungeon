@@ -5,6 +5,8 @@ const SAVE_FOLDER = "user://save/"
 const SAVE_PREFIX = "slot_"
 const SAVE_EXT = ".save"
 const SAVE_VERSION = 1
+const FLAG_DABAO_MAP_SHOWN := "yh_side_dabao_map_shown"
+const FLAG_DABAO_COIN_HINT := "yh_side_dabao_01_coin_hint"
 
 var cached_world_thumb: Image = null
 
@@ -145,6 +147,7 @@ func save_to_slot(slot_index: int) -> void:
 		"affection": GlobalState.affection,
 		"last_facing_direction": GlobalState.last_facing_direction,
 		"shop_runtime_stock": _as_dict(GlobalState.shop_runtime_stock),
+		"alchemy_puzzle_state": _as_dict(GlobalState.alchemy_puzzle_state).duplicate(true),
 		"team_data": TeamData.export_team_state() if TeamData and TeamData.has_method("export_team_state") else {},
 		"inventory_data": InventorySync.export_inventory_state() if InventorySync and InventorySync.has_method("export_inventory_state") else {},
 
@@ -231,6 +234,7 @@ func load_from_slot(slot_index: int) -> void:
 		loaded_flags = loaded_triggered.duplicate(true)
 	if loaded_triggered.is_empty() and not loaded_flags.is_empty():
 		loaded_triggered = loaded_flags.duplicate(true)
+	_migrate_legacy_dabao_flags(loaded_flags, loaded_triggered)
 	GlobalState.flags = loaded_flags
 	GlobalState.triggered_flags = loaded_triggered
 	print("[SaveManager] load slot=", slot_index, " imported flags_count=", _safe_count(GlobalState.flags), " triggered_flags_count=", _safe_count(GlobalState.triggered_flags))
@@ -241,6 +245,7 @@ func load_from_slot(slot_index: int) -> void:
 	GlobalState.affection = int(data.get("affection", 0))
 	GlobalState.last_facing_direction = data.get("last_facing_direction", Vector2(1, 1).normalized())
 	GlobalState.shop_runtime_stock = _as_dict(data.get("shop_runtime_stock", {}))
+	GlobalState.alchemy_puzzle_state = _as_dict(data.get("alchemy_puzzle_state", {})).duplicate(true)
 
 	var map_path = String(data.get("current_map_path", ""))
 	var scene_path = String(data.get("current_scene_path", ""))
@@ -307,6 +312,17 @@ func load_from_slot(slot_index: int) -> void:
 		menu_ctrl.call("close_menu_if_open")
 
 	print("Loaded from slot %d" % slot_index)
+
+func _migrate_legacy_dabao_flags(loaded_flags: Dictionary, loaded_triggered: Dictionary) -> void:
+	var coin_hint_completed := (
+		bool(loaded_flags.get(FLAG_DABAO_COIN_HINT, false))
+		or bool(loaded_triggered.get(FLAG_DABAO_COIN_HINT, false))
+	)
+	if coin_hint_completed:
+		if not bool(loaded_flags.get(FLAG_DABAO_MAP_SHOWN, false)):
+			loaded_flags[FLAG_DABAO_MAP_SHOWN] = true
+		if not bool(loaded_triggered.get(FLAG_DABAO_MAP_SHOWN, false)):
+			loaded_triggered[FLAG_DABAO_MAP_SHOWN] = true
 
 func get_slot_summary(slot_index: int) -> Dictionary:
 	if not _valid_slot(slot_index):

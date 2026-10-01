@@ -186,27 +186,27 @@ func _build_deliver_lunchbox_stage_1_lines(already_met: bool) -> Array:
 		_l("但便當已送到，少俠可以回了。", speaker_id, portrait_path),
 		_l("我想求見左飲。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("果然。", speaker_id, portrait_path),
-		_n("劉語塵眉頭微蹙。"),
-		_l("果然……？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("(眉頭微蹙)果然……？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("今日想見莊主的人不少。", speaker_id, portrait_path),
-		_l("今日想見左先生的人，已有三個。一個說自己是舊友之後，一個說身負血海深仇，一個說江湖同道不該見死不救。。", speaker_id, portrait_path),
+		_l("今日想見左先生的人，已有三個。一個說自己是舊友之後，一個說身負\n血海深仇，一個說江湖同道不該見死不救。。", speaker_id, portrait_path),
 		_l("不意外的,都被你請出去了是吧。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("(門衛聽後,不發一語)。", speaker_id, portrait_path),
-		_l("少俠拿的是我母親的便當。", speaker_id, portrait_path),
+		_l("少俠您也想入莊,所以手裡才拿著我母親的便當。", speaker_id, portrait_path),
 		_l("...", liuyu_speaker_id, liuyu_portrait_path),
 		_l("我不是拿她壓你。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("那便好。", speaker_id, portrait_path),
 		_l("若是，少俠現在便可以下山了。", speaker_id, portrait_path),
 		_l("這人不好糊弄。也對。冠冕堂皇的話，他恐怕聽得不少。", liuyu_speaker_id, liuyu_portrait_path),
-		_l("(若再繞下去，只會被他當成尋常求見之人。也許直接攤牌，反而能讓他願意聽我說完。)", liuyu_speaker_id, liuyu_portrait_path),
-		_l("我承認，得知你是山莊門衛後，我確實想過，這受令堂囑託便當或許能讓你願意聽我說幾句。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("(若再繞下去，只會被他當成尋常求見之人。也許直接攤牌，\n反而能讓他願意聽我說完。)", liuyu_speaker_id, liuyu_portrait_path),
+		_l("我承認，得知你是山莊門衛後，我確實想過，這受令堂囑託\n便當或許能讓你願意聽我說幾句。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("但囑託是囑託，求見是求見。我本就沒打算將兩件事混為一談。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("顧石看了他一眼。"),
+		_n("(顧石看了你一眼。)"),
 		_l("少俠倒是直。", speaker_id, portrait_path),
-		_l("說話再怎麼繞，也不可能讓我繞過你,進入飲月山莊。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("我知道——在你面前說話再怎麼繞，也不可能讓我繞過你，\n進入飲月山莊。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("(顧石輕輕搖了頭笑了笑)", speaker_id, portrait_path),
 		_l("若你方才說自己只是純粹好心，我反倒不信。", speaker_id, portrait_path),
-		_n("(顧石似乎願意再聽你說幾句。)"),
+		_l("(顧石似乎願意再聽你說幾句。)", speaker_id, portrait_path),
+	
 	])
 	return lines
 
@@ -220,7 +220,7 @@ func _build_stage_2_evidence_lines() -> Array:
 		_l("少俠說得太輕。", speaker_id, portrait_path),
 		_l("江湖上每日都有疑問。有人尋仇，有人尋親，有人尋名，也有人尋利。", speaker_id, portrait_path),
 		_l("若人人有疑便能入山莊，這山門便不用守了。", speaker_id, portrait_path),
-		_n("(劉語塵沉默片刻。)"),
+		_l("(你沉默片刻。)", liuyu_speaker_id, liuyu_portrait_path),
 		_l("(他問得很準。若只說私事，他不會讓路。)", liuyu_speaker_id, liuyu_portrait_path),
 		_l("(但『那物』之事，現在還不能說。)", liuyu_speaker_id, liuyu_portrait_path),
 		_l("少俠若不願明說，我也不便追問。", speaker_id, portrait_path),
@@ -235,7 +235,7 @@ func _build_stage_2_evidence_lines() -> Array:
 		_l("確認。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("(顧石臉色一沉)確認什麼？", speaker_id, portrait_path),
 		_l("確認這些異樣，是鎮民多心，還是有人正在讓他們不能多心。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("(顧石雙眼微微睜大,不經意地倒抽一口氣。"),
+		_n("(顧石雙眼微微睜大,不經意地倒抽一口氣。)"),
 		_l("……這句話，是誰教你的？", speaker_id, portrait_path),
 		_l("我自己看見的。", liuyu_speaker_id, liuyu_portrait_path),
 	]
@@ -261,7 +261,7 @@ func _build_evidence_detail_lines() -> Array:
 			_l("我在市集聽過那陣琴聲。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("玉衡鎮人人都聽過。", speaker_id, portrait_path),
 			_l("不一樣。", liuyu_speaker_id, liuyu_portrait_path),
-			_l("我停下來聽時，心神像被什麼東西輕輕撥開。沒有慌亂，沒有痛苦，反倒很平靜。", liuyu_speaker_id, liuyu_portrait_path),
+			_l("我停下來聽時，心神像被什麼東西輕輕撥開。沒有慌亂，沒有痛苦，\n反倒很平靜。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("平靜到……差點忘了自己為何停下。", liuyu_speaker_id, liuyu_portrait_path),
 			_n("顧石眉頭微動。"),
 			_l("你想說什麼？", speaker_id, portrait_path),
@@ -278,7 +278,10 @@ func _build_evidence_detail_lines() -> Array:
 	if has_qin and evidence_count >= 3:
 		lines.append_array([
 			_l("婦人走到市集，忘了四季豆生熟。", liuyu_speaker_id, liuyu_portrait_path),
-			_l("孩子想說井的位置，話到嘴邊卻說不出來。", liuyu_speaker_id, liuyu_portrait_path),
+		])
+		if GlobalState.get_flag(F_DABAO_MAP_SHOWN):
+			lines.append(_l("孩子想說井的位置，話到嘴邊卻說不出來。", liuyu_speaker_id, liuyu_portrait_path))
+		lines.append_array([
 			_l("藥鋪煮藥的炭火，沾了邪典紙灰味。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("一件是偶然，兩件是巧合。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("若所有偶然都落在同一座鎮裡，就不是偶然。", liuyu_speaker_id, liuyu_portrait_path),
@@ -325,7 +328,7 @@ func _build_evidence_detail_lines() -> Array:
 			_l("最後只能用繩索在地上排出方位。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("用繩索？", speaker_id, portrait_path),
 			_l("嘴說不出來，手卻還記得。", liuyu_speaker_id, liuyu_portrait_path),
-			_l("這不像孩子胡鬧。倒像是有人不讓他把睡醒之後,好不容易記住的夢境景象完整的說出口。", liuyu_speaker_id, liuyu_portrait_path),
+			_l("這不像孩子胡鬧。倒像是有人不讓他把睡醒之後,好不容易記住的\n夢境景象完整的說出口。", liuyu_speaker_id, liuyu_portrait_path),
 			_n("顧石神色一沉。"),
 			_l("井……", speaker_id, portrait_path),
 		])
@@ -347,7 +350,7 @@ func _build_evidence_detail_lines() -> Array:
 		lines.append_array([
 			_l("我看見鎮民說話時，常像忽然忘了自己原本要說什麼。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("不是害怕，也不是癡傻。", liuyu_speaker_id, liuyu_portrait_path),
-			_l("像是有人把他們心裡該起的波瀾，輕輕按了下去。", liuyu_speaker_id, liuyu_portrait_path),
+			_l("像是有人把他們心裡該起的波瀾，無情地壓了下去。", liuyu_speaker_id, liuyu_portrait_path),
 		])
 
 	return lines
@@ -377,8 +380,7 @@ func _build_stage_3_best_answer_lines() -> Array:
 		_l("這也是試探？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("不是。", speaker_id, portrait_path),
 		_l("是請託。", speaker_id, portrait_path),
-		_n("劉語塵看著顧石，點頭。"),
-		_l("我會帶到。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("(你看著顧石，輕輕地點了頭。)我會帶到。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("等少俠回來，我會給你答覆。", speaker_id, portrait_path),
 		_n("主線目標更新：回到竹林入口，向阿婆報平安。"),
 	]
@@ -411,7 +413,7 @@ func _build_manor_closed_lines() -> Array:
 		_l("今日閉莊令乃左先生臨時動議,我守山門多年...也極少見莊主如此倉促下令。", speaker_id, portrait_path),
 		_l("(一陣錯愕之後,你回過神來)所以你也不知道原因？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("不知。", speaker_id, portrait_path),
-		_l("(你握緊拳頭,沒好氣的說)你方才說，放錯一個人是失職，擋錯一個人也可能誤事。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("(你握緊拳頭,沒好氣的說)你方才說，放錯一個人是失職，擋錯一個人\n也可能誤事。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("現在呢？", liuyu_speaker_id, liuyu_portrait_path),
 		_n("顧石沉默。"),
 		_l("...現在，我只能守門。", speaker_id, portrait_path),

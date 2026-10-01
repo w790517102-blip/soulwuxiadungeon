@@ -950,3 +950,69 @@ func wait_for_lineup_settled() -> void:
 	while guard < 900 and _arrival_in_progress():
 		await get_tree().process_frame
 		guard += 1
+
+
+# --- Story encounter: 語魅 entanglement and Zuo Yin's moves ----------------------------------
+
+const StoryFx = preload("res://scripts/presentation/StageStoryEffects.gd")
+
+
+func _fx_point(card: Node3D, lift: float = 0.0) -> Vector3:
+	return card.position + Vector3(0.0, card.card_size.y * 0.05 + lift, 0.6)
+
+
+## The boss gathers the 語魅 around itself: it is drawn in from every side, then the card
+## begins its slow white / purple / black pulse.
+func present_entangle(boss: Dictionary) -> void:
+	var card: Node3D = card_for(boss)
+	if card == null:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	StoryFx.absorption(fx_root, _fx_point(card), 1.7)
+	await get_tree().create_timer(1.5).timeout
+	card.set_tint("entangled")
+	await get_tree().create_timer(0.4).timeout
+	busy = false
+
+
+func present_entangle_break(boss: Dictionary) -> void:
+	var card: Node3D = card_for(boss)
+	if card == null:
+		return
+	StoryFx.shell_shatter(fx_root, _fx_point(card), card.card_size)
+	card.set_tint("")
+
+
+## Zuo Yin's scripted actions. `removes` = this action tears the 語魅 off the boss.
+func present_guest_action(guest: Dictionary, action_id: String, boss: Dictionary, removes: bool) -> void:
+	var card: Node3D = card_for(guest)
+	if card == null:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	match action_id:
+		"drink_to_qi":
+			await card.drink_shakes()
+		"wine_edge_charge":
+			await card.drunken_sway()
+			card.set_tint("drunk")
+			await get_tree().create_timer(0.3).timeout
+		"yanxing_wind_breaking_slash":
+			var boss_card: Node3D = card_for(boss)
+			card.somersault(0.8)
+			await get_tree().create_timer(0.4).timeout
+			if boss_card != null:
+				var from: Vector3 = card.position + Vector3(0.0, 0.6, 0.5)
+				var to: Vector3 = _fx_point(boss_card)
+				# Three crescent blades: translucent and dim, opaque and bright, in between.
+				for brightness: float in [0.45, 1.0, 0.72]:
+					StoryFx.crescent(fx_root, from, to, brightness)
+					await get_tree().create_timer(0.13).timeout
+				await get_tree().create_timer(0.1).timeout
+				boss_card.hit_reaction(true)
+				if removes:
+					present_entangle_break(boss)
+			await get_tree().create_timer(0.45).timeout
+			card.set_tint("")
+	busy = false

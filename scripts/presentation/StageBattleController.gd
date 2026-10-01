@@ -18,6 +18,8 @@ func perform_enemy_action(enemy: Dictionary) -> void:
 	# Wait for the card line-up to finish reshuffling (CARD_STAGE) before this enemy acts.
 	if battle_ui and battle_ui.get("stage") and battle_ui.stage.has_method("wait_for_lineup_settled") and bool(battle_ui.get("stage_enabled")):
 		await battle_ui.stage.wait_for_lineup_settled()
+		while battle_ui.stage.busy:
+			await get_tree().process_frame
 	if battle_ui and battle_ui.has_method("present_turn_marker"):
 		battle_ui.present_turn_marker(enemy)
 	await super.perform_enemy_action(enemy)

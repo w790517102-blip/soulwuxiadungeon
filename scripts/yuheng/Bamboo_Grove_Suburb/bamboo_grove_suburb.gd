@@ -4,7 +4,7 @@ extends Node2D
 @export var yuheng_market_west: String = "res://scenes/yuheng/yuheng_market_west/yuheng_market_west.tscn"
 @export var yuheng_market_west_richman_event: String = "res://scenes/yuheng/yuheng_market_west/yuheng_market_west_scene1.tscn"
 @onready var overlay := $BlackOverlay
-@export var music_tag := "station_stillwind"
+@export var music_tag := "bamboo_path_to_manor"
 @export var map_display_name: String = "玉衡鎮竹林郊區"
 
 

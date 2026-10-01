@@ -65,11 +65,16 @@ func disarm_overlapping_map_exits(player: Node2D) -> void:
 	for area in areas:
 		var bodies := area.get_overlapping_bodies()
 		if bodies.has(player):
-			area.set_meta(MAP_EXIT_REQUIRES_EXIT_META, true)
-			var exited_callable := Callable(self, "_on_guarded_map_exit_body_exited").bind(area)
-			if not area.body_exited.is_connected(exited_callable):
-				area.body_exited.connect(exited_callable)
-			print("[MapTransitionGuard] disarmed overlapping exit=", area.name, " player_pos=", player.global_position)
+			_guard_map_exit_until_player_leaves(area, player)
+
+func _guard_map_exit_until_player_leaves(area: Area2D, player: Node2D) -> void:
+	if area == null or player == null:
+		return
+	area.set_meta(MAP_EXIT_REQUIRES_EXIT_META, true)
+	var exited_callable := Callable(self, "_on_guarded_map_exit_body_exited").bind(area)
+	if not area.body_exited.is_connected(exited_callable):
+		area.body_exited.connect(exited_callable)
+	print("[MapTransitionGuard] disarmed overlapping exit=", area.name, " player_pos=", player.global_position)
 
 func _collect_map_exit_areas(node: Node, out: Array[Area2D]) -> void:
 	if node is Area2D and String(node.name).begins_with("to_"):
@@ -85,6 +90,12 @@ func _on_guarded_map_exit_body_exited(body: Node, area: Area2D) -> void:
 		print("[MapTransitionGuard] rearmed exit after leave=", area.name)
 
 func change_map_to(path: String):
+	# 正常換圖與讀檔都必須遵守同一個進場不變條件：出生點定位及物理
+	# overlap 更新完成前，目的地出口不可再次觸發。既有的外層鎖（讀檔／
+	# 劇情）不由此函式解除，避免搶走真正需要延續的控制權。
+	var inherited_transition_lock := is_map_transition_locked()
+	if not inherited_transition_lock:
+		lock_map_transitions("scene_change")
 	current_map_path = path
 	if $CurrentScene.get_child_count() > 0:
 		$CurrentScene.get_child(0).queue_free()
@@ -99,9 +110,24 @@ func change_map_to(path: String):
 	else:
 		push_warning("Spawn point '%s' not found in %s" % [spawn_point_name, path])
 
+	# Area2D 的 overlap 清單在 physics frame 後才可靠。先保持轉場鎖，
+	# 再把出生點仍重疊的出口標成「必須先離開」，最後才交還換圖權。
+	await get_tree().physics_frame
+	disarm_overlapping_map_exits($LiuYu)
+	if not inherited_transition_lock:
+		unlock_map_transitions("scene_change")
+
 	var is_battle_return = GlobalState.get_meta("pending_battle_return", false) == true
-	if not is_battle_return and $LiuYu.has_method("reset_encounter_state"):
-		$LiuYu.reset_encounter_state()
+	var loading_save := GlobalState != null and bool(GlobalState.get("is_loading"))
+	var destination_has_encounters := _scene_contains_random_encounter_zone(new_scene)
+	if not is_battle_return:
+		if loading_save or not destination_has_encounters:
+			if $LiuYu.has_method("reset_encounter_state"):
+				$LiuYu.reset_encounter_state()
+		elif $LiuYu.has_method("suspend_encounter_for_scene_change"):
+			# 同一危險 region 的新 DangerZone 會重新註冊設定；只暫停目前
+			# Scene 的 Area，不清除累積 pressure。
+			$LiuYu.suspend_encounter_for_scene_change()
 
 	# 清除為下一次準備
 	spawn_point_name = "default"
@@ -150,6 +176,16 @@ func change_map_to(path: String):
 		$LiuYu.global_position = return_pos
 		if $LiuYu.has_method("battle_restore"):
 			$LiuYu.battle_restore()
+		# battle_restore 會先恢復一般 idle；需要延續戰鬥姿勢的地圖可在同一幀覆寫，
+		# 避免 BlackOverlay 退去後才看見角色由 idle 跳回劇情姿勢。
+		if new_scene.has_method("prepare_battle_return_actor"):
+			new_scene.call("prepare_battle_return_actor", $LiuYu)
+		# 地圖劇情若仍持有 menu lock，戰鬥回場只恢復角色可見與輸入處理，
+		# 不得搶先開放移動；由該劇情在收尾完成後自行交還控制。
+		if GlobalState.get_meta("menu_locked", false) == true:
+			$LiuYu.can_move = false
+			if $LiuYu.has_method("set_encounter_paused"):
+				$LiuYu.set_encounter_paused(true)
 		if GlobalState.get_meta("oldfighter_sparring_flow_lock_active", false) == true:
 			$LiuYu.can_move = false
 			GlobalState.set_meta("menu_locked", true)
@@ -160,6 +196,16 @@ func change_map_to(path: String):
 		resume_world_bgm_after_battle(0.5)
 
 		print("[GameRoot Return] liuyu visible=", $LiuYu.visible, " can_move=", $LiuYu.get("can_move"))
+
+func _scene_contains_random_encounter_zone(node: Node) -> bool:
+	if node == null:
+		return false
+	if node.is_in_group("random_encounter_zone"):
+		return true
+	for child in node.get_children():
+		if _scene_contains_random_encounter_zone(child):
+			return true
+	return false
 
 func play_music_by_tag(tag: String, fade_time = 1.5):
 	if tag == current_music_tag and music_player.playing:
@@ -236,6 +282,24 @@ func pause_world_bgm_for_battle() -> void:
 	_world_bgm_resume_volume_db = music_player.volume_db
 	music_player.stream_paused = true
 	_world_bgm_paused_for_battle = true
+
+
+func stop_world_bgm(fade_time: float = 0.2) -> void:
+	# Story videos own their soundtrack, so unlike a battle pause this stop is
+	# intentional and must not be resumed by the battle-return path.
+	_world_bgm_paused_for_battle = false
+	_music_transition_serial += 1
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+	if music_player == null:
+		return
+	if music_player.playing and fade_time > 0.0:
+		_music_tween = create_tween()
+		_music_tween.tween_property(music_player, "volume_db", -50.0, fade_time)
+		await _music_tween.finished
+	music_player.stop()
+	music_player.stream_paused = false
+	current_music_tag = ""
 
 func resume_world_bgm_after_battle(fade_time: float = 0.5) -> void:
 	if music_player == null or not _world_bgm_paused_for_battle:

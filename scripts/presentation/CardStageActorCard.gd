@@ -596,3 +596,93 @@ func support_step_hold(hold_seconds: float = 0.7, return_seconds: float = 0.65) 
 	_motion_tween.tween_interval(hold_seconds)
 	_motion_tween.tween_property(self, "position", home_position, return_seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await _wait_for_motion(_motion_tween)
+
+
+# --- Status tints and scripted moves (guest / boss story actions) -----------------------------
+
+var _tint_overlay: ColorRect
+var _tint_tween: Tween
+var tint_kind: String = ""
+
+const TINTS: Dictionary = {
+	# Slow three-colour pulse for the boss while the 語魅 clings to it: white, purple, black.
+	"entangled": {"colors": [Color(1, 1, 1, 0.42), Color(0.55, 0.2, 0.85, 0.5), Color(0.04, 0.0, 0.08, 0.55)], "step": 0.9},
+	# Slow ochre-red pulse for a drunk Zuo Yin.
+	"drunk": {"colors": [Color(0.72, 0.28, 0.14, 0.45), Color(0.72, 0.28, 0.14, 0.08)], "step": 1.0},
+}
+
+
+## Slowly pulses a coloured wash over the card (kind from TINTS). "" turns it off.
+func set_tint(kind: String) -> void:
+	_build_card()
+	if _tint_overlay == null:
+		_tint_overlay = ColorRect.new()
+		_tint_overlay.name = "StatusTint"
+		var frame: Rect2 = (template.frame as Rect2).grow(-8)
+		_tint_overlay.position = frame.position
+		_tint_overlay.size = frame.size
+		_tint_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_tint_overlay.color = Color(0, 0, 0, 0)
+		_turn_overlay.get_parent().add_child(_tint_overlay)
+		_turn_overlay.get_parent().move_child(_tint_overlay, _turn_overlay.get_index())
+	tint_kind = kind
+	if _tint_tween and _tint_tween.is_valid():
+		_tint_tween.kill()
+	_tint_tween = null
+	if kind == "" or not TINTS.has(kind):
+		var fade := create_tween()
+		fade.tween_property(_tint_overlay, "color:a", 0.0, 0.3)
+		return
+	var spec: Dictionary = TINTS[kind]
+	_tint_tween = create_tween().set_loops()
+	for colour: Color in spec.colors:
+		_tint_tween.tween_property(_tint_overlay, "color", colour, float(spec.step)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## 飲酒: one step forward, three quick shakes (taking a drink), then back.
+func drink_shakes() -> void:
+	_kill_motion()
+	var step := Vector3(_toward() * 0.2, 0.05, 0.8)
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", home_position + step, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	for shake: int in range(3):
+		_motion_tween.tween_property(self, "position", home_position + step + Vector3(0.0, 0.14, 0.0), 0.07)
+		_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(-0.1, 0.0, 0.05), 0.07)
+		_motion_tween.tween_property(self, "position", home_position + step, 0.07)
+		_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.07)
+		_motion_tween.tween_interval(0.05)
+	_motion_tween.tween_interval(0.35)
+	_motion_tween.tween_property(self, "position", home_position, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await _wait_for_motion(_motion_tween)
+
+
+## 醉拳: two lurching steps to the left, then slowly two steps back to the right.
+func drunken_sway() -> void:
+	_kill_motion()
+	_motion_tween = create_tween()
+	for step: int in range(2):
+		var x: float = -0.45 * float(step + 1)
+		_motion_tween.tween_property(self, "position", home_position + Vector3(x, 0.0, 0.2), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, 0.16), 0.3)
+		_motion_tween.tween_interval(0.12)
+	for step: int in range(2):
+		var x: float = -0.45 * float(1 - step)
+		_motion_tween.tween_property(self, "position", home_position + Vector3(x, 0.0, 0.2), 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, -0.1 if step == 0 else 0.0), 0.7)
+		_motion_tween.tween_interval(0.1)
+	_motion_tween.tween_property(self, "position", home_position, 0.25)
+	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.25)
+	await _wait_for_motion(_motion_tween)
+
+
+## Jumps up and turns a full forward somersault in the YZ plane (about the X axis).
+func somersault(seconds: float = 0.75) -> void:
+	_kill_motion()
+	var peak := home_position + Vector3(0.0, 1.5, 0.6)
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", peak, seconds * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var spin := create_tween()
+	spin.tween_property(self, "rotation:x", home_rotation.x - TAU, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_motion_tween.tween_property(self, "position", home_position, seconds * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_motion_tween.tween_callback(func() -> void: rotation = home_rotation)
+	await _wait_for_motion(_motion_tween)

@@ -3,6 +3,17 @@ extends CharacterBody2D
 
 const ShopUI = preload("res://scripts/ui/ShopUI.gd")
 
+const F_GO_TO_ZUIYUE_HUIYIN := "main_yh_go_to_zuiyue_huiyin"
+const F_HUIYIN_FIRST_TALK_DONE := "event_huiyin_first_talk_done"
+
+# 通用循環對白目前只完成 main_001。
+# 日後新增某章的專屬循環對白時，才把該章與最後 stage 加進此表。
+# 若目前主線已進入尚未支援的章節，會往前採用最近一個已支援章節的最後 stage。
+const DIALOG_CHAPTER_LAST_STAGE := {
+	"main_001": 10,
+}
+const DEFAULT_DIALOG_QUEST_ID := "main_001"
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/NPC/Yuheng/Teahouse_Boss_headshot.png"
 @export var speaker_id := 1
@@ -37,12 +48,18 @@ func _ready():
 			push_warning("[TeaBoss] PathFollow2D 沒有設定或找不到：" + str(path_node))
 	previous_position = global_position
 
-	dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
+	dialog_lines = _build_lines_for_quest(_get_main_quest_state_safely())
 
-func _build_lines_for_stage(main_stage: int) -> Array:
+func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 	var met := GlobalState.get_flag("met_yuheng_teahouse_boss")
 	var observed := GlobalState.get_flag("event_market_choice_observe")
 	var heard_qin := GlobalState.get_flag("event_yuheng_market_melody")
+	var resolved_quest_state := _resolve_dialog_quest_state(quest_state)
+	var main_stage := int(resolved_quest_state.get("stage", 1))
+
+	# 夜間主線：紅徽音未開口交代任何事；掌櫃只是從琴音裡生出劉語塵將至的預感。
+	if _is_waiting_for_huiyin_first_talk():
+		return _build_huiyin_call_night_lines()
 
 	# ❶ 首見｜有觀察琴音者進入「裏」語氣
 	if not met:
@@ -95,6 +112,26 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 			{ "text": "「現在所有人都願意嘗試不同茶品了!」", "speaker": 1, "portrait": portrait_path },
 		]
 
+
+func _is_waiting_for_huiyin_first_talk() -> bool:
+	return (
+		GlobalState.get_flag(F_GO_TO_ZUIYUE_HUIYIN)
+		and not GlobalState.get_flag(F_HUIYIN_FIRST_TALK_DONE)
+	)
+
+
+func _build_huiyin_call_night_lines() -> Array:
+	return [
+		{ "text": "「客倌，我就知道您今夜還會再來。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "劉語塵：「掌櫃的知道我要來？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "「這……說真的，我也不知道自己怎麼會這麼說。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "「只是今夜聽那位女伶撫琴，腦子裡總不自覺浮出您白日進門的模樣。」", "speaker": speaker_id },
+		{ "text": "「像這坊裡有張桌、有盞燈，原就該替您留著。」", "speaker": speaker_id },
+		{ "text": "「如今真見到您，我反倒莫名鬆了口氣。」", "speaker": speaker_id },
+		{ "text": "「怪事。可這琴聲近來帶來的怪事，也不只一樁了。」", "speaker": speaker_id },
+	]
+
+
 func _process(delta):
 	z_index = int(global_position.y + z_index_offset)
 
@@ -146,8 +183,8 @@ func _choose_chat() -> void:
 
 
 func _show_chat_dialog(mark_met: bool) -> void:
-	var main_stage := _get_main_stage_safely()
-	dialog_lines = _build_lines_for_stage(main_stage)
+	var quest_state := _get_main_quest_state_safely()
+	dialog_lines = _build_lines_for_quest(quest_state)
 	dialog_manager.show_dialog_sequence(dialog_lines, self)
 	await dialog_manager.dialog_finished
 	if mark_met:
@@ -172,16 +209,69 @@ func _open_shop() -> void:
 	liuyu.can_move = true
 	is_talking = false
 
-func _get_main_stage_safely() -> int:
+func _get_main_quest_state_safely() -> Dictionary:
 	var qm := get_node_or_null("/root/QuestManager")
 	if qm and qm.has_method("get_main_quest_state"):
-		var s: Dictionary = qm.get_main_quest_state()
-		return int(s.get("stage", 1))
+		var state: Dictionary = qm.get_main_quest_state()
+		return state.duplicate(true)
+
 	qm = get_node_or_null("/root/GameRoot/QuestManager")
 	if qm and qm.has_method("get_main_quest_state"):
-		var s2: Dictionary = qm.get_main_quest_state()
-		return int(s2.get("stage", 1))
-	return 1
+		var state2: Dictionary = qm.get_main_quest_state()
+		return state2.duplicate(true)
+
+	# QuestManager 暫時不可用時，保留新遊戲最初語境；不讓空資料造成無對白。
+	return {
+		"id": DEFAULT_DIALOG_QUEST_ID,
+		"stage": 1,
+	}
+
+
+func _resolve_dialog_quest_state(quest_state: Dictionary) -> Dictionary:
+	var quest_id := str(quest_state.get("id", "")).strip_edges()
+	var quest_stage := maxi(1, int(quest_state.get("stage", 1)))
+
+	# 空 ID 視為主線尚未完成初始化，維持 main_001 當前 stage，避免新遊戲誤跳後期。
+	if quest_id.is_empty():
+		return {
+			"id": DEFAULT_DIALOG_QUEST_ID,
+			"stage": clampi(quest_stage, 1, int(DIALOG_CHAPTER_LAST_STAGE[DEFAULT_DIALOG_QUEST_ID])),
+		}
+
+	# 已有該章專屬循環對白：使用該章自己的 stage。
+	if DIALOG_CHAPTER_LAST_STAGE.has(quest_id):
+		return {
+			"id": quest_id,
+			"stage": clampi(quest_stage, 1, int(DIALOG_CHAPTER_LAST_STAGE[quest_id])),
+		}
+
+	# 尚未替新章節撰寫循環對白時，往前尋找最近一個已支援章節，
+	# 並採用該章最後 stage，避免跨章後退回初期台詞或變成無對白。
+	var chapter_number := _parse_main_quest_number(quest_id)
+	if chapter_number >= 2:
+		for previous_number in range(chapter_number - 1, 0, -1):
+			var previous_id := "main_%03d" % previous_number
+			if DIALOG_CHAPTER_LAST_STAGE.has(previous_id):
+				return {
+					"id": previous_id,
+					"stage": int(DIALOG_CHAPTER_LAST_STAGE[previous_id]),
+				}
+
+	# 非預期 ID 也採安全的最近完成語境，不回傳空陣列。
+	push_warning("[TeaBoss] 未支援的主線 ID：%s；改用 %s 的最後 stage。" % [quest_id, DEFAULT_DIALOG_QUEST_ID])
+	return {
+		"id": DEFAULT_DIALOG_QUEST_ID,
+		"stage": int(DIALOG_CHAPTER_LAST_STAGE[DEFAULT_DIALOG_QUEST_ID]),
+	}
+
+
+func _parse_main_quest_number(quest_id: String) -> int:
+	if not quest_id.begins_with("main_"):
+		return -1
+	var suffix := quest_id.trim_prefix("main_")
+	if not suffix.is_valid_int():
+		return -1
+	return int(suffix)
 
 func face_towards(target_position: Vector2) -> void:
 	var direction = (target_position - global_position).normalized()

@@ -1,12 +1,16 @@
 extends Area2D
 
 @export var zone_id := ""
+@export var encounter_region_id := ""
+@export var encounter_profile_id := ""
+@export var encounter_profile: Dictionary = {}
 @export var distance_threshold_override := -1.0
 @export var chance_override := -1.0
 @export var cooldown_distance_override := -1.0
 @export var intro_key_override := ""
 
 func _ready() -> void:
+	add_to_group("random_encounter_zone")
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
 	if not body_exited.is_connected(_on_body_exited):
@@ -41,6 +45,12 @@ func _register_player_inside() -> void:
 		push_warning("DangerZone 找不到 /root/GameRoot/LiuYu")
 		return
 	var overrides := {}
+	if encounter_region_id != "":
+		overrides["encounter_region_id"] = encounter_region_id
+	if encounter_profile_id != "":
+		overrides["encounter_profile_id"] = encounter_profile_id
+	if not encounter_profile.is_empty():
+		overrides["encounter_profile"] = encounter_profile.duplicate(true)
 	if distance_threshold_override >= 0.0:
 		overrides["distance_threshold"] = distance_threshold_override
 	if chance_override >= 0.0:

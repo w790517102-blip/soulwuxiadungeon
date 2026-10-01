@@ -395,6 +395,8 @@ func _get_canonical_team_ids() -> Array:
 	if TeamData and typeof(TeamData.current_team_ids) == TYPE_ARRAY:
 		for raw in TeamData.current_team_ids:
 			var actor_id := String(raw)
+			if TeamData.has_method("canonicalize_actor_id"):
+				actor_id = TeamData.canonicalize_actor_id(actor_id)
 			if actor_id == "" or ids.has(actor_id):
 				continue
 			ids.append(actor_id)
@@ -409,10 +411,11 @@ func _get_reserve_actor_ids(team_ids: Array) -> Array:
 	var reserves: Array = []
 	if TeamData == null:
 		return reserves
+	if TeamData.has_method("get_reserve_actor_ids"):
+		return TeamData.get_reserve_actor_ids(team_ids)
 	var all_ids: Array = []
-	if typeof(TeamData.all_characters) == TYPE_DICTIONARY:
-		for key in TeamData.all_characters.keys():
-			all_ids.append(String(key))
+	if TeamData.has_method("get_roster_unlocked_actor_ids"):
+		all_ids = TeamData.get_roster_unlocked_actor_ids()
 	for actor_id in all_ids:
 		if actor_id == "" or team_ids.has(actor_id):
 			continue
@@ -1013,12 +1016,11 @@ func _on_inner_force_tab_changed(_tab_index: int) -> void:
 
 func _refresh_weapon_tab_lists() -> void:
 	var actor_id = _get_active_character_id()
-	var skill_ids: Array = TeamData.get_known_skill_ids(actor_id) if TeamData and TeamData.has_method("get_known_skill_ids") else []
 	var skills: Array = []
-	if not skill_ids.is_empty():
-		skills = _skill_data_db.get_skills_for_actor(actor_id, null, skill_ids)
-	else:
-		skills = _skill_db.get_skills(actor_id)
+	if _skill_db and _skill_db.has_method("get_effective_skills_for_actor"):
+		# The menu shows effective knowledge without applying the current weapon filter;
+		# _can_use_skill_now() remains responsible for the current equipment state.
+		skills = _skill_db.get_effective_skills_for_actor(actor_id, null, false)
 	if not _skill_debug_logged:
 		var liuyu_count = TeamData.get_known_skill_ids("liuyu").size() if TeamData and TeamData.has_method("get_known_skill_ids") else -1
 		var shumian_count = TeamData.get_known_skill_ids("shumian").size() if TeamData and TeamData.has_method("get_known_skill_ids") else -1
@@ -1405,7 +1407,9 @@ func _refresh_inner_force_lists() -> void:
 		return
 	var actor = _get_actor_by_id(_selected_inner_force_actor_id)
 	var forces: Array = []
-	if TeamData and TeamData.has_method("get_known_inner_forces"):
+	if TeamData and TeamData.has_method("get_effective_inner_forces"):
+		forces = TeamData.get_effective_inner_forces(_selected_inner_force_actor_id)
+	elif TeamData and TeamData.has_method("get_known_inner_forces"):
 		forces = TeamData.get_known_inner_forces(_selected_inner_force_actor_id)
 	elif actor != null:
 		forces = _get_actor_value(actor, "available_inner_forces", [])
@@ -1815,8 +1819,8 @@ func _get_all_character_ids() -> Array:
 	var ids: Array = []
 	if TeamData == null:
 		return ids
-	if typeof(TeamData.all_characters) == TYPE_DICTIONARY:
-		for key_any in TeamData.all_characters.keys():
+	if TeamData.has_method("get_roster_unlocked_actor_ids"):
+		for key_any in TeamData.get_roster_unlocked_actor_ids():
 			var actor_id := String(key_any)
 			if actor_id == "" or ids.has(actor_id):
 				continue

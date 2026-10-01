@@ -1,6 +1,8 @@
 extends Node2D
 class_name MusicPlate
 
+signal plate_choice_finished(confirmed: bool)
+
 @export_enum("gong", "shang", "jue", "zhi", "yu") var note_id := "gong"
 @export var interact_action := "interact"
 @export var manager_path: NodePath
@@ -13,7 +15,7 @@ var interaction_locked := false
 var manager: MusicRoomManager
 var audio_player: AudioStreamPlayer2D
 var player_ref: Node = null
-var _space_was_down := false
+var _choice_pending := false
 
 
 func _ready() -> void:
@@ -27,27 +29,82 @@ func _ready() -> void:
 			interact_area.body_exited.connect(_on_body_exited)
 
 
-func _process(_delta: float) -> void:
-	if player_inside and not interaction_locked and _is_interact_pressed():
-		await interact()
+func _unhandled_input(event: InputEvent) -> void:
+	if not player_inside or interaction_locked or _is_world_interaction_blocked():
+		return
+	if not _is_interact_event(event):
+		return
+
+	get_viewport().set_input_as_handled()
+	interact()
 
 
 func interact() -> void:
 	if manager == null:
 		manager = _resolve_manager()
-
 	if manager == null:
 		push_warning("MusicPlate 找不到 MusicRoomManager")
 		return
 
 	interaction_locked = true
-	_set_player_movable(false)
+	var restore_movement := _is_player_movable()
+	if restore_movement:
+		_set_player_movable(false)
 
-	_play_note_sound()
-	await manager.try_press_plate(note_id)
+	var should_confirm := await manager.inspect_plate(note_id, self)
+	if should_confirm:
+		var confirmed: bool = await _confirm_step_plate()
+		if confirmed:
+			_play_note_sound()
+			await manager.try_press_plate(note_id, self)
 
-	_set_player_movable(true)
+	if restore_movement:
+		_set_player_movable(true)
 	interaction_locked = false
+
+
+func get_interaction_prompt() -> String:
+	if manager == null:
+		manager = _resolve_manager()
+	if manager and manager.is_plate_step_available():
+		return "踏下石板"
+	return "觀察石板"
+
+
+func _confirm_step_plate() -> bool:
+	var dialog_manager := _get_dialog_manager()
+	if dialog_manager == null or not dialog_manager.has_method("show_choice"):
+		push_warning("MusicPlate 找不到可用的 ChoiceBox")
+		return false
+
+	_choice_pending = true
+	dialog_manager.show_choice([
+		{"text": "踏下", "callback": Callable(self, "_on_step_choice_selected")},
+		{"text": "先不要", "callback": Callable(self, "_on_cancel_choice_selected")},
+	])
+	var confirmed: bool = await plate_choice_finished
+	_choice_pending = false
+	return confirmed
+
+
+func _on_step_choice_selected() -> void:
+	_finish_plate_choice(true)
+
+
+func _on_cancel_choice_selected() -> void:
+	_finish_plate_choice(false)
+
+
+func _finish_plate_choice(confirmed: bool) -> void:
+	if not _choice_pending:
+		return
+	_choice_pending = false
+	var dialog_manager := _get_dialog_manager()
+	if dialog_manager:
+		var choice_box = dialog_manager.get("choice_box")
+		if choice_box and choice_box.has_method("hide_choices"):
+			choice_box.hide_choices()
+	plate_choice_finished.emit(confirmed)
 
 
 func _play_note_sound() -> void:
@@ -78,27 +135,54 @@ func _is_player(body: Node) -> bool:
 	return body.name == "Player" or body.name == "LiuYu" or body.is_in_group("player")
 
 
-func _is_interact_pressed() -> bool:
-	var pressed_by_action := false
-	if InputMap.has_action(interact_action):
-		pressed_by_action = Input.is_action_just_pressed(interact_action)
+func _is_interact_event(event: InputEvent) -> bool:
+	var key_event := event as InputEventKey
+	if key_event and key_event.echo:
+		return false
+	if InputMap.has_action(interact_action) and event.is_action_pressed(interact_action):
+		return true
+	return key_event != null and key_event.pressed and key_event.keycode == KEY_SPACE
 
-	var space_down := Input.is_key_pressed(KEY_SPACE)
-	var pressed_by_space := space_down and not _space_was_down
-	_space_was_down = space_down
 
-	return pressed_by_action or pressed_by_space
+func _is_world_interaction_blocked() -> bool:
+	var dialog_manager := _get_dialog_manager()
+	if dialog_manager == null:
+		return false
+	if bool(dialog_manager.get("dialog_active")):
+		return true
+	var choice_box = dialog_manager.get("choice_box")
+	if choice_box is CanvasItem:
+		# ChoiceBox 在 game_root.tscn 中預設 visible=true；沒有任何選項時
+		# 只是空容器，不能因此永久封鎖世界互動。
+		return bool(choice_box.visible) and choice_box.get_child_count() > 0
+	return false
+
+
+func _get_dialog_manager() -> Node:
+	var dialog_manager := get_node_or_null("/root/GameRoot/DialogManager")
+	if dialog_manager:
+		return dialog_manager
+	return get_node_or_null("/root/DialogManager")
 
 
 func _set_player_movable(value: bool) -> void:
+	var target := _resolve_player()
+	if target:
+		target.set("can_move", value)
+
+
+func _is_player_movable() -> bool:
+	var target := _resolve_player()
+	return target != null and bool(target.get("can_move"))
+
+
+func _resolve_player() -> Node:
 	var target := player_ref
 	if target == null:
 		target = get_node_or_null("/root/GameRoot/LiuYu")
 	if target == null:
 		target = get_node_or_null("/root/Player")
-
-	if target:
-		target.set("can_move", value)
+	return target
 
 
 func _resolve_manager() -> MusicRoomManager:

@@ -31,6 +31,7 @@ const QUEST_TITLE := "大寶的不能說"
 const QUEST_STAGE_1_DESC := "找來一條細繩，交給大寶。"
 const QUEST_STAGE_2_DESC := "前往井旁，調查大寶所指的石塊。"
 const ITEM_FINE_THREAD := "misc_hemp_twine"
+const FLAG_MAP_SHOWN := "yh_side_dabao_map_shown"
 const FLAG_COIN_HINT := "yh_side_dabao_01_coin_hint"
 const FLAG_COIN_TAKEN := "yh_side_dabao_01_coin_taken"
 
@@ -234,6 +235,7 @@ func _register_dabao_quest() -> void:
 
 func _update_dabao_quest_to_hint_stage() -> void:
 	if GlobalState and GlobalState.has_method("set_flag"):
+		GlobalState.set_flag(FLAG_MAP_SHOWN, true)
 		GlobalState.set_flag(FLAG_COIN_HINT, true)
 	var quest := SideQuestManager.get_quest(QUEST_ID)
 	quest["title"] = QUEST_TITLE
