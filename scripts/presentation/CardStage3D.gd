@@ -1142,3 +1142,12 @@ func present_ink_swirl(targets: Array) -> void:
 	if plays > 0:
 		await get_tree().create_timer(float(SWIRL_COLUMNS * SWIRL_ROWS) * SWIRL_FRAME_SECONDS + 0.1).timeout
 	busy = false
+
+
+## Screen position of the middle of a card's portrait window (where an OS speech tail points).
+func card_portrait_center(actor: Dictionary) -> Vector2:
+	var card: Node3D = card_for(actor)
+	if card == null:
+		return Vector2.ZERO
+	var window: Rect2 = Templates.to_local_rect(card.template_key, Templates.get_template(card.template_key).window)
+	return camera.unproject_position(card.to_global(Vector3(window.get_center().x, window.get_center().y, 0.02)))

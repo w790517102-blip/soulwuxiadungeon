@@ -289,7 +289,10 @@ func _check_stage(fixture: Node) -> void:
 			continue
 		ui._position_bubble_on_portrait(ui.enemy_slots[index], box)
 		_expect(viewport_rect.encloses(Rect2(box.global_position, box.size)), "OS bubble %d stays inside the viewport" % index)
-		_expect(box.global_position.x + box.size.x <= stage.card_screen_rect(enemies[index]).position.x, "OS bubble %d sits beside its own card" % index)
+		var enemy_centre: Vector2 = stage.card_portrait_center(enemies[index])
+		_expect(box.global_position.x + box.size.x <= enemy_centre.x, "OS bubble %d stands beside its own portrait" % index)
+		var tail: Control = box.get_node_or_null("Tail")
+		_expect(tail != null and tail.target.is_equal_approx(enemy_centre), "OS bubble %d has a tail pointing at the middle of the portrait" % index)
 
 	# --- Spatial motion ---------------------------------------------------------
 	await _check_motion(fast, foe_fast, stage, "attack")
@@ -592,6 +595,25 @@ func _check_stage(fixture: Node) -> void:
 	var boxed: String = colour_log.recent_bbcode(colour_log.get_parsed_text(), 3)
 	_expect(boxed.contains("[color=#7fd0ff]輪到「測試」行動。[/color]"), "system lines keep their colour in the message box")
 	_expect(boxed.contains("[color=#ffd447]24[/color]"), "damage numbers keep their colour in the message box")
+
+	# --- OS bubble heights are staggered, sticky, and the tail tilts with them ---------
+	var level_a: int = ui._bubble_level_for(allies[0], false)
+	var level_b: int = ui._bubble_level_for(allies[1], false)
+	var level_c: int = ui._bubble_level_for(allies[2], false)
+	_expect(level_a != level_b and level_b != level_c and level_a != level_c, "speakers of one camp get different box heights")
+	manager.current_index = 0
+	stage._order_signature = ""
+	stage.apply_order(stage.order_keys(), false)
+	_expect(ui._bubble_level_for(allies[0], false) == level_a and ui._bubble_level_for(allies[1], false) == level_b, "a speaker's box height never changes after a reshuffle")
+	var ally_slot: Control = ui.ally_slots[0]
+	ui._actor_bubble_boxes.get(ui._get_bubble_key_for_slot(ally_slot))
+	var ally_box: PanelContainer = ui._actor_bubble_boxes.get(ui._get_bubble_key_for_slot(ally_slot))
+	if ally_box != null:
+		ui._position_bubble_on_portrait(ally_slot, ally_box)
+		var ally_tail: Control = ally_box.get_node_or_null("Tail")
+		var polygon: PackedVector2Array = ally_tail.polygon_global()
+		_expect(polygon[1].is_equal_approx(stage.card_portrait_center(allies[0])), "the tail tip is the portrait centre")
+		_expect(not is_equal_approx(polygon[1].y, (polygon[0].y + polygon[2].y) / 2.0), "the tail is tilted toward the portrait, not simply shifted")
 
 	_stage_checks_completed = true
 

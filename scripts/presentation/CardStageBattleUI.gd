@@ -302,3 +302,76 @@ func play_guest_action(guest: Dictionary, action_id: String, boss: Dictionary, r
 func play_ink_swirl(targets: Array) -> void:
 	if stage_enabled and stage:
 		await stage.present_ink_swirl(targets)
+
+
+# --- OS speech boxes: a comic-style tail pointing at the portrait ------------------------------
+# The box stands close beside the speaker's portrait, its tail aimed at the middle of the
+# portrait. Speakers are placed at staggered heights so neighbouring boxes never stack: the
+# level is chosen the first time someone speaks and then kept for good, even when the cards
+# are reshuffled. The tail is re-aimed every frame, so it tilts with the height difference.
+
+const BubbleTail = preload("res://scripts/presentation/CardStageBubbleTail.gd")
+## Height of the box centre relative to the portrait centre, as a fraction of the card's
+## on-screen height. Index = level; the first speaker of a camp takes the upper one.
+const BUBBLE_LEVELS: Array[float] = [-0.24, 0.22, -0.01]
+const BUBBLE_GAP: float = 64.0
+
+var _bubble_level_by_actor: Dictionary = {}
+
+
+func _position_bubble_on_portrait(slot: Control, box: PanelContainer) -> void:
+	if not stage_enabled or not stage:
+		super._position_bubble_on_portrait(slot, box)
+		return
+	var index: int = enemy_slots.find(slot)
+	var enemy: bool = index >= 0
+	if not enemy:
+		index = ally_slots.find(slot)
+	var actors: Array = enemies if enemy else allies
+	if index < 0 or index >= actors.size():
+		return
+	var actor: Dictionary = actors[index]
+	var rect: Rect2 = stage.card_screen_rect(actor)
+	if rect.size == Vector2.ZERO:
+		return
+	var label: Label = box.get_node("Text")
+	label.add_theme_font_override("font", MenuUIFont)
+	label.add_theme_constant_override("outline_size", 0)
+	label.custom_minimum_size = Vector2(216, 54)
+	label.clip_text = true
+	box.add_theme_stylebox_override("panel", _plate_style())
+	box.size = Vector2(240, 82)
+	var centre: Vector2 = stage.card_portrait_center(actor)
+	var level: float = BUBBLE_LEVELS[_bubble_level_for(actor, enemy)]
+	var anchor_y: float = centre.y + level * rect.size.y
+	# Party boxes stand to the right of the portrait, enemy boxes to the left.
+	var x: float = centre.x - box.size.x - BUBBLE_GAP if enemy else centre.x + BUBBLE_GAP
+	var top_left := Vector2(x, anchor_y - box.size.y / 2.0).clamp(Vector2(12, 60), get_viewport_rect().size - box.size - Vector2(12, 160))
+	box.global_position = top_left
+	var tail: Control = box.get_node_or_null("Tail")
+	if tail == null:
+		tail = BubbleTail.new()
+		box.add_child(tail)
+	tail.aim(Rect2(top_left, box.size), centre, not enemy)
+
+
+## The level (0..2) of a speaker's box. Taken the first time they speak (by their place in the
+## line-up then, avoiding levels already used by their own camp) and never changed afterwards.
+func _bubble_level_for(actor: Dictionary, enemy: bool) -> int:
+	var key: String = "%s:%s" % ["e" if enemy else "p", stage.actor_key(actor)]
+	if _bubble_level_by_actor.has(key):
+		return int(_bubble_level_by_actor[key])
+	var used: Dictionary = {}
+	for other_key: String in _bubble_level_by_actor.keys():
+		if other_key.begins_with("e:" if enemy else "p:"):
+			used[int(_bubble_level_by_actor[other_key])] = true
+	var card: Node3D = stage.card_for(actor)
+	var preferred: int = (int(card.slot_rank) if card != null else 0) % BUBBLE_LEVELS.size()
+	var chosen: int = preferred
+	for step: int in range(BUBBLE_LEVELS.size()):
+		var candidate: int = (preferred + step) % BUBBLE_LEVELS.size()
+		if not used.has(candidate):
+			chosen = candidate
+			break
+	_bubble_level_by_actor[key] = chosen
+	return chosen
