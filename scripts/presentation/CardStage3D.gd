@@ -701,7 +701,7 @@ func fade_out_stage_entity_card(entity: Object) -> void:
 
 # --- Presentation: an attack on a stage entity ---------------------------------------------
 
-func present_entity_attack(attacker: Dictionary, entity: Object, destroyed: bool, attacker_motion: bool = true) -> void:
+func present_entity_attack(attacker: Dictionary, entity: Object, destroyed: bool, attacker_motion: bool = true, landed: bool = true) -> void:
 	var source: Node3D = card_for(attacker)
 	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
 	if source == null or card == null:
@@ -714,12 +714,13 @@ func present_entity_attack(attacker: Dictionary, entity: Object, destroyed: bool
 	var trail: Node3D = SwordTrail.new()
 	fx_root.add_child(trail)
 	var shake_later := get_tree().create_timer(0.3)
-	shake_later.timeout.connect(func() -> void:
-		if is_instance_valid(card):
-			card.hit_shake()
-			StageHitEffects.spark(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.6, false)
-	)
-	await trail.play(source.position, card.home_position, true)
+	if landed:
+		shake_later.timeout.connect(func() -> void:
+			if is_instance_valid(card):
+				card.hit_shake()
+				StageHitEffects.spark(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.6, false)
+		)
+	await trail.play(source.position, card.home_position, landed)
 	trail.queue_free()
 	# A short hit-stop, then the charm tears apart if that was its last charge.
 	await get_tree().create_timer(0.08).timeout

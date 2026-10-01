@@ -129,9 +129,31 @@ func _check_controller_flow() -> void:
 	# --- one hit of any size breaks it, nothing carries over ---
 	enemy["atk"] = 9999
 	var hp_before: Array = [party[0].hp, party[1].hp]
-	await controller._perform_enemy_attack_on_entity(enemy, basic, talisman)
-	_expect(registry.is_empty() and talisman.guard_charges == 0, "one hit breaks it and it leaves the registry")
+	# The blow has to land first: with a crippled accuracy it can miss, and then the charm stays.
+	var normal_accuracy = enemy.get("accuracy", 100)
+	enemy["accuracy"] = -100000
+	var missed_once := false
+	for attempt: int in range(300):
+		seed(attempt)
+		await controller._perform_enemy_attack_on_entity(enemy, basic, talisman)
+		if not registry.is_empty():
+			missed_once = true
+			break
+		# It happened to land: stand a fresh one up and try the next seed.
+		shumian["mp"] = 40
+		await controller.execute_action(shumian, skill, shumian)
+		talisman = registry.get_stage_entities()[0]
+	_expect(missed_once and talisman.guard_charges == 1, "a blow drawn to the charm can miss, and then the charm survives intact")
+	_expect([party[0].hp, party[1].hp] == hp_before, "a missed blow hurts nobody")
+	enemy["accuracy"] = 100000
+	for attempt: int in range(300):
+		seed(attempt)
+		await controller._perform_enemy_attack_on_entity(enemy, basic, talisman)
+		if registry.is_empty():
+			break
+	_expect(registry.is_empty() and talisman.guard_charges == 0, "one landed hit breaks it and it leaves the registry")
 	_expect([party[0].hp, party[1].hp] == hp_before, "a huge blow does not spill onto the characters")
+	enemy["accuracy"] = normal_accuracy
 	enemy["atk"] = 30
 	# --- an area blow: every target (characters AND the charm) rolls its own hit ---------------
 	await controller.execute_action(shumian, skill, shumian)

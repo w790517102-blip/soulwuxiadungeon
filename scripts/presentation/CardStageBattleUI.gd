@@ -271,9 +271,9 @@ func play_stage_entity_cast(actor: Dictionary, _skill_data: Dictionary, phase: S
 
 
 ## An enemy blow (or the shared part of an area blow) lands on a stage entity.
-func play_stage_entity_hit(attacker: Dictionary, entity: Object, destroyed: bool, attacker_motion: bool) -> void:
+func play_stage_entity_hit(attacker: Dictionary, entity: Object, destroyed: bool, attacker_motion: bool, landed: bool = true) -> void:
 	if stage_enabled and stage:
-		await stage.present_entity_attack(attacker, entity, destroyed, attacker_motion)
+		await stage.present_entity_attack(attacker, entity, destroyed, attacker_motion, landed)
 
 
 ## Support action on teammates: step forward, hold, return slowly.

@@ -4311,11 +4311,18 @@ func _attack_strength(enemy: Dictionary) -> int:
 func _perform_enemy_attack_on_entity(enemy: Dictionary, skill: Dictionary, entity: Object) -> void:
 	var entity_name: String = String(entity.get("display_name"))
 	_log("%s 使出「%s」，目標竟被「%s」引去！" % [String(enemy.get("name", "???")), String(skill.get("name", "攻擊")), entity_name])
-	var result: Dictionary = entity.take_damage(_attack_strength(enemy), {"source": enemy, "skill": skill})
+	# A blow drawn to the charm still has to land: it rolls the same accuracy contest, so a
+	# debuffed enemy misses it too (the charm is not a free target).
+	var landed: bool = bool(skill_executor._roll_hit(enemy, {"evasion": 0}).get("hit", true))
+	var result: Dictionary = {"damage": 0, "destroyed": false}
+	if landed:
+		result = entity.take_damage(_attack_strength(enemy), {"source": enemy, "skill": skill})
 	if battle_ui and battle_ui.has_method("play_stage_entity_hit"):
-		await battle_ui.play_stage_entity_hit(enemy, entity, bool(result.get("destroyed", false)), true)
+		await battle_ui.play_stage_entity_hit(enemy, entity, bool(result.get("destroyed", false)), true, landed)
 	_finish_entity_damage(entity, result, {"source": enemy, "skill": skill})
-	if bool(result.get("destroyed", false)):
+	if not landed:
+		_log("這一擊揮空，【%s】毫髮無傷。" % entity_name)
+	elif bool(result.get("destroyed", false)):
 		_log("【%s】應聲裂開，墨痕散作飛灰，這一擊落空了。" % entity_name)
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
