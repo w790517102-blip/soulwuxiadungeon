@@ -651,7 +651,7 @@ func _position_bubble_on_portrait(slot: Control, box: PanelContainer) -> void:
 ## First matching rule wins; the default is the generic backdrop.
 const BACKGROUND_RULES: Array = [
 	{"any": ["molin_yanjiang", "stalactite"], "path": "res://assets/presentation/stalactite_stage.png"},
-	{"any": ["old_fighter", "teashop_training"], "path": "res://assets/presentation/bg_yuheng_arena.webp"},
+	{"any": ["old_fighter"], "path": "res://assets/presentation/bg_yuheng_arena.webp"},
 	{"any": ["sewer"], "path": "res://assets/presentation/bg_sewer.webp"},
 	{"any": ["bamboo"], "path": "res://assets/presentation/bg_bamboo.webp"},
 ]

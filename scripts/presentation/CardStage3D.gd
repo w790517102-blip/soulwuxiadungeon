@@ -752,7 +752,9 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 		await _cast_stroke.heartbeat(2, 0.8)
 		# The mark pulls in, then bursts into ink; the burst is where the card appears.
 		# The green ink swirl blooms from the glyph, then the burst unfolds the card.
-		play_swirl_at(_cast_center, 3.4)
+		# Same centre and the same visual size as the glyph: size the sheet so its ring is as
+		# tall as the glyph (the dragons then reach beyond it).
+		play_swirl_at(_cast_center, _cast_stroke.size / SWIRL_RING_FRACTION)
 		await get_tree().create_timer(0.45).timeout
 		_spawn_origin = _cast_center
 		_burst_ink(_cast_center)
@@ -1028,6 +1030,8 @@ const SWIRL_SHEET := "res://assets/fx/ink_swirl_sheet.webp"
 const SWIRL_COLUMNS: int = 4
 const SWIRL_ROWS: int = 3
 const SWIRL_FRAME_SECONDS: float = 0.075
+## The swirl ring fills about a third of its frame; used to size the sheet to a wanted ring.
+const SWIRL_RING_FRACTION: float = 0.33
 
 
 ## Plays the 12-frame swirl at a point (world space in the FX volume). Returns when it ends.
