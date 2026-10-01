@@ -739,12 +739,12 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 		_cast_center = Vector3(0.2, 0.9, (player_depth + enemy_depth) * 0.5 + 1.5)
 		await card.cast_step_forward()
 		_cast_stroke = InkStroke.new()
-		_cast_stroke.size = 3.0
+		_cast_stroke.size = 3.4
 		fx_root.add_child(_cast_stroke)
 		_cast_stroke.position = _cast_center
-		await _cast_stroke.draw_stroke(1.9)
-		# Gather before the burst: the mark swells and draws in, shaking.
-		await _cast_stroke.tremble(0.7)
+		await _cast_stroke.draw_stroke(2.2)
+		# Heartbeat before the burst: two beats, each throwing a ghost image outward.
+		await _cast_stroke.heartbeat(2, 0.8)
 		# The mark pulls in, then bursts into ink; the burst is where the card appears.
 		_spawn_origin = _cast_center
 		_burst_ink(_cast_center)
