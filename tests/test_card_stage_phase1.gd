@@ -180,7 +180,31 @@ func _check_stage(fixture: Node) -> void:
 	_expect(fast.hp_label.visible and fast.mp_label.visible and fast.force_label.visible and fast.level_label.visible, "party card keeps HP, MP, inner force and level")
 	_expect(foe_fast.hp_label.visible and foe_fast.species_label.visible and foe_fast.element_label.visible and not foe_fast.mp_label.visible, "enemy card keeps HP, species and element")
 	_expect(fast.card_viewport.size_2d_override.y > fast.card_viewport.size_2d_override.x, "card face canvas is portrait")
-	_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(22.0)) and is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-22.0)), "yaw keeps the 22 degree baseline, mirrored")
+	_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(28.0)) and is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-28.0)), "default yaw is the 28 degree preset, mirrored")
+	_expect(stage.YAW_PRESETS == [22.0, 28.0, 32.0], "yaw presets are 22 / 28 / 32")
+	for preset: int in [0, 2, 1]:
+		var applied: float = stage.set_yaw_preset(preset)
+		_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(applied)) and is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-applied)) and fast.rotation.is_equal_approx(fast.home_rotation), "preset %d seats every card at %d degrees, mirrored" % [preset, int(applied)])
+	_expect(stage.cycle_yaw_preset() == 32.0 and stage.cycle_yaw_preset() == 22.0 and stage.cycle_yaw_preset() == 28.0, "yaw cycles 28 -> 32 -> 22 -> 28")
+	# Camp depth: the camps are pulled apart, never the cards of one camp.
+	_expect(party_depths.min() - foe_fast.home_position.z >= 5.0, "enemy camp is at least 5 world units deeper than the party camp")
+	var enemy_depths: Array = []
+	for foe_actor: Dictionary in enemies:
+		enemy_depths.append(stage.card_for(foe_actor).home_position.z)
+	_expect(enemy_depths.max() - enemy_depths.min() < 0.6, "the enemy camp also shares one Z band")
+	_expect(stage.background_depth < enemy_depths.min() - 5.0, "the backdrop is well behind the enemy camp")
+	# Size difference comes from perspective only; no compensating scale.
+	var ally_rect: Rect2 = stage.card_screen_rect(allies[0])
+	var foe_rect: Rect2 = stage.card_screen_rect(enemies[0])
+	_expect(stage.card_for(enemies[0]).scale == Vector3.ONE and foe_rect.size.y < ally_rect.size.y * 0.85, "farther enemy cards look smaller through perspective, not scale")
+	# The middle stays open for sword trails, MISS flights and charges.
+	var party_right: float = 0.0
+	var enemy_left: float = 99999.0
+	for ally_actor: Dictionary in allies:
+		party_right = maxf(party_right, stage.card_screen_rect(ally_actor).end.x)
+	for foe_actor: Dictionary in enemies:
+		enemy_left = minf(enemy_left, stage.card_screen_rect(foe_actor).position.x)
+	_expect(enemy_left - party_right >= root.get_visible_rect().size.x * 0.15, "at least 15 percent of the screen width stays open between the camps")
 	_expect(fast.scale == Vector3.ONE and slow.scale == Vector3.ONE, "cards keep scale 1; depth comes from perspective")
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 	for card: Node3D in stage.cards.values():

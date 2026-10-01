@@ -1,22 +1,57 @@
 extends "res://scripts/presentation/CombatStage25D.gd"
 ## Card Stage: the same camera, background, FX volume and command tray as
 ## STAGE_25D, with upright portrait cards placed in one row per side (see
-## CardStageFormation). The enemy row is on the right and deeper in Z.
-## Yaw stays at the inherited baseline; empty slots are not drawn.
+## CardStageFormation). The two camps are pulled apart in Z, not the cards of one
+## camp: the party stands in the foreground on the left, the enemy farther back on
+## the right, so the real perspective camera makes them close on each other
+## diagonally. Size differences come only from depth and FOV, never from scale.
 
 const CardStageActorCard = preload("res://scripts/presentation/CardStageActorCard.gd")
 const Formation = preload("res://scripts/presentation/CardStageFormation.gd")
 
-## Enemy row depth: clearly deeper than the party row so perspective reads as distance.
-const CARD_STAGE_ENEMY_DEPTH: float = -2.0
+## Camp depth bands (world Z; the camera looks down -Z from z = 18).
+const CARD_STAGE_PLAYER_DEPTH: float = 2.5
+const CARD_STAGE_ENEMY_DEPTH: float = -4.0
+## Backdrop sits well behind the enemy band so MISS ribbons dissipate in front of it.
+const CARD_STAGE_BACKGROUND_DEPTH: float = -11.0
+## Selectable card yaw presets, in degrees (party turns toward the enemy, mirrored).
+const YAW_PRESETS: Array[float] = [22.0, 28.0, 32.0]
+const DEFAULT_YAW_PRESET: int = 1
 
+var yaw_preset: int = DEFAULT_YAW_PRESET
 ## actor key -> {rank, position}; read by tests and debug tools.
 var slots: Dictionary = {}
 
 
 func _ready() -> void:
+	player_depth = CARD_STAGE_PLAYER_DEPTH
 	enemy_depth = CARD_STAGE_ENEMY_DEPTH
+	background_depth = CARD_STAGE_BACKGROUND_DEPTH
+	yaw_preset = DEFAULT_YAW_PRESET
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--card-yaw="):
+			var wanted: float = float(argument.trim_prefix("--card-yaw="))
+			var found: int = YAW_PRESETS.find(wanted)
+			if found >= 0:
+				yaw_preset = found
+	card_yaw_degrees = YAW_PRESETS[yaw_preset]
 	super._ready()
+
+
+## Dev aid: cycles 22 / 28 / 32 degrees and re-seats every card (idle poses only).
+func cycle_yaw_preset() -> float:
+	if busy:
+		return card_yaw_degrees
+	return set_yaw_preset((yaw_preset + 1) % YAW_PRESETS.size())
+
+
+func set_yaw_preset(index: int) -> float:
+	yaw_preset = clampi(index, 0, YAW_PRESETS.size() - 1)
+	card_yaw_degrees = YAW_PRESETS[yaw_preset]
+	for card: Node3D in cards.values():
+		var side: float = 1.0 if card.is_enemy else -1.0
+		card.set_home(card.home_position, -side * card_yaw_degrees)
+	return card_yaw_degrees
 
 
 func set_teams(allies: Array, enemies: Array, guest: Dictionary = {}, status_source: Callable = Callable()) -> void:

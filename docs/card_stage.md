@@ -22,13 +22,14 @@
 
 ## 站位（沒有前鋒／中軍／後援職位）
 - 每方**一排**卡片，沿 X 排列，高度相同（`ROW_Y`），Z 幾乎相同。
-- 我方基準 Z = `player_depth`（+1.0）；敵方排在右側，基準 Z = `CARD_STAGE_ENEMY_DEPTH`（-2.0），由透視自然變遠。
+- 拉開的是「陣營之間」的 Z，不是同隊卡片：我方基準 Z = `CARD_STAGE_PLAYER_DEPTH`（+2.5，前景）、敵方 `CARD_STAGE_ENEMY_DEPTH`（-4.0，後景，在右側），背景 `CARD_STAGE_BACKGROUND_DEPTH`（-11）。大小差只來自透視與 FOV，不使用 scale 補償。
+- 中央保留至少 15% 螢幕寬的空地給劍痕、MISS 穿越與前衝。
 - 速度只決定**初始**由內往外的順序：最快的最靠交鋒區，並略微向鏡頭突出（`FAST_POKE`，最多 0.35）。只在 `set_teams()` 決定，戰鬥中 Buff/Debuff 不重排。客座永遠排最外側。actor 可選 `formation = "inner" | "outer"` 覆寫。
-- 參數（`CardStageFormation.gd`）：`ALLY_LANE_X 5.3`、`ENEMY_LANE_X 6.3`、`ALLY_SPACING 2.1`、`ENEMY_SPACING 2.45`、`ROW_Y -0.2`。
-- Yaw 維持 22° baseline：我方向右內轉，敵方向左內轉。
+- 參數（`CardStageFormation.gd`）：`ALLY_LANE_X 4.6`、`ENEMY_LANE_X 6.1`、`ALLY_SPACING 1.9`、`ENEMY_SPACING 2.2`、`ROW_Y -0.3`、`FAST_POKE 0.25`。
+- Yaw preset：22° / 28°（預設）/ 32°，我方向右內轉、敵方鏡像。Debug build 戰鬥中按 F9 循環；或啟動參數 `-- --card-yaw=32`。
 
 ## 直式卡（2:3）
-- 世界尺寸 `PORTRAIT_SIZE = 2.6 × 3.9`；畫布 400×600（SubViewport 2 倍解析度）。
+- 世界尺寸 `PORTRAIT_SIZE = 2.3 × 3.45`；畫布 400×600（SubViewport 2 倍解析度）。
 - 上方立繪區，下方資訊帶：名字、LV＋狀態字、氣血＋條、內力＋條（我方）／種族（敵方）、屬性與運行心法（我方）／屬性（敵方）。資訊欄位與 STAGE_25D 卡相同，僅重新排版。
 
 ## 動作（皆回到 home_position / home_rotation）

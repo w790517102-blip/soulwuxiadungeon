@@ -9,17 +9,17 @@ extends RefCounted
 ## closest to the centre and pokes out a few centimetres toward the camera.
 ## Order is decided once in set_teams() and never reshuffles on speed buffs.
 
-## Distance between card centres along X (card width is 2.6, so neighbours
+## Distance between card centres along X (card width is 2.3, so neighbours
 ## overlap slightly and the nearer one occludes the outer one's inner edge).
-const ALLY_SPACING: float = 2.1
-const ENEMY_SPACING: float = 2.45
+const ALLY_SPACING: float = 1.9
+const ENEMY_SPACING: float = 2.2
 ## Lane centre: distance from the centre line to the middle of each side's row.
-const ALLY_LANE_X: float = 5.3
-const ENEMY_LANE_X: float = 6.3
+const ALLY_LANE_X: float = 4.6
+const ENEMY_LANE_X: float = 6.1
 ## Row height (card centre). Same for everyone so the cards share a ground line.
-const ROW_Y: float = -0.2
+const ROW_Y: float = -0.3
 ## Fastest card steps forward by this much in Z; each slower neighbour by half less.
-const FAST_POKE: float = 0.35
+const FAST_POKE: float = 0.25
 
 
 ## `rank` 0 is the slot nearest the centre. Returns {rank, position}.

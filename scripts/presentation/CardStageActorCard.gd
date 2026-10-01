@@ -7,7 +7,7 @@ extends "res://scripts/presentation/StageActorCard.gd"
 const PORTRAIT_CANVAS := Vector2i(400, 600)
 const PORTRAIT_VIEWPORT := Vector2i(800, 1200)
 ## World size (2:3). Kept as data; CardStage3D reads card_size for picking.
-const PORTRAIT_SIZE := Vector2(2.6, 3.9)
+const PORTRAIT_SIZE := Vector2(2.3, 3.45)
 
 const WINDUP_DISTANCE := 0.45
 const LUNGE_FRACTION := 0.46
