@@ -44,5 +44,5 @@
 ## 第一個舞台卡技能：替身符
 - 資料：`SkillDB` 的 `skill_substitute_talisman`（書眠、筆、20 MP、1 等學會、`stage_entity` 資料區塊）。任何帶 `stage_entity` 的技能都會直接生成該實體、不需選目標（`BattleController._execute_stage_entity_skill`，由 `StageEntityFactory` 建立）。
 - 實體：`SubstituteTalisman.gd`（`guard_charges` 一次承傷、不可治療；內部 HP 僅為 1）。排在我方列最左（客座右側），欄位 `row / row_edge_distance / advance_policy / advance_amount / expire_at_edge` 皆為資料，每輪結束向右推進一格，超過最右端失效離場。
-- 敵方：`_priority_stage_entity_for` 以 AI 掛鉤給替身符極高權重；僅單體傷害技能會被引去，全體技能照常傷所有角色並同時擊破替身符；`ignore_stage_entity_priority` 的技能可繞過。
+- 敵方：`_priority_stage_entity_for` 以 AI 掛鉤給替身符極高權重；僅單體傷害技能會被引去，全體技能照常對每個目標各自判定命中（替身符也有自己的命中判定，可能被閃過），替身符不會替任何人擋掉那一份；`ignore_stage_entity_priority` 的技能可繞過。
 - 演出：書眠上前一步 → 一筆畫出符咒（純黑不暈開＋會暈開的濕墨兩支筆刷疊畫）→ 爆開、墨點、鏡頭墨濺 → 卡片從爆點展開並插入最左，角色讓位、全部到位後才進行下一個動作 → 被擊中時震動、裂開、碎屑。卡片為角色卡的 85%。

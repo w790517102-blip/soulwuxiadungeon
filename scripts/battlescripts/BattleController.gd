@@ -4335,6 +4335,12 @@ func _hit_stage_entities_with_aoe(enemy: Dictionary, skill: Dictionary) -> void:
 	for entity: Object in stage_entities.get_targetable_entities():
 		if String(entity.get("faction")) == faction_of(enemy):
 			continue
+		# The charm is just another target of the sweep: it gets its own hit roll (the same
+		# accuracy contest a character gets, with no evasion), so it can be missed.
+		var roll: Dictionary = skill_executor._roll_hit(enemy, {"evasion": 0})
+		if not bool(roll.get("hit", true)):
+			_log("%s 的攻勢掠過了【%s】。" % [String(enemy.get("name", "???")), String(entity.get("display_name"))])
+			continue
 		var result: Dictionary = entity.take_damage(_attack_strength(enemy), {"source": enemy, "skill": skill, "aoe": true})
 		if battle_ui and battle_ui.has_method("play_stage_entity_hit"):
 			await battle_ui.play_stage_entity_hit(enemy, entity, bool(result.get("destroyed", false)), false)

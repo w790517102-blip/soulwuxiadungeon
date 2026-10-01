@@ -133,21 +133,32 @@ func _check_controller_flow() -> void:
 	_expect(registry.is_empty() and talisman.guard_charges == 0, "one hit breaks it and it leaves the registry")
 	_expect([party[0].hp, party[1].hp] == hp_before, "a huge blow does not spill onto the characters")
 	enemy["atk"] = 30
-	# --- an area blow hits everyone, and the talisman too ---
+	# --- an area blow: every target (characters AND the charm) rolls its own hit ---------------
 	await controller.execute_action(shumian, skill, shumian)
 	var second = registry.get_stage_entities()[0]
 	_expect(registry.get_stage_entities().size() == 1, "a new talisman can be cast again")
-	enemy["accuracy"] = 100000
 	enemy["crit_rate"] = 0.0
-	for member: Dictionary in party:
-		member["evasion"] = -100000
-	# Hit chance is capped at 95%, so pin the random seed: the test checks the rule, not luck.
-	seed(12345)
 	var aoe: Dictionary = {"id": "aoe_test", "name": "橫掃", "target_scope": "enemy_all", "effects": [{"type": "damage", "power": 1.0}], "power": 1.0}
-	hp_before = [party[0].hp, party[1].hp]
+	var start_hp: Array = [party[0].hp, party[1].hp]
+	# Reference run WITHOUT the charm, from a fixed random seed.
+	registry.unregister_stage_entity(second)
+	seed(2024)
 	await controller._perform_enemy_aoe_action(enemy, aoe, {})
-	_expect(party[0].hp < hp_before[0] and party[1].hp < hp_before[1], "an area attack still hurts every character")
-	_expect(registry.is_empty() and second.guard_charges == 0, "and it also breaks the talisman, which does not absorb the whole attack")
+	var without_charm: Array = [party[0].hp, party[1].hp]
+	# Same seed WITH the charm standing: the characters' outcomes must be identical, i.e. the
+	# charm neither absorbs the area attack nor changes anyone else's roll.
+	party[0].hp = start_hp[0]
+	party[1].hp = start_hp[1]
+	var third_charm = load("res://scripts/battlescripts/StageEntityFactory.gd").create(skill.stage_entity, "shumian")
+	registry.register_stage_entity(third_charm)
+	seed(2024)
+	await controller._perform_enemy_aoe_action(enemy, aoe, {})
+	_expect([party[0].hp, party[1].hp] == without_charm, "a standing charm does not change what an area attack does to the characters")
+	_expect((third_charm.guard_charges == 0) == registry.is_empty(), "the charm either took its own hit and broke, or was missed and stays")
+	if not registry.is_empty():
+		registry.unregister_stage_entity(third_charm)
+	party[0].hp = start_hp[0]
+	party[1].hp = start_hp[1]
 	# --- reaching the right end expires it ---
 	shumian["mp"] = 40
 	await controller.execute_action(shumian, skill, shumian)
