@@ -16,7 +16,7 @@ extends RefCounted
 ## A party card turned 45-55 degrees is enlarged on its near edge by perspective, so
 ## its on-screen height (rotated bounding box) lands at about 4/5, the enemy
 ## (nearly frontal) at about 2/5.
-const ALLY_HEIGHT: float = 0.55
+const ALLY_HEIGHT: float = 0.64
 const ENEMY_HEIGHT: float = 0.37
 ## Screen fraction (from the top) where party card bottoms stand; just above the
 ## command tray. Enemy feet follow from the shared ground plane.
