@@ -686,3 +686,43 @@ func somersault(seconds: float = 0.75) -> void:
 	_motion_tween.tween_property(self, "position", home_position, seconds * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	_motion_tween.tween_callback(func() -> void: rotation = home_rotation)
 	await _wait_for_motion(_motion_tween)
+
+
+# --- Defeat exits ---------------------------------------------------------------------------
+
+var defeat_played: bool = false
+
+
+## Animals: a short shake, then the card tips backwards and fades out.
+func defeat_animal() -> void:
+	defeat_played = true
+	_kill_motion()
+	_flash(Color(0.8, 0.08, 0.035, 0.45))
+	_motion_tween = create_tween()
+	for shake: int in range(4):
+		var side: float = 1.0 if shake % 2 == 0 else -1.0
+		_motion_tween.tween_property(self, "position", home_position + Vector3(side * 0.1, 0.0, 0.0), 0.04)
+	_motion_tween.tween_property(self, "position", home_position, 0.04)
+	_motion_tween.tween_property(self, "rotation", home_rotation + Vector3(-0.9, 0.0, 0.0), 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_motion_tween.parallel().tween_property(self, "position", home_position + Vector3(0.0, -0.25, -0.9), 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_motion_tween.parallel().tween_method(set_fade, 0.0, 1.0, 0.7).set_delay(0.1)
+	await _wait_for_motion(_motion_tween)
+	visible = false
+
+
+## 語魅: a double heartbeat pulse (scale beat with a purple flash), then it drifts up and fades.
+func defeat_yumei() -> void:
+	defeat_played = true
+	_kill_motion()
+	var base_scale: Vector3 = scale
+	_motion_tween = create_tween()
+	for beat: int in range(2):
+		_motion_tween.tween_callback(func() -> void: _flash(Color(0.55, 0.2, 0.85, 0.5)))
+		_motion_tween.tween_property(self, "scale", base_scale * 1.1, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_motion_tween.tween_property(self, "scale", base_scale, 0.18).set_trans(Tween.TRANS_SINE)
+		_motion_tween.tween_interval(0.2)
+	_motion_tween.tween_property(self, "position", home_position + Vector3(0.0, 2.2, 0.0), 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_motion_tween.parallel().tween_method(set_fade, 0.0, 1.0, 0.9).set_delay(0.1)
+	await _wait_for_motion(_motion_tween)
+	visible = false
+	scale = base_scale

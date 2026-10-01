@@ -129,11 +129,44 @@ func _follow_marker() -> void:
 func _process(delta: float) -> void:
 	super._process(delta)
 	_update_order(delta)
+	_update_defeats()
 	_ensure_registry_bound()
 	if _active_card != null and not is_instance_valid(_active_card):
 		clear_active_actor()
 	elif turn_marker and turn_marker.visible:
 		_follow_marker()
+
+
+## A defeated enemy leaves the stage with an exit by family: animals shake and tip backwards,
+## 語魅 beat like a heart and drift upward. Waits until the blow has finished playing, and
+## holds `busy` so the next action starts after the card is gone. A revived card returns.
+func _update_defeats() -> void:
+	if busy:
+		return
+	var manager: Node = _turn_manager()
+	if manager == null:
+		return
+	for actor: Dictionary in manager.enemy_party:
+		var card: Node3D = card_for(actor)
+		if card == null or not card.has_method("defeat_animal"):
+			continue
+		var dead: bool = int(actor.get("hp", 0)) <= 0
+		if not dead:
+			if card.defeat_played:
+				card.defeat_played = false
+				card.visible = true
+				card.set_fade(0.0)
+				card.reset_pose()
+			continue
+		if card.defeat_played or not _cards_idle():
+			continue
+		busy = true
+		if String(actor.get("family", "")) == "yumei":
+			await card.defeat_yumei()
+		else:
+			await card.defeat_animal()
+		busy = false
+		return
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -165,6 +165,27 @@ func _check_stage(fixture: Node) -> void:
 	var stage: Node3D = ui.stage
 	_expect(stage.get_script().resource_path.ends_with("/CardStage3D.gd"), "preview uses the card stage")
 	_expect(stage.cards.size() == 6, "3v3 creates six cards")
+	# --- Defeat exits ----------------------------------------------------------
+	var beast: Node3D = stage.card_for(enemies[0])
+	var spirit: Node3D = stage.card_for(enemies[1])
+	var beast_home: Vector3 = beast.home_position
+	var spirit_home: Vector3 = spirit.home_position
+	beast.defeat_animal()
+	spirit.defeat_yumei()
+	await create_timer(0.7).timeout
+	_expect(beast.rotation.x < beast.home_rotation.x - 0.1 and beast.position.z < beast_home.z, "an animal tips backwards as it exits")
+	_expect(spirit.position.y > spirit_home.y or spirit.scale.x > 1.0, "a 語魅 pulses and begins to rise")
+	await create_timer(1.5).timeout
+	_expect(not beast.visible and not spirit.visible, "defeated cards are gone once the exit ends")
+	_expect(spirit.position.y > spirit_home.y + 1.0, "a 語魅 exits upward")
+	beast.visible = true
+	beast.set_fade(0.0)
+	spirit.visible = true
+	spirit.set_fade(0.0)
+	beast.reset_pose()
+	spirit.reset_pose()
+	spirit.position = spirit_home
+
 
 	# --- Slots and depth -------------------------------------------------------
 	var fast: Node3D = stage.card_for(allies[1])
