@@ -11,7 +11,7 @@ const PORTRAIT_SIZE := Vector2(2.3, 3.45)
 
 const WINDUP_DISTANCE := 0.45
 const LUNGE_FRACTION := 0.46
-const LUNGE_LIFT := 0.9 # Z toward the camera at contact, so the swing reads in depth.
+const LUNGE_LIFT := 0.6 # Z toward the camera at contact, so the swing reads in depth.
 const KNOCKBACK := Vector3(0.55, -0.12, -0.9)
 const KNOCKBACK_HEAVY := Vector3(1.0, -0.2, -1.6)
 const DODGE_SLIP := Vector3(0.5, 0.35, -1.25)
@@ -197,6 +197,13 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	mp_bar.max_value = maxi(1, max_mp)
 	mp_bar.value = clampi(mp, 0, max_mp)
 	name_label.add_theme_color_override("font_color", Color("9b9690") if hp <= 0 and not guest else PAPER)
+	# Overlapping cards hide the side facing the neighbour that stands in front:
+	# the party's RIGHT edge, the enemy's LEFT edge. Keep the text on the other side.
+	var text_side: int = HORIZONTAL_ALIGNMENT_RIGHT if is_enemy else HORIZONTAL_ALIGNMENT_LEFT
+	for label: Label in [name_label, hp_label, species_label]:
+		label.horizontal_alignment = text_side
+	if is_enemy:
+		element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 
 # --- Spatial motion --------------------------------------------------------------

@@ -1,40 +1,71 @@
 extends RefCounted
-## Card Stage line-up. Presentation only; not a tactics grid and not a set of
-## battle roles.
+## Card Stage line-up, expressed in SCREEN terms and converted to world space with
+## the real perspective camera. Presentation only; not a tactics grid and not a set
+## of battle roles.
 ##
-## Each side is ONE row of upright cards along the X axis at almost the same
-## depth. The enemy row is simply deeper and on the right, so perspective makes
-## it look farther away. Speed only decides the initial left-to-right order
-## (an ATB-style "who is nearest the exchange zone"): the fastest card stands
-## closest to the centre and pokes out a few centimetres toward the camera.
-## Order is decided once in set_teams() and never reshuffles on speed buffs.
+## Each camp is ONE row of upright cards along the X axis. How big a card looks is
+## decided by its distance from the camera (perspective), never by scale: the party
+## camp is placed so its cards are about ALLY_HEIGHT of the screen tall, the enemy
+## camp deeper so they are about ENEMY_HEIGHT tall. Both rows stand on one ground
+## plane, so the farther enemy feet sit higher on screen.
+##
+## Speed only decides the initial inner-to-outer order (fastest nearest the
+## exchange zone). Order is decided once in set_teams(); buffs never reshuffle it.
 
-## Distance between card centres along X (card width is 2.3, so neighbours
-## overlap slightly and the nearer one occludes the outer one's inner edge).
-const ALLY_SPACING: float = 1.9
-const ENEMY_SPACING: float = 2.2
-## Lane centre: distance from the centre line to the middle of each side's row.
-const ALLY_LANE_X: float = 4.6
-const ENEMY_LANE_X: float = 6.1
-## Row height (card centre). Same for everyone so the cards share a ground line.
-const ROW_Y: float = -0.3
-## Fastest card steps forward by this much in Z; each slower neighbour by half less.
-const FAST_POKE: float = 0.25
+## Nominal card height as a fraction of the screen height (card turned square-on).
+## A party card turned 45-55 degrees is enlarged on its near edge by perspective, so
+## its on-screen height (rotated bounding box) lands at about 4/5, the enemy
+## (nearly frontal) at about 2/5.
+const ALLY_HEIGHT: float = 0.70
+const ENEMY_HEIGHT: float = 0.37
+## Screen fraction (from the top) where party card bottoms stand; just above the
+## command tray. Enemy feet follow from the shared ground plane.
+const ALLY_FEET: float = 0.79
+## Row centres and spacing as fractions of the screen WIDTH (16:9 assumed).
+const ALLY_LANE: float = 0.285
+const ENEMY_LANE: float = 0.82
+const ALLY_SPACING: float = 0.145
+const ENEMY_SPACING: float = 0.085
+const ASPECT: float = 16.0 / 9.0
+## Tiny Z offset that orders overlapping cards: the party's fastest steps toward
+## the camera; the enemy row stacks outer-in-front so every name stays readable.
+const Z_STACK: float = 0.25
 
 
-## `rank` 0 is the slot nearest the centre. Returns {rank, position}.
-static func slot(count: int, rank: int, enemy: bool, base_depth: float) -> Dictionary:
+## `rank` 0 is the slot nearest the centre. Returns screen-space layout data.
+static func slot(count: int, rank: int, enemy: bool) -> Dictionary:
 	count = clampi(count, 1, 3)
 	rank = clampi(rank, 0, count - 1)
-	var side: float = 1.0 if enemy else -1.0
-	var lane_x: float = ENEMY_LANE_X if enemy else ALLY_LANE_X
-	# Centre the row in its lane; rank 0 is the inner end.
-	var offset: float = (float(rank) - float(count - 1) / 2.0) * (ENEMY_SPACING if enemy else ALLY_SPACING)
-	var poke: float = FAST_POKE * (1.0 - float(rank) / 2.0) if count > 1 else FAST_POKE * 0.5
-	return {
-		"rank": rank,
-		"position": Vector3(side * (lane_x + offset), ROW_Y, base_depth + poke),
-	}
+	var spacing: float = ENEMY_SPACING if enemy else ALLY_SPACING
+	var lane: float = ENEMY_LANE if enemy else ALLY_LANE
+	var inner_first: float = float(count - 1) / 2.0 - float(rank)
+	# Allies: rank 0 is the right-most; enemies: rank 0 is the left-most.
+	var screen_x: float = lane - inner_first * spacing if enemy else lane + inner_first * spacing
+	var height: float = ENEMY_HEIGHT if enemy else ALLY_HEIGHT
+	# Same ground plane for both rows: apparent feet offset from the horizon (0.5)
+	# shrinks in proportion to the card's apparent size.
+	var feet: float = 0.5 + (ALLY_FEET - 0.5) * (height / ALLY_HEIGHT)
+	var z_stack: float = Z_STACK * (float(rank) / 2.0 if enemy else 1.0 - float(rank) / 2.0)
+	if count == 1:
+		z_stack = Z_STACK * 0.5
+	return {"rank": rank, "enemy": enemy, "screen_x": screen_x, "height": height, "feet": feet, "z_stack": z_stack}
+
+
+## Distance in front of the camera at which a card of `card_height` world units
+## fills `fraction` of a vertical field of view of `fov_degrees`.
+static func distance_for_fraction(card_height: float, fraction: float, fov_degrees: float) -> float:
+	return card_height / (2.0 * tan(deg_to_rad(fov_degrees) / 2.0) * fraction)
+
+
+static func world_position(layout: Dictionary, card_height: float, camera_z: float, fov_degrees: float) -> Vector3:
+	var distance: float = distance_for_fraction(card_height, layout.height, fov_degrees)
+	var visible_height: float = 2.0 * distance * tan(deg_to_rad(fov_degrees) / 2.0)
+	var centre_from_top: float = layout.feet - layout.height / 2.0
+	return Vector3(
+		(layout.screen_x - 0.5) * visible_height * ASPECT,
+		(0.5 - centre_from_top) * visible_height,
+		camera_z - distance + layout.z_stack
+	)
 
 
 ## Returns, for each actor index, the slot rank (0 = nearest the centre). Faster

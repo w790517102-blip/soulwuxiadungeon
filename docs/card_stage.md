@@ -21,12 +21,16 @@
 對既有檔案的改動只有掛鉤：`StageBattleUI._create_stage()`、`BattleScene` 的第三個 enum 與分支、`CombatStagePrototype.ui_script_path`。
 
 ## 站位（沒有前鋒／中軍／後援職位）
-- 每方**一排**卡片，沿 X 排列，高度相同（`ROW_Y`），Z 幾乎相同。
-- 拉開的是「陣營之間」的 Z，不是同隊卡片：我方基準 Z = `CARD_STAGE_PLAYER_DEPTH`（+2.5，前景）、敵方 `CARD_STAGE_ENEMY_DEPTH`（-4.0，後景，在右側），背景 `CARD_STAGE_BACKGROUND_DEPTH`（-11）。大小差只來自透視與 FOV，不使用 scale 補償。
+- 每個陣營**一排**卡片，沿 X 排列，同一高度、同一 Z band（只有 `Z_STACK` 0.25 的遮疊排序差）。
+- 位置以「螢幕比例」定義，再用真實透視相機換成世界座標（`Formation.world_position`）；大小只來自距離與 FOV，不使用 scale：
+  - 我方：卡片名目高 `ALLY_HEIGHT 0.70`，轉 45–55° 後近側被放大，實際約占螢幕高 **4/5**；基準 Z ≈ +10.9（前景、左）。
+  - 敵方：`ENEMY_HEIGHT 0.37`，近乎正面，約占螢幕高 **2/5**；基準 Z ≈ +3.5（後景、右）。
+  - 兩排站在同一地平面（`ALLY_FEET 0.79`），所以較遠的敵方腳底在畫面上較高。背景 Z = -11。
 - 中央保留至少 15% 螢幕寬的空地給劍痕、MISS 穿越與前衝。
-- 速度只決定**初始**由內往外的順序：最快的最靠交鋒區，並略微向鏡頭突出（`FAST_POKE`，最多 0.35）。只在 `set_teams()` 決定，戰鬥中 Buff/Debuff 不重排。客座永遠排最外側。actor 可選 `formation = "inner" | "outer"` 覆寫。
-- 參數（`CardStageFormation.gd`）：`ALLY_LANE_X 4.6`、`ENEMY_LANE_X 6.1`、`ALLY_SPACING 1.9`、`ENEMY_SPACING 2.2`、`ROW_Y -0.3`、`FAST_POKE 0.25`。
-- Yaw preset：22° / 28°（預設）/ 32°，我方向右內轉、敵方鏡像。Debug build 戰鬥中按 F9 循環；或啟動參數 `-- --card-yaw=32`。
+- 速度只決定**初始**由內往外的順序：最快的最靠交鋒區（我方並略向鏡頭突出）。只在 `set_teams()` 決定，戰鬥中 Buff/Debuff 不重排。客座永遠排最外側。actor 可選 `formation = "inner" | "outer"` 覆寫。
+- 疊壓：我方右緣、敵方左緣會被鄰卡蓋住，所以敵方卡的名字／氣血／屬性靠右對齊，我方靠左對齊。
+- 參數（`CardStageFormation.gd`，均為畫面比例）：`ALLY_LANE 0.285`、`ENEMY_LANE 0.82`、`ALLY_SPACING 0.145`、`ENEMY_SPACING 0.085`、`ALLY_FEET 0.79`。
+- Yaw：**我方 45° / 50°（預設）/ 55°** 朝向敵方；**敵方固定 12°**，盡量維持正面（`ENEMY_YAW_DEGREES`，或 `-- --enemy-yaw=N`）。Debug build 戰鬥中按 F9 循環我方 yaw；啟動參數 `-- --card-yaw=55`。
 
 ## 直式卡（2:3）
 - 世界尺寸 `PORTRAIT_SIZE = 2.3 × 3.45`；畫布 400×600（SubViewport 2 倍解析度）。

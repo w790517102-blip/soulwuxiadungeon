@@ -1,44 +1,48 @@
 extends "res://scripts/presentation/CombatStage25D.gd"
 ## Card Stage: the same camera, background, FX volume and command tray as
-## STAGE_25D, with upright portrait cards placed in one row per side (see
-## CardStageFormation). The two camps are pulled apart in Z, not the cards of one
-## camp: the party stands in the foreground on the left, the enemy farther back on
-## the right, so the real perspective camera makes them close on each other
-## diagonally. Size differences come only from depth and FOV, never from scale.
+## STAGE_25D, with upright portrait cards placed in one row per camp (see
+## CardStageFormation). The party camp stands in the foreground on the left and
+## fills about 4/5 of the screen height; the enemy camp stands far back on the
+## right at about 2/5. Both sizes come from the perspective camera (distance and
+## FOV), never from scale. Party cards turn hard toward the enemy; enemy cards
+## stay nearly frontal so their information remains easy to read.
 
 const CardStageActorCard = preload("res://scripts/presentation/CardStageActorCard.gd")
 const Formation = preload("res://scripts/presentation/CardStageFormation.gd")
 
-## Camp depth bands (world Z; the camera looks down -Z from z = 18).
-const CARD_STAGE_PLAYER_DEPTH: float = 2.5
-const CARD_STAGE_ENEMY_DEPTH: float = -4.0
-## Backdrop sits well behind the enemy band so MISS ribbons dissipate in front of it.
+const CAMERA_Z: float = 18.0
+## Backdrop sits well behind the enemy camp so MISS ribbons dissipate in front of it.
 const CARD_STAGE_BACKGROUND_DEPTH: float = -11.0
-## Selectable card yaw presets, in degrees (party turns toward the enemy, mirrored).
-const YAW_PRESETS: Array[float] = [22.0, 28.0, 32.0]
+## Party yaw presets in degrees (turned toward the enemy); F9 cycles in debug builds.
+const YAW_PRESETS: Array[float] = [45.0, 50.0, 55.0]
 const DEFAULT_YAW_PRESET: int = 1
+## Enemy cards keep a slight inward turn only.
+const ENEMY_YAW_DEGREES: float = 12.0
 
 var yaw_preset: int = DEFAULT_YAW_PRESET
-## actor key -> {rank, position}; read by tests and debug tools.
+var enemy_yaw_degrees: float = ENEMY_YAW_DEGREES
+## actor key -> layout + world position; read by tests and debug tools.
 var slots: Dictionary = {}
 
 
 func _ready() -> void:
-	player_depth = CARD_STAGE_PLAYER_DEPTH
-	enemy_depth = CARD_STAGE_ENEMY_DEPTH
+	var card_height: float = CardStageActorCard.PORTRAIT_SIZE.y
+	player_depth = CAMERA_Z - Formation.distance_for_fraction(card_height, Formation.ALLY_HEIGHT, camera_fov)
+	enemy_depth = CAMERA_Z - Formation.distance_for_fraction(card_height, Formation.ENEMY_HEIGHT, camera_fov)
 	background_depth = CARD_STAGE_BACKGROUND_DEPTH
 	yaw_preset = DEFAULT_YAW_PRESET
 	for argument: String in OS.get_cmdline_user_args():
 		if argument.begins_with("--card-yaw="):
-			var wanted: float = float(argument.trim_prefix("--card-yaw="))
-			var found: int = YAW_PRESETS.find(wanted)
+			var found: int = YAW_PRESETS.find(float(argument.trim_prefix("--card-yaw=")))
 			if found >= 0:
 				yaw_preset = found
+		elif argument.begins_with("--enemy-yaw="):
+			enemy_yaw_degrees = clampf(float(argument.trim_prefix("--enemy-yaw=")), 0.0, 40.0)
 	card_yaw_degrees = YAW_PRESETS[yaw_preset]
 	super._ready()
 
 
-## Dev aid: cycles 22 / 28 / 32 degrees and re-seats every card (idle poses only).
+## Dev aid: cycles the party yaw 50 -> 55 -> 45 -> 50 and re-seats idle cards.
 func cycle_yaw_preset() -> float:
 	if busy:
 		return card_yaw_degrees
@@ -49,9 +53,13 @@ func set_yaw_preset(index: int) -> float:
 	yaw_preset = clampi(index, 0, YAW_PRESETS.size() - 1)
 	card_yaw_degrees = YAW_PRESETS[yaw_preset]
 	for card: Node3D in cards.values():
-		var side: float = 1.0 if card.is_enemy else -1.0
-		card.set_home(card.home_position, -side * card_yaw_degrees)
+		card.set_home(card.home_position, _yaw_for(card.is_enemy))
 	return card_yaw_degrees
+
+
+func _yaw_for(enemy: bool) -> float:
+	# +yaw turns a party card toward the right; mirrored for the enemy.
+	return -enemy_yaw_degrees if enemy else card_yaw_degrees
 
 
 func set_teams(allies: Array, enemies: Array, guest: Dictionary = {}, status_source: Callable = Callable()) -> void:
@@ -75,21 +83,21 @@ func _place_side(actors: Array, enemy: bool) -> void:
 		if not actor.is_empty():
 			present.append(actor)
 	var ranks: Array[int] = Formation.assign_ranks(present)
-	var base_depth: float = enemy_depth if enemy else player_depth
 	for index: int in range(present.size()):
 		var actor: Dictionary = present[index]
-		var slot: Dictionary = Formation.slot(present.size(), ranks[index], enemy, base_depth)
+		var layout: Dictionary = Formation.slot(present.size(), ranks[index], enemy)
 		var card: Node3D = CardStageActorCard.new()
 		actor_root.add_child(card)
 		card.configure(actor, enemy, _status_text(actor))
 		card.scale = Vector3.ONE
-		var side: float = 1.0 if enemy else -1.0
-		card.set_home(slot.position, -side * card_yaw_degrees)
-		card.slot_rank = slot.rank
+		var position: Vector3 = Formation.world_position(layout, card.card_size.y, CAMERA_Z, camera_fov)
+		card.set_home(position, _yaw_for(enemy))
+		card.slot_rank = layout.rank
 		var key: String = actor_key(actor)
-		card.name = "Card_%d_%s" % [slot.rank, key.replace("#", "_")]
+		card.name = "Card_%d_%s" % [layout.rank, key.replace("#", "_")]
 		cards[key] = card
-		slots[key] = slot
+		layout["position"] = position
+		slots[key] = layout
 
 
 # Cards here are portrait-sized, so picking and screen rectangles use each card's

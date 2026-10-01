@@ -48,22 +48,26 @@ func _check_formation_table() -> void:
 		for enemy: bool in [false, true]:
 			var previous: Dictionary = {}
 			for rank: int in range(count):
-				var slot: Dictionary = Formation.slot(count, rank, enemy, -1.0 if enemy else 1.0)
-				var side: float = 1.0 if enemy else -1.0
-				_expect(signf(slot.position.x) == side, "slot x stays on its own side (count %d rank %d)" % [count, rank])
+				var slot: Dictionary = Formation.slot(count, rank, enemy)
+				_expect((slot.screen_x > 0.5) == enemy, "slot stays on its own half of the screen (count %d rank %d)" % [count, rank])
 				if not previous.is_empty():
-					_expect(absf(slot.position.x) > absf(previous.position.x), "later ranks stand farther from the centre line along X")
-					_expect(is_equal_approx(slot.position.y, previous.position.y), "a row shares one ground line")
-					_expect(slot.position.z <= previous.position.z and previous.position.z - slot.position.z < 0.6, "the row stays at almost one depth; only a small poke for the fastest")
+					var outward: float = slot.screen_x - previous.screen_x
+					_expect((outward > 0.0) == enemy and absf(outward) > 0.0, "later ranks stand farther from the centre along X")
+					_expect(is_equal_approx(slot.feet, previous.feet) and is_equal_approx(slot.height, previous.height), "a camp shares one ground line and one apparent size")
+					_expect(absf(slot.z_stack - previous.z_stack) < 0.3, "ordering offsets inside a camp are tiny")
 				_expect(not slot.has("role_name") and not slot.has("role"), "slots carry no battle-role semantics")
 				previous = slot
-	var ally: Dictionary = Formation.slot(3, 0, false, 1.0)
-	var enemy_slot: Dictionary = Formation.slot(3, 0, true, -2.0)
-	_expect(ally.position.z - enemy_slot.position.z > 2.5, "enemy row is clearly deeper than the party row")
-	_expect(is_equal_approx(ally.position.y, enemy_slot.position.y), "both rows share the same height")
-	var ally_span: float = absf(Formation.slot(3, 2, false, 1.0).position.x - Formation.slot(3, 0, false, 1.0).position.x)
+	var ally: Dictionary = Formation.slot(3, 0, false)
+	var enemy_slot: Dictionary = Formation.slot(3, 0, true)
+	_expect(is_equal_approx(Formation.ALLY_HEIGHT / Formation.ENEMY_HEIGHT, 70.0 / 37.0), "camp apparent heights are data constants")
+	_expect(Formation.ALLY_HEIGHT > Formation.ENEMY_HEIGHT * 1.7, "the party camp looks nearly twice as tall as the enemy camp")
+	_expect(enemy_slot.feet < ally.feet and enemy_slot.feet > 0.5, "enemy feet stand higher on screen on the same ground plane")
+	var ally_span: float = absf(Formation.slot(3, 2, false).screen_x - Formation.slot(3, 0, false).screen_x)
 	_expect(is_equal_approx(ally_span, Formation.ALLY_SPACING * 2.0), "neighbour spacing is the data constant")
-	_expect(is_equal_approx(Formation.slot(1, 0, false, 1.0).position.x, -Formation.ALLY_LANE_X), "a lone party card centres in its lane")
+	_expect(is_equal_approx(Formation.slot(1, 0, false).screen_x, Formation.ALLY_LANE), "a lone party card centres in its lane")
+	var near: float = Formation.distance_for_fraction(3.45, Formation.ALLY_HEIGHT, 34.0)
+	var far: float = Formation.distance_for_fraction(3.45, Formation.ENEMY_HEIGHT, 34.0)
+	_expect(far > near * 1.8 and far < near * 2.1, "the enemy camp is about twice as far from the camera")
 
 
 func _check_rank_assignment() -> void:
@@ -180,12 +184,14 @@ func _check_stage(fixture: Node) -> void:
 	_expect(fast.hp_label.visible and fast.mp_label.visible and fast.force_label.visible and fast.level_label.visible, "party card keeps HP, MP, inner force and level")
 	_expect(foe_fast.hp_label.visible and foe_fast.species_label.visible and foe_fast.element_label.visible and not foe_fast.mp_label.visible, "enemy card keeps HP, species and element")
 	_expect(fast.card_viewport.size_2d_override.y > fast.card_viewport.size_2d_override.x, "card face canvas is portrait")
-	_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(28.0)) and is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-28.0)), "default yaw is the 28 degree preset, mirrored")
-	_expect(stage.YAW_PRESETS == [22.0, 28.0, 32.0], "yaw presets are 22 / 28 / 32")
+	_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(50.0)), "party cards default to a 50 degree turn toward the enemy")
+	_expect(is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-12.0)) and foe_fast.home_rotation.y < 0.0, "enemy cards stay nearly frontal, turned slightly toward the party")
+	_expect(stage.YAW_PRESETS == [45.0, 50.0, 55.0], "party yaw presets are 45 / 50 / 55")
 	for preset: int in [0, 2, 1]:
 		var applied: float = stage.set_yaw_preset(preset)
-		_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(applied)) and is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-applied)) and fast.rotation.is_equal_approx(fast.home_rotation), "preset %d seats every card at %d degrees, mirrored" % [preset, int(applied)])
-	_expect(stage.cycle_yaw_preset() == 32.0 and stage.cycle_yaw_preset() == 22.0 and stage.cycle_yaw_preset() == 28.0, "yaw cycles 28 -> 32 -> 22 -> 28")
+		_expect(is_equal_approx(fast.home_rotation.y, deg_to_rad(applied)) and is_equal_approx(slow.home_rotation.y, deg_to_rad(applied)) and fast.rotation.is_equal_approx(fast.home_rotation), "preset %d seats every party card at %d degrees" % [preset, int(applied)])
+		_expect(is_equal_approx(foe_fast.home_rotation.y, deg_to_rad(-12.0)), "party yaw presets never change the enemy yaw")
+	_expect(stage.cycle_yaw_preset() == 55.0 and stage.cycle_yaw_preset() == 45.0 and stage.cycle_yaw_preset() == 50.0, "party yaw cycles 50 -> 55 -> 45 -> 50")
 	# Camp depth: the camps are pulled apart, never the cards of one camp.
 	_expect(party_depths.min() - foe_fast.home_position.z >= 5.0, "enemy camp is at least 5 world units deeper than the party camp")
 	var enemy_depths: Array = []
@@ -196,7 +202,10 @@ func _check_stage(fixture: Node) -> void:
 	# Size difference comes from perspective only; no compensating scale.
 	var ally_rect: Rect2 = stage.card_screen_rect(allies[0])
 	var foe_rect: Rect2 = stage.card_screen_rect(enemies[0])
-	_expect(stage.card_for(enemies[0]).scale == Vector3.ONE and foe_rect.size.y < ally_rect.size.y * 0.85, "farther enemy cards look smaller through perspective, not scale")
+	_expect(stage.card_for(enemies[0]).scale == Vector3.ONE and foe_rect.size.y < ally_rect.size.y * 0.6, "farther enemy cards look smaller through perspective, not scale")
+	var screen_h: float = root.get_visible_rect().size.y
+	_expect(ally_rect.size.y / screen_h > 0.74 and ally_rect.size.y / screen_h < 0.9, "party cards fill about 4/5 of the screen height (%.2f)" % (ally_rect.size.y / screen_h))
+	_expect(foe_rect.size.y / screen_h > 0.33 and foe_rect.size.y / screen_h < 0.47, "enemy cards fill about 2/5 of the screen height (%.2f)" % (foe_rect.size.y / screen_h))
 	# The middle stays open for sword trails, MISS flights and charges.
 	var party_right: float = 0.0
 	var enemy_left: float = 99999.0
@@ -209,7 +218,8 @@ func _check_stage(fixture: Node) -> void:
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 	for card: Node3D in stage.cards.values():
 		var rect: Rect2 = stage.card_screen_rect(_actor_of(card, stage, allies + enemies))
-		_expect(viewport_rect.grow(2.0).encloses(rect), "%s stays inside the viewport" % card.name)
+		_expect(viewport_rect.grow(viewport_rect.size.x * 0.03).encloses(rect), "%s stays (almost) inside the viewport: %s" % [card.name, str(rect)])
+		_expect(rect.end.y <= viewport_rect.size.y * 0.85, "%s stands above the command tray" % card.name)
 
 	# --- Overlap, picking and hover --------------------------------------------
 	var overlap_found := false
@@ -324,7 +334,7 @@ func _check_motion(card: Node3D, other: Node3D, stage: Node3D, kind: String) -> 
 	_expect(card.position.is_equal_approx(home) and card.rotation.is_equal_approx(card.home_rotation), "%s motion returns the card to its slot" % kind)
 	match kind:
 		"attack":
-			_expect(peak_distance > 2.0 and peak_z_forward >= 0.8, "attack lunges toward the centre and swings out toward the viewer")
+			_expect(peak_distance > 1.8 and peak_z_forward >= 0.5, "attack lunges toward the centre and swings out toward the viewer")
 		"hit":
 			_expect(peak_z_back <= -1.4, "heavy hit knocks the card back into depth")
 		"dodge":
