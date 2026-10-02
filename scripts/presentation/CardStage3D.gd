@@ -987,20 +987,30 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 	var cut_centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.4)
 	var cut_length: float = destination.card_size.y * 1.15
 	if hit:
-		StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
+		var cut_wait: float = 0.1
+		var cut_hold: float = StageHitEffects.slash_duration() + 0.1
+		if USE_WATER_SLASH:
+			_start_water_slash(cut_centre, cut_length * 1.5, direction)
+			cut_wait = WATER_SLASH_SECONDS * 0.30
+			cut_hold = WATER_SLASH_SECONDS * 0.45
+		else:
+			StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
 		# The target is struck as the cut lands (late in the draw), then reacts.
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(cut_wait).timeout
 		if bool(target.get("defending", false)):
 			destination.guard_motion()
 		else:
 			destination.hit_reaction(bool(result.get("crit", false)))
 		# Let the whole cut finish (drawn, blue flicker, held) before the attacker withdraws.
-		await get_tree().create_timer(StageHitEffects.slash_duration() + 0.1).timeout
+		await get_tree().create_timer(cut_hold).timeout
 	else:
 		destination.dodge_motion()
 		# The blade only finds air beside the target.
 		var miss_centre: Vector3 = cut_centre + Vector3(direction * 0.9, 0.2, -0.6)
-		StageHitEffects.slash(fx_root, miss_centre, cut_length, direction, 0.55)
+		if USE_WATER_SLASH:
+			_start_water_slash(miss_centre, cut_length * 1.1, direction)
+		else:
+			StageHitEffects.slash(fx_root, miss_centre, cut_length, direction, 0.55)
 		await get_tree().create_timer(0.34).timeout
 	await source.lunge_return(0.4)
 	await get_tree().create_timer(0.12).timeout
@@ -1321,3 +1331,22 @@ func present_boss_finale(boss: Dictionary) -> void:
 	# 6. The black husk shrinks and is squashed flat.
 	await card.char_collapse(0.7)
 	busy = false
+
+
+# --- Water slash (a blade of flowing water on a half-circle orbit; first version) ----------------
+
+const WaterSlash = preload("res://scripts/presentation/StageWaterSlash.gd")
+## Off by default while the look is being worked out; true switches sword cuts to the water slash.
+const USE_WATER_SLASH: bool = false
+const WATER_SLASH_SECONDS: float = 0.8
+
+
+## Starts the water cut (it frees itself); the caller times its own reaction.
+func _start_water_slash(centre: Vector3, length: float, direction: float) -> void:
+	var slash := WaterSlash.new()
+	slash.duration = WATER_SLASH_SECONDS
+	fx_root.add_child(slash)
+	slash.setup(length, direction)
+	# Centre the half-circle on the target.
+	slash.position = centre + Vector3(-direction * length * 0.02, length * 0.01, 0.3)
+	slash.play()
