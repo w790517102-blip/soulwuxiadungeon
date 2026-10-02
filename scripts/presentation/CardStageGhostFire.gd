@@ -1,10 +1,10 @@
 extends Node3D
-## Violet ghost fire rising off a dying card: many small sparks like those of a campfire,
-## scattering outward and upward on turbulent paths, plus a few long wisps that leave ribbon
-## trails like the paths of ghosts. GPU particles; presentation only.
+## Violet fire off a dying card: many small sparks like those of a campfire, scattering outward
+## and upward on turbulent paths, plus purple triangles shooting out from the centre like rays of light,
+## the way an early arcade boss explodes. Presentation only.
 
 var _sparks: GPUParticles3D
-var _wisps: GPUParticles3D
+
 
 
 static func _soft_dot() -> Texture2D:
@@ -79,47 +79,61 @@ func play(size: Vector2, seconds: float) -> void:
 	_sparks.emitting = true
 	add_child(_sparks)
 
-	# --- Ghost wisps with ribbon trails -----------------------------------------------------------
-	_wisps = GPUParticles3D.new()
-	var wisp_process := ParticleProcessMaterial.new()
-	wisp_process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	wisp_process.emission_box_extents = Vector3(size.x * 0.45, size.y * 0.4, 0.05)
-	wisp_process.direction = Vector3(0.0, 1.0, 0.0)
-	wisp_process.spread = 90.0
-	wisp_process.initial_velocity_min = 0.4
-	wisp_process.initial_velocity_max = 1.0
-	wisp_process.gravity = Vector3(0.0, 0.25, 0.0)
-	wisp_process.turbulence_enabled = true
-	wisp_process.turbulence_noise_strength = 5.0
-	wisp_process.turbulence_noise_scale = 0.7
-	wisp_process.turbulence_influence_min = 0.5
-	wisp_process.turbulence_influence_max = 0.9
-	wisp_process.color_ramp = _ramp(
-		PackedColorArray([Color(0.7, 0.35, 1.0, 0.0), Color(0.62, 0.28, 0.95, 0.85), Color(0.3, 0.08, 0.55, 0.0)]),
-		PackedFloat32Array([0.0, 0.25, 1.0]))
-	_wisps.process_material = wisp_process
-	var ribbon := RibbonTrailMesh.new()
-	ribbon.size = 0.035
-	ribbon.sections = 8
-	ribbon.section_length = 0.09
-	ribbon.section_segments = 2
-	ribbon.material = _glow_material(false)
-	_wisps.draw_pass_1 = ribbon
-	_wisps.transform_align = GPUParticles3D.TRANSFORM_ALIGN_Y_TO_VELOCITY
-	_wisps.trail_enabled = true
-	_wisps.trail_lifetime = 1.0
-	_wisps.amount = 30
-	_wisps.lifetime = 2.8
-	_wisps.visibility_aabb = AABB(Vector3(-4, -4, -4), Vector3(8, 8, 8))
-	_wisps.emitting = true
-	add_child(_wisps)
-
+	# Rays of light from the centre, in waves.
+	for wave: int in range(4):
+		get_tree().create_timer(0.55 * float(wave)).timeout.connect(func() -> void: ray_burst(size, 24 + wave * 4))
 	get_tree().create_timer(seconds).timeout.connect(_stop)
 
 
 func _stop() -> void:
 	if is_instance_valid(_sparks):
 		_sparks.emitting = false
-	if is_instance_valid(_wisps):
-		_wisps.emitting = false
 	get_tree().create_timer(3.4).timeout.connect(queue_free)
+
+
+## One wave of purple triangles radiating from the centre point, each a thin spike pointing
+## away from it, flying outward fast and fading (like the burst of an early arcade boss).
+func ray_burst(size: Vector2, count: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var reach: float = maxf(size.x, size.y) * 1.6
+	var phase: float = rng.randf() * TAU
+	for index: int in range(count):
+		var angle: float = phase + TAU * float(index) / float(count) + rng.randf_range(-0.09, 0.09)
+		var length: float = rng.randf_range(0.35, 0.95)
+		var width: float = rng.randf_range(0.05, 0.12)
+		var ray := MeshInstance3D.new()
+		ray.mesh = _spike_mesh(length, width)
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		material.render_priority = 25
+		material.albedo_color = Color(0.66, 0.30, 1.0, 0.95) if index % 4 != 0 else Color(0.88, 0.70, 1.0, 0.95)
+		ray.material_override = material
+		ray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(ray)
+		# The spike points along +Y; turn it so its tip faces outward at `angle`.
+		ray.rotation = Vector3(0.0, 0.0, angle - PI * 0.5)
+		var direction := Vector3(cos(angle), sin(angle), 0.0)
+		ray.position = direction * 0.12
+		ray.scale = Vector3(0.6, 0.4, 1.0)
+		var travel: float = reach * rng.randf_range(0.6, 1.0)
+		var seconds: float = rng.randf_range(0.75, 1.1)
+		var tween := create_tween().set_parallel(true)
+		tween.tween_property(ray, "position", direction * (0.12 + travel), seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(ray, "scale", Vector3(1.0, 1.7, 1.0), seconds * 0.7)
+		tween.tween_property(ray, "transparency", 1.0, seconds * 0.55).set_delay(seconds * 0.45)
+		tween.chain().tween_callback(ray.queue_free)
+
+
+## A thin isosceles triangle: base on the origin, tip `length` along +Y.
+func _spike_mesh(length: float, width: float) -> ArrayMesh:
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(-width * 0.5, 0.0, 0.0), Vector3(width * 0.5, 0.0, 0.0), Vector3(0.0, length, 0.0)])
+	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2])
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
