@@ -1,11 +1,11 @@
 extends Node3D
-## The sword cut: ONE band of turbulent water texture along a half-circle orbit. Only the texture of
-## water (streaks that all run the same way yet are irregular and uncoordinated), no droplets or
-## splash. A shader paints it on an arc-shaped strip standing in the stage; the band has a pointed
-## head and a tail that thins, breaks into strands and dissolves. Struck from our side toward the
-## upper right (mirrored for the other side). Presentation only.
+## The sword cut: ONE sharp crescent of cold silver-white light that tears the air, with black ink
+## strands dragged behind it and black fracture cracks across it (high contrast, no blue, no water).
+## The streaks all run along the cut in the same direction yet are irregular and uncoordinated.
+## A shader paints it on an arc-shaped strip standing in the stage; the cut swings from the upper
+## left down to the lower right (mirrored for the other side). Presentation only.
 
-const WaterShader = preload("res://scripts/presentation/shaders/water_slash.gdshader")
+const BladeShader = preload("res://scripts/presentation/shaders/blade_slash.gdshader")
 
 const TILT := 0.50
 const SWEEP_END := 0.34
@@ -26,7 +26,9 @@ var _material: ShaderMaterial
 ## A point on the half-circle orbit at `s` (0 = left end, 1 = right end), in units of `_unit`.
 func _orbit(s: float) -> Vector3:
 	var phi: float = lerpf(PI + 0.05, TAU - 0.05, s)
-	return Vector3(cos(phi), sin(phi) * 0.62 + 0.40, 0.08 * sin(PI * s))
+	# The upper arc of a flattened ellipse (a frown), centred on the pivot; the whole cut is then
+	# turned to descend from the upper left to the lower right.
+	return Vector3(cos(phi), -sin(phi) * 0.62 - 0.31, 0.08 * sin(PI * s))
 
 
 func _tangent(s: float) -> Vector3:
@@ -38,10 +40,10 @@ func _tangent(s: float) -> Vector3:
 func setup(length: float, direction: float) -> void:
 	_unit = length * 0.5
 	scale.x = 1.0 if direction >= 0.0 else -1.0
-	rotation.z = TILT * (1.0 if direction >= 0.0 else -1.0)
-	rotation.y = -0.30 * (1.0 if direction >= 0.0 else -1.0)
+	rotation.z = -TILT * (1.0 if direction >= 0.0 else -1.0)
+	rotation.y = 0.30 * (1.0 if direction >= 0.0 else -1.0)
 	_material = ShaderMaterial.new()
-	_material.shader = WaterShader
+	_material.shader = BladeShader
 	_material.set_shader_parameter("seed", randf() * 10.0)
 	_material.set_shader_parameter("progress", 0.0)
 	_material.render_priority = 28

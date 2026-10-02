@@ -989,10 +989,10 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 	if hit:
 		var cut_wait: float = 0.1
 		var cut_hold: float = StageHitEffects.slash_duration() + 0.1
-		if USE_WATER_SLASH:
-			_start_water_slash(cut_centre, cut_length * 1.5, direction)
-			cut_wait = WATER_SLASH_SECONDS * 0.30
-			cut_hold = WATER_SLASH_SECONDS * 0.45
+		if USE_BLADE_SLASH:
+			_start_blade_slash(cut_centre, cut_length * 1.5, direction)
+			cut_wait = BLADE_SLASH_SECONDS * 0.30
+			cut_hold = BLADE_SLASH_SECONDS * 0.45
 		else:
 			StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
 		# The target is struck as the cut lands (late in the draw), then reacts.
@@ -1007,8 +1007,8 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 		destination.dodge_motion()
 		# The blade only finds air beside the target.
 		var miss_centre: Vector3 = cut_centre + Vector3(direction * 0.9, 0.2, -0.6)
-		if USE_WATER_SLASH:
-			_start_water_slash(miss_centre, cut_length * 1.1, direction)
+		if USE_BLADE_SLASH:
+			_start_blade_slash(miss_centre, cut_length * 1.1, direction)
 		else:
 			StageHitEffects.slash(fx_root, miss_centre, cut_length, direction, 0.55)
 		await get_tree().create_timer(0.34).timeout
@@ -1333,20 +1333,20 @@ func present_boss_finale(boss: Dictionary) -> void:
 	busy = false
 
 
-# --- The sword cut: one band of turbulent water texture on a half-circle orbit -----------------
+# --- The sword cut: one silver-white blade crescent with black ink, upper left to lower right ---
 
-const WaterSlash = preload("res://scripts/presentation/StageWaterSlash.gd")
-## Sword cuts use the single water-texture band (false brings back the sprite-sheet slash).
-const USE_WATER_SLASH: bool = true
-const WATER_SLASH_SECONDS: float = 0.8
+const BladeSlash = preload("res://scripts/presentation/StageBladeSlash.gd")
+## Sword cuts use the single silver-white blade band (false brings back the sprite-sheet slash).
+const USE_BLADE_SLASH: bool = true
+const BLADE_SLASH_SECONDS: float = 0.8
 
 
-## Starts the water cut (it frees itself); the caller times its own reaction.
-func _start_water_slash(centre: Vector3, length: float, direction: float) -> void:
-	var slash := WaterSlash.new()
-	slash.duration = WATER_SLASH_SECONDS
+## Starts the blade cut (it frees itself); the caller times its own reaction.
+func _start_blade_slash(centre: Vector3, length: float, direction: float) -> void:
+	var slash := BladeSlash.new()
+	slash.duration = BLADE_SLASH_SECONDS
 	fx_root.add_child(slash)
 	slash.setup(length, direction)
 	# Centre the half-circle on the target.
-	slash.position = centre + Vector3(-direction * length * 0.02, length * 0.01, 0.3)
+	slash.position = centre + Vector3(direction * length * 0.03, -length * 0.13, 0.3)
 	slash.play()
