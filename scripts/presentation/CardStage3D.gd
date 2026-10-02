@@ -1268,9 +1268,11 @@ func has_boss_finale(actor: Dictionary) -> bool:
 	return card != null and card.get("template_key") == "boss"
 
 
-## Directed finale: the card flashes white, the backdrop whites out and fades away, violet ghost
-## fire streams up and out, the card burns for five seconds, and the charred black husk shrinks
-## and is squashed flat.
+## Directed finale: the card flashes white, slowly; on the last flash it stays white while the
+## backdrop fades in to white, then the card returns to its normal colours and the backdrop fades
+## out to black. Violet triangles then fly off the centre one at a time, in random directions,
+## with campfire-like sparks, until the card is half burnt. The card burns for five seconds; the
+## charred black husk shrinks and is squashed flat.
 func present_boss_finale(boss: Dictionary) -> void:
 	var card: Node3D = card_for(boss)
 	if card == null:
@@ -1280,9 +1282,7 @@ func present_boss_finale(boss: Dictionary) -> void:
 	card.defeat_played = true
 	card.set_tint("")
 	card._kill_motion()
-	# 1. White, white, white ... quickening.
-	await card.flash_white_pulses(8, 0.46, 0.14)
-	# 2. The backdrop inverts to white, then fades out to nothing.
+	# The backdrop sheet (sits behind the boss only), transparent for now.
 	var distance: float = CAMERA_Z - (card.position.z - 1.0)
 	var visible_height: float = 2.0 * distance * tan(deg_to_rad(camera_fov) / 2.0)
 	var sheet_mesh := QuadMesh.new()
@@ -1298,19 +1298,26 @@ func present_boss_finale(boss: Dictionary) -> void:
 	sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	fx_root.add_child(sheet)
 	sheet.global_position = Vector3(0.0, 0.0, card.position.z - 1.0)
-	var whiteout := create_tween()
-	whiteout.tween_property(sheet_material, "albedo_color:a", 1.0, 0.5)
-	whiteout.tween_interval(0.25)
-	whiteout.tween_property(sheet_material, "albedo_color", Color(0.0, 0.0, 0.0, 1.0), 1.2).set_trans(Tween.TRANS_SINE)
-	await whiteout.finished
-	# 3. Violet ghost fire streams out and up.
+	# 1. White, white, white ... slowly; the last flash stays white and the backdrop fades in white.
+	var backdrop_white := func() -> void:
+		var fade_in := create_tween()
+		fade_in.tween_property(sheet_material, "albedo_color:a", 1.0, 0.8)
+	await card.flash_white_pulses(6, 0.95, 0.55, backdrop_white)
+	# 2. The card shows its normal colours again against the white.
+	await card.fade_white_overlay(0.6)
+	await get_tree().create_timer(0.3).timeout
+	# 3. The white backdrop fades out to black.
+	var fade_out := create_tween()
+	fade_out.tween_property(sheet_material, "albedo_color", Color(0.0, 0.0, 0.0, 1.0), 1.2).set_trans(Tween.TRANS_SINE)
+	await fade_out.finished
+	# 4. Violet fire: triangles fly off one by one until the card is half burnt, sparks all along.
 	var fire := GhostFire.new()
 	fx_root.add_child(fire)
 	fire.global_position = card.global_position + Vector3(0.0, 0.0, 0.2)
-	fire.play(card.card_size, FINALE_BURN_SECONDS + 1.0)
+	fire.play(card.card_size, FINALE_BURN_SECONDS + 1.0, 0.9 + FINALE_BURN_SECONDS * 0.5)
 	await get_tree().create_timer(0.9).timeout
-	# 4. The card burns, five seconds, to black.
+	# 5. The card burns, five seconds, to black.
 	await card.burn_down(FINALE_BURN_SECONDS)
-	# 5. The black husk shrinks and is squashed flat.
+	# 6. The black husk shrinks and is squashed flat.
 	await card.char_collapse(0.7)
 	busy = false

@@ -4,6 +4,9 @@ extends Node3D
 ## the way an early arcade boss explodes. Presentation only.
 
 var _sparks: GPUParticles3D
+var _ray_size: Vector2 = Vector2.ONE
+var _ray_time_left: float = 0.0
+var _ray_wait: float = 0.0
 
 
 
@@ -46,7 +49,7 @@ func _glow_material(use_texture: bool) -> StandardMaterial3D:
 
 ## Starts the fire over the card area `size` (centred on this node). It keeps burning for
 ## `seconds`, then stops and frees itself once the last spark is gone.
-func play(size: Vector2, seconds: float) -> void:
+func play(size: Vector2, seconds: float, ray_seconds: float = 0.0) -> void:
 	# --- Sparks -------------------------------------------------------------------------------
 	_sparks = GPUParticles3D.new()
 	var spark_process := ParticleProcessMaterial.new()
@@ -79,9 +82,10 @@ func play(size: Vector2, seconds: float) -> void:
 	_sparks.emitting = true
 	add_child(_sparks)
 
-	# Rays of light from the centre, in waves.
-	for wave: int in range(4):
-		get_tree().create_timer(0.55 * float(wave)).timeout.connect(func() -> void: ray_burst(size, 24 + wave * 4))
+	# Rays of light: one at a time, in random directions, for `ray_seconds` (see _process).
+	_ray_size = size
+	_ray_time_left = ray_seconds
+	_ray_wait = 0.0
 	get_tree().create_timer(seconds).timeout.connect(_stop)
 
 
@@ -137,3 +141,13 @@ func _spike_mesh(length: float, width: float) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
+
+
+func _process(delta: float) -> void:
+	if _ray_time_left <= 0.0:
+		return
+	_ray_time_left -= delta
+	_ray_wait -= delta
+	if _ray_wait <= 0.0:
+		ray_burst(_ray_size, 1)
+		_ray_wait = randf_range(0.07, 0.22)

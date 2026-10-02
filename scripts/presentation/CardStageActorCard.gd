@@ -765,15 +765,27 @@ var _burn_material: ShaderMaterial
 
 
 ## The whole card flashes white and back, `flashes` times, quickening as it goes.
-func flash_white_pulses(flashes: int, first_gap: float, last_gap: float) -> void:
+func flash_white_pulses(flashes: int, first_gap: float, last_gap: float, on_last_rise: Callable = Callable()) -> void:
+	# The last flash does not fall again: the card stays white (see fade_white_overlay).
 	if _flash_tween and _flash_tween.is_valid():
 		_flash_tween.kill()
 	_flash_tween = create_tween()
 	for index: int in range(flashes):
 		var gap: float = lerpf(first_gap, last_gap, float(index) / maxf(float(flashes - 1), 1.0))
-		_flash_tween.tween_property(_hit_overlay, "color", Color(1.0, 1.0, 1.0, 0.92), gap * 0.25)
-		_flash_tween.tween_property(_hit_overlay, "color", Color(1.0, 1.0, 1.0, 0.0), gap * 0.75)
+		var is_last: bool = index == flashes - 1
+		if is_last and on_last_rise.is_valid():
+			_flash_tween.tween_callback(on_last_rise)
+		_flash_tween.tween_property(_hit_overlay, "color", Color(1.0, 1.0, 1.0, 1.0 if is_last else 0.92), gap * (0.5 if is_last else 0.25))
+		if not is_last:
+			_flash_tween.tween_property(_hit_overlay, "color", Color(1.0, 1.0, 1.0, 0.0), gap * 0.75)
 	await _flash_tween.finished
+
+
+## The white leaves the card and it shows its normal colours again.
+func fade_white_overlay(seconds: float) -> void:
+	var tween := create_tween()
+	tween.tween_property(_hit_overlay, "color", Color(1.0, 1.0, 1.0, 0.0), seconds).set_trans(Tween.TRANS_SINE)
+	await tween.finished
 
 
 ## A fire climbs the card from its bottom edge and chars it black. Returns when the card is
