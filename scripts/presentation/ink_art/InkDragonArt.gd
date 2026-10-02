@@ -64,22 +64,81 @@ func _draw() -> void:
 # --- Green swirling rings (first phase) ---------------------------------------------------------
 
 func _draw_rings(fade: float) -> void:
+	# Before the dragons: electrons circling an atom. Several tilted orbits are laid out in 3D and
+	# projected, so the near half of each orbit is bold and bright, the far half thin and dim and
+	# hidden behind the nucleus, and small bright electrons run along them trailing short streaks.
 	var t: float = clampf(progress / RINGS_END, 0.0, 1.0)
 	var alpha: float = fade * (1.0 - clampf((progress - RINGS_END * 0.8) / (FLASH_END - RINGS_END * 0.8), 0.0, 1.0))
+	var scale_f: float = canvas_size / REF
 	var centre: Vector2 = _to_canvas(CENTRE)
-	var radius: float = 150.0 * canvas_size / REF * 1.0
-	# A dark smudge behind the rings.
-	for ring: int in range(5):
-		var points := PackedVector2Array()
-		var tilt: float = float(ring) * 0.62 + t * 3.2
-		var squash: float = lerpf(0.35, 0.95, t) * (0.7 + 0.1 * float(ring % 3))
-		for step: int in range(61):
-			var angle: float = TAU * float(step) / 60.0
-			var local := Vector2(cos(angle) * radius, sin(angle) * radius * squash)
-			points.append(centre + local.rotated(tilt))
-		draw_polyline(points, Color(INK.r, INK.g, INK.b, 0.9 * alpha), 9.0 * canvas_size / REF * 2.0, true)
-		draw_polyline(points, Color(MINT.r, MINT.g, MINT.b, alpha), 6.0 * canvas_size / REF * 2.0, true)
-		draw_polyline(points, Color(MINT_PALE.r, MINT_PALE.g, MINT_PALE.b, 0.8 * alpha), 2.0 * canvas_size / REF * 2.0, true)
+	var radius: float = (270.0 - 70.0 * t * t) * scale_f
+	var orbit_count: int = 4
+	var steps: int = 72
+	# Draw order: far halves, the nucleus, then near halves and the electrons.
+	for pass_index: int in range(2):
+		if pass_index == 1:
+			_draw_nucleus(centre, scale_f, alpha, t)
+		for orbit: int in range(orbit_count):
+			var spin: float = progress * (3.0 + float(orbit) * 0.7)
+			var yaw: float = float(orbit) * PI / float(orbit_count) * 1.6 + progress * 1.1
+			var pitch: float = 0.30 + float(orbit) * 0.42 + 0.12 * sin(progress * 5.0 + float(orbit))
+			var near_segments: Array = []
+			var previous: Vector2 = Vector2.ZERO
+			var previous_depth: float = 0.0
+			for step: int in range(steps + 1):
+				var angle: float = TAU * float(step) / float(steps)
+				var local := Vector3(cos(angle), sin(angle), 0.0)
+				var rotated: Vector3 = _orbit_basis(yaw, pitch) * local
+				var perspective: float = 1.0 + rotated.z * 0.22
+				var point: Vector2 = centre + Vector2(rotated.x, rotated.y) * radius * perspective
+				if step > 0:
+					var depth: float = (previous_depth + rotated.z) * 0.5
+					var near: bool = depth >= 0.0
+					if near == (pass_index == 1):
+						var strength: float = clampf(absf(depth), 0.0, 1.0)
+						var width: float = (4.0 + 9.0 * strength if near else 3.0 + 2.0 * (1.0 - strength)) * scale_f * 2.0
+						var tone: float = alpha
+						if near:
+							near_segments.append([previous, point, width])
+						else:
+							draw_line(previous, point, Color(0.12, 0.45, 0.36, tone), width, true)
+				previous = point
+				previous_depth = rotated.z
+			# Near halves in whole passes (outline, body, glint) so segments never leave ticks.
+			for segment: Array in near_segments:
+				draw_line(segment[0], segment[1], Color(INK.r, INK.g, INK.b, alpha), float(segment[2]) + 3.0 * scale_f * 2.0, true)
+				draw_circle(segment[1], (float(segment[2]) + 3.0 * scale_f * 2.0) * 0.5, Color(INK.r, INK.g, INK.b, alpha))
+			for segment: Array in near_segments:
+				draw_line(segment[0], segment[1], Color(MINT.r, MINT.g, MINT.b, alpha), float(segment[2]), true)
+				draw_circle(segment[1], float(segment[2]) * 0.5, Color(MINT.r, MINT.g, MINT.b, alpha))
+			for segment: Array in near_segments:
+				draw_line(segment[0], segment[1], Color(MINT_PALE.r, MINT_PALE.g, MINT_PALE.b, alpha), float(segment[2]) * 0.35, true)
+			if pass_index == 1:
+				# Two electrons per orbit, each with a short fading trail.
+				for electron: int in range(2):
+					var lead: float = spin + float(electron) * PI + float(orbit)
+					for trail: int in range(8):
+						var trail_angle: float = lead - float(trail) * 0.075
+						var local_e := Vector3(cos(trail_angle), sin(trail_angle), 0.0)
+						var rotated_e: Vector3 = _orbit_basis(yaw, pitch) * local_e
+						var perspective_e: float = 1.0 + rotated_e.z * 0.22
+						var at: Vector2 = centre + Vector2(rotated_e.x, rotated_e.y) * radius * perspective_e
+						var size: float = (11.0 - float(trail) * 1.1) * scale_f * 1.6 * perspective_e
+						var visible: float = alpha * (1.0 - float(trail) / 8.0) * (1.0 if rotated_e.z >= -0.15 else 0.3)
+						draw_circle(at, size * 1.8, Color(MINT.r, MINT.g, MINT.b, 0.28 * visible))
+						draw_circle(at, size, Color(MINT_PALE.r, MINT_PALE.g, MINT_PALE.b, visible))
+
+
+func _orbit_basis(yaw: float, pitch: float) -> Basis:
+	return Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, pitch)
+
+
+func _draw_nucleus(centre: Vector2, scale_f: float, alpha: float, t: float) -> void:
+	var radius: float = (26.0 + 10.0 * t) * scale_f * 1.6
+	draw_circle(centre, radius * 2.4, Color(MINT.r, MINT.g, MINT.b, 0.16 * alpha))
+	draw_circle(centre, radius * 1.5, Color(MINT.r, MINT.g, MINT.b, 0.28 * alpha))
+	draw_circle(centre, radius, Color(INK.r, INK.g, INK.b, alpha))
+	draw_circle(centre + Vector2(-radius * 0.3, -radius * 0.3), radius * 0.28, Color(MINT_PALE.r, MINT_PALE.g, MINT_PALE.b, 0.85 * alpha))
 
 
 func _draw_flash(fade: float) -> void:

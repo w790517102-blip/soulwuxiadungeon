@@ -1,16 +1,19 @@
 extends Node2D
-## A sword cut drawn entirely with Godot 2D shapes (no bitmap): a mint-green crescent with a
-## dark-red core under it, black contour lines, a burst of ink flecks with a halftone patch, and
-## speed lines radiating across the frame. Meant as a flat, hand-inked "comic" slash.
+## A sword cut drawn entirely with Godot 2D shapes (no bitmap), swung from our side toward the
+## upper right. It is not one smooth crescent but a stack of "envelope" surfaces, each with its
+## own scalloped, surging edge like cloud or wave crests, so the cut reads as an impact. The
+## whole body is squashed along the line of force like a dodgeball flattened by a hit (never a
+## round ball), the contour lines jitter, leave afterimages and change thickness along their length.
 ##
-## Set `progress` from 0 to 1 to animate it (sweep, hold, fade). `canvas_size` is the square it
-## is drawn in; everything scales with it. Presentation only.
+## Set `progress` from 0 to 1 (sweep, hold, fade). `canvas_size` is the square it is drawn in.
+## Presentation only.
 
+const MINT_PALE := Color(0.80, 0.97, 0.91)
 const MINT := Color(0.40, 0.84, 0.66)
-const MINT_DARK := Color(0.25, 0.62, 0.50)
-const MINT_LIGHT := Color(0.86, 0.98, 0.93)
+const MINT_DEEP := Color(0.22, 0.60, 0.50)
 const RED := Color(0.55, 0.07, 0.17)
 const RED_DARK := Color(0.30, 0.02, 0.08)
+const WHITE := Color(1.0, 1.0, 1.0)
 const INK := Color(0.05, 0.05, 0.06)
 
 @export var canvas_size: float = 512.0
@@ -18,16 +21,17 @@ const INK := Color(0.05, 0.05, 0.06)
 	set(value):
 		progress = value
 		queue_redraw()
-## Tilt of the whole cut (radians, screen coordinates: positive leans down to the right).
-@export var tilt: float = 0.40
+## Tilt of the cut (radians; negative = leaning up to the right, the way our side strikes).
+@export var tilt: float = -0.42
 
-var _rng := RandomNumberGenerator.new()
-
-# Sweep timing (fractions of `progress`).
 const SWEEP_END := 0.34
-const RED_START := 0.22
+const RED_START := 0.20
 const RED_END := 0.50
 const FADE_START := 0.80
+## Afterimages of the contour, as how far back in `progress` each one trails.
+const GHOSTS: Array[float] = [0.035, 0.07, 0.11]
+
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -35,46 +39,70 @@ func _ready() -> void:
 
 
 func _centre() -> Vector2:
-	return Vector2(canvas_size * 0.5, canvas_size * 0.52)
+	return Vector2(canvas_size * 0.5, canvas_size * 0.50)
 
 
-## A point on the cut's ellipse. `u` is the angle in the ellipse's own frame (PI = left end,
-## PI/2 = bottom, 0 = right end); `grow` scales the radii, `shift` moves the whole ellipse.
-func _ellipse_point(u: float, rx: float, ry: float, shift: Vector2 = Vector2.ZERO) -> Vector2:
-	var local := Vector2(cos(u) * rx, sin(u) * ry)
-	return _centre() + shift + local.rotated(tilt)
+func _eased(value: float) -> float:
+	return 1.0 - pow(1.0 - clampf(value, 0.0, 1.0), 3.0)
 
 
-func _ellipse_normal_inward(u: float, rx: float, ry: float) -> Vector2:
-	var local_inward := Vector2(-cos(u) / rx, -sin(u) / ry).normalized()
-	return local_inward.rotated(tilt)
+## 0..1..0 hump over the sweep: how hard the cut is being squashed by the blow.
+func _squash(at: float) -> float:
+	var t: float = clampf(at / 0.5, 0.0, 1.0)
+	return sin(t * PI) * (1.0 - clampf((at - 0.5) / 0.4, 0.0, 1.0))
 
 
-## A tapered band hugging the ellipse between angles `from_u` (start, larger) and `to_u` (end).
-## `reveal_u` cuts the band off early (the sweep head). Returns [outer, inner] point lists.
-func _band(from_u: float, to_u: float, reveal_u: float, rx: float, ry: float, thickness: float, shift: Vector2, bias: float) -> Array:
+## Ellipse radii: long along the cut and flattened across it (never a ball), flatter still at
+## the instant of impact and springing back afterwards.
+func _radii(at: float) -> Vector2:
+	var s: float = canvas_size / 512.0
+	var flat: float = 1.0 - 0.38 * _squash(at)
+	return Vector2(232.0 * s * (1.0 + 0.06 * _squash(at)), 88.0 * s * flat)
+
+
+func _point(u: float, radii: Vector2, shift: Vector2 = Vector2.ZERO) -> Vector2:
+	return _centre() + shift + Vector2(cos(u) * radii.x, sin(u) * radii.y).rotated(tilt)
+
+
+func _inward(u: float, radii: Vector2) -> Vector2:
+	return Vector2(-cos(u) / radii.x, -sin(u) / radii.y).normalized().rotated(tilt)
+
+
+## Scalloped cloud/wave crest: rounded lobes with cusps between them, drifting with `phase`.
+func _crest(u: float, lobes: float, phase: float) -> float:
+	return pow(absf(sin(u * lobes + phase)), 0.55)
+
+
+## One envelope: the points of its outer and inner edge. `layer` shifts its size, lobes and phase,
+## `reveal_u` is the sweep head (the tip is pointed while it travels).
+func _envelope(layer: Dictionary, at: float, reveal_u: float) -> Array:
+	var radii: Vector2 = _radii(at)
+	var s: float = canvas_size / 512.0
+	var from_u: float = layer.from
+	var to_u: float = layer.to
 	var outer := PackedVector2Array()
 	var inner := PackedVector2Array()
-	var steps: int = 56
+	var steps: int = 70
 	for index: int in range(steps + 1):
 		var t: float = float(index) / float(steps)
 		var u: float = lerpf(from_u, to_u, t)
 		if u < reveal_u:
 			break
-		# Fat toward the start, a long thin tail at the end; the head is pointed while sweeping.
-		var width: float = thickness * pow(sin(PI * pow(t, 0.5)), 1.35)
-		var head_taper: float = clampf((u - reveal_u) / 0.30, 0.0, 1.0)
-		width *= head_taper
-		var base: Vector2 = _ellipse_point(u, rx, ry, shift)
-		var inward: Vector2 = _ellipse_normal_inward(u, rx, ry)
-		outer.append(base - inward * width * (1.0 - bias))
-		inner.append(base + inward * width * bias)
+		var profile: float = pow(sin(PI * pow(t, 0.5)), 1.25)
+		var taper: float = clampf((u - reveal_u) / 0.28, 0.0, 1.0)
+		var thickness: float = float(layer.thick) * s * profile * taper
+		# The edge surges: lobes ride along the cut as it is swung, strongest where it is fat.
+		var surge: float = float(layer.surge) * s * profile * taper * _crest(u, float(layer.lobes), float(layer.phase) + at * 9.0)
+		var base: Vector2 = _point(u, radii, Vector2(layer.shift) * s)
+		var inward: Vector2 = _inward(u, radii)
+		outer.append(base - inward * (thickness * (1.0 - float(layer.bias)) + surge))
+		inner.append(base + inward * (thickness * float(layer.bias) - surge * 0.35))
 	return [outer, inner]
 
 
-func _polygon_from_band(band: Array) -> PackedVector2Array:
-	var outer: PackedVector2Array = band[0]
-	var inner: PackedVector2Array = band[1]
+func _polygon(edges: Array) -> PackedVector2Array:
+	var outer: PackedVector2Array = edges[0]
+	var inner: PackedVector2Array = edges[1]
 	var polygon := PackedVector2Array()
 	polygon.append_array(outer)
 	for index: int in range(inner.size() - 1, -1, -1):
@@ -82,9 +110,15 @@ func _polygon_from_band(band: Array) -> PackedVector2Array:
 	return polygon
 
 
-func _eased(value: float) -> float:
-	var t: float = clampf(value, 0.0, 1.0)
-	return 1.0 - pow(1.0 - t, 3.0)
+func _layers() -> Array:
+	return [
+		# Outermost, palest, widest: the shock-wave of the cut.
+		{"from": 3.55, "to": -0.35, "thick": 118.0, "surge": 22.0, "lobes": 9.0, "phase": 0.0, "shift": Vector2(8, -6), "bias": 0.5, "color": Color(MINT_PALE.r, MINT_PALE.g, MINT_PALE.b, 0.72)},
+		{"from": 3.45, "to": -0.25, "thick": 96.0, "surge": 17.0, "lobes": 7.0, "phase": 1.7, "shift": Vector2(3, -2), "bias": 0.52, "color": MINT},
+		{"from": 3.30, "to": -0.05, "thick": 72.0, "surge": 12.0, "lobes": 11.0, "phase": 3.1, "shift": Vector2(0, 2), "bias": 0.55, "color": MINT_DEEP},
+		{"from": 3.15, "to": 0.30, "thick": 50.0, "surge": 8.0, "lobes": 6.0, "phase": 4.4, "shift": Vector2(-3, 6), "bias": 0.7, "color": RED, "late": true},
+		{"from": 3.00, "to": 0.70, "thick": 22.0, "surge": 5.0, "lobes": 8.0, "phase": 5.2, "shift": Vector2(-3, 8), "bias": 0.8, "color": RED_DARK, "late": true},
+	]
 
 
 func _draw() -> void:
@@ -92,109 +126,99 @@ func _draw() -> void:
 	var fade: float = 1.0 - clampf((progress - FADE_START) / (1.0 - FADE_START), 0.0, 1.0)
 	if fade <= 0.0:
 		return
-	var s: float = canvas_size / 512.0
+	# The cut is struck from the lower left toward the upper right: mirror vertically so the
+	# tilted ellipse starts low on our side.
+	draw_set_transform(Vector2(0.0, canvas_size), 0.0, Vector2(1.0, -1.0))
 	var sweep: float = _eased(progress / SWEEP_END)
-	var rx: float = 225.0 * s
-	var ry: float = 112.0 * s
-
-	_draw_speed_lines(sweep, fade, s)
-	_draw_far_arc(sweep, fade, rx, ry, s)
-
-	# Mint crescent.
-	var head: float = lerpf(3.45, -0.25, sweep)
-	var green_band: Array = _band(3.45, -0.25, head, rx, ry, 74.0 * s, Vector2.ZERO, 0.55)
-	_fill_band(green_band, MINT, INK, fade, 2.2 * s)
-	_draw_highlight(green_band, fade, s)
-	# Dark red core inside the green, nearer its inner edge (appears a little later).
-	var red_sweep: float = _eased((progress - RED_START) / (RED_END - RED_START))
-	if red_sweep > 0.0:
-		var red_head: float = lerpf(3.05, 0.75, red_sweep)
-		var red_band: Array = _band(3.05, 0.75, red_head, rx * 0.97, ry * 0.97, 44.0 * s, Vector2(2, 5) * s, 0.85)
-		_fill_band(red_band, RED, RED_DARK, fade, 1.6 * s)
-	_draw_edge_whiskers(sweep, fade, rx, ry, s)
-
-	_draw_burst(sweep, fade, s)
+	_draw_speed_lines(sweep, fade)
+	_draw_far_arc(sweep, fade)
+	# Afterimages first (behind): only their contours, faint and trailing.
+	for ghost_index: int in range(GHOSTS.size()):
+		var at: float = progress - GHOSTS[ghost_index]
+		if at > 0.02:
+			var ghost_alpha: float = fade * (0.34 - 0.09 * float(ghost_index))
+			_draw_cut(at, ghost_alpha, true)
+	_draw_cut(progress, fade, false)
+	_draw_burst(sweep, fade)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _fill_band(band: Array, fill: Color, line: Color, fade: float, line_width: float) -> void:
-	var polygon: PackedVector2Array = _polygon_from_band(band)
-	if polygon.size() < 4:
+## The whole cut at progress `at`. `ghost` draws only the contours.
+func _draw_cut(at: float, alpha: float, ghost: bool) -> void:
+	var s: float = canvas_size / 512.0
+	var head_progress: float = _eased(at / SWEEP_END)
+	var layers: Array = _layers()
+	for layer_index: int in range(layers.size()):
+		var layer: Dictionary = layers[layer_index]
+		var head: float
+		if bool(layer.get("late", false)):
+			var late_progress: float = _eased((at - RED_START) / (RED_END - RED_START))
+			if late_progress <= 0.0:
+				continue
+			head = lerpf(float(layer.from), float(layer.to), late_progress)
+		else:
+			head = lerpf(float(layer.from), float(layer.to), head_progress)
+		var edges: Array = _envelope(layer, at, head)
+		var polygon: PackedVector2Array = _polygon(edges)
+		if polygon.size() < 6:
+			continue
+		var colour: Color = layer.color
+		if not ghost:
+			draw_colored_polygon(polygon, Color(colour.r, colour.g, colour.b, colour.a * alpha))
+		# Contour: jittered, in a few passes, with a thickness that varies along its length.
+		var passes: int = 1 if ghost else 3
+		for pass_index: int in range(passes):
+			var jitter := Vector2(_rng.randf_range(-1.6, 1.6), _rng.randf_range(-1.6, 1.6)) * s * (1.0 if pass_index > 0 else 0.0)
+			var line_alpha: float = alpha * (1.0 if pass_index == 0 else 0.38)
+			_variable_line(edges[0], INK, 3.4 * s, line_alpha, jitter, layer_index * 3 + pass_index)
+			if layer_index <= 2:
+				_variable_line(edges[1], INK, 2.2 * s, line_alpha * 0.8, jitter, layer_index * 5 + pass_index + 11)
+	if ghost:
 		return
-	var faded_fill := Color(fill.r, fill.g, fill.b, fill.a * fade)
-	var faded_line := Color(line.r, line.g, line.b, fade)
-	draw_colored_polygon(polygon, faded_fill)
-	var outer: PackedVector2Array = band[0]
-	var inner: PackedVector2Array = band[1]
-	if outer.size() > 1:
-		draw_polyline(outer, faded_line, line_width, true)
-		draw_polyline(inner, faded_line, line_width * 0.6, true)
+	# Pale streak along the leading edge of the mint layers.
+	var streak_edges: Array = _envelope({"from": 3.40, "to": -0.15, "thick": 12.0, "surge": 3.0, "lobes": 12.0, "phase": 0.7, "shift": Vector2(2, -12), "bias": 0.25}, at, lerpf(3.40, -0.15, head_progress))
+	var streak: PackedVector2Array = _polygon(streak_edges)
+	if streak.size() >= 6:
+		draw_colored_polygon(streak, Color(WHITE.r, WHITE.g, WHITE.b, 0.8 * alpha))
 
 
-## The pale streak along the upper edge of the green band.
-func _draw_highlight(band: Array, fade: float, s: float) -> void:
-	var outer: PackedVector2Array = band[0]
-	var inner: PackedVector2Array = band[1]
-	if outer.size() < 6:
+## A polyline whose width changes along its length (thick here, hair-thin there), drawn
+## segment by segment with rounded joints.
+func _variable_line(points: PackedVector2Array, colour: Color, base_width: float, alpha: float, jitter: Vector2, seed_offset: int) -> void:
+	if points.size() < 2:
 		return
-	var streak := PackedVector2Array()
-	var back := PackedVector2Array()
-	var count: int = outer.size()
-	for index: int in range(2, count - 6):
-		var t: float = float(index) / float(count)
-		var edge: Vector2 = outer[index].lerp(inner[index], 0.06)
-		var in_edge: Vector2 = outer[index].lerp(inner[index], 0.06 + 0.16 * sin(PI * t))
-		streak.append(edge)
-		back.append(in_edge)
-	if streak.size() < 3:
-		return
-	var polygon := PackedVector2Array()
-	polygon.append_array(streak)
-	for index: int in range(back.size() - 1, -1, -1):
-		polygon.append(back[index])
-	draw_colored_polygon(polygon, Color(MINT_LIGHT.r, MINT_LIGHT.g, MINT_LIGHT.b, 0.92 * fade))
+	var tone := Color(colour.r, colour.g, colour.b, alpha)
+	for index: int in range(points.size() - 1):
+		var wave: float = 0.55 + 0.45 * sin(float(index) * 0.43 + float(seed_offset) * 1.7) + 0.35 * sin(float(index) * 1.31 + float(seed_offset))
+		var width: float = maxf(0.6, base_width * wave)
+		var a: Vector2 = points[index] + jitter
+		var b: Vector2 = points[index + 1] + jitter
+		draw_line(a, b, tone, width, true)
+		draw_circle(b, width * 0.5, tone)
 
 
-## Little curled barbs and slivers that peel off the leading end of the cut.
-func _draw_edge_whiskers(sweep: float, fade: float, rx: float, ry: float, s: float) -> void:
-	if sweep < 0.2:
-		return
-	var color := Color(MINT.r, MINT.g, MINT.b, fade)
-	var line := Color(INK.r, INK.g, INK.b, fade)
-	for index: int in range(6):
-		var u: float = lerpf(3.25, 2.4, float(index) / 5.0)
-		var base: Vector2 = _ellipse_point(u, rx, ry)
-		var inward: Vector2 = _ellipse_normal_inward(u, rx, ry)
-		var tangent: Vector2 = (_ellipse_point(u - 0.05, rx, ry) - base).normalized()
-		var length: float = (26.0 + 18.0 * sin(float(index) * 1.7)) * s * sweep
-		var tip: Vector2 = base - inward * length * 0.9 - tangent * length * 0.5
-		var left: Vector2 = base + tangent * 3.0 * s
-		var right: Vector2 = base - tangent * 5.0 * s
-		draw_colored_polygon(PackedVector2Array([left, tip, right]), color)
-		draw_polyline(PackedVector2Array([left, tip, right]), line, 1.2 * s, true)
-
-
-## The faint far side of the ring: a thin double contour with scattered flecks.
-func _draw_far_arc(sweep: float, fade: float, rx: float, ry: float, s: float) -> void:
+## The faint far side of the ring and a few flecks.
+func _draw_far_arc(sweep: float, fade: float) -> void:
 	if sweep <= 0.3:
 		return
+	var s: float = canvas_size / 512.0
 	var alpha: float = clampf((sweep - 0.3) / 0.7, 0.0, 1.0) * fade
+	var radii: Vector2 = _radii(progress) * Vector2(1.04, 1.12)
 	var points := PackedVector2Array()
 	for index: int in range(40):
-		var u: float = lerpf(-0.15, -1.9, float(index) / 39.0)
-		points.append(_ellipse_point(u, rx * 1.02, ry * 1.05))
-	draw_polyline(points, Color(0.2, 0.2, 0.22, 0.55 * alpha), 1.4 * s, true)
-	for index: int in range(28):
-		var u: float = _rng.randf_range(-1.7, -0.1)
+		points.append(_point(lerpf(-0.10, -2.0, float(index) / 39.0), radii))
+	_variable_line(points, Color(0.2, 0.2, 0.22), 2.6 * s, 0.6 * alpha, Vector2.ZERO, 3)
+	for index: int in range(30):
 		var jitter := Vector2(_rng.randf_range(-12.0, 12.0), _rng.randf_range(-12.0, 12.0)) * s
-		var radius: float = _rng.randf_range(0.8, 3.2) * s
-		draw_circle(_ellipse_point(u, rx * 1.02, ry * 1.05) + jitter, radius, Color(INK.r, INK.g, INK.b, 0.85 * alpha))
+		draw_circle(_point(_rng.randf_range(-1.8, -0.05), radii) + jitter, _rng.randf_range(0.8, 3.4) * s, Color(INK.r, INK.g, INK.b, 0.85 * alpha))
 
 
-func _draw_speed_lines(sweep: float, fade: float, s: float) -> void:
+func _draw_speed_lines(sweep: float, fade: float) -> void:
+	var s: float = canvas_size / 512.0
 	var impact: float = clampf((sweep - 0.45) / 0.55, 0.0, 1.0)
 	if impact <= 0.0:
 		return
-	var centre: Vector2 = _centre() + Vector2(-18, -18) * s
+	var centre: Vector2 = _centre() + Vector2(14, 14) * s
 	for index: int in range(46):
 		var angle: float = TAU * float(index) / 46.0 + _rng.randf_range(-0.05, 0.05)
 		var direction := Vector2.from_angle(angle)
@@ -209,15 +233,15 @@ func _draw_speed_lines(sweep: float, fade: float, s: float) -> void:
 
 
 ## Ink fragments and a halftone patch at the point of impact.
-func _draw_burst(sweep: float, fade: float, s: float) -> void:
+func _draw_burst(sweep: float, fade: float) -> void:
+	var s: float = canvas_size / 512.0
 	var impact: float = clampf((sweep - 0.4) / 0.6, 0.0, 1.0)
 	if impact <= 0.0:
 		return
-	var centre: Vector2 = _centre() + Vector2(-16, -10) * s
-	# Halftone: a hex grid of dots that shrink away from the centre.
+	var centre: Vector2 = _centre() + Vector2(18, 8) * s
 	var spacing: float = 7.0 * s
-	for row: int in range(-9, 10):
-		for column: int in range(-9, 10):
+	for row: int in range(-11, 12):
+		for column: int in range(-11, 12):
 			var offset := Vector2(float(column) * spacing + (spacing * 0.5 if row % 2 != 0 else 0.0), float(row) * spacing * 0.87)
 			var distance: float = offset.length()
 			var reach: float = 88.0 * s * impact
@@ -226,7 +250,6 @@ func _draw_burst(sweep: float, fade: float, s: float) -> void:
 			var radius: float = (1.0 - distance / reach) * 3.0 * s
 			if radius > 0.4:
 				draw_circle(centre + offset, radius, Color(0.25, 0.27, 0.28, 0.75 * fade))
-	# Jagged ink flecks thrown outwards, with a few near the cut.
 	for index: int in range(80):
 		var angle: float = _rng.randf_range(0.0, TAU)
 		var distance: float = pow(_rng.randf(), 1.5) * 200.0 * s * impact + 8.0 * s
@@ -238,7 +261,6 @@ func _draw_burst(sweep: float, fade: float, s: float) -> void:
 			var corner_angle: float = TAU * float(corner) / float(corners) + _rng.randf_range(-0.4, 0.4)
 			shard.append(point + Vector2.from_angle(corner_angle) * size * _rng.randf_range(0.5, 1.5))
 		draw_colored_polygon(shard, Color(INK.r, INK.g, INK.b, 0.95 * fade))
-	# A few mint specks mixed in.
 	for index: int in range(14):
 		var angle2: float = _rng.randf_range(0.0, TAU)
 		var distance2: float = _rng.randf_range(20.0, 120.0) * s * impact
