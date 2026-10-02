@@ -1208,16 +1208,20 @@ func _portrait_screen_rect(card: Node3D) -> Rect2:
 # --- Zooming a whole card into the middle of the screen (the 燕行破風斬 intake) ------------------
 
 const CARD_ZOOM_SECONDS: float = 0.6
-const CARD_ZOOM_FILL: float = 0.9
+
 var _zoom_dim: MeshInstance3D = null
 
 
-## The card turns square to the camera and swells to the middle of the screen (it is moved
+## The card turns square to the camera and swells until its portrait fills the screen (it is moved
 ## toward the camera, so the growth is real perspective), while everything behind it dims.
 func _zoom_card_to_centre(card: Node3D) -> void:
-	var distance: float = Formation.distance_for_fraction(card.card_size.y, CARD_ZOOM_FILL, camera_fov)
-	var target := Vector3(0.0, 0.0, CAMERA_Z - distance)
-	# A black sheet just behind the zoomed card hides and dims the rest of the stage.
+	# Sized so the portrait picture is exactly as large as the animation's square (the full
+	# screen height) and sits in the middle: the rest of the card simply runs off the screen.
+	var layer: MeshInstance3D = card.get("art_layer")
+	var art_height: float = (layer.mesh as QuadMesh).size.y if layer != null and layer.mesh is QuadMesh else card.card_size.y
+	var offset: Vector3 = layer.position if layer != null else Vector3.ZERO
+	var distance: float = Formation.distance_for_fraction(art_height, 1.0, camera_fov)
+	var target := Vector3(-offset.x, -offset.y, CAMERA_Z - distance - offset.z)
 	var visible_height: float = 2.0 * distance * tan(deg_to_rad(camera_fov) / 2.0)
 	var sheet := QuadMesh.new()
 	sheet.size = Vector2(visible_height * 4.0, visible_height * 2.0)
@@ -1231,7 +1235,7 @@ func _zoom_card_to_centre(card: Node3D) -> void:
 	_zoom_dim.material_override = material
 	_zoom_dim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	fx_root.add_child(_zoom_dim)
-	_zoom_dim.global_position = Vector3(0.0, 0.0, target.z - 0.6)
+	_zoom_dim.global_position = Vector3(0.0, 0.0, target.z + offset.z - 0.6)
 	card._kill_motion()
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(card, "position", target, CARD_ZOOM_SECONDS).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
