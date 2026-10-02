@@ -56,9 +56,13 @@ void fragment() {
 	// Torn, wavy edges that fray more with age.
 	float edge_noise = (fbm(vec2(x * 11.0 - progress * 6.0, across * 2.0 + seed)) - 0.5) * (0.20 + 0.5 * age);
 	float mask = 1.0 - smoothstep(width * 0.78, width, abs(across + edge_noise));
-	// Flowing streaks along the arc: they scroll toward the head, stretched along x.
-	float flow = fbm(vec2(x * 5.0 - progress * 9.0, across * 9.0 + seed));
-	float fine = noise(vec2(x * 22.0 - progress * 14.0, across * 28.0 + seed * 2.0));
+	// Turbulent streaks: all run along the arc (same direction) but each lane flows at its own speed
+	// and wanders, so the texture is irregular and uncoordinated, like churning water.
+	float lane = across * 9.0 + seed;
+	float lane_speed = 7.0 + 5.0 * noise(vec2(floor(lane), seed));
+	vec2 warp = vec2(fbm(vec2(x * 3.0 - progress * 4.0, across * 3.0 + seed)), fbm(vec2(x * 4.0 + 7.0, across * 4.0 - progress * 3.0))) - 0.5;
+	float flow = fbm(vec2(x * 5.0 - progress * lane_speed + warp.x * 1.6, across * 9.0 + warp.y * 2.2 + seed));
+	float fine = noise(vec2(x * 24.0 - progress * (11.0 + lane_speed) + warp.x * 3.0, across * 30.0 + warp.y * 4.0 + seed * 2.0));
 	// The tail breaks into strands and dissolves.
 	float cutoff = smoothstep(0.10, 1.0, age) * 0.75;
 	if (flow * 0.6 + fine * 0.4 < cutoff) {
@@ -70,7 +74,7 @@ void fragment() {
 	float rim = smoothstep(0.55, 0.98, abs(across) / max(width, 0.001));
 	float crest = smoothstep(0.72, 0.92, flow + fine * 0.25);
 	float lead = smoothstep(0.10, 0.0, age);
-	float foam_amount = clamp(rim * 0.9 + crest * 0.7 + lead, 0.0, 1.0);
+	float foam_amount = clamp(rim * 0.55 + crest * 0.35 + lead * 0.8, 0.0, 1.0);
 	colour = mix(colour, foam.rgb, foam_amount);
 	// A thin bright line along one edge, like light running on the surface.
 	colour = mix(colour, vec3(1.0), smoothstep(0.80, 0.95, across / max(width, 0.001)) * 0.8);

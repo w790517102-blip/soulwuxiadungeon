@@ -1333,11 +1333,11 @@ func present_boss_finale(boss: Dictionary) -> void:
 	busy = false
 
 
-# --- Water slash (a blade of flowing water on a half-circle orbit; first version) ----------------
+# --- The sword cut: one band of turbulent water texture on a half-circle orbit -----------------
 
 const WaterSlash = preload("res://scripts/presentation/StageWaterSlash.gd")
-## Off by default while the look is being worked out; true switches sword cuts to the water slash.
-const USE_WATER_SLASH: bool = false
+## Sword cuts use the single water-texture band (false brings back the sprite-sheet slash).
+const USE_WATER_SLASH: bool = true
 const WATER_SLASH_SECONDS: float = 0.8
 
 
