@@ -756,3 +756,60 @@ func stagger_recover(seconds: float) -> void:
 	_motion_tween.tween_property(self, "position", home_position, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_motion_tween.tween_property(self, "rotation", home_rotation, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await _wait_for_motion(_motion_tween)
+
+
+# --- Final defeat of a boss: white flashes, burning, collapse ----------------------------------------
+
+var _burn_overlay: MeshInstance3D
+var _burn_material: ShaderMaterial
+
+
+## The whole card flashes white and back, `flashes` times, quickening as it goes.
+func flash_white_pulses(flashes: int, first_gap: float, last_gap: float) -> void:
+	if _flash_tween and _flash_tween.is_valid():
+		_flash_tween.kill()
+	_flash_tween = create_tween()
+	for index: int in range(flashes):
+		var gap: float = lerpf(first_gap, last_gap, float(index) / maxf(float(flashes - 1), 1.0))
+		_flash_tween.tween_property(_hit_overlay, "color", Color(1.0, 1.0, 1.0, 0.92), gap * 0.25)
+		_flash_tween.tween_property(_hit_overlay, "color", Color(1.0, 1.0, 1.0, 0.0), gap * 0.75)
+	await _flash_tween.finished
+
+
+## A fire climbs the card from its bottom edge and chars it black. Returns when the card is
+## completely charred.
+func burn_down(seconds: float) -> void:
+	if _burn_overlay == null:
+		var quad := QuadMesh.new()
+		quad.size = face_size
+		_burn_overlay = MeshInstance3D.new()
+		_burn_overlay.name = "BurnSheet"
+		_burn_overlay.mesh = quad
+		_burn_material = ShaderMaterial.new()
+		_burn_material.shader = load("res://scripts/presentation/shaders/card_burn.gdshader")
+		_burn_material.set_shader_parameter("face_tex", card_viewport.get_texture())
+		var window_pixels: Rect2 = template.window
+		var canvas: Vector2 = template.canvas
+		_burn_material.set_shader_parameter("window", Vector4(window_pixels.position.x / canvas.x, window_pixels.position.y / canvas.y, window_pixels.end.x / canvas.x, window_pixels.end.y / canvas.y))
+		_burn_material.set_shader_parameter("seed", randf() * 10.0)
+		_burn_material.render_priority = 5
+		_burn_overlay.material_override = _burn_material
+		_burn_overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_burn_overlay.position = card_mesh.position + Vector3(0.0, 0.0, 0.03)
+		_burn_overlay.sorting_offset = 0.5
+		add_child(_burn_overlay)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_method(func(value: float) -> void: _burn_material.set_shader_parameter("burn", value), 0.0, 1.0, seconds)
+	tween.tween_method(func(value: float) -> void: _burn_material.set_shader_parameter("time_value", value), 0.0, seconds, seconds)
+	await tween.finished
+
+
+## The charred black card shrinks and is squashed flat, then is gone.
+func char_collapse(seconds: float) -> void:
+	var start_scale: Vector3 = scale
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(self, "scale", Vector3(start_scale.x * 0.55, start_scale.y * 0.03, start_scale.z), seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(self, "position", position + Vector3(0.0, -card_size.y * 0.5 * 0.97, 0.0), seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tween.finished
+	visible = false
+	scale = start_scale

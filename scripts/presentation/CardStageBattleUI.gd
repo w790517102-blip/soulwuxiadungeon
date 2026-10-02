@@ -375,3 +375,13 @@ func _bubble_level_for(actor: Dictionary, enemy: bool) -> int:
 			break
 	_bubble_level_by_actor[key] = chosen
 	return chosen
+
+
+## The defeated boss's dedicated finale (white flashes, backdrop whiteout, ghost fire, burning,
+## collapse). Called by the controller before the victory text.
+func play_enemy_defeat_finale(enemies: Array) -> void:
+	if not (stage_enabled and stage):
+		return
+	for enemy: Variant in enemies:
+		if enemy is Dictionary and stage.has_boss_finale(enemy):
+			await stage.present_boss_finale(enemy)

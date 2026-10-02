@@ -151,6 +151,8 @@ func _update_defeats() -> void:
 		var card: Node3D = card_for(actor)
 		if card == null or not card.has_method("defeat_animal"):
 			continue
+		if card.get("template_key") == "boss":
+			continue  # a boss has its own finale (present_boss_finale)
 		var dead: bool = int(actor.get("hp", 0)) <= 0
 		if not dead:
 			if card.defeat_played:
@@ -1252,3 +1254,63 @@ func _restore_zoomed_card(card: Node3D) -> void:
 	if _zoom_dim != null and is_instance_valid(_zoom_dim):
 		_zoom_dim.queue_free()
 	_zoom_dim = null
+
+
+# --- The second-phase boss is finally defeated ------------------------------------------------------
+
+const GhostFire = preload("res://scripts/presentation/CardStageGhostFire.gd")
+const FINALE_BURN_SECONDS: float = 5.0
+
+
+## Whether this actor gets the dedicated boss finale instead of an ordinary defeat exit.
+func has_boss_finale(actor: Dictionary) -> bool:
+	var card: Node3D = card_for(actor)
+	return card != null and card.get("template_key") == "boss"
+
+
+## Directed finale: the card flashes white, the backdrop whites out and fades away, violet ghost
+## fire streams up and out, the card burns for five seconds, and the charred black husk shrinks
+## and is squashed flat.
+func present_boss_finale(boss: Dictionary) -> void:
+	var card: Node3D = card_for(boss)
+	if card == null:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	card.defeat_played = true
+	card.set_tint("")
+	card._kill_motion()
+	# 1. White, white, white ... quickening.
+	await card.flash_white_pulses(8, 0.46, 0.14)
+	# 2. The backdrop inverts to white, then fades out to nothing.
+	var distance: float = CAMERA_Z - (card.position.z - 1.0)
+	var visible_height: float = 2.0 * distance * tan(deg_to_rad(camera_fov) / 2.0)
+	var sheet_mesh := QuadMesh.new()
+	sheet_mesh.size = Vector2(visible_height * 4.0, visible_height * 2.0)
+	var sheet := MeshInstance3D.new()
+	sheet.mesh = sheet_mesh
+	var sheet_material := StandardMaterial3D.new()
+	sheet_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sheet_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sheet_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	sheet_material.albedo_color = Color(1.0, 1.0, 1.0, 0.0)
+	sheet.material_override = sheet_material
+	sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	fx_root.add_child(sheet)
+	sheet.global_position = Vector3(0.0, 0.0, card.position.z - 1.0)
+	var whiteout := create_tween()
+	whiteout.tween_property(sheet_material, "albedo_color:a", 1.0, 0.5)
+	whiteout.tween_interval(0.25)
+	whiteout.tween_property(sheet_material, "albedo_color", Color(0.0, 0.0, 0.0, 1.0), 1.2).set_trans(Tween.TRANS_SINE)
+	await whiteout.finished
+	# 3. Violet ghost fire streams out and up.
+	var fire := GhostFire.new()
+	fx_root.add_child(fire)
+	fire.global_position = card.global_position + Vector3(0.0, 0.0, 0.2)
+	fire.play(card.card_size, FINALE_BURN_SECONDS + 1.0)
+	await get_tree().create_timer(0.9).timeout
+	# 4. The card burns, five seconds, to black.
+	await card.burn_down(FINALE_BURN_SECONDS)
+	# 5. The black husk shrinks and is squashed flat.
+	await card.char_collapse(0.7)
+	busy = false

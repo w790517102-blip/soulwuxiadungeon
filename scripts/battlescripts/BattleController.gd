@@ -2119,6 +2119,10 @@ func _begin_end_battle(result: String) -> void:
 	if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
 		await action_log_ui.wait_for_all_logs()
 
+	# A view may stage a dedicated finale for the defeated boss (CARD_STAGE does).
+	if result == "victory" and battle_ui and battle_ui.has_method("play_enemy_defeat_finale"):
+		await battle_ui.play_enemy_defeat_finale(enemy_party)
+
 	if result == "phase_break":
 		# Scripted multi-phase encounters return to their map intermission without
 		# presenting victory prose, rewards, growth, or the result panel.
