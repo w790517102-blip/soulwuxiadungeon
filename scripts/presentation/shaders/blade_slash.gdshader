@@ -12,7 +12,7 @@ uniform vec4 light_core : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec4 light_cool : source_color = vec4(0.80, 0.84, 0.90, 1.0);
 uniform vec4 ink : source_color = vec4(0.015, 0.015, 0.02, 1.0);
 
-const float SWEEP_END = 0.34;
+const float SWEEP_END = 0.21;
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -42,18 +42,20 @@ void fragment() {
 	// When the head reached this point of the arc (inverse of the sweep easing), and how long ago.
 	float reach = clamp((UV.x + 0.05) / 1.10, 0.0, 0.999);
 	float passed_at = SWEEP_END * (1.0 - pow(1.0 - reach, 1.0 / 2.2));
-	float age = (progress - passed_at) / 0.55;
-	if (age < 0.0) {
+	float since = progress - passed_at;
+	float age = since / 0.34;                          // the white blade: lasts about as long as before
+	float age_ink = since / 0.77;                      // the black ink: lingers and fades slowly
+	if (since < 0.0) {
 		discard;
 	}
-	float end_fade = 1.0 - smoothstep(0.80, 1.0, progress);
+	float end_fade = 1.0 - smoothstep(0.92, 1.0, progress);
 	float x = UV.x;
 	float across = (UV.y - 0.5) * 2.0;
 
 	// The crescent: pointed at both ends, fat toward the start, sharpest at the head, thinning with age.
 	float shape = pow(sin(3.14159 * pow(x, 0.55)), 0.9);
-	float light_width = shape * clamp(age * 10.0, 0.14, 1.0) * (1.0 - 0.70 * smoothstep(0.12, 1.0, age)) * 0.62;
-	float ink_width = shape * (1.0 - 0.25 * smoothstep(0.3, 1.0, age)) * 1.45;
+	float light_width = shape * clamp(age * 10.0, 0.14, 1.0) * (1.0 - 0.70 * smoothstep(0.12, 1.0, age)) * 0.24;
+	float ink_width = shape * (1.0 - 0.30 * smoothstep(0.3, 1.0, age_ink)) * 0.52;
 
 	// Turbulent streaks: they all run along the arc but each lane flows at its own speed and wanders.
 	float lane = across * 8.0 + seed;
@@ -73,7 +75,7 @@ void fragment() {
 		light_mask *= 0.0;
 	}
 	// The ink is dragged out as separate strands (the dry-brush streaks of the stroke).
-	float strands = smoothstep(0.22 + 0.30 * age, 0.55 + 0.25 * age, flow * 0.7 + fine * 0.5);
+	float strands = smoothstep(0.22 + 0.34 * age_ink, 0.55 + 0.28 * age_ink, flow * 0.7 + fine * 0.5);
 	ink_mask *= strands;
 
 	// Cracks of black across the light: the air splitting along thin jagged lines.
@@ -88,10 +90,13 @@ void fragment() {
 	light_colour = mix(light_colour, ink.rgb, clamp(cracks * 0.95 + inner_dark, 0.0, 0.92));
 
 	float light_alpha = light_mask;
-	float ink_alpha = ink_mask * 0.92 * (1.0 - 0.6 * smoothstep(0.5, 1.0, age));
+	float ink_alpha = ink_mask * 0.95 * (1.0 - smoothstep(0.30, 1.0, age_ink));
+	// A faint silver glint along the ink edges so the black mark still reads on a dark stage.
+	float ink_rim = smoothstep(0.10, 0.35, ink_mask) * (1.0 - smoothstep(0.35, 0.75, ink_mask));
+	vec3 ink_colour = mix(ink.rgb, vec3(0.62, 0.65, 0.72), ink_rim * 0.85 * (1.0 - 0.5 * smoothstep(0.2, 1.0, age_ink)));
 	// Light over ink.
 	float alpha = light_alpha + ink_alpha * (1.0 - light_alpha);
-	vec3 colour = (light_colour * light_alpha + ink.rgb * ink_alpha * (1.0 - light_alpha)) / max(alpha, 0.001);
+	vec3 colour = (light_colour * light_alpha + ink_colour * ink_alpha * (1.0 - light_alpha)) / max(alpha, 0.001);
 	ALBEDO = colour;
 	ALPHA = alpha * end_fade;
 	EMISSION = light_colour * light_alpha * 0.5;
