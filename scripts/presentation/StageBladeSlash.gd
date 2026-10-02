@@ -8,11 +8,11 @@ extends Node3D
 const BladeShader = preload("res://scripts/presentation/shaders/blade_slash.gdshader")
 
 const TILT := 0.50
-const SWEEP_END := 0.34
+const SWEEP_END := 0.22
 const HALF_WIDTH := 0.34          # half the band's width, in units
 const SEGMENTS := 72
 
-var duration: float = 0.8
+var duration: float = 1.2
 var progress: float = 0.0:
 	set(value):
 		progress = value

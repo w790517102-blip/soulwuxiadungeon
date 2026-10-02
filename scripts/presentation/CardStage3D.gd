@@ -991,8 +991,8 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 		var cut_hold: float = StageHitEffects.slash_duration() + 0.1
 		if USE_BLADE_SLASH:
 			_start_blade_slash(cut_centre, cut_length * 1.5, direction)
-			cut_wait = BLADE_SLASH_SECONDS * 0.30
-			cut_hold = BLADE_SLASH_SECONDS * 0.45
+			cut_wait = 0.22
+			cut_hold = 0.36
 		else:
 			StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
 		# The target is struck as the cut lands (late in the draw), then reacts.
@@ -1338,7 +1338,7 @@ func present_boss_finale(boss: Dictionary) -> void:
 const BladeSlash = preload("res://scripts/presentation/StageBladeSlash.gd")
 ## Sword cuts use the single silver-white blade band (false brings back the sprite-sheet slash).
 const USE_BLADE_SLASH: bool = true
-const BLADE_SLASH_SECONDS: float = 0.8
+const BLADE_SLASH_SECONDS: float = 1.2
 
 
 ## Starts the blade cut (it frees itself); the caller times its own reaction.
