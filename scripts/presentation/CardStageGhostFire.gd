@@ -104,7 +104,7 @@ func ray_burst(size: Vector2, count: int) -> void:
 	var phase: float = rng.randf() * TAU
 	for index: int in range(count):
 		var angle: float = phase + TAU * float(index) / float(count) + rng.randf_range(-0.09, 0.09)
-		var length: float = rng.randf_range(0.35, 0.95)
+		var length: float = rng.randf_range(1.05, 2.85)
 		var width: float = rng.randf_range(0.05, 0.12)
 		var ray := MeshInstance3D.new()
 		ray.mesh = _spike_mesh(length, width)
@@ -150,4 +150,4 @@ func _process(delta: float) -> void:
 	_ray_wait -= delta
 	if _ray_wait <= 0.0:
 		ray_burst(_ray_size, 1)
-		_ray_wait = randf_range(0.07, 0.22)
+		_ray_wait = randf_range(0.105, 0.33)
