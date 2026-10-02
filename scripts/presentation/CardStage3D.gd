@@ -9,6 +9,7 @@ extends "res://scripts/presentation/CombatStage25D.gd"
 
 const CardStageActorCard = preload("res://scripts/presentation/CardStageActorCard.gd")
 const Templates = preload("res://scripts/presentation/CardStageTemplates.gd")
+const Art = preload("res://scripts/presentation/CardStageArt.gd")
 const Formation = preload("res://scripts/presentation/CardStageFormation.gd")
 const CardStageCommandTray = preload("res://scripts/presentation/CardStageCommandTray.gd")
 const CardStageTurnMarker = preload("res://scripts/presentation/CardStageTurnMarker.gd")
@@ -1048,12 +1049,46 @@ func present_entangle(boss: Dictionary) -> void:
 	busy = false
 
 
+const ShardBurst = preload("res://scripts/presentation/CardStageShardBurst.gd")
+const FocusLines = preload("res://scripts/presentation/CardStageFocusLines.gd")
+const YanxingCinematic = preload("res://scripts/presentation/CardStageYanxingCinematic.gd")
+## While the shell shatters the game runs slow for this many real seconds, then at full speed.
+const BREAK_SLOWMO_SECONDS: float = 0.8
+const BREAK_SLOWMO_SCALE: float = 0.22
+var _slowmo_active: bool = false
+
+
+func _exit_tree() -> void:
+	if _slowmo_active:
+		Engine.time_scale = 1.0
+
+
+## The 語魅 shell breaks. In slow motion for 0.8 s the purple triangles blow apart radially
+## (like a window hit by a ball), then fall; a few bounce on the floor. Focus lines burst out,
+## and the boss reels backwards for 0.8 s before slowly coming back.
 func present_entangle_break(boss: Dictionary) -> void:
 	var card: Node3D = card_for(boss)
 	if card == null:
 		return
-	StoryFx.shell_shatter(fx_root, _fx_point(card), card.card_size)
+	var was_busy: bool = busy
+	busy = true
+	var impact_local := Vector2(-card.card_size.x * 0.12, card.card_size.y * 0.04)
+	var impact_world: Vector3 = card.to_global(Vector3(impact_local.x, impact_local.y, 0.0))
 	card.set_tint("")
+	var burst := ShardBurst.new()
+	fx_root.add_child(burst)
+	burst.setup(card, card.card_size, impact_local, card.home_position.y - card.card_size.y * 0.5 + 0.02)
+	FocusLines.burst(self, camera.unproject_position(impact_world))
+	_slowmo_active = true
+	Engine.time_scale = BREAK_SLOWMO_SCALE
+	var reel: Vector3 = Vector3(0.55 if card.is_enemy else -0.55, 0.0, -1.1)
+	# 0.16 game seconds at a fifth of the speed: the reel lasts the 0.8 real seconds of the slow motion.
+	card.stagger_back(reel, BREAK_SLOWMO_SECONDS * BREAK_SLOWMO_SCALE)
+	await get_tree().create_timer(BREAK_SLOWMO_SECONDS, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_slowmo_active = false
+	await card.stagger_recover(1.4)
+	busy = was_busy
 
 
 ## Zuo Yin's scripted actions. `removes` = this action tears the 語魅 off the boss.
@@ -1072,20 +1107,21 @@ func present_guest_action(guest: Dictionary, action_id: String, boss: Dictionary
 			await get_tree().create_timer(0.3).timeout
 		"yanxing_wind_breaking_slash":
 			var boss_card: Node3D = card_for(boss)
-			card.somersault(0.8)
-			await get_tree().create_timer(0.4).timeout
+			# The whole move is the supplied animation: zoom into the portrait, play, white, back.
+			var art_entry: Dictionary = Art.entry_for(guest)
+			var art_texture: Texture2D = load(String(art_entry.get("path", ""))) as Texture2D if not art_entry.is_empty() else null
+			if art_texture != null:
+				# The whole card swells to the middle of the screen first, then the animation takes over.
+				await _zoom_card_to_centre(card)
+				var cinematic := YanxingCinematic.new()
+				add_child(cinematic)
+				await cinematic.play(self, _portrait_screen_rect(card), art_texture, Callable(self, "_restore_zoomed_card").bind(card))
+				cinematic.queue_free()
 			if boss_card != null:
-				var from: Vector3 = card.position + Vector3(0.0, 0.6, 0.5)
-				var to: Vector3 = _fx_point(boss_card)
-				# Three crescent blades: translucent and dim, opaque and bright, in between.
-				for brightness: float in [0.45, 1.0, 0.72]:
-					StoryFx.crescent(fx_root, from, to, brightness)
-					await get_tree().create_timer(0.13).timeout
-				await get_tree().create_timer(0.1).timeout
-				boss_card.hit_reaction(true)
 				if removes:
-					present_entangle_break(boss)
-			await get_tree().create_timer(0.45).timeout
+					await present_entangle_break(boss)
+				else:
+					boss_card.hit_reaction(true)
 			card.set_tint("")
 	busy = false
 
@@ -1151,3 +1187,64 @@ func card_portrait_center(actor: Dictionary) -> Vector2:
 		return Vector2.ZERO
 	var window: Rect2 = Templates.to_local_rect(card.template_key, Templates.get_template(card.template_key).window)
 	return camera.unproject_position(card.to_global(Vector3(window.get_center().x, window.get_center().y, 0.02)))
+
+
+## Where a card's portrait picture is on screen right now: the projected art quad (the same
+## picture a full-screen animation starts from, so the zoom into it joins up).
+func _portrait_screen_rect(card: Node3D) -> Rect2:
+	var layer: MeshInstance3D = card.get("art_layer")
+	if layer == null or not (layer.mesh is QuadMesh):
+		return Rect2(camera.unproject_position(card.global_position) - Vector2(120.0, 160.0), Vector2(240.0, 320.0))
+	var half: Vector2 = (layer.mesh as QuadMesh).size * 0.5
+	var corners: Array[Vector2] = []
+	for corner: Vector2 in [Vector2(-1, -1), Vector2(-1, 1), Vector2(1, -1), Vector2(1, 1)]:
+		corners.append(camera.unproject_position(layer.to_global(Vector3(corner.x * half.x, corner.y * half.y, 0.0))))
+	var result := Rect2(corners[0], Vector2.ZERO)
+	for corner: Vector2 in corners:
+		result = result.expand(corner)
+	return result
+
+
+# --- Zooming a whole card into the middle of the screen (the 燕行破風斬 intake) ------------------
+
+const CARD_ZOOM_SECONDS: float = 0.6
+const CARD_ZOOM_FILL: float = 0.9
+var _zoom_dim: MeshInstance3D = null
+
+
+## The card turns square to the camera and swells to the middle of the screen (it is moved
+## toward the camera, so the growth is real perspective), while everything behind it dims.
+func _zoom_card_to_centre(card: Node3D) -> void:
+	var distance: float = Formation.distance_for_fraction(card.card_size.y, CARD_ZOOM_FILL, camera_fov)
+	var target := Vector3(0.0, 0.0, CAMERA_Z - distance)
+	# A black sheet just behind the zoomed card hides and dims the rest of the stage.
+	var visible_height: float = 2.0 * distance * tan(deg_to_rad(camera_fov) / 2.0)
+	var sheet := QuadMesh.new()
+	sheet.size = Vector2(visible_height * 4.0, visible_height * 2.0)
+	_zoom_dim = MeshInstance3D.new()
+	_zoom_dim.mesh = sheet
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(0.0, 0.0, 0.0, 0.0)
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_zoom_dim.material_override = material
+	_zoom_dim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	fx_root.add_child(_zoom_dim)
+	_zoom_dim.global_position = Vector3(0.0, 0.0, target.z - 0.6)
+	card._kill_motion()
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(card, "position", target, CARD_ZOOM_SECONDS).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(card, "rotation", Vector3.ZERO, CARD_ZOOM_SECONDS).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(material, "albedo_color:a", 0.88, CARD_ZOOM_SECONDS)
+	await tween.finished
+
+
+## Puts the zoomed card back at its place (done while the screen is white).
+func _restore_zoomed_card(card: Node3D) -> void:
+	if is_instance_valid(card):
+		card.position = card.home_position
+		card.rotation = card.home_rotation
+	if _zoom_dim != null and is_instance_valid(_zoom_dim):
+		_zoom_dim.queue_free()
+	_zoom_dim = null

@@ -735,3 +735,24 @@ func defeat_yumei() -> void:
 	await _wait_for_motion(_motion_tween)
 	visible = false
 	scale = base_scale
+
+
+# --- Knocked back by a heavy blow (the boss when its shell breaks) ------------------------------
+
+## Reels backwards (away from the camera and from the attacker) and stays there. `seconds` is
+## game time, so it stretches during a slow motion.
+func stagger_back(away: Vector3, seconds: float) -> void:
+	_kill_motion()
+	_motion_tween = create_tween().set_parallel(true)
+	_motion_tween.tween_property(self, "position", home_position + away, seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_motion_tween.tween_property(self, "rotation", home_rotation + Vector3(-0.22, -_toward() * 0.10, -_toward() * 0.07), seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await _wait_for_motion(_motion_tween)
+
+
+## Slowly recovers from stagger_back().
+func stagger_recover(seconds: float) -> void:
+	_kill_motion()
+	_motion_tween = create_tween().set_parallel(true)
+	_motion_tween.tween_property(self, "position", home_position, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_motion_tween.tween_property(self, "rotation", home_rotation, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await _wait_for_motion(_motion_tween)

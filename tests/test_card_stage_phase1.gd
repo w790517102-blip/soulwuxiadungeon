@@ -615,6 +615,41 @@ func _check_stage(fixture: Node) -> void:
 		_expect(polygon[1].is_equal_approx(stage.card_portrait_center(allies[0])), "the tail tip is the portrait centre")
 		_expect(not is_equal_approx(polygon[1].y, (polygon[0].y + polygon[2].y) / 2.0), "the tail is tilted toward the portrait, not simply shifted")
 
+	# --- The boss shell breaks (slow motion, radial shards, a few bounce) -------------------
+	var shell_boss: Dictionary = enemies[0].duplicate(true)
+	shell_boss["id"] = "molin_yanjiang"
+	shell_boss["battle_uid"] = "molin_yanjiang#9"
+	ui.set_teams(allies, [shell_boss])
+	stage = ui.stage
+	var shell_card: Node3D = stage.card_for(shell_boss)
+	var break_done: Array = [false]
+	var break_runner := func() -> void:
+		await stage.present_entangle_break(shell_boss)
+		break_done[0] = true
+	break_runner.call()
+	await process_frame
+	var burst: Node3D = null
+	for child: Node in stage.fx_root.get_children():
+		if child.has_method("piece_count"):
+			burst = child
+	_expect(burst != null and burst.piece_count() >= 60, "the shell breaks into many triangular pieces")
+	_expect(is_equal_approx(Engine.time_scale, stage.BREAK_SLOWMO_SCALE), "the shatter runs in slow motion")
+	if burst != null:
+		var sample: Node3D = burst.get_child(0)
+		var before_distance: float = (sample.global_position - shell_card.global_position).length()
+		for slow_frame: int in range(20):
+			await process_frame
+		_expect((sample.global_position - shell_card.global_position).length() > before_distance, "pieces fly outward from the impact")
+		_expect(burst.bouncy_count() > 0 and burst.bouncy_count() < burst.piece_count() / 2, "only some pieces are the bouncing kind")
+	var wait_guard: int = 0
+	while not break_done[0] and wait_guard < 60 * 8:
+		await process_frame
+		wait_guard += 1
+	_expect(break_done[0] and is_equal_approx(Engine.time_scale, 1.0), "normal speed returns after the slow motion")
+	_expect(shell_card.position.is_equal_approx(shell_card.home_position), "the boss has slowly come back to its place")
+	ui.set_teams(allies, enemies)
+	stage = ui.stage
+
 	_stage_checks_completed = true
 
 
