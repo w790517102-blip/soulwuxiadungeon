@@ -4,13 +4,16 @@ extends Node
 ## the screen, the video plays from that frame, freezes on its last frame, the screen washes to
 ## white, and fades back to the battle. Presentation only: it never touches combat state.
 
-const VIDEO_PATH := "res://assets/presentation/video/yan_xing_po_feng_zhan.ogv"
-const VIDEO_SECONDS := 6.58
+const DEFAULT_VIDEO_PATH := "res://assets/presentation/video/yan_xing_po_feng_zhan.ogv"
+const DEFAULT_VIDEO_SECONDS := 6.58
 const ZOOM_SECONDS := 0.65
 const FREEZE_BEFORE_END := 0.05
 const WHITE_SECONDS := 0.9
 const RETURN_SECONDS := 0.8
 
+## The animation to play and how long it runs (the defaults are 燕行破風斬).
+var video_path: String = DEFAULT_VIDEO_PATH
+var video_seconds: float = DEFAULT_VIDEO_SECONDS
 var _finished: bool = false
 
 
@@ -47,7 +50,7 @@ func play(host: Node, start_rect: Rect2, art: Texture2D, on_white: Callable = Ca
 	await zoom.finished
 
 	# 2. The animation, from its first frame (the portrait itself, so the join is seamless).
-	var stream: VideoStream = load(VIDEO_PATH) as VideoStream
+	var stream: VideoStream = load(video_path) as VideoStream
 	var video: VideoStreamPlayer = null
 	if stream != null:
 		video = VideoStreamPlayer.new()
@@ -68,13 +71,13 @@ func play(host: Node, start_rect: Rect2, art: Texture2D, on_white: Callable = Ca
 		picture.hide()
 		# 3. Freeze on the last frame.
 		var watchdog: int = 0
-		while not _finished and video.stream_position < VIDEO_SECONDS - FREEZE_BEFORE_END and watchdog < 60 * 12:
+		while not _finished and video.stream_position < video_seconds - FREEZE_BEFORE_END and watchdog < 60 * 12:
 			await get_tree().process_frame
 			watchdog += 1
 		if not _finished:
 			video.paused = true
 	else:
-		push_warning("燕行破風斬 video is missing: %s" % VIDEO_PATH)
+		push_warning("燕行破風斬 video is missing: %s" % video_path)
 		await get_tree().create_timer(0.4).timeout
 
 	# 4. The screen washes to white, then fades back to the battle.

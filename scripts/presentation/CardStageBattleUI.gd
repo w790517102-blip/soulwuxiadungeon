@@ -434,5 +434,8 @@ func _bubble_avoid_shift(box: PanelContainer, rect: Rect2) -> float:
 func play_area_strikes(actor: Dictionary, skill_data: Dictionary, events: Array) -> bool:
 	if not (stage_enabled and stage) or String(skill_data.get("weapon_type", "")) != "拳":
 		return false
+	if String(skill_data.get("target_scope", "")) == "enemy_all_per_target_random_hits":
+		await stage.present_ultimate_fist_rain(actor, events)
+		return true
 	await stage.present_punch_events(actor, events)
 	return true

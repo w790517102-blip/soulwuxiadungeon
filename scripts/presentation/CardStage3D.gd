@@ -1569,3 +1569,135 @@ func _blade_hit_feedback(cut_centre: Vector3, cut_length: float, critical: bool,
 	SpaceWarpFX.play_at(fx_root, cut_centre + Vector3(0.0, 0.0, 0.7), cut_length * (1.7 if critical else 1.3), strength, 0.5 if critical else 0.2)
 	if critical and is_instance_valid(destination):
 		get_tree().create_timer(0.22).timeout.connect(destination.shudder.bind(0.24, 0.09))
+
+
+# --- 真．石破天驚拳 (the ultimate): zoom, animation, then a rain of punches over the whole screen ----------
+
+const ULTIMATE_VIDEO := "res://assets/presentation/video/shi_po_tian_jing_quan_ultimate.ogv"
+const ULTIMATE_VIDEO_SECONDS := 6.55
+## Seconds between one impact of the rain and the next (real hits and the decorative ones between them).
+const RAIN_GAP: float = 0.045
+const RAIN_DECOR_PER_HIT: int = 5
+
+
+## The ultimate fist skill. The card swells to the middle of the screen, the animation plays, then the
+## card floats in mid-air (it does not walk up to anyone) and punches rain down all over the screen:
+## every real blow lands on its target card, and many more impacts crack the rest of the picture.
+func present_ultimate_fist_rain(attacker: Dictionary, events: Array) -> void:
+	var source := card_for(attacker)
+	if source == null or events.is_empty():
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var art_entry: Dictionary = Art.entry_for(attacker)
+	var art_texture: Texture2D = load(String(art_entry.get("path", ""))) as Texture2D if not art_entry.is_empty() else null
+	if art_texture != null and ResourceLoader.exists(ULTIMATE_VIDEO):
+		await _zoom_card_to_centre(source)
+		var cinematic := YanxingCinematic.new()
+		cinematic.video_path = ULTIMATE_VIDEO
+		cinematic.video_seconds = ULTIMATE_VIDEO_SECONDS
+		add_child(cinematic)
+		await cinematic.play(self, _portrait_screen_rect(source), art_texture, Callable(self, "_restore_zoomed_card").bind(source))
+		cinematic.queue_free()
+	# The card rises and hangs in the air, facing the camera, while the blows fall.
+	source._kill_motion()
+	var hover_position: Vector3 = source.home_position + Vector3(1.5, 0.15, 0.7)
+	var hover := create_tween().set_parallel(true)
+	hover.tween_property(source, "position", hover_position, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	hover.tween_property(source, "rotation", Vector3.ZERO, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await hover.finished
+	# Schedule: the real blows in order, with decorative impacts mixed between them.
+	var last_event: Dictionary = {}
+	var landed: Dictionary = {}
+	for index: int in range(events.size()):
+		var key: String = actor_key((events[index] as Dictionary).target)
+		last_event[key] = index
+		landed[key] = bool(landed.get(key, false)) or bool((events[index] as Dictionary).hit)
+	var struck: Array = []
+	for key: String in landed.keys():
+		var struck_card: Node3D = cards.get(key) as Node3D
+		if struck_card == null:
+			continue
+		if landed[key]:
+			struck.append(struck_card)
+		else:
+			struck_card.dodge_motion()
+	var rain_depth: float = CAMERA_Z - (enemy_depth + 1.0)
+	var half_height: float = tan(deg_to_rad(camera_fov) * 0.5) * rain_depth
+	var view: Vector2 = get_viewport().get_visible_rect().size
+	var half_width: float = half_height * view.x / maxf(view.y, 1.0)
+	var camera_home: Vector3 = camera.position
+	_suppress_card_spark = true
+	var per_target_count: Dictionary = {}
+	var hover_clock: float = 0.0
+	for index: int in range(events.size()):
+		var event: Dictionary = events[index]
+		var destination := card_for(event.target)
+		if destination == null:
+			continue
+		var key: String = actor_key(event.target)
+		var count: int = int(per_target_count.get(key, 0))
+		per_target_count[key] = count + 1
+		# Decorative impacts first: the screen cracks all around the real blow.
+		for decor: int in range(RAIN_DECOR_PER_HIT):
+			var spot := Vector3(randf_range(-half_width * 0.85, half_width * 0.85), randf_range(-half_height * 0.6, half_height * 0.8), CAMERA_Z - rain_depth + 0.6)
+			_rain_impact(spot, source.position, randf_range(0.8, 1.7) * destination.card_size.y * 0.5, false, 0.0)
+			camera.position = camera_home + Vector3(randf_range(-0.06, 0.06), randf_range(-0.05, 0.05), 0.0)
+			hover_clock += RAIN_GAP
+			source.position = hover_position + Vector3(0.0, sin(hover_clock * 24.0) * 0.05, 0.0)
+			await get_tree().create_timer(RAIN_GAP).timeout
+		var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+		var heavy: bool = int(last_event[key]) == index
+		if bool(event.hit):
+			var spot2: Vector2 = PUNCH_SPOTS[count % PUNCH_SPOTS.size()]
+			var point: Vector3 = destination.position + Vector3(spot2.x * destination.card_size.x, destination.card_size.y * 0.05 + spot2.y * destination.card_size.y * 0.5, 0.5)
+			var hit_size: float = destination.card_size.y * 0.5
+			var params: Dictionary = PunchHitFX.heavy_preset(hit_size) if heavy else PunchHitFX.light_preset(hit_size)
+			params["direction"] = 1.0
+			params["angle"] = _angle_back_to(point, source.position)
+			params["critical"] = bool(event.crit)
+			PunchHitFX.play_at(fx_root, point, params)
+			if heavy:
+				await _hit_stop(float(params.hit_stop_time))
+			if bool(event.target.get("defending", false)):
+				destination.guard_motion()
+			else:
+				destination._flash(Color(0.92, 0.96, 1.0, 0.5))
+				destination.stagger_back(Vector3(direction * float(params.recoil_distance), 0.05, -0.3), 0.07 if heavy else 0.05)
+				if bool(event.crit):
+					get_tree().create_timer(0.09).timeout.connect(destination.shudder.bind(0.22, 0.09))
+		await get_tree().create_timer(RAIN_GAP).timeout
+	camera.position = camera_home
+	_suppress_card_spark = false
+	await get_tree().create_timer(0.35).timeout
+	for struck_card: Node3D in struck:
+		if is_instance_valid(struck_card):
+			struck_card.stagger_recover(0.45)
+	# The card drifts back down to its place.
+	var settle := create_tween().set_parallel(true)
+	settle.tween_property(source, "position", source.home_position, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	settle.tween_property(source, "rotation", source.home_rotation, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	await settle.finished
+	await get_tree().create_timer(0.12).timeout
+	busy = false
+
+
+## The angle (see PunchHitFX.angle) that makes the afterimages of an impact trail back toward `origin`.
+func _angle_back_to(point: Vector3, origin: Vector3) -> float:
+	var back := Vector2(origin.x - point.x, origin.y - point.y)
+	if back.length() < 0.001:
+		return 0.0
+	back = back.normalized()
+	return atan2(-back.y, -back.x)
+
+
+## One decorative impact of the rain, with its afterimages trailing back toward the card.
+func _rain_impact(point: Vector3, origin: Vector3, size: float, _heavy: bool, _unused: float) -> void:
+	var params: Dictionary = PunchHitFX.light_preset(size)
+	params["direction"] = 1.0
+	params["angle"] = _angle_back_to(point, origin)
+	params["ink_amount"] = 0
+	params["mark_scale"] = 1.1
+	params["mark_life"] = 0.5
+	params["spark_count"] = 5
+	PunchHitFX.play_at(fx_root, point, params)
