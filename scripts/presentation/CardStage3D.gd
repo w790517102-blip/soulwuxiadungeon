@@ -1796,6 +1796,24 @@ func _is_lute_attack(skill: Dictionary) -> bool:
 	return USE_BLADE_SLASH and String(skill.get("weapon_type", "")) == "琴"
 
 
+## The struck card shakes slightly and leans back a hair as the wave lands.
+func _lute_recoil(card: Node, direction: float, crit: bool) -> void:
+	if not is_instance_valid(card):
+		return
+	card.shudder(0.4 if crit else 0.26, 0.07 if crit else 0.045)
+	var lean := create_tween()
+	lean.tween_property(card, "rotation", card.home_rotation + Vector3(0.0, 0.0, direction * (0.06 if crit else 0.035)), 0.06)
+	lean.tween_property(card, "rotation", card.home_rotation, 0.2)
+	# The neighbours on the same side step to the right so the leaning card is not hidden behind them.
+	for other: Node3D in cards.values():
+		if other == card or other.is_enemy != card.is_enemy or absf(other.home_position.x - card.home_position.x) > card.card_size.x * 2.2:
+			continue
+		var step := create_tween()
+		step.tween_property(other, "position", other.home_position + Vector3(card.card_size.x * 0.28, 0.0, 0.0), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		step.tween_interval(0.14)
+		step.tween_property(other, "position", other.home_position, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
 ## The player's card gives one short shake of the string (it does not walk up to anyone); a thin
 ## pressure front crosses to the target, which resonates: it trembles in place (no knock-back).
 func _present_lute_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
@@ -1829,20 +1847,20 @@ func _present_lute_attack(attacker: Dictionary, target: Dictionary, result: Dict
 		params["card_width"] = destination.card_size.x
 		params["card_height"] = destination.card_size.y
 		params["wave_width"] = destination.card_size.y * 0.55
-		params["resonance_radius"] = destination.card_size.y * 0.9
+		params["outer_ring_size"] = destination.card_size.y * 1.15
 		if crit:
-			params["ring_count"] = 2
-			params["spark_count"] = 10
+			params["spark_count"] = 12
 			params["shiver_marks"] = 5
+			params["impact_flash_strength"] = 4.0
 		elif strikes.size() > 1:
-			params["ring_count"] = 1
-			params["spark_count"] = 3
+			params["spark_count"] = 4
+			params["shiver_marks"] = 2
 		var origin: Vector3 = source.position + Vector3(direction * source.card_size.x * 0.35, 0.0, 0.4)
 		var aim: Vector3 = centre if landed else centre + Vector3(direction * 0.9, 0.2, -0.6)
 		LuteFX.play_between(fx_root, origin, aim, params)
 		if landed:
 			# The struck card trembles where it stands for as long as the sound rings.
-			get_tree().create_timer(float(params.wave_speed) * 0.92).timeout.connect(destination.shudder.bind(0.4 if crit else 0.28, 0.07 if crit else 0.045))
+			get_tree().create_timer(float(params.wave_speed)).timeout.connect(_lute_recoil.bind(destination, direction, crit))
 		if index < strikes.size() - 1:
 			await get_tree().create_timer(0.16).timeout
 	await get_tree().create_timer(0.55).timeout

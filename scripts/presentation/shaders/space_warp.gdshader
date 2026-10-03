@@ -9,6 +9,7 @@ uniform float t : hint_range(0.0, 1.0) = 0.0;
 uniform float strength = 0.01;         // how far the picture is pushed (share of the screen)
 uniform float seed = 0.0;
 uniform float max_radius = 0.95;
+uniform float ring_only = 0.0;         // 1: only the spreading ring bends the space (a mirage ring, nothing inside it)
 uniform vec2 aspect = vec2(1.0, 1.0);  // the screen's width/height ratio, so the push is round
 
 float hash(vec2 p) {
@@ -30,7 +31,7 @@ void fragment() {
 	float radius = max_radius * (1.0 - pow(1.0 - t, 2.4));
 	float width = mix(0.28, 0.12, t);
 	float ring = exp(-pow((r - radius) / width, 2.0) * 1.5);
-	float inside = (1.0 - smoothstep(radius * 0.4, radius, r)) * 0.35;
+	float inside = (1.0 - smoothstep(radius * 0.4, radius, r)) * 0.35 * (1.0 - ring_only);
 	float life = 1.0 - smoothstep(0.5, 1.0, t);
 	vec2 wave = vec2(noise(p * 5.0 + vec2(t * 6.0, seed)) - 0.5, noise(p * 5.0 + vec2(seed, -t * 6.0)) - 0.5) * 2.0;
 	vec2 outward = normalize(p + vec2(0.0001)) * ring;

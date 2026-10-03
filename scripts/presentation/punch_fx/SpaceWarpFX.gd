@@ -13,7 +13,7 @@ const CRITICAL_STRENGTH := 0.022
 
 ## Plays one ripple centred on `centre` (a world position in front of the camera) and frees itself.
 ## `size` is the ripple's width in world units.
-static func play_at(host: Node, centre: Vector3, size: float, strength: float, life: float = 0.45) -> void:
+static func play_at(host: Node, centre: Vector3, size: float, strength: float, life: float = 0.45, ring_only: bool = false) -> void:
 	var camera: Camera3D = host.get_viewport().get_camera_3d()
 	if camera == null or not (host is Node3D):
 		return
@@ -25,10 +25,10 @@ static func play_at(host: Node, centre: Vector3, size: float, strength: float, l
 	var pixels: float = maxf(absf(edge.x - screen_centre.x) * 2.0, 8.0)
 	var warp := new()
 	host.add_child(warp)
-	warp._run(screen_centre, pixels, strength, life, host.get_viewport().get_visible_rect().size)
+	warp._run(screen_centre, pixels, strength, life, host.get_viewport().get_visible_rect().size, ring_only)
 
 
-func _run(screen_centre: Vector2, pixels: float, strength: float, life: float, view: Vector2) -> void:
+func _run(screen_centre: Vector2, pixels: float, strength: float, life: float, view: Vector2, ring_only: bool = false) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = -1       # above the 3D world, below the interface
 	add_child(layer)
@@ -39,6 +39,7 @@ func _run(screen_centre: Vector2, pixels: float, strength: float, life: float, v
 	var material := ShaderMaterial.new()
 	material.shader = WarpShader
 	material.set_shader_parameter("strength", strength)
+	material.set_shader_parameter("ring_only", 1.0 if ring_only else 0.0)
 	material.set_shader_parameter("seed", randf() * 10.0)
 	material.set_shader_parameter("aspect", Vector2(1.0, view.x / maxf(view.y, 1.0)))
 	rect.material = material
