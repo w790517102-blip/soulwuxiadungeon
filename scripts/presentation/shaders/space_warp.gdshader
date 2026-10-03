@@ -1,15 +1,15 @@
-shader_type spatial;
-render_mode unshaded, cull_disabled, depth_draw_never, depth_test_disabled, blend_mix;
-// A mirage / heat-haze warp of the space behind a quad: the picture already on screen is sampled
-// through a wavering offset, so cards and backdrop seem to ripple and bend. Here it is shaped as a
-// shock wave: a ring of strong distortion spreading from the centre, with a gentle wobble inside it.
-// `t` runs 0..1 over its life. Presentation only.
+shader_type canvas_item;
+// A mirage / heat-haze warp of the picture behind a rectangle: the finished frame (3D stage, cards
+// and all, since this is a canvas pass drawn after the 3D world) is sampled through a wavering
+// offset, shaped as a shock wave: a ring of strong distortion spreading from the centre, with a
+// gentle wobble inside it. `t` runs 0..1 over its life. Presentation only.
 
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
 uniform float t : hint_range(0.0, 1.0) = 0.0;
-uniform float strength = 0.02;         // how far the picture is pushed (share of the screen)
+uniform float strength = 0.01;         // how far the picture is pushed (share of the screen)
 uniform float seed = 0.0;
 uniform float max_radius = 0.95;
+uniform vec2 aspect = vec2(1.0, 1.0);  // the screen's width/height ratio, so the push is round
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -32,14 +32,10 @@ void fragment() {
 	float ring = exp(-pow((r - radius) / width, 2.0) * 1.5);
 	float inside = (1.0 - smoothstep(radius * 0.4, radius, r)) * 0.35;
 	float life = 1.0 - smoothstep(0.5, 1.0, t);
-	// A wavering offset: two slow noise fields drifting past each other.
 	vec2 wave = vec2(noise(p * 5.0 + vec2(t * 6.0, seed)) - 0.5, noise(p * 5.0 + vec2(seed, -t * 6.0)) - 0.5) * 2.0;
-	// Pushed outward along the ring as well, so the space seems shoved away from the blow.
 	vec2 outward = normalize(p + vec2(0.0001)) * ring;
-	vec2 offset = (wave * (ring + inside) + outward * 0.8) * strength * life;
+	vec2 offset = (wave * (ring + inside) + outward * 0.8) * strength * life * aspect;
 	vec3 colour = texture(screen_texture, SCREEN_UV + offset).rgb;
-	// Fade the edge of the quad so no square outline can show.
 	float edge = 1.0 - smoothstep(0.82, 1.0, r);
-	ALBEDO = colour;
-	ALPHA = edge * clamp((ring + inside) * life * 1.6, 0.0, 1.0);
+	COLOR = vec4(colour, edge * clamp((ring + inside) * life * 1.6, 0.0, 1.0));
 }

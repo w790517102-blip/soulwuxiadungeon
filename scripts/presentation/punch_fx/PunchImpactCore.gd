@@ -13,6 +13,8 @@ var life: float = 0.06
 ## +1: the fist came from the left, -1: from the right. `afterimages` ghost copies trail behind.
 var travel_dir: float = 1.0
 var afterimages: int = 3
+## Only a critical hit trembles near the end.
+var tremble: bool = false
 
 
 func _flash(size: Vector2, intensity: float, flash_life: float, position_offset: Vector3, start_scale: float) -> void:
@@ -36,9 +38,9 @@ func _flash(size: Vector2, intensity: float, flash_life: float, position_offset:
 	var drift_to: Vector3 = position_offset - Vector3(travel_dir * impact_scale * 0.35, 0.0, 0.0)
 	tween.tween_method(func(value: float) -> void:
 		var base: Vector3 = position_offset.lerp(drift_to, value)
-		var tremble: float = smoothstep(0.55, 1.0, value) * impact_scale * 0.06
+		var tremble_amount: float = (smoothstep(0.55, 1.0, value) * impact_scale * 0.06) if tremble else 0.0
 		if is_instance_valid(flash):
-			flash.position = base + Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), 0.0) * tremble
+			flash.position = base + Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), 0.0) * tremble_amount
 	, 0.0, 1.0, flash_life)
 	tween.tween_method(func(value: float) -> void: material.set_shader_parameter("t", value), 0.0, 1.0, flash_life)
 	tween.chain().tween_callback(flash.queue_free)

@@ -18,10 +18,16 @@ var progress: float = 0.0:
 		progress = value
 		if _material != null:
 			_material.set_shader_parameter("progress", progress)
+		if tremble and _base_known and progress > 0.45:
+			position = _base_position + Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), 0.0) * _unit * 0.02 * smoothstep(0.45, 0.9, progress)
 
 var _unit: float = 1.0
 ## 刀: a straight cut (not the sword's curve) in vermilion mixed with white, crossing very fast.
 var _saber: bool = false
+## A critical cut: its light trembles near the end of its life.
+var tremble: bool = false
+var _base_position: Vector3 = Vector3.ZERO
+var _base_known: bool = false
 var _material: ShaderMaterial
 
 
@@ -107,6 +113,8 @@ func _build_strip() -> ArrayMesh:
 
 ## Plays the cut once; frees itself at the end. Awaitable.
 func play() -> void:
+	_base_position = position
+	_base_known = true
 	progress = 0.0
 	var tween := create_tween()
 	tween.tween_property(self, "progress", 1.0, duration)

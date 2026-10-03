@@ -9,6 +9,7 @@ const Ring = preload("res://scripts/presentation/punch_fx/PunchShockRing.gd")
 const Spark = preload("res://scripts/presentation/punch_fx/PunchWhiteSpark.gd")
 const Debris = preload("res://scripts/presentation/punch_fx/PunchInkDebris.gd")
 const Mark = preload("res://scripts/presentation/punch_fx/PunchInkMark.gd")
+const Warp = preload("res://scripts/presentation/punch_fx/SpaceWarpFX.gd")
 
 # --- Tunable parameters (`size` is the stage's hit scale; the rest scale with it) ----------------
 var impact_scale: float = 1.0       # the core flash
@@ -22,6 +23,8 @@ var recoil_distance: float = 0.55   # how far the struck card is knocked back, w
 var flash_intensity: float = 3.4    # how far above white the core glows
 var size: float = 1.8
 var direction: float = 1.0          # +1: the fist came from the left, -1: from the right (for the afterimages)
+var critical: bool = false          # a critical hit: the white light trembles at the end and the space warps harder
+var warp_strength: float = 0.010    # the mirage ripple of the space around the hit (0 = none)
 
 
 ## The heavy blow: bigger core, a full ring, more sparks.
@@ -50,8 +53,11 @@ func play() -> void:
 	core.impact_scale = impact_scale * size * 0.55
 	core.flash_intensity = flash_intensity
 	core.travel_dir = direction
+	core.tremble = critical
 	add_child(core)
 	core.play()
+	if warp_strength > 0.0:
+		Warp.play_at(self, Vector3(0.0, 0.0, 0.4), size * (3.0 if critical else 2.4), warp_strength * (2.2 if critical else 1.0), 0.45 if critical else 0.36)
 	if mark_scale > 0.0:
 		var mark := Mark.new()
 		mark.mark_scale = mark_scale * size

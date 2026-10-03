@@ -1019,8 +1019,9 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 		var cut_wait: float = 0.1
 		var cut_hold: float = StageHitEffects.slash_duration() + 0.1
 		if USE_BLADE_SLASH:
-			_start_blade_slash(cut_centre, cut_length * 1.5, direction, 0, saber)
+			_start_blade_slash(cut_centre, cut_length * 1.5, direction, 0, saber, bool(result.get("crit", false)))
 			cut_wait = 0.05 if saber else 0.16
+			_blade_hit_feedback(cut_centre, cut_length, bool(result.get("crit", false)), destination)
 			cut_hold = 0.34 if saber else 0.30
 		else:
 			StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
@@ -1371,8 +1372,9 @@ const BLADE_SLASH_SECONDS: float = 1.3
 
 
 ## Starts the blade cut (it frees itself); the caller times its own reaction.
-func _start_blade_slash(centre: Vector3, length: float, direction: float, variant: int = 0, saber: bool = false) -> void:
+func _start_blade_slash(centre: Vector3, length: float, direction: float, variant: int = 0, saber: bool = false, critical: bool = false) -> void:
 	var slash := BladeSlash.new()
+	slash.tremble = critical
 	slash.duration = BLADE_SLASH_SECONDS
 	fx_root.add_child(slash)
 	slash.setup(length, direction, variant, saber)
@@ -1416,7 +1418,8 @@ func _play_sword_flurry(destination: Node3D, target: Dictionary, strikes: Array,
 		var strike: Dictionary = strikes[index]
 		var landed: bool = bool(strike.get("hit", true))
 		if landed:
-			_start_blade_slash(cut_centre, cut_length * 1.5, direction, index, saber)
+			_start_blade_slash(cut_centre, cut_length * 1.5, direction, index, saber, bool(strike.get("crit", false)))
+			_blade_hit_feedback(cut_centre, cut_length, bool(strike.get("crit", false)), destination)
 			get_tree().create_timer(0.16).timeout.connect(_flurry_react.bind(destination, guarding, bool(strike.get("crit", false))))
 		else:
 			# The blade only finds air beside the target.
@@ -1442,6 +1445,7 @@ func _flurry_react(destination: Node3D, guarding: bool, crit: bool) -> void:
 # and springs home. Every blow of a flurry is a light one except the last, which is heavy.
 
 const PunchHitFX = preload("res://scripts/presentation/punch_fx/PunchHitFX.gd")
+const SpaceWarpFX = preload("res://scripts/presentation/punch_fx/SpaceWarpFX.gd")
 var _suppress_card_spark: bool = false
 var _hit_stop_active: bool = false
 
@@ -1488,6 +1492,7 @@ func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dic
 		if bool(strike.get("hit", true)):
 			var params: Dictionary = PunchHitFX.heavy_preset(hit_size) if heavy else PunchHitFX.light_preset(hit_size)
 			params["direction"] = direction
+			params["critical"] = bool(strike.get("crit", false))
 			var point: Vector3 = centre + Vector3(randf_range(-0.12, 0.12), randf_range(-0.18, 0.18), 0.0) * (0.0 if index == 0 else 1.0)
 			# The fist presses in a little as it lands.
 			var press := create_tween()
@@ -1499,8 +1504,9 @@ func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dic
 			else:
 				destination._flash(Color(0.92, 0.96, 1.0, 0.5))
 				destination.stagger_back(Vector3(direction * float(params.recoil_distance), 0.05, -0.3), 0.07 if heavy else 0.05)
-				# After the knock-back the struck card shudders for a moment.
-				get_tree().create_timer(0.09 if heavy else 0.06).timeout.connect(destination.shudder.bind(0.2 if heavy else 0.12, 0.09 if heavy else 0.05))
+				# After the knock-back a critical hit makes the struck card shudder for a moment.
+				if bool(strike.get("crit", false)):
+					get_tree().create_timer(0.09 if heavy else 0.06).timeout.connect(destination.shudder.bind(0.22 if heavy else 0.14, 0.09 if heavy else 0.05))
 		if index < strikes.size() - 1:
 			await get_tree().create_timer(0.11).timeout
 	_suppress_card_spark = false
@@ -1511,3 +1517,13 @@ func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dic
 	await source.lunge_return(0.4)
 	await get_tree().create_timer(0.12).timeout
 	busy = false
+
+
+## Feedback shared by every sword / 刀 cut that lands: a faint mirage ripple of the space around the
+## hit. A critical hit has a much stronger ripple, a tremble in the cut's light near its end, and makes
+## the struck card shudder after its knock-back.
+func _blade_hit_feedback(cut_centre: Vector3, cut_length: float, critical: bool, destination: Node3D) -> void:
+	var strength: float = SpaceWarpFX.CRITICAL_STRENGTH if critical else SpaceWarpFX.NORMAL_STRENGTH
+	SpaceWarpFX.play_at(fx_root, cut_centre + Vector3(0.0, 0.0, 0.7), cut_length * (1.7 if critical else 1.3), strength, 0.5 if critical else 0.38)
+	if critical and is_instance_valid(destination):
+		get_tree().create_timer(0.22).timeout.connect(destination.shudder.bind(0.24, 0.09))
