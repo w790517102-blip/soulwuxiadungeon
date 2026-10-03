@@ -8,12 +8,15 @@ const Core = preload("res://scripts/presentation/punch_fx/PunchImpactCore.gd")
 const Ring = preload("res://scripts/presentation/punch_fx/PunchShockRing.gd")
 const Spark = preload("res://scripts/presentation/punch_fx/PunchWhiteSpark.gd")
 const Debris = preload("res://scripts/presentation/punch_fx/PunchInkDebris.gd")
+const Mark = preload("res://scripts/presentation/punch_fx/PunchInkMark.gd")
 
 # --- Tunable parameters (`size` is the stage's hit scale; the rest scale with it) ----------------
 var impact_scale: float = 1.0       # the core flash
 var ring_scale: float = 1.0         # the shock ring
 var spark_count: int = 14           # white spark streaks
 var ink_amount: int = 4             # ink drops
+var mark_scale: float = 1.0         # the black ink mark left on the spot (0 = none)
+var mark_life: float = 0.9          # seconds the mark takes to fade away (long after the white light is gone)
 var hit_stop_time: float = 0.07     # real seconds the game stands almost still on contact (read by the stage)
 var recoil_distance: float = 0.55   # how far the struck card is knocked back, world units (read by the stage)
 var flash_intensity: float = 3.4    # how far above white the core glows
@@ -22,12 +25,12 @@ var size: float = 1.8
 
 ## The heavy blow: bigger core, a full ring, more sparks.
 static func heavy_preset(size_value: float = 1.8) -> Dictionary:
-	return {"impact_scale": 1.0, "ring_scale": 2.7, "spark_count": 16, "ink_amount": 5, "hit_stop_time": 0.075, "recoil_distance": 0.6, "flash_intensity": 3.6, "size": size_value}
+	return {"impact_scale": 1.0, "ring_scale": 2.7, "spark_count": 16, "ink_amount": 5, "mark_scale": 2.3, "mark_life": 1.3, "hit_stop_time": 0.075, "recoil_distance": 0.6, "flash_intensity": 3.6, "size": size_value}
 
 
 ## The light blow (a quick jab): smaller core, a short ring, few sparks; a faster beat.
 static func light_preset(size_value: float = 1.8) -> Dictionary:
-	return {"impact_scale": 0.6, "ring_scale": 1.15, "spark_count": 7, "ink_amount": 2, "hit_stop_time": 0.03, "recoil_distance": 0.3, "flash_intensity": 2.8, "size": size_value}
+	return {"impact_scale": 0.6, "ring_scale": 1.15, "spark_count": 7, "ink_amount": 2, "mark_scale": 1.3, "mark_life": 0.8, "hit_stop_time": 0.03, "recoil_distance": 0.3, "flash_intensity": 2.8, "size": size_value}
 
 
 ## Plays one hit at `centre` (world position). `params` overrides any of the knobs above.
@@ -47,9 +50,15 @@ func play() -> void:
 	core.flash_intensity = flash_intensity
 	add_child(core)
 	core.play()
+	if mark_scale > 0.0:
+		var mark := Mark.new()
+		mark.mark_scale = mark_scale * size
+		mark.life = mark_life
+		add_child(mark)
+		mark.play()
 	# The ring and the sparks burst out in the very next instant.
 	get_tree().create_timer(0.025, true, false, true).timeout.connect(_burst)
-	get_tree().create_timer(1.2).timeout.connect(queue_free)
+	get_tree().create_timer(maxf(1.2, mark_life + 0.3)).timeout.connect(queue_free)
 
 
 func _burst() -> void:
