@@ -439,3 +439,21 @@ func play_area_strikes(actor: Dictionary, skill_data: Dictionary, events: Array)
 		return true
 	await stage.present_punch_events(actor, events)
 	return true
+
+
+## A talisman buff (臨符): yellow sheets are woken, thrown and stuck onto each target.
+func play_talisman_cast(caster: Dictionary, targets: Array) -> void:
+	if stage_enabled and stage:
+		await stage.present_talisman_cast(caster, targets)
+
+
+## HEAL: green breath and drifting leaves over the healed card.
+func play_heal_fx(target: Dictionary) -> void:
+	if stage_enabled and stage:
+		stage.present_heal(target)
+
+
+## BUFF / DEBUFF colour breath over a card (kind: attack, defense, speed, accuracy, crit, debuff).
+func play_buff_fx(target: Dictionary, kind: String) -> void:
+	if stage_enabled and stage:
+		stage.present_buff(target, kind)

@@ -700,6 +700,7 @@ func somersault(seconds: float = 0.75) -> void:
 # --- Defeat exits ---------------------------------------------------------------------------
 
 var defeat_played: bool = false
+const YUMEI_BURN_SECONDS: float = 1.9
 
 
 ## Animals: a short shake, then the card tips backwards and fades out.
@@ -719,8 +720,10 @@ func defeat_animal() -> void:
 	visible = false
 
 
-## 語魅: a double heartbeat pulse (scale beat with a purple flash), then it drifts up and fades.
-func defeat_yumei() -> void:
+## 語魅: a double heartbeat pulse (scale beat with a purple flash), then it burns as it rises: the
+## card chars from its bottom edge while it climbs away and fades at the top. `on_ascend` is called
+## the moment the rise begins (the stage starts the violet fire there).
+func defeat_yumei(on_ascend: Callable = Callable()) -> void:
 	defeat_played = true
 	_kill_motion()
 	var base_scale: Vector3 = scale
@@ -730,11 +733,25 @@ func defeat_yumei() -> void:
 		_motion_tween.tween_property(self, "scale", base_scale * 1.1, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		_motion_tween.tween_property(self, "scale", base_scale, 0.18).set_trans(Tween.TRANS_SINE)
 		_motion_tween.tween_interval(0.2)
-	_motion_tween.tween_property(self, "position", home_position + Vector3(0.0, 2.2, 0.0), 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	_motion_tween.parallel().tween_method(set_fade, 0.0, 1.0, 0.9).set_delay(0.1)
+	await _wait_for_motion(_motion_tween)
+	if on_ascend.is_valid():
+		on_ascend.call()
+	burn_down(YUMEI_BURN_SECONDS)
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", home_position + Vector3(0.0, 2.4, 0.0), YUMEI_BURN_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_motion_tween.parallel().tween_method(set_fade, 0.0, 1.0, YUMEI_BURN_SECONDS * 0.4).set_delay(YUMEI_BURN_SECONDS * 0.6)
 	await _wait_for_motion(_motion_tween)
 	visible = false
 	scale = base_scale
+	clear_burn()
+
+
+## Removes the charring sheet (the card is whole again if it is brought back).
+func clear_burn() -> void:
+	if _burn_overlay != null:
+		_burn_overlay.queue_free()
+		_burn_overlay = null
+		_burn_material = null
 
 
 # --- Knocked back by a heavy blow (the boss when its shell breaks) ------------------------------
@@ -811,8 +828,12 @@ func burn_down(seconds: float) -> void:
 		_burn_overlay.sorting_offset = 0.5
 		add_child(_burn_overlay)
 	var tween := create_tween().set_parallel(true)
-	tween.tween_method(func(value: float) -> void: _burn_material.set_shader_parameter("burn", value), 0.0, 1.0, seconds)
-	tween.tween_method(func(value: float) -> void: _burn_material.set_shader_parameter("time_value", value), 0.0, seconds, seconds)
+	tween.tween_method(func(value: float) -> void:
+		if _burn_material != null:
+			_burn_material.set_shader_parameter("burn", value), 0.0, 1.0, seconds)
+	tween.tween_method(func(value: float) -> void:
+		if _burn_material != null:
+			_burn_material.set_shader_parameter("time_value", value), 0.0, seconds, seconds)
 	await tween.finished
 
 

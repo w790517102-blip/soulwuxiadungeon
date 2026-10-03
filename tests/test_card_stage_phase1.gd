@@ -176,7 +176,9 @@ func _check_stage(fixture: Node) -> void:
 	await create_timer(0.7).timeout
 	_expect(beast.rotation.x < beast.home_rotation.x - 0.1 and beast.position.z < beast_home.z, "an animal tips backwards as it exits")
 	_expect(spirit.position.y > spirit_home.y or spirit.scale.x > 1.0, "a 語魅 pulses and begins to rise")
-	await create_timer(1.5).timeout
+	await create_timer(1.1).timeout
+	_expect(spirit.get("_burn_overlay") != null and spirit.position.y > spirit_home.y, "a 語魅 burns as it rises")
+	await create_timer(2.3).timeout
 	_expect(not beast.visible and not spirit.visible, "defeated cards are gone once the exit ends")
 	_expect(spirit.position.y > spirit_home.y + 1.0, "a 語魅 exits upward")
 	beast.visible = true

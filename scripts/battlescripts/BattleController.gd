@@ -3689,6 +3689,8 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 		if battle_ui.has_method("play_heal_react"):
 			for t in targets:
 				battle_ui.play_heal_react(t)
+				if battle_ui.has_method("play_heal_fx"):
+					battle_ui.play_heal_fx(t)
 	_play_support_se("heal")
 
 	# 🔁 同步 UI
@@ -3749,6 +3751,8 @@ func _execute_support_mp_heal(user: Dictionary, skill_data: Dictionary, target: 
 
 	if battle_ui and battle_ui.has_method("play_heal_react"):
 		battle_ui.play_heal_react(target)
+		if battle_ui.has_method("play_heal_fx"):
+			battle_ui.play_heal_fx(target)
 	_play_support_se("heal")
 
 	_update_ui_for_actor(target)
@@ -3792,12 +3796,20 @@ func _execute_support_status_action(user: Dictionary, skill_data: Dictionary, ta
 	if battle_ui and battle_ui.has_method("play_attack_motion"):
 		_play_support_motion(user, targets)
 		if _uses_ink_swirl(skill_data) and battle_ui.has_method("play_ink_swirl"):
-			await battle_ui.play_ink_swirl(targets)
+			if String(skill_data.get("name", "")).begins_with("臨符") and battle_ui.has_method("play_talisman_cast"):
+				await battle_ui.play_talisman_cast(user, targets)
+			else:
+				await battle_ui.play_ink_swirl(targets)
 		if battle_ui.has_method("play_hit_fx_on_target"):
 			var fx_id = _get_fx_id_for_skill(skill_data, user)
 			if fx_id != "":
 				for effect_target in targets:
 					battle_ui.play_hit_fx_on_target(effect_target, fx_id)
+		if battle_ui.has_method("play_buff_fx"):
+			var fx_kind: String = _buff_fx_kind(skill_data, effect, effect_entry_source, positive_buff)
+			if fx_kind != "":
+				for effect_target in targets:
+					battle_ui.play_buff_fx(effect_target, fx_kind)
 		if positive_buff and battle_ui.has_method("play_heal_react"):
 			for effect_target in targets:
 				battle_ui.play_heal_react(effect_target)
@@ -4540,3 +4552,33 @@ func _play_support_motion(user: Dictionary, targets: Array) -> void:
 ## ink swirl on their targets.
 func _uses_ink_swirl(skill_data: Dictionary) -> bool:
 	return String(skill_data.get("cast_animation", "")) == "ink_swirl" or String(skill_data.get("name", "")).begins_with("臨符")
+
+
+## Which colour of buff / debuff breath a support-status skill plays: attack (red), defense (blue),
+## speed (sky cyan), accuracy (yellow), crit (orange and red); every debuff is violet and black smoke.
+func _buff_fx_kind(skill_data: Dictionary, effect: String, entry: Dictionary, positive: bool) -> String:
+	if not positive:
+		return "debuff"
+	match effect:
+		"atk_up":
+			return "attack"
+		"def_up":
+			return "defense"
+		"buff_speed", "speed_buff", "evasion_boost":
+			return "speed"
+		"focus":
+			return "accuracy"
+		"stat_buff":
+			var stat: String = str(skill_data.get("stat_key", entry.get("stat_key", entry.get("stat", "")))).strip_edges().to_lower()
+			match stat:
+				"str":
+					return "attack"
+				"con":
+					return "defense"
+				"agi":
+					return "speed"
+				"int":
+					return "accuracy"
+				"luck":
+					return "crit"
+	return "attack"

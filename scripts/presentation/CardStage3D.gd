@@ -167,12 +167,13 @@ func _update_defeats() -> void:
 				card.visible = true
 				card.set_fade(0.0)
 				card.reset_pose()
+				card.clear_burn()
 			continue
 		if card.defeat_played or not _cards_idle():
 			continue
 		busy = true
 		if String(actor.get("family", "")) == "yumei":
-			await card.defeat_yumei()
+			await card.defeat_yumei(_start_yumei_fire.bind(card))
 		else:
 			await card.defeat_animal()
 		busy = false
@@ -985,6 +986,9 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_talisman_skill(skill):
+		await _present_talisman_attack(attacker, target, result)
+		return
 	if _is_lute_attack(skill):
 		await _present_lute_attack(attacker, target, result)
 		return
@@ -1865,3 +1869,131 @@ func _present_lute_attack(attacker: Dictionary, target: Dictionary, result: Dict
 			await get_tree().create_timer(0.16).timeout
 	await get_tree().create_timer(0.55).timeout
 	busy = false
+
+
+# --- Talismans (符咒): paper appears, wakes, flies, sticks, seals, burns away ------------------------
+
+const TalismanFX = preload("res://scripts/presentation/talisman_fx/TalismanFX.gd")
+
+
+## Talisman skills by name (臨符, 殘符, 殘咒...). 替身符 has its own stage cast.
+func _is_talisman_skill(skill: Dictionary) -> bool:
+	var skill_name: String = String(skill.get("name", ""))
+	if skill_name.contains("替身符"):
+		return false
+	return skill_name.contains("符") or skill_name.contains("殘咒") or String(skill.get("id", "")).contains("talisman")
+
+
+func _talisman_params(destination: Node3D, blessing: bool, crit: bool, count: int, missed: bool) -> Dictionary:
+	var params: Dictionary = TalismanFX.defaults()
+	params["card_size"] = destination.card_size
+	params["glyph_height"] = destination.card_size.y * 0.55
+	params["brand_height"] = destination.card_size.y * 0.78
+	params["stroke_width"] = destination.card_size.y * 0.020
+	params["brand_width"] = destination.card_size.y * 0.016
+	params["blessing"] = blessing
+	params["critical"] = crit
+	params["miss"] = missed
+	params["arc_height"] = destination.card_size.y * 0.22
+	return params
+
+
+## An attack or debuff by talisman: the caster steps out, the sheets are woken and thrown, and
+## the struck card is pressed back by the slap of the paper and the seal that spreads over it.
+func _present_talisman_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var landed: bool = bool(result.get("hit", true))
+	var crit: bool = landed and bool(result.get("crit", false))
+	var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	await source.cast_step_forward()
+	var origin: Vector3 = source.position + Vector3(direction * source.card_size.x * 0.55, source.card_size.y * 0.12, 0.7)
+	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.02, 0.5)
+	var fx := TalismanFX.play_between(fx_root, origin, centre, _talisman_params(destination, false, crit, 3 if crit else 2, not landed))
+	if landed:
+		fx.landed.connect(destination.shudder.bind(0.25, 0.015))
+		fx.sealed.connect(_talisman_press.bind(destination, direction, crit))
+	else:
+		fx.landed.connect(destination.dodge_motion)
+	await fx.finished
+	await source.cast_return()
+	busy = false
+
+
+## The slap: the card is rocked back a little and trembles, then the seal holds it for a moment.
+func _talisman_press(card: Node3D, direction: float, crit: bool) -> void:
+	if not is_instance_valid(card):
+		return
+	card.shudder(0.3, 0.07 if crit else 0.05)
+	var lean := create_tween()
+	lean.tween_property(card, "rotation", card.home_rotation + Vector3(-0.07, 0.0, direction * 0.05), 0.07)
+	lean.tween_interval(0.35)
+	lean.tween_property(card, "rotation", card.home_rotation, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## A talisman buff: the same sheets, gold and gentle, stuck onto each ally.
+func present_talisman_cast(caster: Dictionary, targets: Array) -> void:
+	var source := card_for(caster)
+	busy = true
+	command_tray.set_enabled(false)
+	var stepped: bool = false
+	if source and source.has_method("cast_step_forward"):
+		stepped = true
+		await source.cast_step_forward()
+	var finishers: Array = []
+	for target_any: Variant in targets:
+		if typeof(target_any) != TYPE_DICTIONARY:
+			continue
+		var destination := card_for(target_any as Dictionary)
+		if destination == null:
+			continue
+		var origin: Vector3 = (source.position if source else destination.position) + Vector3(0.0, (source.card_size.y if source else destination.card_size.y) * 0.12, 0.8)
+		if source and source != destination:
+			var heading: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+			origin += Vector3(heading * source.card_size.x * 0.5, 0.0, 0.0)
+		var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.02, 0.5)
+		finishers.append(TalismanFX.play_between(fx_root, origin, centre, _talisman_params(destination, true, false, 1, false)))
+	# Every sheet runs on the same timing, so waiting for the first is waiting for all.
+	if not finishers.is_empty():
+		await (finishers[0] as Node).finished
+	if stepped:
+		await source.cast_return()
+	busy = false
+
+
+# --- Healing (HEAL): green breath poured up into the card, with drifting leaves -------------------
+
+const HealFX = preload("res://scripts/presentation/heal_fx/HealFX.gd")
+const BuffFX = preload("res://scripts/presentation/heal_fx/BuffFX.gd")
+
+
+## Does not hold the line-up: the healing plays over the card while the turn goes on.
+func present_heal(target: Dictionary) -> void:
+	var card := card_for(target)
+	if card == null:
+		return
+	HealFX.play_at(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.02, 0.45), card.card_size)
+
+
+## BUFF / DEBUFF: coloured breath rising (buffs) or a black-violet smoke sinking (debuffs).
+func present_buff(target: Dictionary, kind: String) -> void:
+	var card := card_for(target)
+	if card == null:
+		return
+	BuffFX.play_at(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.02, 0.45), card.card_size, kind)
+
+
+## 語魅 burning as it rises: violet fire (the boss's finale fire) follows the card up.
+func _start_yumei_fire(card: Node3D) -> void:
+	var fire := GhostFire.new()
+	fx_root.add_child(fire)
+	fire.global_position = card.global_position + Vector3(0.0, 0.0, 0.2)
+	fire.play(card.card_size, card.YUMEI_BURN_SECONDS, 0.0)
+	var follow := create_tween()
+	follow.tween_method(func(_value: float) -> void:
+		if is_instance_valid(card) and is_instance_valid(fire):
+			fire.global_position = card.global_position + Vector3(0.0, 0.0, 0.2), 0.0, 1.0, card.YUMEI_BURN_SECONDS)

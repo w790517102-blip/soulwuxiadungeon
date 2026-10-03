@@ -12,6 +12,8 @@ uniform float seed = 0.0;
 uniform float lead_heavy = 0.0;        // 1: a lash, fat at its head and thin where it began (0: a written stroke)
 uniform float tail_taper = 0.88;       // how thin the lash's hooked-back tail gets (0 = as thick as the head, 1 = a point)
 uniform vec4 ink : source_color = vec4(0.012, 0.012, 0.016, 1.0);
+uniform vec4 sheen_tone : source_color = vec4(0.62, 0.66, 0.74, 1.0);   // tone of the faint sheen on the upper edge
+uniform float glow = 0.0;              // >0: the ink gives off light (cinnabar that burns)
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -58,6 +60,7 @@ void fragment() {
 	float alpha = mask * mix(1.0, eroded, smoothstep(0.0, 0.2, fade)) * (1.0 - smoothstep(0.7, 1.0, fade));
 	// A faint cold-grey sheen along the stroke's upper edge so the black still reads against a dark stage.
 	float sheen = smoothstep(0.55, 0.95, -across / max(width, 0.001)) * (1.0 - smoothstep(0.0, 0.5, fade)) * 0.55;
-	ALBEDO = mix(ink.rgb, vec3(0.62, 0.66, 0.74), sheen);
+	ALBEDO = mix(ink.rgb, sheen_tone.rgb, sheen);
 	ALPHA = clamp(alpha, 0.0, 1.0) * 0.96;
+	EMISSION = ALBEDO * glow * ALPHA;
 }
