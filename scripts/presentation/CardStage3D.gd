@@ -1499,6 +1499,8 @@ func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dic
 			else:
 				destination._flash(Color(0.92, 0.96, 1.0, 0.5))
 				destination.stagger_back(Vector3(direction * float(params.recoil_distance), 0.05, -0.3), 0.07 if heavy else 0.05)
+				# After the knock-back the struck card shudders for a moment.
+				get_tree().create_timer(0.09 if heavy else 0.06).timeout.connect(destination.shudder.bind(0.2 if heavy else 0.12, 0.09 if heavy else 0.05))
 		if index < strikes.size() - 1:
 			await get_tree().create_timer(0.11).timeout
 	_suppress_card_spark = false

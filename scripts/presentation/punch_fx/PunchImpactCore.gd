@@ -32,7 +32,14 @@ func _flash(size: Vector2, intensity: float, flash_life: float, position_offset:
 	flash.scale = Vector3.ONE * start_scale
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(flash, "scale", Vector3.ONE * 1.1, flash_life).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	tween.tween_property(flash, "position", position_offset - Vector3(travel_dir * impact_scale * 0.35, 0.0, 0.0), flash_life)
+	# The light drifts back along the blow and, near the end of its life, trembles slightly.
+	var drift_to: Vector3 = position_offset - Vector3(travel_dir * impact_scale * 0.35, 0.0, 0.0)
+	tween.tween_method(func(value: float) -> void:
+		var base: Vector3 = position_offset.lerp(drift_to, value)
+		var tremble: float = smoothstep(0.55, 1.0, value) * impact_scale * 0.06
+		if is_instance_valid(flash):
+			flash.position = base + Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), 0.0) * tremble
+	, 0.0, 1.0, flash_life)
 	tween.tween_method(func(value: float) -> void: material.set_shader_parameter("t", value), 0.0, 1.0, flash_life)
 	tween.chain().tween_callback(flash.queue_free)
 

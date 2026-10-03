@@ -825,3 +825,17 @@ func char_collapse(seconds: float) -> void:
 	await tween.finished
 	visible = false
 	scale = start_scale
+
+
+## A quick tremble around the current position (the shudder after a heavy blow), dying away.
+func shudder(seconds: float, amplitude: float) -> void:
+	_kill_motion()
+	var centre: Vector3 = position
+	_motion_tween = create_tween()
+	var steps: int = maxi(int(seconds / 0.025), 2)
+	for step: int in range(steps):
+		var fade: float = 1.0 - float(step) / float(steps)
+		var offset := Vector3(randf_range(-1.0, 1.0), randf_range(-0.5, 0.5), 0.0) * amplitude * fade
+		_motion_tween.tween_property(self, "position", centre + offset, 0.025)
+	_motion_tween.tween_property(self, "position", centre, 0.025)
+	await _wait_for_motion(_motion_tween)
