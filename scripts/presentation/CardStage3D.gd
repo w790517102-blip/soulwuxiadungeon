@@ -1597,14 +1597,15 @@ func present_ultimate_fist_rain(attacker: Dictionary, events: Array) -> void:
 		cinematic.video_path = ULTIMATE_VIDEO
 		cinematic.video_seconds = ULTIMATE_VIDEO_SECONDS
 		add_child(cinematic)
-		await cinematic.play(self, _portrait_screen_rect(source), art_texture, Callable(self, "_restore_zoomed_card").bind(source))
+		await cinematic.play(self, _portrait_screen_rect(source), art_texture, Callable(self, "_ultimate_after_white").bind())
 		cinematic.queue_free()
-	# The card rises and hangs in the air, facing the camera, while the blows fall.
+	# The card is still in front of the camera where the zoom left it; from there it settles into the
+	# hover position and hangs in the air, facing the camera, while the blows fall.
 	source._kill_motion()
 	var hover_position: Vector3 = source.home_position + Vector3(1.5, 0.15, 0.7)
 	var hover := create_tween().set_parallel(true)
-	hover.tween_property(source, "position", hover_position, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	hover.tween_property(source, "rotation", Vector3.ZERO, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	hover.tween_property(source, "position", hover_position, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	hover.tween_property(source, "rotation", Vector3.ZERO, 0.55).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	await hover.finished
 	# Schedule: the real blows in order, with decorative impacts mixed between them.
 	var last_event: Dictionary = {}
@@ -1701,3 +1702,12 @@ func _rain_impact(point: Vector3, origin: Vector3, size: float, _heavy: bool, _u
 	params["mark_life"] = 0.5
 	params["spark_count"] = 5
 	PunchHitFX.play_at(fx_root, point, params)
+
+
+
+## Called while the animation's white fills the screen: the zoom's dimmer goes, but the card stays
+## where the zoom left it (in front of the camera) and carries on from there.
+func _ultimate_after_white() -> void:
+	if _zoom_dim != null and is_instance_valid(_zoom_dim):
+		_zoom_dim.queue_free()
+	_zoom_dim = null
