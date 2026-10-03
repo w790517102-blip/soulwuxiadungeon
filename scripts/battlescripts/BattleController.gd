@@ -1311,6 +1311,9 @@ func _execute_single_target_strikes(
 		var combo_log := String(pairing_bonus.get("log", ""))
 		if combo_log != "":
 			combined_logs.append(combo_log.replace("{name}", String(actor.get("name", "俠士"))))
+	if strike_count > 1:
+		var combo_text: String = String(combined_logs[0]) if not combined_logs.is_empty() else ""
+		return _run_multi_strikes(actor, target, damage_skill_data, inner_force, pairing_bonus, strike_count, combo_text)
 	for i in range(strike_count):
 		if int(target.get("hp", 0)) <= 0:
 			break
@@ -1351,6 +1354,145 @@ func _execute_single_target_strikes(
 		"pairing_bonus": pairing_bonus,
 		"strike_count": strike_count,
 	}
+
+# --- Multi-strike skills: one sentence for the whole action -------------------------------------
+# A skill that strikes several times used to log every segment on its own (a header, then the
+# full description, damage and reaction lines), and play a sound per segment. It now reads as ONE
+# log entry (so one key press controls its pace): the flourish of the attack, then each segment in
+# turn (its damage, or that it was dodged, and whether it was a critical hit), then how the target
+# took it. Hit animation and sound are decided once: if any segment landed, it counts as a hit.
+
+const MULTI_STRIKE_OPENERS: Array[String] = [
+	"%s 這一式「%s」招式凌厲，勢如破竹，連綿的攻勢將 %s 打得毫無喘息的餘地。",
+	"%s 施展「%s」，攻勢一波接著一波，%s 只覺得招招緊逼、應接不暇。",
+	"%s 使出「%s」，招與招之間不留半分空隙，%s 被逼得連連後退。",
+]
+const MULTI_STRIKE_DODGES: Array[String] = ["身形一晃閃開了攻勢", "側身讓過了這一擊", "腳下一錯避開了鋒芒"]
+const MULTI_STRIKE_NUMERALS: Array[String] = ["一", "二", "三", "四", "五", "六", "七", "八"]
+const MULTI_STRIKE_ALL_MISSED: Array[String] = [
+	"%s 步步閃避，連衣角也沒被沾到。",
+	"%s 一路化解，這輪攻勢竟全數落空。",
+]
+
+
+## The one log entry for a run of strikes on one target (lines joined by newlines, typed in a single go).
+func _compose_multi_strike_entry(actor: Dictionary, target: Dictionary, skill_data: Dictionary, strikes: Array, combo_log: String = "", blocked_log: String = "") -> String:
+	var skill_name: String = String(skill_data.get("name", "招式"))
+	var actor_name: String = String(actor.get("name", "俠士"))
+	var target_name: String = String(target.get("name", "對手"))
+	var lines: Array[String] = []
+	if combo_log != "":
+		lines.append(combo_log)
+	lines.append(MULTI_STRIKE_OPENERS[randi() % MULTI_STRIKE_OPENERS.size()] % [actor_name, skill_name, target_name])
+	var parts: Array[String] = []
+	var total_damage := 0
+	var advantage := false
+	var last_hit: Dictionary = {}
+	for index: int in range(strikes.size()):
+		var strike: Dictionary = strikes[index]
+		var label: String = "第%s段" % (MULTI_STRIKE_NUMERALS[index] if index < MULTI_STRIKE_NUMERALS.size() else str(index + 1))
+		if bool(strike.get("damage_prevented", false)):
+			parts.append("%s 被護住了" % label)
+		elif not bool(strike.get("hit", true)):
+			parts.append("%s %s" % [label, MULTI_STRIKE_DODGES[randi() % MULTI_STRIKE_DODGES.size()]])
+		else:
+			var damage: int = int(strike.get("damage", 0))
+			total_damage += damage
+			var text: String = "%s [color=#ffd447]%d[/color] 傷害" % [label, damage]
+			if bool(strike.get("crit", false)):
+				text += "，竟是[color=#ff2b2d]會心一擊[/color]"
+			parts.append(text)
+			advantage = advantage or bool(strike.get("element_advantage", false))
+			last_hit = strike
+	var strike_line: String = "、".join(parts)
+	var landed: int = 0
+	for strike_any: Variant in strikes:
+		if bool((strike_any as Dictionary).get("hit", true)) and not bool((strike_any as Dictionary).get("damage_prevented", false)):
+			landed += 1
+	if landed >= 2:
+		strike_line += "，合計 [color=#ffd447]%d[/color] 點" % total_damage
+	if advantage:
+		strike_line += "；此招[color=#ff2b2d]剋制[/color]其屬性，氣勢凌人"
+	lines.append(strike_line + "。")
+	if blocked_log != "":
+		lines.append(blocked_log)
+	elif not last_hit.is_empty():
+		var closing: Array = last_hit.get("closing_lines", [])
+		if not closing.is_empty():
+			lines.append("".join(PackedStringArray(closing.map(func(line: Variant) -> String: return String(line)))))
+	else:
+		lines.append(MULTI_STRIKE_ALL_MISSED[randi() % MULTI_STRIKE_ALL_MISSED.size()] % target_name)
+	return "\n".join(PackedStringArray(lines))
+
+
+## Plays the sound and the actors' one-liners for a whole run of strikes, once: any landed
+## segment makes it a hit (a critical one if any segment was critical).
+func _emit_multi_strike_feedback(actor: Dictionary, target: Dictionary, skill_data: Dictionary, strikes: Array) -> void:
+	var any_hit := false
+	var any_crit := false
+	var strongest: Dictionary = {}
+	for strike_any: Variant in strikes:
+		var strike: Dictionary = strike_any
+		if not bool(strike.get("hit", true)):
+			continue
+		any_hit = true
+		any_crit = any_crit or bool(strike.get("crit", false))
+		if strongest.is_empty() or int(strike.get("damage", 0)) > int(strongest.get("damage", 0)):
+			strongest = strike
+	var first: Dictionary = strikes[0] if not strikes.is_empty() else {}
+	_play_attack_se_from_result(actor, target, skill_data, {
+		"hit": any_hit, "dodged": not any_hit, "crit": any_crit,
+		"target_defending": bool(first.get("target_defending", target.get("defending", false))),
+	})
+	if any_crit:
+		_emit_crit_admire_line({"hit": true, "crit": true}, actor)
+	elif any_hit:
+		_emit_major_hit_reaction_from_result(strongest, target)
+	else:
+		_emit_dodge_actor_line(first, target)
+
+
+## Strikes one target `strike_count` times (it stops if the target falls) and returns the strike
+## results; nothing is logged here.
+func _roll_strikes(actor: Dictionary, target: Dictionary, skill_data: Dictionary, inner_force: Dictionary, strike_count: int) -> Array:
+	var strikes: Array = []
+	for index: int in range(strike_count):
+		if int(target.get("hp", 0)) <= 0:
+			break
+		var strike_data := skill_data.duplicate(true)
+		if index > 0:
+			strike_data["_suppress_attack_opener"] = true
+		var strike: Dictionary = skill_executor.execute(actor, target, strike_data, inner_force)
+		strikes.append(strike)
+		if bool(strike.get("target_down", false)):
+			break
+	return strikes
+
+
+func _run_multi_strikes(actor: Dictionary, target: Dictionary, skill_data: Dictionary, inner_force: Dictionary, pairing_bonus: Dictionary, strike_count: int, combo_log: String) -> Dictionary:
+	var strikes: Array = _roll_strikes(actor, target, skill_data, inner_force, strike_count)
+	var blocked_log := ""
+	var total_damage := 0
+	var any_hit := false
+	var any_crit := false
+	var target_down := false
+	for strike_any: Variant in strikes:
+		var strike: Dictionary = strike_any
+		total_damage += int(strike.get("damage", 0))
+		any_hit = any_hit or bool(strike.get("hit", true))
+		any_crit = any_crit or (bool(strike.get("hit", true)) and bool(strike.get("crit", false)))
+		target_down = target_down or bool(strike.get("target_down", false))
+		if blocked_log == "" and bool(strike.get("damage_prevented", false)):
+			blocked_log = String(strike.get("damage_prevention_log", ""))
+	_emit_multi_strike_feedback(actor, target, skill_data, strikes)
+	var result: Dictionary = (strikes[0] as Dictionary).duplicate() if not strikes.is_empty() else {"hit": false, "target_down": false}
+	result["log"] = [_compose_multi_strike_entry(actor, target, skill_data, strikes, combo_log, blocked_log)]
+	result["damage"] = total_damage
+	result["hit"] = any_hit
+	result["crit"] = any_crit
+	result["target_down"] = target_down
+	return {"result": result, "pairing_bonus": pairing_bonus, "strike_count": strike_count}
+
 
 func _target_has_status_before_action(target: Dictionary, effect_id: String) -> bool:
 	if target.is_empty() or effect_id == "" or status_manager == null:
@@ -2346,6 +2488,8 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 		battle_ui.play_attack_motion(actor)
 		await get_tree().create_timer(0.35).timeout
 
+	# The strikes land on random enemies; each enemy gets ONE log entry for all the strikes it took.
+	var groups: Array = []
 	for i in range(strike_total):
 		var pick := _pick_random_alive_enemy()
 		if pick.is_empty():
@@ -2354,13 +2498,14 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 		if i > 0:
 			strike_skill_data["_suppress_attack_opener"] = true
 		var strike_result = skill_executor.execute(actor, pick, strike_skill_data, inner_force)
-		_play_attack_se_from_result(actor, pick, strike_skill_data, strike_result)
-		_emit_dodge_actor_line(strike_result, pick)
-		_emit_crit_admire_line(strike_result, actor)
-		_emit_major_hit_reaction_from_result(strike_result, pick)
-		combined_logs.append("—— 震勁流轉・第 %d 段 ——" % [i + 1])
-		for line in strike_result.get("log", []):
-			combined_logs.append(line)
+		var group: Dictionary = {}
+		for existing: Dictionary in groups:
+			if String(existing.target.get("battle_uid", "")) == String(pick.get("battle_uid", "")):
+				group = existing
+		if group.is_empty():
+			group = {"target": pick, "strikes": []}
+			groups.append(group)
+		(group.strikes as Array).append(strike_result)
 		if bool(strike_result.get("hit", true)):
 			any_hit = true
 			if not hit_targets.has(pick):
@@ -2370,6 +2515,9 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 		if bool(strike_result.get("target_down", false)):
 			_mark_actor_down(pick)
 			any_down = true
+	for group: Dictionary in groups:
+		_emit_multi_strike_feedback(actor, group.target, skill_data, group.strikes)
+		combined_logs.append(_compose_multi_strike_entry(actor, group.target, skill_data, group.strikes))
 
 	if battle_ui and not hit_targets.is_empty():
 		if battle_ui.has_method("play_hit_fx_multi"):
@@ -2418,21 +2566,12 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 			continue
 		if int(enemy.get("hp", 0)) <= 0:
 			continue
+		# Every enemy takes its strikes and gets ONE log entry for all of them.
 		var strike_total = _resolve_strike_count(actor, skill_data)
-		for i in range(strike_total):
-			if int(enemy.get("hp", 0)) <= 0:
-				break
-			var strike_skill_data := skill_data.duplicate(true)
-			if i > 0:
-				strike_skill_data["_suppress_attack_opener"] = true
-			var strike_result = skill_executor.execute(actor, enemy, strike_skill_data, inner_force)
-			_play_attack_se_from_result(actor, enemy, strike_skill_data, strike_result)
-			_emit_dodge_actor_line(strike_result, enemy)
-			_emit_crit_admire_line(strike_result, actor)
-			_emit_major_hit_reaction_from_result(strike_result, enemy)
-			combined_logs.append("—— %s・第 %d 段 ——" % [String(enemy.get("name", "敵人")), i + 1])
-			for line in strike_result.get("log", []):
-				combined_logs.append(line)
+		var enemy_strikes: Array = _roll_strikes(actor, enemy, skill_data, inner_force, strike_total)
+		if enemy_strikes.is_empty():
+			continue
+		for strike_result: Dictionary in enemy_strikes:
 			if bool(strike_result.get("hit", true)):
 				any_hit = true
 				if not hit_targets.has(enemy):
@@ -2442,7 +2581,8 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 			if bool(strike_result.get("target_down", false)):
 				_mark_actor_down(enemy)
 				any_down = true
-				break
+		_emit_multi_strike_feedback(actor, enemy, skill_data, enemy_strikes)
+		combined_logs.append(_compose_multi_strike_entry(actor, enemy, skill_data, enemy_strikes))
 
 	if battle_ui and not hit_targets.is_empty():
 		if battle_ui.has_method("play_hit_fx_multi"):

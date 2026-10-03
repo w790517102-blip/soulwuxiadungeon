@@ -347,6 +347,14 @@ func _position_bubble_on_portrait(slot: Control, box: PanelContainer) -> void:
 	# Party boxes stand to the right of the portrait, enemy boxes to the left.
 	var x: float = centre.x - box.size.x - BUBBLE_GAP if enemy else centre.x + BUBBLE_GAP
 	var top_left := Vector2(x, anchor_y - box.size.y / 2.0).clamp(Vector2(12, 60), get_viewport_rect().size - box.size - Vector2(12, 160))
+	# Keep clear of the speech boxes that were already on screen (an enemy line must not sit on top of
+	# our first character's): the later box eases out of the way, so two boxes never fight over a spot.
+	if not box.visible:
+		box.set_meta("appeared", Time.get_ticks_usec())
+	var wanted_shift: float = _bubble_avoid_shift(box, Rect2(top_left, box.size))
+	var shift: float = wanted_shift if not box.visible else lerpf(float(box.get_meta("avoid_current", wanted_shift)), wanted_shift, 0.4)
+	box.set_meta("avoid_current", shift)
+	top_left.y = clampf(top_left.y + shift, 60.0, get_viewport_rect().size.y - box.size.y - 160.0)
 	box.global_position = top_left
 	var tail: Control = box.get_node_or_null("Tail")
 	if tail == null:
@@ -385,3 +393,37 @@ func play_enemy_defeat_finale(enemies: Array) -> void:
 	for enemy: Variant in enemies:
 		if enemy is Dictionary and stage.has_boss_finale(enemy):
 			await stage.present_boss_finale(enemy)
+
+
+## How far (in y) a speech box must move so it does not overlap any other visible speech box.
+func _bubble_avoid_shift(box: PanelContainer, rect: Rect2) -> float:
+	var shift: float = 0.0
+	var view_height: float = get_viewport_rect().size.y
+	for attempt: int in range(5):
+		var moved: Rect2 = Rect2(rect.position + Vector2(0.0, shift), rect.size)
+		var blocker: Rect2 = Rect2()
+		var found: bool = false
+		for other_any: Variant in _actor_bubble_boxes.values():
+			var other: PanelContainer = other_any
+			if other == box or not is_instance_valid(other) or not other.visible:
+				continue
+			if int(other.get_meta("appeared", 0)) >= int(box.get_meta("appeared", 0)):
+				continue  # only yield to boxes that appeared before this one
+			var other_rect := Rect2(other.global_position, other.size).grow(6.0)
+			if moved.intersects(other_rect):
+				blocker = other_rect
+				found = true
+				break
+		if not found:
+			return shift
+		var up: float = blocker.position.y - moved.end.y - 4.0
+		var down: float = blocker.end.y - moved.position.y + 4.0
+		var up_ok: bool = moved.position.y + up >= 60.0
+		var down_ok: bool = moved.end.y + down <= view_height - 160.0
+		if up_ok and (not down_ok or absf(up) <= absf(down)):
+			shift += up
+		elif down_ok:
+			shift += down
+		else:
+			return shift
+	return shift

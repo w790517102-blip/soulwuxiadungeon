@@ -656,6 +656,20 @@ func _check_stage(fixture: Node) -> void:
 	ui.set_teams(allies, enemies)
 	stage = ui.stage
 
+	# --- Speech boxes of both camps never sit on top of each other --------------------
+	ui._setup_actor_bubble_labels()
+	ui.show_actor_line_for_actor(allies[0], "出手吧！這一式你接得住嗎？")
+	ui.show_actor_line_for_actor(enemies[0], "休想從這裡過去！")
+	await create_timer(0.25).timeout
+	var shown_boxes: Array = []
+	for bubble_box: PanelContainer in ui._actor_bubble_boxes.values():
+		if bubble_box.visible:
+			shown_boxes.append(Rect2(bubble_box.global_position, bubble_box.size))
+	_expect(shown_boxes.size() >= 2, "both speakers' boxes are showing")
+	for first_index: int in range(shown_boxes.size()):
+		for second_index: int in range(first_index + 1, shown_boxes.size()):
+			_expect(not (shown_boxes[first_index] as Rect2).intersects(shown_boxes[second_index]), "speech boxes do not overlap")
+
 	_stage_checks_completed = true
 
 

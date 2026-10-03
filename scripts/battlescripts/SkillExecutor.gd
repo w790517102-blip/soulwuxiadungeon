@@ -290,6 +290,10 @@ func execute(
 		dmg_int,
 		context
 	)
+	# For recomposing a multi-strike log: what follows the damage line (the target's reaction / down line).
+	var damage_line_index: int = int(context.get("_damage_line_index", -1))
+	result["closing_lines"] = log_lines.slice(damage_line_index + 1) if damage_line_index >= 0 else []
+	result["element_advantage"] = bool(context.get("element_advantage", false))
 	if bool(result.get("damage_prevented", false)):
 		# The strike aggregator emits one shield line for the whole action, so a
 		# multi-hit skill cannot repeat the same long narration per segment.

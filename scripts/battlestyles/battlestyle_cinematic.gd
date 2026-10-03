@@ -63,6 +63,9 @@ func describe_attack(
 		target.get("name", "???"),
 		dmg_str
 	])
+	# Lets a caller tell where the damage line sits (multi-strike logs are recomposed from parts).
+	if context is Dictionary:
+		context["_damage_line_index"] = lines.size() - 1
 
 	# === 擊倒 or 受擊反應 ===
 	if context.get("target_down", false):
