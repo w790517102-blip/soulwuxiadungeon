@@ -1,5 +1,5 @@
 extends Node3D
-## The sword cut: ONE sharp crescent of cold silver-white light that tears the air, with black ink
+## The sword cut (and, with `saber`, the 刀 cut): ONE sharp crescent of cold silver-white light that tears the air, with black ink
 ## strands dragged behind it and black fracture cracks across it (high contrast, no blue, no water).
 ## The streaks all run along the cut in the same direction yet are irregular and uncoordinated.
 ## A shader paints it on an arc-shaped strip standing in the stage; the cut swings from the upper
@@ -20,11 +20,15 @@ var progress: float = 0.0:
 			_material.set_shader_parameter("progress", progress)
 
 var _unit: float = 1.0
+## 刀: a straight cut (not the sword's curve) in vermilion mixed with white, crossing very fast.
+var _saber: bool = false
 var _material: ShaderMaterial
 
 
 ## A point on the half-circle orbit at `s` (0 = left end, 1 = right end), in units of `_unit`.
 func _orbit(s: float) -> Vector3:
+	if _saber:
+		return Vector3(lerpf(-1.0, 1.0, s), 0.0, 0.05 * sin(PI * s))
 	var phi: float = lerpf(PI + 0.05, TAU - 0.05, s)
 	# The upper arc of a flattened ellipse (a frown), centred on the pivot; the whole cut is then
 	# turned to descend from the upper left to the lower right.
@@ -37,8 +41,9 @@ func _tangent(s: float) -> Vector3:
 
 ## `length` is the cut's length in world units, `direction` +1 swings from the left up to the
 ## right (our side striking), -1 is the mirror image.
-func setup(length: float, direction: float, variant: int = 0) -> void:
+func setup(length: float, direction: float, variant: int = 0, saber: bool = false) -> void:
 	_unit = length * 0.5
+	_saber = saber
 	# Every cut of a flurry goes a different way: 0 down-and-across (upper left to lower right),
 	# 1 backhand up (lower left to upper right), 2 a steep downward chop, 3 the mirror of the first
 	# (upper right to lower left).
@@ -50,10 +55,21 @@ func setup(length: float, direction: float, variant: int = 0) -> void:
 	var tilt_by_kind: Array[float] = [-TILT, TILT * 0.9, -1.15, -TILT]
 	rotation.z = tilt_by_kind[kind] * side
 	rotation.y = (0.12 if kind == 2 else 0.30) * side
+	if _saber:
+		# One straight stroke from the upper left to the lower right (mirrored for the other side).
+		scale = Vector3(1.0 if direction >= 0.0 else -1.0, 1.0, 1.0)
+		rotation.z = -0.78 * (1.0 if direction >= 0.0 else -1.0)
+		rotation.y = 0.18 * (1.0 if direction >= 0.0 else -1.0)
 	_material = ShaderMaterial.new()
 	_material.shader = BladeShader
 	_material.set_shader_parameter("seed", randf() * 10.0)
 	_material.set_shader_parameter("progress", 0.0)
+	if _saber:
+		_material.set_shader_parameter("sweep_end", 0.06)
+		_material.set_shader_parameter("edge_mix", 1.0)
+		_material.set_shader_parameter("light_core", Color(1.0, 0.95, 0.92))
+		_material.set_shader_parameter("light_cool", Color(0.90, 0.14, 0.07))
+		_material.set_shader_parameter("ink", Color(0.12, 0.01, 0.01))
 	_material.render_priority = 28
 	var strip := MeshInstance3D.new()
 	strip.mesh = _build_strip()
