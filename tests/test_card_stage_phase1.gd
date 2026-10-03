@@ -304,6 +304,11 @@ func _check_stage(fixture: Node) -> void:
 	var before: Array = (allies + enemies).duplicate(true)
 	await stage.present_attack(allies[1], enemies[1], {}, {"hit": true, "crit": false})
 	_expect(allies + enemies == before, "hit presentation leaves combat dictionaries untouched")
+	# The hit spark leaves a short residue (cracks, ink flecks); it must clear by itself.
+	var fx_guard: int = 0
+	while stage.fx_root.get_child_count() > 0 and fx_guard < 400:
+		await process_frame
+		fx_guard += 1
 	_expect(not stage.busy and stage.fx_root.get_child_count() == 0, "hit presentation completes and releases its FX")
 	for target_index: int in [1, 0, 2]:
 		var target: Dictionary = enemies[target_index]
@@ -315,8 +320,9 @@ func _check_stage(fixture: Node) -> void:
 		while not done[0] and frames < 400:
 			await process_frame
 			frames += 1
-			if stage.fx_root.get_child_count() > 0 and stage.fx_root.get_child(0).last_endpoint != Vector3.ZERO:
-				endpoint = stage.fx_root.get_child(0).last_endpoint
+			for fx_child: Node in stage.fx_root.get_children():
+				if "last_endpoint" in fx_child and fx_child.last_endpoint != Vector3.ZERO:
+					endpoint = fx_child.last_endpoint
 		await process_frame
 		_expect(endpoint != Vector3.ZERO, "miss ribbon reports a flight endpoint (target %d)" % target_index)
 		_expect(endpoint.z < destination.home_position.z - 2.0, "miss ribbon passes behind the target's depth (target %d)" % target_index)
