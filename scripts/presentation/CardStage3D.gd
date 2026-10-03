@@ -968,24 +968,26 @@ func support_motion(actor: Dictionary) -> void:
 
 
 func _on_card_hit_landed(card: Node3D, heavy: bool) -> void:
+	if _suppress_card_spark:
+		return
 	_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.8, heavy)
 
 
 func _is_sword_attack(skill: Dictionary) -> bool:
-	return String(skill.get("weapon_type", "")) in ["劍", "刀", "拳"]
+	return String(skill.get("weapon_type", "")) in ["劍", "刀"]
 
 
 func _is_saber_attack(skill: Dictionary) -> bool:
 	return String(skill.get("weapon_type", "")) == "刀"
 
 
-func _is_fist_attack(skill: Dictionary) -> bool:
-	return String(skill.get("weapon_type", "")) == "拳"
-
 ## Sword attacks: the attacker thrusts at the target and HOLDS; at contact a diagonal cut
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_punch_attack(skill):
+		await _present_punch_attack(attacker, target, result)
+		return
 	if not _is_sword_attack(skill):
 		await super.present_attack(attacker, target, skill, result)
 		return
@@ -996,10 +998,9 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 	busy = true
 	command_tray.set_enabled(false)
 	await source.lunge_to(destination.home_position)
-	var fist: bool = _is_fist_attack(skill)
-	var saber: bool = _is_saber_attack(skill) or fist
+	var saber: bool = _is_saber_attack(skill)
 	if saber:
-		# 刀 and 拳: a tap first (the blade is set against the target), then the cut comes down very fast.
+		# 刀: a tap first (the blade is set against the target), then the cut comes down very fast.
 		var tap := create_tween()
 		tap.tween_property(source, "position", source.position + Vector3(0.0, 0.07, 0.0), 0.05)
 		tap.tween_property(source, "position", source.position + Vector3(0.0, -0.05, 0.0), 0.04)
@@ -1013,12 +1014,12 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 	# starting before the previous one has finished.
 	var strikes: Array = result.get("strikes", [])
 	if USE_BLADE_SLASH and strikes.size() > 1:
-		await _play_sword_flurry(destination, target, strikes, cut_centre, cut_length, direction, saber, fist)
+		await _play_sword_flurry(destination, target, strikes, cut_centre, cut_length, direction, saber)
 	elif hit:
 		var cut_wait: float = 0.1
 		var cut_hold: float = StageHitEffects.slash_duration() + 0.1
 		if USE_BLADE_SLASH:
-			_start_blade_slash(cut_centre, cut_length * (1.1 if fist else 1.5), direction, 0, saber, fist)
+			_start_blade_slash(cut_centre, cut_length * 1.5, direction, 0, saber)
 			cut_wait = 0.05 if saber else 0.16
 			cut_hold = 0.34 if saber else 0.30
 		else:
@@ -1036,7 +1037,7 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 		# The blade only finds air beside the target.
 		var miss_centre: Vector3 = cut_centre + Vector3(direction * 0.9, 0.2, -0.6)
 		if USE_BLADE_SLASH:
-			_start_blade_slash(miss_centre, cut_length * (0.9 if fist else 1.1), direction, 0, saber, fist)
+			_start_blade_slash(miss_centre, cut_length * 1.1, direction, 0, saber)
 		else:
 			StageHitEffects.slash(fx_root, miss_centre, cut_length, direction, 0.55)
 		await get_tree().create_timer(0.34).timeout
@@ -1099,7 +1100,7 @@ var _slowmo_active: bool = false
 
 
 func _exit_tree() -> void:
-	if _slowmo_active:
+	if _slowmo_active or _hit_stop_active:
 		Engine.time_scale = 1.0
 
 
@@ -1370,11 +1371,11 @@ const BLADE_SLASH_SECONDS: float = 1.3
 
 
 ## Starts the blade cut (it frees itself); the caller times its own reaction.
-func _start_blade_slash(centre: Vector3, length: float, direction: float, variant: int = 0, saber: bool = false, impact: bool = false) -> void:
+func _start_blade_slash(centre: Vector3, length: float, direction: float, variant: int = 0, saber: bool = false) -> void:
 	var slash := BladeSlash.new()
 	slash.duration = BLADE_SLASH_SECONDS
 	fx_root.add_child(slash)
-	slash.setup(length, direction, variant, saber, impact)
+	slash.setup(length, direction, variant, saber)
 	# Centre the half-circle on the target (successive cuts of a flurry are nudged apart).
 	var jitter := Vector3(sin(float(variant) * 2.3), cos(float(variant) * 1.7), 0.0) * length * 0.035
 	slash.position = centre + jitter + Vector3(direction * length * (0.0 if saber else 0.03), -length * (0.06 if saber else 0.13), 0.3 + 0.02 * float(variant))
@@ -1404,7 +1405,7 @@ const FLURRY_GAP: float = 0.15
 ## One cut per strike, each beginning while the last is still fading, alternating forehand and
 ## backhand. A landed strike makes the target react (and spark) when its cut reaches it; if no
 ## strike landed at all, the target dodges once.
-func _play_sword_flurry(destination: Node3D, target: Dictionary, strikes: Array, cut_centre: Vector3, cut_length: float, direction: float, saber: bool = false, fist: bool = false) -> void:
+func _play_sword_flurry(destination: Node3D, target: Dictionary, strikes: Array, cut_centre: Vector3, cut_length: float, direction: float, saber: bool = false) -> void:
 	var any_landed: bool = false
 	for strike_any: Variant in strikes:
 		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
@@ -1415,11 +1416,11 @@ func _play_sword_flurry(destination: Node3D, target: Dictionary, strikes: Array,
 		var strike: Dictionary = strikes[index]
 		var landed: bool = bool(strike.get("hit", true))
 		if landed:
-			_start_blade_slash(cut_centre, cut_length * (1.1 if fist else 1.5), direction, index, saber, fist)
+			_start_blade_slash(cut_centre, cut_length * 1.5, direction, index, saber)
 			get_tree().create_timer(0.16).timeout.connect(_flurry_react.bind(destination, guarding, bool(strike.get("crit", false))))
 		else:
 			# The blade only finds air beside the target.
-			_start_blade_slash(cut_centre + Vector3(direction * 0.9, 0.2, -0.6), cut_length * (0.9 if fist else 1.1), direction, index, saber, fist)
+			_start_blade_slash(cut_centre + Vector3(direction * 0.9, 0.2, -0.6), cut_length * 1.1, direction, index, saber)
 		if index < strikes.size() - 1:
 			await get_tree().create_timer(FLURRY_GAP).timeout
 	# Let the last cut land and play out before the attacker withdraws.
@@ -1433,3 +1434,77 @@ func _flurry_react(destination: Node3D, guarding: bool, crit: bool) -> void:
 		destination.guard_motion()
 	else:
 		destination.hit_reaction(crit)
+
+
+# --- Fists (拳): compress, burst, shake -----------------------------------------------------------
+# The attacker rushes in, the game stands still for a heartbeat at the contact (hit-stop), a cold white
+# core flashes, a broken ring of ink and white sparks burst outward, and the struck card is knocked back
+# and springs home. Every blow of a flurry is a light one except the last, which is heavy.
+
+const PunchHitFX = preload("res://scripts/presentation/punch_fx/PunchHitFX.gd")
+var _suppress_card_spark: bool = false
+var _hit_stop_active: bool = false
+
+
+func _is_punch_attack(skill: Dictionary) -> bool:
+	return USE_BLADE_SLASH and String(skill.get("weapon_type", "")) == "拳"
+
+
+## Freezes the game almost still for `seconds` of real time (the weight of a blow).
+func _hit_stop(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	_hit_stop_active = true
+	Engine.time_scale = 0.03
+	await get_tree().create_timer(seconds, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_hit_stop_active = false
+
+
+func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	await source.lunge_to(destination.home_position)
+	var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.5)
+	var strikes: Array = result.get("strikes", [])
+	if strikes.is_empty():
+		strikes = [{"hit": bool(result.get("hit", true)), "crit": bool(result.get("crit", false))}]
+	var any_landed: bool = false
+	for strike_any: Variant in strikes:
+		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
+	if not any_landed:
+		destination.dodge_motion()
+	var guarding: bool = bool(target.get("defending", false))
+	var hit_size: float = destination.card_size.y * 0.5
+	_suppress_card_spark = true
+	for index: int in range(strikes.size()):
+		var strike: Dictionary = strikes[index]
+		var heavy: bool = index == strikes.size() - 1
+		if bool(strike.get("hit", true)):
+			var params: Dictionary = PunchHitFX.heavy_preset(hit_size) if heavy else PunchHitFX.light_preset(hit_size)
+			var point: Vector3 = centre + Vector3(randf_range(-0.12, 0.12), randf_range(-0.18, 0.18), 0.0) * (0.0 if index == 0 else 1.0)
+			# The fist presses in a little as it lands.
+			var press := create_tween()
+			press.tween_property(source, "position", source.position + Vector3(direction * 0.14, 0.0, 0.0), 0.04)
+			PunchHitFX.play_at(fx_root, point, params)
+			await _hit_stop(float(params.hit_stop_time))
+			if guarding:
+				destination.guard_motion()
+			else:
+				destination._flash(Color(0.92, 0.96, 1.0, 0.5))
+				destination.stagger_back(Vector3(direction * float(params.recoil_distance), 0.05, -0.3), 0.07 if heavy else 0.05)
+		if index < strikes.size() - 1:
+			await get_tree().create_timer(0.11).timeout
+	_suppress_card_spark = false
+	await get_tree().create_timer(0.16).timeout
+	if any_landed and not guarding:
+		destination.stagger_recover(0.4)
+	await get_tree().create_timer(0.14).timeout
+	await source.lunge_return(0.4)
+	await get_tree().create_timer(0.12).timeout
+	busy = false

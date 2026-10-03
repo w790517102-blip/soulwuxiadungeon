@@ -1,5 +1,5 @@
 extends Node3D
-## The sword cut (with `saber` the 刀 cut, with `impact` the 拳 impact mark): ONE sharp crescent of cold silver-white light that tears the air, with black ink
+## The sword cut (and, with `saber`, the 刀 cut): ONE sharp crescent of cold silver-white light that tears the air, with black ink
 ## strands dragged behind it and black fracture cracks across it (high contrast, no blue, no water).
 ## The streaks all run along the cut in the same direction yet are irregular and uncoordinated.
 ## A shader paints it on an arc-shaped strip standing in the stage; the cut swings from the upper
@@ -41,9 +41,9 @@ func _tangent(s: float) -> Vector3:
 
 ## `length` is the cut's length in world units, `direction` +1 swings from the left up to the
 ## right (our side striking), -1 is the mirror image.
-func setup(length: float, direction: float, variant: int = 0, saber: bool = false, impact: bool = false) -> void:
+func setup(length: float, direction: float, variant: int = 0, saber: bool = false) -> void:
 	_unit = length * 0.5
-	_saber = saber or impact
+	_saber = saber
 	# Every cut of a flurry goes a different way: 0 down-and-across (upper left to lower right),
 	# 1 backhand up (lower left to upper right), 2 a steep downward chop, 3 the mirror of the first
 	# (upper right to lower left).
@@ -70,17 +70,6 @@ func setup(length: float, direction: float, variant: int = 0, saber: bool = fals
 		_material.set_shader_parameter("light_core", Color(1.0, 0.95, 0.92))
 		_material.set_shader_parameter("light_cool", Color(0.90, 0.14, 0.07))
 		_material.set_shader_parameter("ink", Color(0.12, 0.01, 0.01))
-	if impact:
-		# 拳: not a cut but an impact mark, a short thick straight streak driven at the target in pale
-		# cyan-white cold light (not saturated blue).
-		scale = Vector3(1.0 if direction >= 0.0 else -1.0, 1.55, 1.0)
-		rotation.z = -0.20 * (1.0 if direction >= 0.0 else -1.0)
-		rotation.y = 0.10 * (1.0 if direction >= 0.0 else -1.0)
-		_material.set_shader_parameter("sweep_end", 0.05)
-		_material.set_shader_parameter("edge_mix", 1.0)
-		_material.set_shader_parameter("light_core", Color(0.97, 1.0, 1.0))
-		_material.set_shader_parameter("light_cool", Color(0.58, 0.86, 0.94))
-		_material.set_shader_parameter("ink", Color(0.02, 0.07, 0.09))
 	_material.render_priority = 28
 	var strip := MeshInstance3D.new()
 	strip.mesh = _build_strip()

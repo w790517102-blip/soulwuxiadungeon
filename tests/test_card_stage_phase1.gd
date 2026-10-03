@@ -670,6 +670,29 @@ func _check_stage(fixture: Node) -> void:
 		for second_index: int in range(first_index + 1, shown_boxes.size()):
 			_expect(not (shown_boxes[first_index] as Rect2).intersects(shown_boxes[second_index]), "speech boxes do not overlap")
 
+	# --- Punch hit FX: hit-stop is temporary, the FX clears itself, the card springs home ---------
+	var punch_done: Array = [false]
+	var punch_runner := func() -> void:
+		await stage.present_attack(allies[1], enemies[1], {"weapon_type": "拳"}, {"hit": true, "crit": false, "strikes": [{"hit": true}, {"hit": true}, {"hit": true, "crit": true}]})
+		punch_done[0] = true
+	punch_runner.call()
+	var punch_guard: int = 0
+	while not punch_done[0] and punch_guard < 60 * 8:
+		await process_frame
+		punch_guard += 1
+	_expect(punch_done[0] and is_equal_approx(Engine.time_scale, 1.0), "a punch flurry finishes and time runs normally again")
+	var struck_card: Node3D = stage.card_for(enemies[1])
+	var spring_guard: int = 0
+	while (not struck_card.position.is_equal_approx(struck_card.home_position)) and spring_guard < 200:
+		await process_frame
+		spring_guard += 1
+	_expect(struck_card.position.is_equal_approx(struck_card.home_position), "the struck card springs back to its place")
+	var clear_guard: int = 0
+	while stage.fx_root.get_child_count() > 0 and clear_guard < 400:
+		await process_frame
+		clear_guard += 1
+	_expect(stage.fx_root.get_child_count() == 0, "the punch FX clears itself")
+
 	_stage_checks_completed = true
 
 
