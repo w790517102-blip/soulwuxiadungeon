@@ -1491,6 +1491,12 @@ func _run_multi_strikes(actor: Dictionary, target: Dictionary, skill_data: Dicti
 	result["hit"] = any_hit
 	result["crit"] = any_crit
 	result["target_down"] = target_down
+	# What each segment did, so a view can draw one cut per segment.
+	var summaries: Array = []
+	for strike_any: Variant in strikes:
+		var one: Dictionary = strike_any
+		summaries.append({"hit": bool(one.get("hit", true)), "crit": bool(one.get("crit", false)), "damage": int(one.get("damage", 0))})
+	result["strikes"] = summaries
 	return {"result": result, "pairing_bonus": pairing_bonus, "strike_count": strike_count}
 
 

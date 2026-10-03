@@ -37,10 +37,14 @@ func _tangent(s: float) -> Vector3:
 
 ## `length` is the cut's length in world units, `direction` +1 swings from the left up to the
 ## right (our side striking), -1 is the mirror image.
-func setup(length: float, direction: float) -> void:
+func setup(length: float, direction: float, variant: int = 0) -> void:
 	_unit = length * 0.5
 	scale.x = 1.0 if direction >= 0.0 else -1.0
-	rotation.z = -TILT * (1.0 if direction >= 0.0 else -1.0)
+	# Even cuts come down from the upper left; odd ones are backhands sweeping up from the lower left.
+	var backhand: bool = variant % 2 == 1
+	scale.y = -1.0 if backhand else 1.0
+	var steepness: float = 1.0 + 0.18 * float(variant / 2)
+	rotation.z = (TILT * 0.8 if backhand else -TILT) * steepness * (1.0 if direction >= 0.0 else -1.0)
 	rotation.y = 0.30 * (1.0 if direction >= 0.0 else -1.0)
 	_material = ShaderMaterial.new()
 	_material.shader = BladeShader
