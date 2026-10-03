@@ -985,6 +985,9 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_lute_attack(skill):
+		await _present_lute_attack(attacker, target, result)
+		return
 	if _is_pen_attack(skill):
 		await _present_pen_attack(attacker, target, result)
 		return
@@ -1781,4 +1784,66 @@ func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dicti
 		if index < strikes.size() - 1:
 			await get_tree().create_timer(0.13).timeout
 	await get_tree().create_timer(0.22).timeout
+	busy = false
+
+
+# --- Lute (琴): a plucked string sets the air shaking; the struck card resonates -------------------
+
+const LuteFX = preload("res://scripts/presentation/lute_fx/LuteFX.gd")
+
+
+func _is_lute_attack(skill: Dictionary) -> bool:
+	return USE_BLADE_SLASH and String(skill.get("weapon_type", "")) == "琴"
+
+
+## The player's card gives one short shake of the string (it does not walk up to anyone); a thin
+## pressure front crosses to the target, which resonates: it trembles in place (no knock-back).
+func _present_lute_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var strikes: Array = result.get("strikes", [])
+	if strikes.is_empty():
+		strikes = [{"hit": bool(result.get("hit", true)), "crit": bool(result.get("crit", false))}]
+	var any_landed: bool = false
+	for strike_any: Variant in strikes:
+		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
+	if not any_landed:
+		destination.dodge_motion()
+	var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.02, 0.5)
+	for index: int in range(strikes.size()):
+		var strike: Dictionary = strikes[index]
+		var landed: bool = bool(strike.get("hit", true))
+		var crit: bool = landed and bool(strike.get("crit", false))
+		# Pluck: the card shivers in place and leans a hair toward the target.
+		source.shudder(0.14, 0.06)
+		var lean := create_tween()
+		lean.tween_property(source, "rotation", source.home_rotation + Vector3(0.0, 0.0, -direction * 0.05), 0.05)
+		lean.tween_property(source, "rotation", source.home_rotation, 0.12)
+		var params: Dictionary = LuteFX.defaults()
+		params["critical"] = crit
+		params["card_width"] = destination.card_size.x
+		params["card_height"] = destination.card_size.y
+		params["wave_width"] = destination.card_size.y * 0.55
+		params["resonance_radius"] = destination.card_size.y * 0.9
+		if crit:
+			params["ring_count"] = 2
+			params["spark_count"] = 10
+			params["shiver_marks"] = 5
+		elif strikes.size() > 1:
+			params["ring_count"] = 1
+			params["spark_count"] = 3
+		var origin: Vector3 = source.position + Vector3(direction * source.card_size.x * 0.35, 0.0, 0.4)
+		var aim: Vector3 = centre if landed else centre + Vector3(direction * 0.9, 0.2, -0.6)
+		LuteFX.play_between(fx_root, origin, aim, params)
+		if landed:
+			# The struck card trembles where it stands for as long as the sound rings.
+			get_tree().create_timer(float(params.wave_speed) * 0.92).timeout.connect(destination.shudder.bind(0.4 if crit else 0.28, 0.07 if crit else 0.045))
+		if index < strikes.size() - 1:
+			await get_tree().create_timer(0.16).timeout
+	await get_tree().create_timer(0.55).timeout
 	busy = false

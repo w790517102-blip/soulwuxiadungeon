@@ -62,8 +62,8 @@ func _stroke_point(s: float) -> Vector2:
 
 ## Where along the lash (0..1) it meets the target: the point of sharpest bend, the crack of the whip.
 const WHIP_CONTACT := 0.52
-## true: the lash's tail sweeps back in a crescent (a C); false: a short sharp hook (the earlier look).
-const CRESCENT_TAIL := true
+## true: the lash's tail sweeps back in a crescent (a C); false: a short sharp hook (the chosen look).
+const CRESCENT_TAIL := false
 ## The share of the swing time at which the lash has reached WHIP_CONTACT (it speeds up as it goes).
 const CONTACT_TIME := 0.70
 var _whip_cache: PackedVector2Array = PackedVector2Array()
