@@ -1566,6 +1566,6 @@ func present_punch_events(attacker: Dictionary, events: Array) -> void:
 ## the struck card shudder after its knock-back.
 func _blade_hit_feedback(cut_centre: Vector3, cut_length: float, critical: bool, destination: Node3D) -> void:
 	var strength: float = SpaceWarpFX.CRITICAL_STRENGTH if critical else SpaceWarpFX.NORMAL_STRENGTH
-	SpaceWarpFX.play_at(fx_root, cut_centre + Vector3(0.0, 0.0, 0.7), cut_length * (1.7 if critical else 1.3), strength, 0.5 if critical else 0.38)
+	SpaceWarpFX.play_at(fx_root, cut_centre + Vector3(0.0, 0.0, 0.7), cut_length * (1.7 if critical else 1.3), strength, 0.5 if critical else 0.2)
 	if critical and is_instance_valid(destination):
 		get_tree().create_timer(0.22).timeout.connect(destination.shudder.bind(0.24, 0.09))

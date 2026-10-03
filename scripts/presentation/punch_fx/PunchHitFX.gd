@@ -59,7 +59,7 @@ func play() -> void:
 	add_child(core)
 	core.play()
 	if warp_strength > 0.0:
-		Warp.play_at(self, Vector3(0.0, 0.0, 0.4), size * (3.0 if critical else 2.4), warp_strength * (2.2 if critical else 1.0), 0.45 if critical else 0.36)
+		Warp.play_at(self, Vector3(0.0, 0.0, 0.4), size * (3.0 if critical else 2.4), warp_strength * (2.2 if critical else 1.0), 0.45 if critical else 0.18)
 	if mark_scale > 0.0:
 		var mark := Mark.new()
 		mark.mark_scale = mark_scale * size
