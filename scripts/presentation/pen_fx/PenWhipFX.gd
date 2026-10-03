@@ -62,13 +62,15 @@ func _stroke_point(s: float) -> Vector2:
 
 ## Where along the lash (0..1) it meets the target: the point of sharpest bend, the crack of the whip.
 const WHIP_CONTACT := 0.52
+## true: the lash's tail sweeps back in a crescent (a C); false: a short sharp hook (the earlier look).
+const CRESCENT_TAIL := true
 ## The share of the swing time at which the lash has reached WHIP_CONTACT (it speeds up as it goes).
 const CONTACT_TIME := 0.70
 var _whip_cache: PackedVector2Array = PackedVector2Array()
 
 
 ## The lash comes in almost straight, like a cord pulled taut, and bends sharply right where it meets
-## the target (the crack of a whip), then its tip hooks back on itself, drawing the stroke back toward
+## the target (the crack of a whip), then the tail sweeps back around in a crescent (a C), drawing the stroke back toward
 ## where it came from. The contact point is the origin.
 func _whip_build() -> void:
 	var steps: int = 140
@@ -81,7 +83,12 @@ func _whip_build() -> void:
 		var s: float = float(index) / float(steps)
 		var bend: float = exp(-pow((s - WHIP_CONTACT) / 0.07, 2.0))
 		position += Vector2(cos(heading), sin(heading)) * step_length
-		heading += -0.012 + (-0.172 * bend)
+		if CRESCENT_TAIL:
+			# The tail sweeps back around in a sustained curve: a crescent (a C).
+			heading += -0.012 + (-0.09 * bend) + (-0.029 * smoothstep(WHIP_CONTACT, WHIP_CONTACT + 0.06, s))
+		else:
+			# The tail snaps back in a short hook.
+			heading += -0.012 + (-0.172 * bend)
 	var anchor: Vector2 = points[int(round(WHIP_CONTACT * float(steps)))]
 	for index: int in range(points.size()):
 		points[index] -= anchor
@@ -127,6 +134,7 @@ func _path_mesh(half_width: float, segments: int, whip: bool) -> ArrayMesh:
 
 func _ink_material(seed_value: float, lash: bool, priority: int) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
+	material.set_shader_parameter("tail_taper", 0.45 if CRESCENT_TAIL else 0.88)
 	material.shader = InkShader
 	material.set_shader_parameter("seed", seed_value)
 	material.set_shader_parameter("reveal", 0.0)

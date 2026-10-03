@@ -10,6 +10,7 @@ uniform float reveal : hint_range(0.0, 1.2) = 0.0;
 uniform float fade : hint_range(0.0, 1.0) = 0.0;
 uniform float seed = 0.0;
 uniform float lead_heavy = 0.0;        // 1: a lash, fat at its head and thin where it began (0: a written stroke)
+uniform float tail_taper = 0.88;       // how thin the lash's hooked-back tail gets (0 = as thick as the head, 1 = a point)
 uniform vec4 ink : source_color = vec4(0.012, 0.012, 0.016, 1.0);
 
 float hash(vec2 p) {
@@ -40,7 +41,7 @@ void fragment() {
 	if (lead_heavy > 0.5) {
 		// A lash: thin where it began, swelling to its fullest at the bend (x = 0.52) where it strikes, then the
 		// hooked-back tail tapers to a point.
-		width = pow(smoothstep(0.0, 0.52, x), 0.8) * (0.9 + 0.1 * sin(x * 15.0 + seed)) * (1.0 - smoothstep(0.52, 1.0, x) * 0.80);
+		width = pow(smoothstep(0.0, 0.52, x), 0.8) * (0.9 + 0.1 * sin(x * 15.0 + seed)) * (1.0 - smoothstep(0.52, 1.0, x) * tail_taper);
 	}
 	// Rough edges, like bristles on paper.
 	float rough = (noise(vec2(x * 38.0 + seed, across * 4.0)) - 0.5) * 0.22 * (0.4 + x);
