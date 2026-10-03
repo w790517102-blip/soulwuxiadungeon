@@ -1763,7 +1763,9 @@ func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dicti
 		params["lash_angle"] = -0.45 + 0.18 * float(index % 3)
 		params["ink_length"] = destination.card_size.y * 1.15
 		params["ink_width"] = destination.card_size.y * 0.10
-		params["light_width"] = destination.card_size.y * 0.032
+		params["whip_width"] = destination.card_size.y * 0.075
+		params["burst_scale"] = destination.card_size.y * 2.2
+		params["light_duration"] = 0.13
 		params["hit_flash_scale"] = destination.card_size.y * 0.2
 		if crit:
 			params["ink_width"] = destination.card_size.y * 0.13
@@ -1771,6 +1773,7 @@ func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dicti
 		PenWhipFX.play_at(fx_root, spot, params)
 		if landed:
 			# The struck card shudders sideways for an instant, then is still.
+			get_tree().create_timer(0.13).timeout.connect(_hit_spark.bind(spot + Vector3(0.0, 0.0, 0.3), 1.5, crit))
 			var shake: float = float(params.card_hit_shake)
 			get_tree().create_timer(0.06).timeout.connect(destination.shudder.bind(0.1, shake))
 			if crit:

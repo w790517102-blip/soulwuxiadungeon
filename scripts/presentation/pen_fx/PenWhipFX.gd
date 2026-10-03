@@ -11,6 +11,7 @@ extends Node3D
 const InkShader = preload("res://scripts/presentation/shaders/ink_stroke.gdshader")
 const LightShader = preload("res://scripts/presentation/shaders/pen_light.gdshader")
 const Core = preload("res://scripts/presentation/punch_fx/PunchImpactCore.gd")
+const Mark = preload("res://scripts/presentation/punch_fx/PunchInkMark.gd")
 
 # --- Tunable parameters ---------------------------------------------------------------------------
 var light_duration: float = 0.11        # seconds the white streak takes to run and die
@@ -24,6 +25,10 @@ var ink_droplet_speed: float = 3.6      # how far and fast they are thrown (worl
 var hit_flash_scale: float = 0.45       # size of the contact flash (a fraction of the fist FX's)
 var card_hit_shake: float = 0.05        # how far the struck card shudders sideways (world units)
 var lash_angle: float = -0.45           # direction of the stroke in the screen plane (radians)
+var whip_width: float = 0.16          # half-width of the ink whip at its fattest (world units)
+var whip_hold: float = 0.10            # seconds the whip stays at full strength after it lands
+var burst_scale: float = 3.0           # size of the radial ink burst at the contact (bigger than a punch's)
+var burst_life: float = 0.9            # seconds it takes to fade
 var direction: float = 1.0              # +1: the lash comes from the left, -1: from the right
 var critical: bool = false
 
@@ -53,20 +58,28 @@ static func play_at(host: Node, centre: Vector3, params: Dictionary = {}) -> Nod
 ## A point on the stroke at `s` (0 = where the brush begins, 1 = the tip): a long flowing line that
 ## swings past the target and flicks at the very end, like the crack of a whip. In local units.
 func _stroke_point(s: float) -> Vector2:
-	var x: float = lerpf(-0.5, 0.5, s) * ink_length
-	var y: float = (sin(s * PI * 1.1) * 0.18 - s * 0.05 + (s * s * s) * 0.22) * ink_length * 0.5
+	var x: float = lerpf(-0.5, 0.5, s) * ink_length * 0.6
+	var y: float = (sin(s * PI * 1.1) * 0.18 - s * 0.05 + (s * s * s) * 0.22) * ink_length * 0.3
 	return Vector2(x, y)
 
 
-func _stroke_mesh(half_width: float, segments: int = 56) -> ArrayMesh:
+func _whip_point(s: float) -> Vector2:
+	# The lash of the brush: a long curved whip that starts low behind the attacker, rises in a wide
+	# S-shaped sweep and cracks down onto the target. In local units, centred on the contact point.
+	var x: float = lerpf(-1.0, 0.18, s) * ink_length * 1.25
+	var y: float = (sin(s * PI * 1.35) * 0.55 - s * 0.35 + 0.1 * sin(s * PI * 3.0)) * ink_length * 0.5
+	return Vector2(x, y)
+
+
+func _stroke_mesh(half_width: float, segments: int = 56, whip: bool = false) -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	var indices := PackedInt32Array()
 	for index: int in range(segments + 1):
 		var s: float = float(index) / float(segments)
-		var point: Vector2 = _stroke_point(s)
-		var ahead: Vector2 = _stroke_point(minf(s + 0.01, 1.0))
-		var behind: Vector2 = _stroke_point(maxf(s - 0.01, 0.0))
+		var point: Vector2 = _whip_point(s) if whip else _stroke_point(s)
+		var ahead: Vector2 = _whip_point(minf(s + 0.01, 1.0)) if whip else _stroke_point(minf(s + 0.01, 1.0))
+		var behind: Vector2 = _whip_point(maxf(s - 0.01, 0.0)) if whip else _stroke_point(maxf(s - 0.01, 0.0))
 		var tangent: Vector2 = (ahead - behind).normalized()
 		var normal := Vector2(-tangent.y, tangent.x)
 		vertices.append(Vector3(point.x - normal.x * half_width, point.y - normal.y * half_width, 0.0))
@@ -91,11 +104,27 @@ func _stroke_mesh(half_width: float, segments: int = 56) -> ArrayMesh:
 func play() -> void:
 	var holder := Node3D.new()
 	add_child(holder)
-	# The whole stroke is laid at the lash angle and mirrored for a lash from the right.
+	# The whole lash is laid at the lash angle and mirrored for a lash from the right.
 	holder.rotation.z = lash_angle * direction
 	holder.scale = Vector3(direction, 1.0, 1.0)
 	var seed_value: float = randf() * 10.0
-	# The ink stroke: written by the lash, then it stays.
+	# 1. The ink whip: a long curved lash of black ink only (no light), cracking down onto the target.
+	var whip_material := ShaderMaterial.new()
+	whip_material.shader = InkShader
+	whip_material.set_shader_parameter("seed", seed_value + 3.0)
+	whip_material.set_shader_parameter("reveal", 0.0)
+	whip_material.render_priority = 31
+	var whip_mesh := MeshInstance3D.new()
+	whip_mesh.mesh = _stroke_mesh(whip_width, 72, true)
+	whip_mesh.material_override = whip_material
+	whip_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	holder.add_child(whip_mesh)
+	var crack := create_tween()
+	crack.tween_method(func(value: float) -> void: whip_material.set_shader_parameter("reveal", value), 0.0, 1.05, light_duration).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	crack.tween_interval(whip_hold)
+	crack.tween_method(func(value: float) -> void: whip_material.set_shader_parameter("fade", value), 0.0, 1.0, ink_fade_time)
+	# 2. The stroke left on the enemy where it was struck (the mark of the blow): written as the whip
+	# lands, and kept longer than the whip.
 	var ink_material := ShaderMaterial.new()
 	ink_material.shader = InkShader
 	ink_material.set_shader_parameter("seed", seed_value)
@@ -105,28 +134,15 @@ func play() -> void:
 	ink_mesh.mesh = _stroke_mesh(ink_width)
 	ink_mesh.material_override = ink_material
 	ink_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ink_mesh.position.z = 0.01
 	holder.add_child(ink_mesh)
-	# The whip light: thin, short-lived, over the ink.
-	var light_material := ShaderMaterial.new()
-	light_material.shader = LightShader
-	light_material.set_shader_parameter("reveal", 0.0)
-	light_material.render_priority = 38
-	var light_mesh := MeshInstance3D.new()
-	light_mesh.mesh = _stroke_mesh(light_width)
-	light_mesh.material_override = light_material
-	light_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	light_mesh.position.z = 0.02
-	holder.add_child(light_mesh)
-	# The lash crosses the stroke in the time of the light; the ink is drawn on with it.
-	var whip := create_tween().set_parallel(true)
-	whip.tween_method(func(value: float) -> void: ink_material.set_shader_parameter("reveal", value), 0.0, 1.05, light_duration * 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	whip.tween_method(func(value: float) -> void: light_material.set_shader_parameter("reveal", value), 0.0, 1.2, light_duration * 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	whip.tween_method(func(value: float) -> void: light_material.set_shader_parameter("fade", value), 0.0, 1.0, light_duration * 0.45).set_delay(light_duration * 0.65)
-	# The ink holds, then thins out.
-	var linger := create_tween()
-	linger.tween_interval(light_duration + ink_duration)
-	linger.tween_method(func(value: float) -> void: ink_material.set_shader_parameter("fade", value), 0.0, 1.0, ink_fade_time)
-	# The contact: a tiny flash where the lash lands, much smaller than a punch's.
+	var write := create_tween()
+	write.tween_interval(light_duration * 0.9)
+	write.tween_method(func(value: float) -> void: ink_material.set_shader_parameter("reveal", value), 0.0, 1.05, 0.05)
+	write.tween_interval(ink_duration)
+	write.tween_method(func(value: float) -> void: ink_material.set_shader_parameter("fade", value), 0.0, 1.0, ink_fade_time)
+	# 3. The contact: a tiny flash, the radial ink burst (bigger and rougher than a punch's mark), and
+	# the cold spark (added by the caller).
 	var contact := Core.new()
 	contact.impact_scale = hit_flash_scale
 	contact.flash_intensity = 2.4
@@ -134,9 +150,21 @@ func play() -> void:
 	contact.life = 0.05
 	contact.tremble = critical
 	add_child(contact)
-	get_tree().create_timer(light_duration * 0.5).timeout.connect(contact.play)
+	get_tree().create_timer(light_duration * 0.95).timeout.connect(contact.play)
+	get_tree().create_timer(light_duration * 0.95).timeout.connect(_ink_burst)
 	_fling_drops()
-	get_tree().create_timer(light_duration + ink_duration + ink_fade_time + 0.3).timeout.connect(queue_free)
+	get_tree().create_timer(light_duration + whip_hold + ink_duration + ink_fade_time + 0.5).timeout.connect(queue_free)
+
+
+## The radial burst of ink at the contact: the same black ink-burst style as a punch's mark but larger
+## and with long splayed streaks, so the two cannot be mistaken for each other.
+func _ink_burst() -> void:
+	var mark := Mark.new()
+	mark.mark_scale = burst_scale
+	mark.life = burst_life
+	add_child(mark)
+	mark.play()
+
 
 
 ## A few drops of ink thrown off the tip along the line of the stroke, then a little later gone.
