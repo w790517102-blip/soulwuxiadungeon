@@ -61,6 +61,48 @@ const TEMPLATES: Dictionary = {
 		"status": Rect2(100, 1212, 824, 150),
 		"name_font": 68, "slot_font": 44, "row_font": 54, "status_font": 40,
 	},
+	# 江湖人士 (blue): the enemy layout with its own frame.
+	"jianghu": {
+		"face": DIR + "card_jianghu_face.webp",
+		"ink": DIR + "card_jianghu_ink.webp",
+		"canvas": Vector2(1024, 1536),
+		"frame": Rect2(36, 38, 958, 1458),
+		"window": Rect2(76, 172, 872, 676),
+		"name": Rect2(84, 62, 856, 88),
+		"element": Rect2(100, 892, 824, 84),
+		"species": Rect2(100, 976, 824, 84),
+		"hp": Rect2(88, 1108, 848, 72),
+		"status": Rect2(100, 1212, 824, 150),
+		"name_font": 68, "slot_font": 44, "row_font": 54, "status_font": 40,
+	},
+	# 痞子 / 盜賊 / 土匪 (earth yellow): the enemy layout with its own frame.
+	"bandit": {
+		"face": DIR + "card_bandit_face.webp",
+		"ink": DIR + "card_bandit_ink.webp",
+		"canvas": Vector2(1024, 1536),
+		"frame": Rect2(36, 38, 958, 1458),
+		"window": Rect2(76, 172, 872, 676),
+		"name": Rect2(84, 62, 856, 88),
+		"element": Rect2(100, 892, 824, 84),
+		"species": Rect2(100, 976, 824, 84),
+		"hp": Rect2(88, 1108, 848, 72),
+		"status": Rect2(100, 1212, 824, 150),
+		"name_font": 68, "slot_font": 44, "row_font": 54, "status_font": 40,
+	},
+	# 朝廷人士 (red and black): the enemy layout with its own frame.
+	"court": {
+		"face": DIR + "card_court_face.webp",
+		"ink": DIR + "card_court_ink.webp",
+		"canvas": Vector2(1024, 1536),
+		"frame": Rect2(36, 38, 958, 1458),
+		"window": Rect2(76, 172, 872, 676),
+		"name": Rect2(84, 62, 856, 88),
+		"element": Rect2(100, 892, 824, 84),
+		"species": Rect2(100, 976, 824, 84),
+		"hp": Rect2(88, 1108, 848, 72),
+		"status": Rect2(100, 1212, 824, 150),
+		"name_font": 68, "slot_font": 44, "row_font": 54, "status_font": 40,
+	},
 	# Bosses (the supplied Molin Yanjiang card, with its decorations outside the frame).
 	"boss": {
 		"face": DIR + "card_boss_face.webp",
@@ -90,6 +132,16 @@ static func key_for(actor: Dictionary, enemy: bool) -> String:
 		return "boss"
 	if id.begins_with("bamboo_"):
 		return "beast"
+	# People of the martial world are told apart by their `family` (or `faction`): wanderers of the
+	# jianghu on the blue card, bandits and ruffians on the earth-yellow card, the court's men on the
+	# red and black one.
+	var camp: String = String(actor.get("faction", actor.get("family", ""))).strip_edges()
+	if camp in ["jianghu", "江湖", "江湖人士"]:
+		return "jianghu"
+	if camp in ["bandit", "痞子", "盜賊", "土匪"]:
+		return "bandit"
+	if camp in ["court", "朝廷", "朝廷人士"]:
+		return "court"
 	return "enemy"
 
 
