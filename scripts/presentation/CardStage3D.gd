@@ -983,6 +983,9 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_fist_attack(skill):
+		await _present_fist_attack(attacker, target, skill, result)
+		return
 	if not _is_sword_attack(skill):
 		await super.present_attack(attacker, target, skill, result)
 		return
@@ -1429,3 +1432,69 @@ func _flurry_react(destination: Node3D, guarding: bool, crit: bool) -> void:
 		destination.guard_motion()
 	else:
 		destination.hit_reaction(crit)
+
+
+# --- Fists (拳): a fist is formed, held for a tap, then thrown at full speed ----------------------
+
+const FistStrike = preload("res://scripts/presentation/StageFistStrike.gd")
+
+
+func _is_fist_attack(skill: Dictionary) -> bool:
+	return USE_BLADE_SLASH and String(skill.get("weapon_type", "")) == "拳"
+
+
+func _present_fist_attack(attacker: Dictionary, target: Dictionary, _skill: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	await source.lunge_to(destination.home_position)
+	var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.5)
+	var travel := Vector2(direction, -0.22).normalized()
+	var strikes: Array = result.get("strikes", [])
+	if strikes.is_empty():
+		strikes = [{"hit": bool(result.get("hit", true)), "crit": bool(result.get("crit", false))}]
+	var any_landed: bool = false
+	for strike_any: Variant in strikes:
+		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
+	if not any_landed:
+		destination.dodge_motion()
+	var guarding: bool = bool(target.get("defending", false))
+	var last_fist: Node3D = null
+	for index: int in range(strikes.size()):
+		var strike: Dictionary = strikes[index]
+		var landed: bool = bool(strike.get("hit", true))
+		var aim: Vector3 = centre + Vector3(randf_range(-0.12, 0.12), randf_range(-0.2, 0.2), 0.0) * (1.0 if index > 0 else 0.4)
+		if not landed:
+			aim += Vector3(direction * 0.9, 0.25, -0.6)
+		var fist := FistStrike.new()
+		fist.tap_seconds = 0.28 if index == 0 else 0.0
+		fx_root.add_child(fist)
+		fist.setup(aim + Vector3(0.0, 0.0, 0.6), travel, destination.card_size.y * 1.35, destination.card_size.y * 0.78)
+		if landed:
+			fist.impact.connect(_fist_impact.bind(destination, aim, guarding, bool(strike.get("crit", false))))
+		last_fist = fist
+		fist.play()
+		# The next blow of a flurry follows right behind this one.
+		if index < strikes.size() - 1:
+			await fist.impact
+			await get_tree().create_timer(0.07).timeout
+	if is_instance_valid(last_fist):
+		await last_fist.impact
+	await get_tree().create_timer(0.22).timeout
+	await source.lunge_return(0.4)
+	await get_tree().create_timer(0.12).timeout
+	busy = false
+
+
+func _fist_impact(destination: Node3D, point: Vector3, guarding: bool, crit: bool) -> void:
+	if not is_instance_valid(destination):
+		return
+	if guarding:
+		destination.guard_motion()
+	else:
+		destination.hit_reaction(crit)
+	_hit_spark(point, 1.8, crit)
