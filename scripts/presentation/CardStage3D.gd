@@ -87,6 +87,13 @@ func _install_card_stage_extras() -> void:
 		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		environment.ambient_light_color = Color(0.62, 0.62, 0.68)
 		environment.ambient_light_energy = 0.9
+		# Glow: only things brighter than white (the hit sparks, emitted HDR) bloom.
+		environment.glow_enabled = true
+		environment.glow_hdr_threshold = 1.0
+		environment.glow_intensity = 0.9
+		environment.glow_strength = 1.0
+		environment.glow_bloom = 0.0
+		environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 	turn_marker = CardStageTurnMarker.new()
 	turn_marker.name = "TurnMarker"
 	turn_marker.scale = Vector3.ONE * MARKER_SCALE
@@ -767,7 +774,7 @@ func present_entity_attack(attacker: Dictionary, entity: Object, destroyed: bool
 		shake_later.timeout.connect(func() -> void:
 			if is_instance_valid(card):
 				card.hit_shake()
-				StageHitEffects.spark(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.6, false)
+				_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.6, false)
 		)
 	await trail.play(source.position, card.home_position, landed)
 	trail.queue_free()
@@ -961,7 +968,7 @@ func support_motion(actor: Dictionary) -> void:
 
 
 func _on_card_hit_landed(card: Node3D, heavy: bool) -> void:
-	StageHitEffects.spark(fx_root, card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.8, heavy)
+	_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.05, 0.5), 1.8, heavy)
 
 
 func _is_sword_attack(skill: Dictionary) -> bool:
@@ -1350,3 +1357,17 @@ func _start_blade_slash(centre: Vector3, length: float, direction: float) -> voi
 	# Centre the half-circle on the target.
 	slash.position = centre + Vector3(direction * length * 0.03, -length * 0.13, 0.3)
 	slash.play()
+
+
+# --- The hit spark: a cold white burst in the sword cut's language (not a cartoon star) -----------
+
+const HitSpark = preload("res://scripts/presentation/StageHitSpark.gd")
+## false brings back the old red-yellow spark star.
+const USE_COLD_HIT_SPARK: bool = true
+
+
+func _hit_spark(centre: Vector3, size: float, heavy: bool) -> void:
+	if USE_COLD_HIT_SPARK:
+		HitSpark.play(fx_root, centre, size, heavy)
+	else:
+		StageHitEffects.spark(fx_root, centre, size, heavy)
