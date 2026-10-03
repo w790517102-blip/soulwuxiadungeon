@@ -985,6 +985,9 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_pen_attack(skill):
+		await _present_pen_attack(attacker, target, result)
+		return
 	if _is_punch_attack(skill):
 		await _present_punch_attack(attacker, target, result)
 		return
@@ -1711,3 +1714,68 @@ func _ultimate_after_white() -> void:
 	if _zoom_dim != null and is_instance_valid(_zoom_dim):
 		_zoom_dim.queue_free()
 	_zoom_dim = null
+
+
+# --- Brush (筆): the pen is cracked like a whip -------------------------------------------------------
+
+const PenWhipFX = preload("res://scripts/presentation/pen_fx/PenWhipFX.gd")
+
+
+func _is_pen_attack(skill: Dictionary) -> bool:
+	return USE_BLADE_SLASH and String(skill.get("weapon_type", "")) == "筆"
+
+
+## Short light, a lash, a long stroke of ink and a few flung drops. The attacker snaps forward and
+## back at once; the struck card only gives a quick side shudder.
+func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var strikes: Array = result.get("strikes", [])
+	if strikes.is_empty():
+		strikes = [{"hit": bool(result.get("hit", true)), "crit": bool(result.get("crit", false))}]
+	var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.6)
+	var any_landed: bool = false
+	for strike_any: Variant in strikes:
+		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
+	if not any_landed:
+		destination.dodge_motion()
+	for index: int in range(strikes.size()):
+		var strike: Dictionary = strikes[index]
+		var landed: bool = bool(strike.get("hit", true))
+		var crit: bool = landed and bool(strike.get("crit", false))
+		# The brush snaps forward and sideways, then straight back.
+		var lash := create_tween()
+		lash.tween_property(source, "position", source.home_position + Vector3(direction * 0.5, 0.05, 0.4), 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		lash.parallel().tween_property(source, "rotation", source.home_rotation + Vector3(-0.08, 0.0, -direction * 0.07), 0.05)
+		lash.tween_property(source, "position", source.home_position, 0.09)
+		lash.parallel().tween_property(source, "rotation", source.home_rotation, 0.09)
+		var spot := centre + Vector3(0.0, (float(index % 3) - 1.0) * destination.card_size.y * 0.12, 0.0)
+		if not landed:
+			spot += Vector3(direction * 0.9, 0.2, -0.6)
+		var params: Dictionary = PenWhipFX.defaults()
+		params["direction"] = direction
+		params["critical"] = crit
+		params["lash_angle"] = -0.45 + 0.18 * float(index % 3)
+		params["ink_length"] = destination.card_size.y * 1.15
+		params["ink_width"] = destination.card_size.y * 0.10
+		params["light_width"] = destination.card_size.y * 0.032
+		params["hit_flash_scale"] = destination.card_size.y * 0.2
+		if crit:
+			params["ink_width"] = destination.card_size.y * 0.13
+			params["card_hit_shake"] = 0.09
+		PenWhipFX.play_at(fx_root, spot, params)
+		if landed:
+			# The struck card shudders sideways for an instant, then is still.
+			var shake: float = float(params.card_hit_shake)
+			get_tree().create_timer(0.06).timeout.connect(destination.shudder.bind(0.1, shake))
+			if crit:
+				_blade_hit_feedback(centre, destination.card_size.y, true, destination)
+		if index < strikes.size() - 1:
+			await get_tree().create_timer(0.13).timeout
+	await get_tree().create_timer(0.22).timeout
+	busy = false
