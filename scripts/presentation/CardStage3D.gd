@@ -1763,8 +1763,8 @@ func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dicti
 		params["lash_angle"] = -0.45 + 0.18 * float(index % 3)
 		params["ink_length"] = destination.card_size.y * 1.15
 		params["ink_width"] = destination.card_size.y * 0.10
-		params["whip_width"] = destination.card_size.y * 0.075
-		params["burst_scale"] = destination.card_size.y * 2.2
+		params["whip_width"] = destination.card_size.y * 0.11
+		params["burst_scale"] = destination.card_size.y * 0.62
 		params["light_duration"] = 0.13
 		params["hit_flash_scale"] = destination.card_size.y * 0.2
 		if crit:

@@ -9,6 +9,7 @@ render_mode unshaded, cull_disabled, depth_draw_never, depth_test_disabled, blen
 uniform float reveal : hint_range(0.0, 1.2) = 0.0;
 uniform float fade : hint_range(0.0, 1.0) = 0.0;
 uniform float seed = 0.0;
+uniform float lead_heavy = 0.0;        // 1: a lash, fat at its head and thin where it began (0: a written stroke)
 uniform vec4 ink : source_color = vec4(0.012, 0.012, 0.016, 1.0);
 
 float hash(vec2 p) {
@@ -36,6 +37,10 @@ void fragment() {
 	float swell = 0.78 + 0.22 * sin(x * 9.0 + seed) + 0.12 * sin(x * 21.0 + seed * 2.0);
 	float lift = pow(1.0 - smoothstep(0.62, 1.0, x), 0.85);
 	float width = press * swell * lift;
+	if (lead_heavy > 0.5) {
+		// A lash: thin where it began, swelling toward the head, ending in a blunt brush head.
+		width = pow(smoothstep(0.0, 0.85, x), 0.8) * (0.9 + 0.1 * sin(x * 15.0 + seed)) * (1.0 - smoothstep(0.96, 1.0, x) * 0.5);
+	}
 	// Rough edges, like bristles on paper.
 	float rough = (noise(vec2(x * 38.0 + seed, across * 4.0)) - 0.5) * 0.22 * (0.4 + x);
 	float body = 1.0 - smoothstep(width * 0.82, width, abs(across + rough));
