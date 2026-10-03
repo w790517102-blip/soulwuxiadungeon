@@ -39,13 +39,17 @@ func _tangent(s: float) -> Vector3:
 ## right (our side striking), -1 is the mirror image.
 func setup(length: float, direction: float, variant: int = 0) -> void:
 	_unit = length * 0.5
-	scale.x = 1.0 if direction >= 0.0 else -1.0
-	# Even cuts come down from the upper left; odd ones are backhands sweeping up from the lower left.
-	var backhand: bool = variant % 2 == 1
-	scale.y = -1.0 if backhand else 1.0
-	var steepness: float = 1.0 + 0.18 * float(variant / 2)
-	rotation.z = (TILT * 0.8 if backhand else -TILT) * steepness * (1.0 if direction >= 0.0 else -1.0)
-	rotation.y = 0.30 * (1.0 if direction >= 0.0 else -1.0)
+	# Every cut of a flurry goes a different way: 0 down-and-across (upper left to lower right),
+	# 1 backhand up (lower left to upper right), 2 a steep downward chop, 3 the mirror of the first
+	# (upper right to lower left).
+	var kind: int = variant % 4
+	var travel: float = -direction if kind == 3 else direction
+	var side: float = 1.0 if travel >= 0.0 else -1.0
+	scale.x = side
+	scale.y = -1.0 if kind == 1 else 1.0
+	var tilt_by_kind: Array[float] = [-TILT, TILT * 0.9, -1.15, -TILT]
+	rotation.z = tilt_by_kind[kind] * side
+	rotation.y = (0.12 if kind == 2 else 0.30) * side
 	_material = ShaderMaterial.new()
 	_material.shader = BladeShader
 	_material.set_shader_parameter("seed", randf() * 10.0)
