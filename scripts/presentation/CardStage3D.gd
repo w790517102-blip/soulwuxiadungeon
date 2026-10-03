@@ -986,6 +986,9 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_spear_attack(skill):
+		await _present_spear_attack(attacker, target, result)
+		return
 	if _is_staff_attack(skill):
 		await _present_staff_attack(attacker, target, result)
 		return
@@ -2085,3 +2088,75 @@ func _staff_impact(card: Node3D, swing: float, crit: bool) -> void:
 	_hit_stop(STAFF_HIT_STOP * (1.6 if crit else 1.0))
 	_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.05, 0.8), 2.0, crit)
 	_blade_hit_feedback(card.position + Vector3(0.0, card.card_size.y * 0.02, 0.5), card.card_size.y, crit, card)
+
+
+# --- Spear (槍): one point, one narrow line, straight through the target ---------------------------------
+
+const SpearThrustFX = preload("res://scripts/presentation/spear_fx/SpearThrustFX.gd")
+## How far along the line to the target the wielder steps (a long weapon keeps its distance).
+const SPEAR_REACH: float = 0.55
+## How far (world units, away from the camera) a speared card is driven back, and the hitch of time.
+const SPEAR_RECOIL: float = 0.8
+const SPEAR_HIT_STOP: float = 0.06
+
+
+func _is_spear_attack(skill: Dictionary) -> bool:
+	return USE_BLADE_SLASH and String(skill.get("weapon_type", "")) == "槍"
+
+
+## The wielder steps in and drives the spear down a single line; the struck card is thrust back
+## along its depth, rocks, hangs, and comes back.
+func _present_spear_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var strikes: Array = result.get("strikes", [])
+	if strikes.is_empty():
+		strikes = [{"hit": bool(result.get("hit", true)), "crit": bool(result.get("crit", false))}]
+	var any_landed: bool = false
+	for strike_any: Variant in strikes:
+		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
+	if not any_landed:
+		destination.dodge_motion()
+	var side: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	source.lunge_to(destination.home_position, SPEAR_REACH)
+	await get_tree().create_timer(0.22).timeout
+	for index: int in range(strikes.size()):
+		var strike: Dictionary = strikes[index]
+		var landed: bool = bool(strike.get("hit", true))
+		var crit: bool = landed and bool(strike.get("crit", false))
+		var height: float = destination.card_size.y
+		# Each thrust of a flurry takes a slightly different line through the target.
+		var line_offset: float = (float(index % 3) - 1.0) * height * 0.09
+		var spot: Vector3 = destination.position + Vector3(0.0, height * 0.06 + line_offset, 0.5)
+		if not landed:
+			spot += Vector3(side * 0.5, height * 0.35, -0.3)
+		var tip: Vector3 = source.position + Vector3(side * source.card_size.x * 0.45, source.card_size.y * 0.04 + line_offset * 0.4, 0.5)
+		var params: Dictionary = SpearThrustFX.defaults()
+		params["critical"] = crit
+		if not landed:
+			params["impact_flash_size"] = 0.25
+		var fx := SpearThrustFX.play_between(fx_root, tip, spot, destination.card_size, params)
+		if landed:
+			fx.impact.connect(_spear_impact.bind(destination, crit))
+		if index < strikes.size() - 1:
+			await get_tree().create_timer(0.22).timeout
+	await get_tree().create_timer(0.55).timeout
+	await source.lunge_return()
+	busy = false
+
+
+## The point lands: a hitch of time, then the card is driven back along its depth and rocks.
+func _spear_impact(card: Node3D, crit: bool) -> void:
+	if not is_instance_valid(card):
+		return
+	card.stagger_back(Vector3(0.0, 0.03, -SPEAR_RECOIL * (1.35 if crit else 1.0)), 0.05)
+	_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.06, 0.8), 1.6, crit)
+	_blade_hit_feedback(card.position + Vector3(0.0, card.card_size.y * 0.04, 0.5), card.card_size.y, crit, card)
+	await _hit_stop(SPEAR_HIT_STOP * (1.6 if crit else 1.0))
+	await get_tree().create_timer(0.28).timeout
+	if is_instance_valid(card):
+		card.stagger_recover(0.3)
