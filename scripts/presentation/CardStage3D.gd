@@ -1487,6 +1487,7 @@ func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dic
 		var heavy: bool = index == strikes.size() - 1
 		if bool(strike.get("hit", true)):
 			var params: Dictionary = PunchHitFX.heavy_preset(hit_size) if heavy else PunchHitFX.light_preset(hit_size)
+			params["direction"] = direction
 			var point: Vector3 = centre + Vector3(randf_range(-0.12, 0.12), randf_range(-0.18, 0.18), 0.0) * (0.0 if index == 0 else 1.0)
 			# The fist presses in a little as it lands.
 			var press := create_tween()

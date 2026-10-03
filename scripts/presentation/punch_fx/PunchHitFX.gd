@@ -21,16 +21,17 @@ var hit_stop_time: float = 0.07     # real seconds the game stands almost still 
 var recoil_distance: float = 0.55   # how far the struck card is knocked back, world units (read by the stage)
 var flash_intensity: float = 3.4    # how far above white the core glows
 var size: float = 1.8
+var direction: float = 1.0          # +1: the fist came from the left, -1: from the right (for the afterimages)
 
 
 ## The heavy blow: bigger core, a full ring, more sparks.
 static func heavy_preset(size_value: float = 1.8) -> Dictionary:
-	return {"impact_scale": 1.0, "ring_scale": 2.7, "spark_count": 16, "ink_amount": 5, "mark_scale": 2.3, "mark_life": 1.3, "hit_stop_time": 0.075, "recoil_distance": 0.6, "flash_intensity": 3.6, "size": size_value}
+	return {"impact_scale": 1.0, "ring_scale": 2.7, "spark_count": 16, "ink_amount": 5, "mark_scale": 3.4, "mark_life": 1.3, "hit_stop_time": 0.075, "recoil_distance": 0.6, "flash_intensity": 3.6, "size": size_value}
 
 
 ## The light blow (a quick jab): smaller core, a short ring, few sparks; a faster beat.
 static func light_preset(size_value: float = 1.8) -> Dictionary:
-	return {"impact_scale": 0.6, "ring_scale": 1.15, "spark_count": 7, "ink_amount": 2, "mark_scale": 1.3, "mark_life": 0.8, "hit_stop_time": 0.03, "recoil_distance": 0.3, "flash_intensity": 2.8, "size": size_value}
+	return {"impact_scale": 0.6, "ring_scale": 1.15, "spark_count": 7, "ink_amount": 2, "mark_scale": 1.9, "mark_life": 0.8, "hit_stop_time": 0.03, "recoil_distance": 0.3, "flash_intensity": 2.8, "size": size_value}
 
 
 ## Plays one hit at `centre` (world position). `params` overrides any of the knobs above.
@@ -48,6 +49,7 @@ func play() -> void:
 	var core := Core.new()
 	core.impact_scale = impact_scale * size * 0.55
 	core.flash_intensity = flash_intensity
+	core.travel_dir = direction
 	add_child(core)
 	core.play()
 	if mark_scale > 0.0:

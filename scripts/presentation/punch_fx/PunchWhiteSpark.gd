@@ -8,7 +8,7 @@ const SparkShader = preload("res://scripts/presentation/shaders/hit_spark_partic
 
 var spark_count: int = 14
 var spark_size: float = 1.8
-var life: float = 0.4
+var life: float = 0.32
 
 
 func play() -> void:
@@ -19,8 +19,8 @@ func play() -> void:
 	var process := ParticleProcessMaterial.new()
 	process.direction = Vector3.ZERO
 	process.spread = 180.0
-	process.initial_velocity_min = spark_size * 2.6
-	process.initial_velocity_max = spark_size * 7.4
+	process.initial_velocity_min = spark_size * 3.4
+	process.initial_velocity_max = spark_size * 9.6
 	process.damping_min = spark_size * 3.4
 	process.damping_max = spark_size * 6.2
 	process.gravity = Vector3(0.0, -spark_size * 0.5, 0.0)
@@ -29,7 +29,7 @@ func play() -> void:
 	process.color_ramp = ramp
 	streaks.process_material = process
 	var mesh := QuadMesh.new()
-	mesh.size = Vector2(spark_size * 0.020, spark_size * 0.28)
+	mesh.size = Vector2(spark_size * 0.020, spark_size * 0.42)
 	var material := ShaderMaterial.new()
 	material.shader = SparkShader
 	material.render_priority = 37
