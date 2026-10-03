@@ -14,6 +14,12 @@ uniform vec4 ink : source_color = vec4(0.015, 0.015, 0.02, 1.0);
 
 uniform float sweep_end = 0.15;           // the share of the effect's time the head takes to cross (smaller = faster)
 uniform float edge_mix = 0.8;             // how far the light turns from its core colour to its edge colour
+uniform float reverse_taper = 0.0;        // 1: the trace starts thin and swells toward its head (a staff), instead of being fat at the start
+uniform float head_floor = 0.14;          // width of a fresh stretch of light at the head, as a share of full width (1 = no narrowing)
+uniform float bulge_at = 0.5;             // where along the trace it suddenly swells (the point of impact)
+uniform float bulge_amount = 0.0;         // how much wider it gets there (0 = not at all)
+uniform float bulge_width = 0.07;
+uniform float accelerate = 0.0;           // 1: the head starts slowly and is whipped faster and faster (the inertia of a swung staff)
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -42,7 +48,7 @@ float fbm(vec2 p) {
 void fragment() {
 	// When the head reached this point of the arc (inverse of the sweep easing), and how long ago.
 	float reach = clamp((UV.x + 0.05) / 1.10, 0.0, 0.999);
-	float passed_at = sweep_end * (1.0 - pow(1.0 - reach, 1.0 / 2.2));
+	float passed_at = mix(sweep_end * (1.0 - pow(1.0 - reach, 1.0 / 2.2)), sweep_end * pow(reach, 0.6), accelerate);
 	float since = progress - passed_at;
 	float age = since / 0.28;                          // the white blade: lasts about as long as before
 	float age_ink = since / 0.77;                      // the black ink: lingers and fades slowly
@@ -54,8 +60,11 @@ void fragment() {
 	float across = (UV.y - 0.5) * 2.0;
 
 	// The crescent: pointed at both ends, fat toward the start, sharpest at the head, thinning with age.
-	float shape = pow(sin(3.14159 * pow(x, 0.55)), 0.9);
-	float light_width = shape * clamp(age * 10.0, 0.14, 1.0) * (1.0 - 0.70 * smoothstep(0.12, 1.0, age)) * 0.24;
+	float shape_start = pow(sin(3.14159 * pow(x, 0.55)), 0.9);
+	float shape_end = pow(sin(3.14159 * pow(1.0 - x, 0.55)), 0.9);
+	float shape = mix(shape_start, shape_end, reverse_taper);
+	shape *= 1.0 + bulge_amount * exp(-pow((x - bulge_at) / bulge_width, 2.0));
+	float light_width = shape * clamp(age * 10.0, head_floor, 1.0) * (1.0 - 0.70 * smoothstep(0.12, 1.0, age)) * 0.24;
 	float ink_width = shape * (1.0 - 0.30 * smoothstep(0.3, 1.0, age_ink)) * 0.52;
 
 	// Turbulent streaks: they all run along the arc but each lane flows at its own speed and wanders.

@@ -11,9 +11,11 @@ uniform float arc = 0.9;                  // how far around the crescent curves
 uniform float thickness = 0.10;           // thickness of the half-moon at its middle, in quad units
 uniform float opacity = 0.7;              // overall opacity of the wave
 uniform float trail = 0.8;                // how much of a ghosted trail follows behind it
-uniform float emission_strength = 1.5;
+uniform float emission_strength = 3.2;
 uniform float raggedness = 0.55;          // how irregular the edge and body are
 uniform float seed = 0.0;
+uniform float rim_strength = 0.0;         // >0: a thin silver line along the band's edges (for the dark shadow layer)
+uniform vec4 rim_tone : source_color = vec4(0.62, 0.65, 0.72, 1.0);
 uniform vec4 tone : source_color = vec4(0.93, 0.96, 1.0, 1.0);
 
 float hash(vec2 p) {
@@ -57,8 +59,10 @@ void fragment() {
 		ghost += lag * mix(1.0, frayed, raggedness) * horn * (0.5 / k) * trail;
 	}
 	float life = smoothstep(0.0, 0.10, t) * (1.0 - smoothstep(0.86, 1.0, t));
-	float value = clamp(body + ghost, 0.0, 1.0) * life;
-	ALBEDO = tone.rgb;
+	float rim = exp(-pow((abs(d + thickness * 0.5) - thickness * 0.75) / (thickness * 0.14), 2.0)) * horn * mix(1.0, gaps, 0.8) * rim_strength;
+	float value = clamp(body + ghost + rim, 0.0, 1.0) * life;
+	vec3 colour = mix(tone.rgb, rim_tone.rgb, clamp(rim * 1.4, 0.0, 1.0));
+	ALBEDO = colour;
 	ALPHA = value * opacity;
 	EMISSION = tone.rgb * value * emission_strength * opacity;
 }

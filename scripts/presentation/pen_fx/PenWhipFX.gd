@@ -14,17 +14,17 @@ const Core = preload("res://scripts/presentation/punch_fx/PunchImpactCore.gd")
 
 # --- Tunable parameters ---------------------------------------------------------------------------
 var light_duration: float = 0.13        # seconds the whip takes to sweep in and land
-var ink_duration: float = 0.30          # seconds the residue stroke is held at full strength
+var ink_duration: float = 0.90          # seconds the residue stroke is held at full strength
 var ink_width: float = 0.22             # half-width of the residue stroke at its fattest (world units)
 var ink_length: float = 3.4             # reach of the whip and of the residue stroke (world units)
-var ink_fade_time: float = 0.28         # seconds the stroke takes to thin out and disappear
+var ink_fade_time: float = 0.60         # seconds the stroke takes to thin out and disappear
 var ink_droplet_count: int = 5          # small drops flung along the lash (3 to 7)
 var ink_droplet_speed: float = 3.6      # how far and fast they are thrown (world units per second)
 var hit_flash_scale: float = 0.45       # size of the contact flash (a fraction of the fist FX's)
 var card_hit_shake: float = 0.05        # how far the struck card shudders sideways (world units)
 var lash_angle: float = -0.45           # direction of the lash in the screen plane (radians)
 var whip_width: float = 0.20            # half-width of the whip at its head (world units)
-var whip_hold: float = 0.10             # seconds the whip stays at full strength after it lands
+var whip_hold: float = 0.55             # seconds the whip stays at full strength after it lands
 var burst_scale: float = 4.0            # size of the ink burst at the contact (much bigger than a punch's mark)
 var burst_life: float = 0.9             # seconds the burst takes to fade
 var direction: float = 1.0              # +1: the lash comes from the left, -1: from the right
@@ -34,9 +34,9 @@ var critical: bool = false
 ## The defaults, as a dictionary, so skills can override single entries.
 static func defaults() -> Dictionary:
 	return {
-		"light_duration": 0.13, "ink_duration": 0.30, "ink_width": 0.22, "ink_length": 3.4,
-		"ink_fade_time": 0.28, "ink_droplet_count": 5, "ink_droplet_speed": 3.6, "hit_flash_scale": 0.45,
-		"card_hit_shake": 0.05, "whip_width": 0.20, "whip_hold": 0.10, "burst_scale": 4.0, "burst_life": 0.9,
+		"light_duration": 0.13, "ink_duration": 0.90, "ink_width": 0.22, "ink_length": 3.4,
+		"ink_fade_time": 0.60, "ink_droplet_count": 5, "ink_droplet_speed": 3.6, "hit_flash_scale": 0.45,
+		"card_hit_shake": 0.05, "whip_width": 0.20, "whip_hold": 0.55, "burst_scale": 4.0, "burst_life": 0.9,
 	}
 
 

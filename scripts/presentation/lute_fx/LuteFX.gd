@@ -27,7 +27,7 @@ const SparkShader = preload("res://scripts/presentation/shaders/hit_spark_partic
 var wave_speed: float = 0.26                # seconds the wave takes to reach the target
 var wave_width: float = 1.8                 # height of the half-moon (world units)
 var wave_arc: float = 0.95                  # how far the half-moon curves
-var wave_opacity: float = 0.75              # how opaque the silver wave is
+var wave_opacity: float = 0.95              # how opaque the silver wave is
 var shadow_trail_strength: float = 0.55     # opacity of the black shadow under the wave
 var shadow_lag: float = 1.5                 # the shadow takes this many times as long as the light (Doppler feel)
 var outer_ring_scale_start: float = 1.0     # radius of the collapsing ring at the start (share of its quad)
@@ -52,7 +52,7 @@ var critical: bool = false
 
 static func defaults() -> Dictionary:
 	return {
-		"wave_speed": 0.26, "wave_width": 1.8, "wave_arc": 0.95, "wave_opacity": 0.75, "shadow_trail_strength": 0.55, "shadow_lag": 1.5,
+		"wave_speed": 0.26, "wave_width": 1.8, "wave_arc": 0.95, "wave_opacity": 0.95, "shadow_trail_strength": 0.55, "shadow_lag": 1.5,
 		"outer_ring_scale_start": 1.0, "outer_ring_scale_end": 0.03, "outer_ring_alpha": 0.4, "outer_ring_size": 4.0,
 		"impact_flash_strength": 3.0, "mirage_ring_duration": 0.5, "distortion_strength": 0.012,
 		"afterglow_duration": 0.5, "spark_count": 8, "string_count": 0, "shiver_marks": 3,
@@ -121,6 +121,7 @@ func play(origin_offset: Vector3) -> void:
 	shadow_material.set_shader_parameter("thickness", 0.16)
 	shadow_material.set_shader_parameter("raggedness", 0.75)
 	shadow_material.set_shader_parameter("emission_strength", 0.0)
+	shadow_material.set_shader_parameter("rim_strength", 0.85)
 	var wave_material := _wave_material(Color(0.93, 0.96, 1.0), wave_opacity, 0.8, 38)
 	var shadow := _quad(Vector2(wave_width * 0.6, wave_width * 1.1), shadow_material, 37)
 	var wave := _quad(Vector2(wave_width * 0.6, wave_width), wave_material, 38)

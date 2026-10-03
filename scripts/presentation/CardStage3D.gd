@@ -986,6 +986,9 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_staff_attack(skill):
+		await _present_staff_attack(attacker, target, result)
+		return
 	if _is_talisman_skill(skill):
 		await _present_talisman_attack(attacker, target, result)
 		return
@@ -1751,16 +1754,12 @@ func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dicti
 		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
 	if not any_landed:
 		destination.dodge_motion()
+	# Close combat like the sword: the writer steps right up to the target and stays there while the lash lands.
+	await source.lunge_to(destination.home_position)
 	for index: int in range(strikes.size()):
 		var strike: Dictionary = strikes[index]
 		var landed: bool = bool(strike.get("hit", true))
 		var crit: bool = landed and bool(strike.get("crit", false))
-		# The brush snaps forward and sideways, then straight back.
-		var lash := create_tween()
-		lash.tween_property(source, "position", source.home_position + Vector3(direction * 0.5, 0.05, 0.4), 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		lash.parallel().tween_property(source, "rotation", source.home_rotation + Vector3(-0.08, 0.0, -direction * 0.07), 0.05)
-		lash.tween_property(source, "position", source.home_position, 0.09)
-		lash.parallel().tween_property(source, "rotation", source.home_rotation, 0.09)
 		var spot := centre + Vector3(0.0, (float(index % 3) - 1.0) * destination.card_size.y * 0.12, 0.0)
 		if not landed:
 			spot += Vector3(direction * 0.9, 0.2, -0.6)
@@ -1787,7 +1786,8 @@ func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dicti
 				_blade_hit_feedback(centre, destination.card_size.y, true, destination)
 		if index < strikes.size() - 1:
 			await get_tree().create_timer(0.13).timeout
-	await get_tree().create_timer(0.22).timeout
+	await get_tree().create_timer(1.0).timeout
+	await source.lunge_return()
 	busy = false
 
 
@@ -1805,6 +1805,8 @@ func _lute_recoil(card: Node, direction: float, crit: bool) -> void:
 	if not is_instance_valid(card):
 		return
 	card.shudder(0.4 if crit else 0.26, 0.07 if crit else 0.045)
+	_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.05, 0.8), 1.8, crit)
+	_blade_hit_feedback(card.position + Vector3(0.0, card.card_size.y * 0.02, 0.5), card.card_size.y, crit, card)
 	var lean := create_tween()
 	lean.tween_property(card, "rotation", card.home_rotation + Vector3(0.0, 0.0, direction * (0.06 if crit else 0.035)), 0.06)
 	lean.tween_property(card, "rotation", card.home_rotation, 0.2)
@@ -1997,3 +1999,89 @@ func _start_yumei_fire(card: Node3D) -> void:
 	follow.tween_method(func(_value: float) -> void:
 		if is_instance_valid(card) and is_instance_valid(fire):
 			fire.global_position = card.global_position + Vector3(0.0, 0.0, 0.2), 0.0, 1.0, card.YUMEI_BURN_SECONDS)
+
+
+# --- Staff (棍): a heavy flat sweep of air, a blunt sideways shove ------------------------------------
+
+const StaffSweepFX = preload("res://scripts/presentation/staff_fx/StaffSweepFX.gd")
+## How far a swept card is shoved sideways (world units), and how far it tilts (radians).
+const STAFF_PUSH_DISTANCE: float = 0.95
+const STAFF_TILT: float = 0.2
+const STAFF_HIT_STOP: float = 0.05
+## How far along the line to the target the wielder steps, compared with a sword (a long weapon keeps its distance).
+const STAFF_REACH: float = 0.5
+
+
+func _is_staff_attack(skill: Dictionary) -> bool:
+	return USE_BLADE_SLASH and String(skill.get("weapon_type", "")) == "棍"
+
+
+## The attacker winds up and swings sideways in one short motion; a broad band of air crosses the
+## target, which is shoved away along the swing, tilts, hangs, and springs back.
+func _present_staff_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var strikes: Array = result.get("strikes", [])
+	if strikes.is_empty():
+		strikes = [{"hit": bool(result.get("hit", true)), "crit": bool(result.get("crit", false))}]
+	var any_landed: bool = false
+	for strike_any: Variant in strikes:
+		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
+	if not any_landed:
+		destination.dodge_motion()
+	var side: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.02, 0.5)
+	for index: int in range(strikes.size()):
+		var strike: Dictionary = strikes[index]
+		var landed: bool = bool(strike.get("hit", true))
+		var crit: bool = landed and bool(strike.get("crit", false))
+		# Alternate the swing's direction on a flurry; a single swing goes toward the target's side.
+		var swing: float = side if index % 2 == 0 else -side
+		var params: Dictionary = StaffSweepFX.defaults()
+		params["origin_offset"] = source.home_position - centre
+		params["camera_offset"] = camera.global_position - fx_root.to_global(centre)
+		params["direction"] = swing
+		params["critical"] = crit
+		if not landed:
+			params["warp_strength"] = 0.0
+			params["shockwave_strength"] = 0.0
+		# Melee: the first swing starts with the attacker closing in (wind-up, then a hard step
+		# toward the target); the sweep is released as the step lands.
+		if index == 0:
+			source.lunge_to(destination.home_position, STAFF_REACH)
+			await get_tree().create_timer(0.2).timeout
+		else:
+			var twist := create_tween()
+			twist.tween_property(source, "rotation", source.rotation + Vector3(0.0, 0.0, -swing * 0.16), 0.07)
+			twist.tween_property(source, "rotation", source.rotation, 0.14)
+			await get_tree().create_timer(0.06).timeout
+		var spot: Vector3 = centre if landed else centre + Vector3(swing * 1.1, 0.25, -0.6)
+		var fx := StaffSweepFX.play_at(fx_root, spot, destination.card_size, params)
+		# The wielder's own short, clear sideways swing: a hard twist and slide along the sweep.
+		var body_swing := create_tween().set_parallel(true)
+		body_swing.tween_property(source, "position:x", source.position.x + swing * 0.4, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		body_swing.tween_property(source, "rotation:z", source.home_rotation.z - swing * 0.2, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		if landed:
+			fx.impact.connect(_staff_impact.bind(destination, swing, crit))
+		if index < strikes.size() - 1:
+			await get_tree().create_timer(0.3).timeout
+	await get_tree().create_timer(0.5).timeout
+	await source.lunge_return()
+	busy = false
+
+
+## The head of the sweep reaches the card: a hitch of time, then the card is thrown sideways.
+func _staff_impact(card: Node3D, swing: float, crit: bool) -> void:
+	if not is_instance_valid(card):
+		return
+	var distance: float = STAFF_PUSH_DISTANCE * (1.35 if crit else 1.0)
+
+	# Swept: the whole card slides away along the swing, tilts, hangs for a moment, then springs back.
+	card.shove(Vector3(swing * distance, 0.04, -0.1), -swing * STAFF_TILT * (1.4 if crit else 1.0), 0.14 if crit else 0.10)
+	_hit_stop(STAFF_HIT_STOP * (1.6 if crit else 1.0))
+	_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.05, 0.8), 2.0, crit)
+	_blade_hit_feedback(card.position + Vector3(0.0, card.card_size.y * 0.02, 0.5), card.card_size.y, crit, card)

@@ -560,14 +560,14 @@ signal hit_landed(card, heavy)
 
 ## Thrusts toward the target and STAYS there at the peak (the caller strikes while the card
 ## holds, then calls lunge_return). Returns when the peak is reached.
-func lunge_to(target_position: Vector3) -> void:
+func lunge_to(target_position: Vector3, reach_scale: float = 1.0) -> void:
 	_kill_motion()
 	var toward: float = _toward()
 	var line: Vector3 = target_position - home_position
 	var windup_position: Vector3 = home_position - line.normalized() * WINDUP_DISTANCE + Vector3(0.0, -0.06, -0.25)
 	# Travel along the whole line to the target, depth included: toward a deeper enemy the
 	# card visibly goes away from the camera (and shrinks), toward a nearer one it comes out.
-	var strike_position: Vector3 = home_position + line * LUNGE_FRACTION + Vector3(0.0, 0.12, 0.0)
+	var strike_position: Vector3 = home_position + line * LUNGE_FRACTION * reach_scale + Vector3(0.0, 0.12, 0.0)
 	var strike_rotation: Vector3 = Vector3(home_rotation.x + 0.10, home_rotation.y * 0.45, home_rotation.z - toward * 0.12)
 	_motion_tween = create_tween()
 	_motion_tween.tween_property(self, "position", windup_position, 0.12)
@@ -859,4 +859,17 @@ func shudder(seconds: float, amplitude: float) -> void:
 		var offset := Vector3(randf_range(-1.0, 1.0), randf_range(-0.5, 0.5), 0.0) * amplitude * fade
 		_motion_tween.tween_property(self, "position", centre + offset, 0.025)
 	_motion_tween.tween_property(self, "position", centre, 0.025)
+	await _wait_for_motion(_motion_tween)
+
+
+## A blunt sideways shove (a staff sweeping the card): it slides `push` away, tilts, hangs for an
+## instant, then springs back to its place.
+func shove(push: Vector3, tilt: float, hold: float) -> void:
+	_kill_motion()
+	_motion_tween = create_tween()
+	_motion_tween.tween_property(self, "position", home_position + push, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, tilt), 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_motion_tween.tween_interval(hold)
+	_motion_tween.tween_property(self, "position", home_position, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await _wait_for_motion(_motion_tween)
