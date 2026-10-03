@@ -36,7 +36,7 @@ func _run(size: float, heavy: bool) -> void:
 
 func _core_flash(size: float, heavy: bool, rng: RandomNumberGenerator) -> void:
 	var quad := QuadMesh.new()
-	quad.size = Vector2.ONE * size * 0.95
+	quad.size = Vector2.ONE * size * 1.35
 	var flash := MeshInstance3D.new()
 	flash.mesh = quad
 	flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -74,8 +74,8 @@ func _spark_particles(size: float, heavy: bool) -> void:
 	var streak_process := ParticleProcessMaterial.new()
 	streak_process.direction = Vector3(0.0, 0.0, 0.0)
 	streak_process.spread = 180.0
-	streak_process.initial_velocity_min = size * 1.4
-	streak_process.initial_velocity_max = size * (4.2 if heavy else 3.4)
+	streak_process.initial_velocity_min = size * 1.8
+	streak_process.initial_velocity_max = size * (5.6 if heavy else 4.6)
 	streak_process.damping_min = size * 3.0
 	streak_process.damping_max = size * 6.0
 	streak_process.gravity = Vector3(0.0, -size * 0.5, 0.0)
@@ -84,11 +84,11 @@ func _spark_particles(size: float, heavy: bool) -> void:
 	streak_process.color_ramp = ramp
 	streaks.process_material = streak_process
 	var streak_mesh := QuadMesh.new()
-	streak_mesh.size = Vector2(size * 0.012, size * 0.16)
+	streak_mesh.size = Vector2(size * 0.022, size * 0.30)
 	streak_mesh.material = _spark_material()
 	streaks.draw_pass_1 = streak_mesh
 	streaks.transform_align = GPUParticles3D.TRANSFORM_ALIGN_Y_TO_VELOCITY
-	streaks.amount = 18 if heavy else 12
+	streaks.amount = 22 if heavy else 16
 	streaks.lifetime = 0.3
 	streaks.one_shot = true
 	streaks.explosiveness = 1.0
@@ -101,7 +101,7 @@ func _spark_particles(size: float, heavy: bool) -> void:
 	dot_process.direction = Vector3(0.0, 0.0, 0.0)
 	dot_process.spread = 180.0
 	dot_process.initial_velocity_min = size * 0.6
-	dot_process.initial_velocity_max = size * 2.2
+	dot_process.initial_velocity_max = size * 3.0
 	dot_process.damping_min = size * 2.0
 	dot_process.damping_max = size * 4.5
 	dot_process.gravity = Vector3(0.0, -size * 1.4, 0.0)
@@ -110,11 +110,11 @@ func _spark_particles(size: float, heavy: bool) -> void:
 	dot_process.color_ramp = ramp
 	dots.process_material = dot_process
 	var dot_mesh := QuadMesh.new()
-	dot_mesh.size = Vector2(size * 0.035, size * 0.035)
+	dot_mesh.size = Vector2(size * 0.065, size * 0.065)
 	var dot_material := _spark_material()
 	dot_mesh.material = dot_material
 	dots.draw_pass_1 = dot_mesh
-	dots.amount = 10 if heavy else 7
+	dots.amount = 14 if heavy else 10
 	dots.lifetime = 0.34
 	dots.one_shot = true
 	dots.explosiveness = 1.0

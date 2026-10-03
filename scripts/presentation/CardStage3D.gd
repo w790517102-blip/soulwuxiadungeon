@@ -998,8 +998,8 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 		var cut_hold: float = StageHitEffects.slash_duration() + 0.1
 		if USE_BLADE_SLASH:
 			_start_blade_slash(cut_centre, cut_length * 1.5, direction)
-			cut_wait = 0.24
-			cut_hold = 0.40
+			cut_wait = 0.16
+			cut_hold = 0.30
 		else:
 			StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
 		# The target is struck as the cut lands (late in the draw), then reacts.

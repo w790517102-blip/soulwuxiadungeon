@@ -12,7 +12,7 @@ uniform vec4 light_core : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec4 light_cool : source_color = vec4(0.80, 0.84, 0.90, 1.0);
 uniform vec4 ink : source_color = vec4(0.015, 0.015, 0.02, 1.0);
 
-const float SWEEP_END = 0.21;
+const float SWEEP_END = 0.15;
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -43,7 +43,7 @@ void fragment() {
 	float reach = clamp((UV.x + 0.05) / 1.10, 0.0, 0.999);
 	float passed_at = SWEEP_END * (1.0 - pow(1.0 - reach, 1.0 / 2.2));
 	float since = progress - passed_at;
-	float age = since / 0.34;                          // the white blade: lasts about as long as before
+	float age = since / 0.28;                          // the white blade: lasts about as long as before
 	float age_ink = since / 0.77;                      // the black ink: lingers and fades slowly
 	if (since < 0.0) {
 		discard;
