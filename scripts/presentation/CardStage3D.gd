@@ -402,7 +402,7 @@ func order_keys() -> Array[String]:
 	var queue: Array = manager.turn_queue
 	var index: int = clampi(int(manager.current_index), 0, queue.size())
 	var alive_all: Array = []
-	for actor: Dictionary in manager.player_party + manager.enemy_party:
+	for actor: Dictionary in manager.get_all_actors():
 		if int(actor.get("hp", 0)) > 0 and manager._is_actor_alive(actor):
 			alive_all.append(actor)
 	var remaining: Array = []

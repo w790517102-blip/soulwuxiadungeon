@@ -285,7 +285,7 @@ func start_battle(context: Dictionary) -> void:
 	last_round_regen = -1
 
 	await _run_battle_opening_sequence(context)
-	turn_manager.start_battle(player_party, enemy_party)
+	turn_manager.start_battle(player_party, enemy_party, _build_guest_turn_actor())
 
 func _mark_enemy_lore_encounter(enemy: Dictionary) -> void:
 	if enemy.is_empty() or GlobalState == null or not GlobalState.has_method("set_flag"):
@@ -1694,6 +1694,14 @@ func _on_turn_started(actor: Dictionary) -> void:
 		safe_end_turn()
 		return
 
+	# 🍶 Scripted guest (左飲): his turn comes in the order like anyone's, but he has no command;
+	# he plays the next of his scripted moves and hands over.
+	if bool(actor.get("is_scripted_guest", false)):
+		_log_system("輪到「%s」行動。" % String(actor.get("name", "???")))
+		await run_scripted_guest_turn()
+		safe_end_turn()
+		return
+
 	if actor in player_party:
 		await _maybe_play_pending_ally_down_reaction(actor)
 
@@ -1785,7 +1793,16 @@ func _apply_encounter_round_start(_round_number: int) -> void:
 		await battle_ui.play_stage_status_event("entangle", boss)
 
 
+## The guest used to act once at the end of every round; now it has a turn in the order (see
+## _build_guest_turn_actor), so the round end only plays it for a guest that takes no turn.
 func run_round_end_encounter_actions(_round_number: int) -> void:
+	if _guest_takes_turns():
+		return
+	await run_scripted_guest_turn()
+
+
+## What a scripted guest does on its turn: the next of its scripted moves, in order, cycling.
+func run_scripted_guest_turn() -> void:
 	if battle_finished or _ending or scripted_guest.is_empty():
 		return
 	var actions = scripted_guest.get("actions", [])
@@ -4582,3 +4599,26 @@ func _buff_fx_kind(skill_data: Dictionary, effect: String, entry: Dictionary, po
 				"luck":
 					return "crit"
 	return "attack"
+
+
+func _guest_takes_turns() -> bool:
+	return not scripted_guest.is_empty() and bool(scripted_guest.get("takes_turns", true))
+
+
+## The scripted guest as an actor of the turn order: it has a place in the order (by its speed) and
+## a turn, but no player action; it cannot be targeted or defeated.
+func _build_guest_turn_actor() -> Dictionary:
+	if not _guest_takes_turns():
+		return {}
+	var guest_name := String(scripted_guest.get("display_name", "左飲"))
+	return {
+		"id": String(scripted_guest.get("id", "scripted_guest")),
+		"name": guest_name,
+		"display_name": guest_name,
+		"hp": 1,
+		"max_hp": 1,
+		"speed": int(scripted_guest.get("speed", 12)),
+		"element": "",
+		"is_guest": true,
+		"is_scripted_guest": true,
+	}

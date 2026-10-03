@@ -12,6 +12,7 @@ const ZUOYIN_STALACTITE_GUEST_PROFILE := {
 	"id": ZUOYIN_STALACTITE_GUEST_ID,
 	"display_name": "左飲",
 	"portrait_path": "res://assets/sprites/NPC/Yuheng/Zuo_Yin_battle.png",
+	"speed": 14,
 	"controllable": false,
 	"normal_target": false,
 	"uses_playable_actor": false,

@@ -23,6 +23,9 @@ var round_end_emitted = false
 # 外部資料來源（從 BattleController 注入）
 var player_party: Array = []
 var enemy_party: Array = []
+## A scripted guest (e.g. 左飲): it has a place in the turn order and a turn of its own, but no
+## player action; the controller plays its scripted move when the turn comes. Empty when none.
+var guest_actor: Dictionary = {}
 
 # 每輪依角色當下的最終加權速度排序（若未設定 speed，預設 0）
 func _compare_speed(a: Dictionary, b: Dictionary) -> bool:
@@ -44,7 +47,8 @@ func _compare_speed(a: Dictionary, b: Dictionary) -> bool:
 var round_in_progress = false
 
 # 初始化並開始第一回合
-func start_battle(players: Array, enemies: Array) -> void:
+func start_battle(players: Array, enemies: Array, guest: Dictionary = {}) -> void:
+	guest_actor = guest
 	player_party = players
 	enemy_party = enemies
 	_assign_battle_order_indices()
@@ -53,7 +57,7 @@ func start_battle(players: Array, enemies: Array) -> void:
 
 func _assign_battle_order_indices() -> void:
 	var order_index := 0
-	for actor in player_party + enemy_party:
+	for actor in get_all_actors():
 		if typeof(actor) != TYPE_DICTIONARY:
 			continue
 		if not actor.has("battle_order_index"):
@@ -73,7 +77,7 @@ func start_new_round() -> void:
 	emit_signal("round_started", round_count)
 
 	turn_queue.clear()
-	turn_queue += player_party + enemy_party
+	turn_queue += get_all_actors()
 	turn_queue = turn_queue.filter(func(a): return _is_actor_alive(a))
 	turn_queue.sort_custom(Callable(self, "_compare_speed"))
 	current_index = 0
@@ -156,7 +160,7 @@ func _is_actor_alive(actor: Dictionary) -> bool:
 func _build_round_roster() -> void:
 	round_roster.clear()
 	acted_this_round.clear()
-	for actor in (player_party + enemy_party):
+	for actor in get_all_actors():
 		if _is_actor_alive(actor):
 			var key = _actor_key(actor)
 			if key != "":
@@ -171,7 +175,7 @@ func _mark_actor_acted(actor: Dictionary) -> void:
 
 func _prune_roster() -> void:
 	var remaining = []
-	for actor in (player_party + enemy_party):
+	for actor in get_all_actors():
 		var key = _actor_key(actor)
 		if key == "":
 			continue
@@ -217,3 +221,11 @@ func _is_battle_ending() -> bool:
 	if bool(controller.get("_ending")):
 		return true
 	return false
+
+
+## Everyone who takes a turn: the party, the enemies and the scripted guest, if any.
+func get_all_actors() -> Array:
+	var everyone: Array = player_party + enemy_party
+	if not guest_actor.is_empty():
+		everyone.append(guest_actor)
+	return everyone
