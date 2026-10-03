@@ -24,6 +24,7 @@ var flash_intensity: float = 3.4    # how far above white the core glows
 var size: float = 1.8
 var direction: float = 1.0          # +1: the fist came from the left, -1: from the right (for the afterimages)
 var critical: bool = false          # a critical hit: the white light trembles at the end and the space warps harder
+var angle: float = 0.0              # the line the afterimages trail along (radians), so successive blows differ
 var warp_strength: float = 0.010    # the mirage ripple of the space around the hit (0 = none)
 
 
@@ -34,7 +35,7 @@ static func heavy_preset(size_value: float = 1.8) -> Dictionary:
 
 ## The light blow (a quick jab): smaller core, a short ring, few sparks; a faster beat.
 static func light_preset(size_value: float = 1.8) -> Dictionary:
-	return {"impact_scale": 0.6, "ring_scale": 1.15, "spark_count": 7, "ink_amount": 2, "mark_scale": 1.9, "mark_life": 0.8, "hit_stop_time": 0.03, "recoil_distance": 0.3, "flash_intensity": 2.8, "size": size_value}
+	return {"impact_scale": 0.6, "ring_scale": 1.15, "spark_count": 7, "ink_amount": 2, "mark_scale": 1.9, "mark_life": 0.8, "warp_strength": 0.0, "hit_stop_time": 0.03, "recoil_distance": 0.3, "flash_intensity": 2.8, "size": size_value}
 
 
 ## Plays one hit at `centre` (world position). `params` overrides any of the knobs above.
@@ -54,6 +55,7 @@ func play() -> void:
 	core.flash_intensity = flash_intensity
 	core.travel_dir = direction
 	core.tremble = critical
+	core.travel_angle = angle
 	add_child(core)
 	core.play()
 	if warp_strength > 0.0:

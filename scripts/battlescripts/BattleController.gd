@@ -2496,6 +2496,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 
 	# The strikes land on random enemies; each enemy gets ONE log entry for all the strikes it took.
 	var groups: Array = []
+	var events: Array = []
 	for i in range(strike_total):
 		var pick := _pick_random_alive_enemy()
 		if pick.is_empty():
@@ -2512,6 +2513,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 			group = {"target": pick, "strikes": []}
 			groups.append(group)
 		(group.strikes as Array).append(strike_result)
+		events.append({"target": pick, "hit": bool(strike_result.get("hit", true)), "crit": bool(strike_result.get("crit", false))})
 		if bool(strike_result.get("hit", true)):
 			any_hit = true
 			if not hit_targets.has(pick):
@@ -2525,7 +2527,11 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 		_emit_multi_strike_feedback(actor, group.target, skill_data, group.strikes)
 		combined_logs.append(_compose_multi_strike_entry(actor, group.target, skill_data, group.strikes))
 
-	if battle_ui and not hit_targets.is_empty():
+	var area_strikes_played: bool = false
+	if battle_ui and not events.is_empty() and battle_ui.has_method("play_area_strikes"):
+		# A view that draws the whole run of blows itself (CARD_STAGE) takes over the hit FX.
+		area_strikes_played = await battle_ui.play_area_strikes(actor, skill_data, events)
+	if battle_ui and not hit_targets.is_empty() and not area_strikes_played:
 		if battle_ui.has_method("play_hit_fx_multi"):
 			battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
 		if battle_ui.has_method("play_damage_react_multi"):
@@ -2558,6 +2564,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 
 func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, inner_force: Dictionary) -> void:
 	var any_down := false
+	var events: Array = []
 	var any_hit := false
 	var hit_targets: Array = []
 	var damaged_targets: Array = []
@@ -2578,6 +2585,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 		if enemy_strikes.is_empty():
 			continue
 		for strike_result: Dictionary in enemy_strikes:
+			events.append({"target": enemy, "hit": bool(strike_result.get("hit", true)), "crit": bool(strike_result.get("crit", false))})
 			if bool(strike_result.get("hit", true)):
 				any_hit = true
 				if not hit_targets.has(enemy):
@@ -2590,7 +2598,11 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 		_emit_multi_strike_feedback(actor, enemy, skill_data, enemy_strikes)
 		combined_logs.append(_compose_multi_strike_entry(actor, enemy, skill_data, enemy_strikes))
 
-	if battle_ui and not hit_targets.is_empty():
+	var area_strikes_played: bool = false
+	if battle_ui and not events.is_empty() and battle_ui.has_method("play_area_strikes"):
+		# A view that draws the whole run of blows itself (CARD_STAGE) takes over the hit FX.
+		area_strikes_played = await battle_ui.play_area_strikes(actor, skill_data, events)
+	if battle_ui and not hit_targets.is_empty() and not area_strikes_played:
 		if battle_ui.has_method("play_hit_fx_multi"):
 			battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
 		if battle_ui.has_method("play_damage_react_multi"):

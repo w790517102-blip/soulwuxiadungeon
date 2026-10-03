@@ -427,3 +427,12 @@ func _bubble_avoid_shift(box: PanelContainer, rect: Rect2) -> float:
 		else:
 			return shift
 	return shift
+
+
+## An area punch skill (石破天驚拳 and 真．石破天驚拳): the whole run of blows is drawn by the stage as one
+## flurry. Returns true when it did, so the controller skips the generic hit FX.
+func play_area_strikes(actor: Dictionary, skill_data: Dictionary, events: Array) -> bool:
+	if not (stage_enabled and stage) or String(skill_data.get("weapon_type", "")) != "拳":
+		return false
+	await stage.present_punch_events(actor, events)
+	return true

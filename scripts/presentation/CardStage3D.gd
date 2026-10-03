@@ -1466,53 +1466,95 @@ func _hit_stop(seconds: float) -> void:
 
 
 func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
-	var source := card_for(attacker)
-	var destination := card_for(target)
-	if not source or not destination:
-		return
-	busy = true
-	command_tray.set_enabled(false)
-	await source.lunge_to(destination.home_position)
-	var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
-	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.5)
 	var strikes: Array = result.get("strikes", [])
 	if strikes.is_empty():
 		strikes = [{"hit": bool(result.get("hit", true)), "crit": bool(result.get("crit", false))}]
-	var any_landed: bool = false
+	var events: Array = []
 	for strike_any: Variant in strikes:
-		any_landed = any_landed or bool((strike_any as Dictionary).get("hit", true))
-	if not any_landed:
-		destination.dodge_motion()
-	var guarding: bool = bool(target.get("defending", false))
-	var hit_size: float = destination.card_size.y * 0.5
+		var strike: Dictionary = strike_any
+		events.append({"target": target, "hit": bool(strike.get("hit", true)), "crit": bool(strike.get("crit", false))})
+	await present_punch_events(attacker, events)
+
+
+## A flurry of punches, one per event ({target, hit, crit}), in order. Like the sword flurry, the
+## next blow starts while the last one's light is still fading; each lands on its own spot of the
+## target and sends its afterimages back along its own line. The last blow on each target is a heavy
+## one (it also stops the game for a heartbeat); the blows before it are light. Used for the
+## single-target multi-hit punches (天驚拳) and, with several targets, the area versions
+## (石破天驚拳, 真．石破天驚拳).
+const PUNCH_SPOTS: Array[Vector2] = [Vector2(-0.18, 0.22), Vector2(0.20, -0.18), Vector2(0.02, 0.04), Vector2(-0.14, -0.30), Vector2(0.18, 0.30)]
+const PUNCH_ANGLES: Array[float] = [0.0, 0.55, -0.5, 0.28, -0.3]
+const PUNCH_GAP: float = 0.10
+
+
+func present_punch_events(attacker: Dictionary, events: Array) -> void:
+	var source := card_for(attacker)
+	if source == null or events.is_empty():
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var first_card := card_for((events[0] as Dictionary).target)
+	if first_card == null:
+		busy = false
+		return
+	await source.lunge_to(first_card.home_position)
+	# Per target: did any blow land, and which event is its last one?
+	var landed: Dictionary = {}
+	var last_event: Dictionary = {}
+	for index: int in range(events.size()):
+		var key: String = actor_key((events[index] as Dictionary).target)
+		landed[key] = bool(landed.get(key, false)) or bool((events[index] as Dictionary).hit)
+		last_event[key] = index
+	var struck: Array = []
+	for key: String in landed.keys():
+		var struck_card: Node3D = cards.get(key) as Node3D
+		if struck_card == null:
+			continue
+		if landed[key]:
+			struck.append(struck_card)
+		else:
+			struck_card.dodge_motion()
 	_suppress_card_spark = true
-	for index: int in range(strikes.size()):
-		var strike: Dictionary = strikes[index]
-		var heavy: bool = index == strikes.size() - 1
-		if bool(strike.get("hit", true)):
+	var per_target_count: Dictionary = {}
+	for index: int in range(events.size()):
+		var event: Dictionary = events[index]
+		var destination := card_for(event.target)
+		if destination == null:
+			continue
+		var key: String = actor_key(event.target)
+		var count: int = int(per_target_count.get(key, 0))
+		per_target_count[key] = count + 1
+		var direction: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+		var heavy: bool = int(last_event[key]) == index
+		var guarding: bool = bool(event.target.get("defending", false))
+		if bool(event.hit):
+			var hit_size: float = destination.card_size.y * 0.5
 			var params: Dictionary = PunchHitFX.heavy_preset(hit_size) if heavy else PunchHitFX.light_preset(hit_size)
 			params["direction"] = direction
-			params["critical"] = bool(strike.get("crit", false))
-			var point: Vector3 = centre + Vector3(randf_range(-0.12, 0.12), randf_range(-0.18, 0.18), 0.0) * (0.0 if index == 0 else 1.0)
-			# The fist presses in a little as it lands.
+			params["critical"] = bool(event.crit)
+			params["angle"] = PUNCH_ANGLES[count % PUNCH_ANGLES.size()]
+			var spot: Vector2 = PUNCH_SPOTS[count % PUNCH_SPOTS.size()]
+			var point: Vector3 = destination.position + Vector3(spot.x * destination.card_size.x, destination.card_size.y * 0.05 + spot.y * destination.card_size.y * 0.5, 0.5)
+			# The fist presses in a little as it lands; the other hand follows on the next blow.
 			var press := create_tween()
-			press.tween_property(source, "position", source.position + Vector3(direction * 0.14, 0.0, 0.0), 0.04)
+			press.tween_property(source, "position", source.position + Vector3(direction * 0.12, 0.05 * (1.0 if index % 2 == 0 else -1.0), 0.0), 0.04)
 			PunchHitFX.play_at(fx_root, point, params)
-			await _hit_stop(float(params.hit_stop_time))
+			if heavy:
+				await _hit_stop(float(params.hit_stop_time))
 			if guarding:
 				destination.guard_motion()
 			else:
 				destination._flash(Color(0.92, 0.96, 1.0, 0.5))
 				destination.stagger_back(Vector3(direction * float(params.recoil_distance), 0.05, -0.3), 0.07 if heavy else 0.05)
-				# After the knock-back a critical hit makes the struck card shudder for a moment.
-				if bool(strike.get("crit", false)):
+				if bool(event.crit):
 					get_tree().create_timer(0.09 if heavy else 0.06).timeout.connect(destination.shudder.bind(0.22 if heavy else 0.14, 0.09 if heavy else 0.05))
-		if index < strikes.size() - 1:
-			await get_tree().create_timer(0.11).timeout
+		if index < events.size() - 1:
+			await get_tree().create_timer(PUNCH_GAP).timeout
 	_suppress_card_spark = false
-	await get_tree().create_timer(0.16).timeout
-	if any_landed and not guarding:
-		destination.stagger_recover(0.4)
+	await get_tree().create_timer(0.30).timeout
+	for struck_card: Node3D in struck:
+		if is_instance_valid(struck_card):
+			struck_card.stagger_recover(0.4)
 	await get_tree().create_timer(0.14).timeout
 	await source.lunge_return(0.4)
 	await get_tree().create_timer(0.12).timeout

@@ -13,6 +13,8 @@ var life: float = 0.06
 ## +1: the fist came from the left, -1: from the right. `afterimages` ghost copies trail behind.
 var travel_dir: float = 1.0
 var afterimages: int = 3
+## The line (radians, 0 = straight back) along which the afterimages trail, so successive blows differ.
+var travel_angle: float = 0.0
 ## Only a critical hit trembles near the end.
 var tremble: bool = false
 
@@ -35,7 +37,7 @@ func _flash(size: Vector2, intensity: float, flash_life: float, position_offset:
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(flash, "scale", Vector3.ONE * 1.1, flash_life).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	# The light drifts back along the blow and, near the end of its life, trembles slightly.
-	var drift_to: Vector3 = position_offset - Vector3(travel_dir * impact_scale * 0.35, 0.0, 0.0)
+	var drift_to: Vector3 = position_offset - Vector3(travel_dir * cos(travel_angle) * impact_scale * 0.35, sin(travel_angle) * impact_scale * 0.35, 0.0)
 	tween.tween_method(func(value: float) -> void:
 		var base: Vector3 = position_offset.lerp(drift_to, value)
 		var tremble_amount: float = (smoothstep(0.55, 1.0, value) * impact_scale * 0.06) if tremble else 0.0
@@ -51,7 +53,7 @@ func play() -> void:
 	# Afterimages: long soft smears of white left behind along the line of the blow, one after another.
 	for index: int in range(afterimages):
 		var behind: float = impact_scale * (0.55 + 0.5 * float(index))
-		var offset := Vector3(-travel_dir * behind, randf_range(-0.04, 0.04) * impact_scale, 0.0)
+		var offset := Vector3(-travel_dir * cos(travel_angle) * behind, -sin(travel_angle) * behind + randf_range(-0.04, 0.04) * impact_scale, 0.0)
 		var size := Vector2(impact_scale * (1.9 - 0.25 * float(index)), impact_scale * (0.42 - 0.08 * float(index)))
 		var delay: float = 0.012 * float(index + 1)
 		get_tree().create_timer(delay, true, false, true).timeout.connect(
