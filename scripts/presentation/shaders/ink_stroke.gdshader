@@ -38,8 +38,9 @@ void fragment() {
 	float lift = pow(1.0 - smoothstep(0.62, 1.0, x), 0.85);
 	float width = press * swell * lift;
 	if (lead_heavy > 0.5) {
-		// A lash: thin where it began, swelling toward the head, ending in a blunt brush head.
-		width = pow(smoothstep(0.0, 0.85, x), 0.8) * (0.9 + 0.1 * sin(x * 15.0 + seed)) * (1.0 - smoothstep(0.96, 1.0, x) * 0.5);
+		// A lash: thin where it began, swelling to its fullest at the bend (x = 0.62) where it strikes, then the
+		// hooked-back tail tapers to a point.
+		width = pow(smoothstep(0.0, 0.62, x), 0.8) * (0.9 + 0.1 * sin(x * 15.0 + seed)) * (1.0 - smoothstep(0.62, 1.0, x) * 0.88);
 	}
 	// Rough edges, like bristles on paper.
 	float rough = (noise(vec2(x * 38.0 + seed, across * 4.0)) - 0.5) * 0.22 * (0.4 + x);

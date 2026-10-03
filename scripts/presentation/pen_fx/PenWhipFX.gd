@@ -60,12 +60,41 @@ func _stroke_point(s: float) -> Vector2:
 	return Vector2(x, y)
 
 
-## The lash: starts low behind the attacker, rises in a wide S-shaped sweep and cracks down on the
-## target, which sits at the end of the path (s = 1).
+## Where along the lash (0..1) it meets the target: the point of sharpest bend, the crack of the whip.
+const WHIP_CONTACT := 0.62
+## The share of the swing time at which the lash has reached WHIP_CONTACT (it speeds up as it goes).
+const CONTACT_TIME := 0.78
+var _whip_cache: PackedVector2Array = PackedVector2Array()
+
+
+## The lash comes in almost straight, like a cord pulled taut, and bends sharply right where it meets
+## the target (the crack of a whip), then its tip hooks back on itself, drawing the stroke back toward
+## where it came from. The contact point is the origin.
+func _whip_build() -> void:
+	var steps: int = 140
+	var step_length: float = ink_length * 0.95 / (float(steps) * WHIP_CONTACT)
+	var points := PackedVector2Array()
+	var position := Vector2.ZERO
+	var heading: float = 0.28
+	for index: int in range(steps + 1):
+		points.append(position)
+		var s: float = float(index) / float(steps)
+		var bend: float = exp(-pow((s - WHIP_CONTACT) / 0.07, 2.0))
+		position += Vector2(cos(heading), sin(heading)) * step_length
+		heading += -0.012 + (-0.172 * bend)
+	var anchor: Vector2 = points[int(round(WHIP_CONTACT * float(steps)))]
+	for index: int in range(points.size()):
+		points[index] -= anchor
+	_whip_cache = points
+
+
 func _whip_point(s: float) -> Vector2:
-	var x: float = lerpf(-1.0, 0.0, s) * ink_length * 0.95
-	var y: float = (sin(s * PI * 1.35) * 0.55 - s * 0.35 + 0.1 * sin(s * PI * 3.0)) * ink_length * 0.5
-	return Vector2(x, y)
+	if _whip_cache.is_empty():
+		_whip_build()
+	var scaled: float = clampf(s, 0.0, 1.0) * float(_whip_cache.size() - 1)
+	var low: int = int(floor(scaled))
+	var high: int = mini(low + 1, _whip_cache.size() - 1)
+	return _whip_cache[low].lerp(_whip_cache[high], scaled - float(low))
 
 
 func _path_mesh(half_width: float, segments: int, whip: bool) -> ArrayMesh:
@@ -123,10 +152,9 @@ func play() -> void:
 	whip_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	holder.add_child(whip_mesh)
 	var crack := create_tween()
-	crack.tween_method(func(value: float) -> void: whip_material.set_shader_parameter("reveal", value), 0.0, 1.05, light_duration).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	crack.tween_method(func(value: float) -> void: whip_material.set_shader_parameter("reveal", value), 0.0, 1.05, light_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	crack.tween_interval(whip_hold)
 	crack.tween_method(func(value: float) -> void: whip_material.set_shader_parameter("fade", value), 0.0, 1.0, ink_fade_time)
-	_brush_head(holder)
 	# 3. TRACE: the stroke left on the enemy, written only after the whip has landed.
 	var ink_material := _ink_material(seed_value, false, 32)
 	var ink_mesh := MeshInstance3D.new()
@@ -136,7 +164,7 @@ func play() -> void:
 	ink_mesh.position.z = 0.01
 	holder.add_child(ink_mesh)
 	var write := create_tween()
-	write.tween_interval(light_duration + 0.05)
+	write.tween_interval(light_duration * CONTACT_TIME + 0.05)
 	write.tween_method(func(value: float) -> void: ink_material.set_shader_parameter("reveal", value), 0.0, 1.05, 0.05)
 	write.tween_interval(ink_duration)
 	write.tween_method(func(value: float) -> void: ink_material.set_shader_parameter("fade", value), 0.0, 1.0, ink_fade_time)
@@ -148,49 +176,10 @@ func play() -> void:
 	contact.life = 0.05
 	contact.tremble = critical
 	add_child(contact)
-	get_tree().create_timer(light_duration).timeout.connect(contact.play)
-	get_tree().create_timer(light_duration).timeout.connect(_ink_burst)
+	get_tree().create_timer(light_duration * CONTACT_TIME).timeout.connect(contact.play)
+	get_tree().create_timer(light_duration * CONTACT_TIME).timeout.connect(_ink_burst)
 	_fling_drops()
 	get_tree().create_timer(light_duration + 0.05 + 0.05 + ink_duration + ink_fade_time + 0.5).timeout.connect(queue_free)
-
-
-## The brush itself: a small dark brush head (a tuft of bristles ending in a point, on a short ferrule)
-## that rides the tip of the whip along its path, so the lash reads as a brush being swung.
-func _brush_head(holder: Node3D) -> void:
-	var arrays: Array = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	var size: float = whip_width * 2.4
-	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([
-		Vector3(-0.9 * size, -0.42 * size, 0.0), Vector3(0.05 * size, -0.55 * size, 0.0), Vector3(1.2 * size, 0.0, 0.0),
-		Vector3(0.05 * size, 0.55 * size, 0.0), Vector3(-0.9 * size, 0.42 * size, 0.0),
-	])
-	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2, 0, 2, 3, 0, 3, 4])
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var head := MeshInstance3D.new()
-	head.mesh = mesh
-	head.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.albedo_color = Color(0.01, 0.01, 0.014, 1.0)
-	material.render_priority = 34
-	head.material_override = material
-	holder.add_child(head)
-	var travel := create_tween()
-	travel.tween_method(_place_head.bind(head), 0.0, 1.0, light_duration).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
-	travel.tween_property(material, "albedo_color:a", 0.0, 0.07)
-	travel.tween_callback(head.queue_free)
-
-
-func _place_head(value: float, head: Node3D) -> void:
-	if not is_instance_valid(head):
-		return
-	var here: Vector2 = _whip_point(clampf(value, 0.0, 1.0))
-	var ahead: Vector2 = _whip_point(clampf(value + 0.02, 0.0, 1.0))
-	head.position = Vector3(here.x, here.y, 0.03)
-	head.rotation.z = atan2(ahead.y - here.y, ahead.x - here.x)
 
 
 func _soft_disc() -> GradientTexture2D:
@@ -222,20 +211,18 @@ func _ink_burst() -> void:
 		var size: float = burst_scale * rng.randf_range(0.07, 0.17)
 		var reach: float = burst_scale * rng.randf_range(0.20, 0.52)
 		var seconds: float = rng.randf_range(0.10, 0.17)
-		for layer: int in range(2):
+		for layer: int in range(1):
 			var drop := MeshInstance3D.new()
 			var quad := QuadMesh.new()
-			# The underlay is a bigger, faint cold-grey disc so a black drop still reads on a dark stage.
-			var scale_factor: float = 1.0 if layer == 1 else 1.35
-			quad.size = Vector2(size * rng.randf_range(1.0, 1.25), size) * scale_factor
+			quad.size = Vector2(size * rng.randf_range(1.0, 1.25), size)
 			drop.mesh = quad
 			drop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			var material := StandardMaterial3D.new()
 			material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			material.albedo_texture = soft
-			material.albedo_color = Color(0.012, 0.012, 0.016, 0.97) if layer == 1 else Color(0.62, 0.66, 0.74, 0.34)
-			material.render_priority = 36 + layer
+			material.albedo_color = Color(0.012, 0.012, 0.016, 0.97)
+			material.render_priority = 36
 			drop.material_override = material
 			add_child(drop)
 			drop.position = direction_vec * burst_scale * 0.04 + Vector3(0.0, 0.0, 0.05)

@@ -1760,7 +1760,7 @@ func _present_pen_attack(attacker: Dictionary, target: Dictionary, result: Dicti
 		var params: Dictionary = PenWhipFX.defaults()
 		params["direction"] = direction
 		params["critical"] = crit
-		params["lash_angle"] = -0.45 + 0.18 * float(index % 3)
+		params["lash_angle"] = -0.12 + 0.16 * float(index % 3)
 		params["ink_length"] = destination.card_size.y * 1.15
 		params["ink_width"] = destination.card_size.y * 0.10
 		params["whip_width"] = destination.card_size.y * 0.11
