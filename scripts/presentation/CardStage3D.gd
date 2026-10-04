@@ -137,6 +137,7 @@ func _follow_marker() -> void:
 func _process(delta: float) -> void:
 	super._process(delta)
 	_update_order(delta)
+	_update_pointer_hover()
 	_update_defeats()
 	_ensure_registry_bound()
 	if _active_card != null and not is_instance_valid(_active_card):
@@ -298,52 +299,77 @@ func pick_actor(screen_position: Vector2, candidates: Array, include_dead: bool 
 # --- Target selection: the hovered card lifts, its camp-mates step aside -------------
 
 ## How far a hovered card comes toward the camera and up.
-const FAN_LIFT := Vector3(0.0, 0.10, 0.9)
+const FAN_LIFT := Vector3(0.0, 0.16, 0.9)
 ## Breathing room kept between the lifted card and the neighbours that make way.
 const FAN_MARGIN: float = 0.14
 ## Neighbours also recede a little so the lifted card clearly leads.
 const FAN_RECEDE: float = 0.2
+## The screen band (fractions of the width) a camp's cards may be pushed into while a card is lifted: the party
+## row never reaches over the enemy side and the enemy row never over the party side.
+const PARTY_BAND := Vector2(0.01, 0.70)
+const ENEMY_BAND := Vector2(0.58, 0.99)
 
 var hover_key: String = ""
+var _pointer_hover_enabled: bool = true
+var _last_pointer: Vector2 = Vector2(-1.0, -1.0)
+var _pointer_hover_key: String = ""
+
+
+## Every card that stands in a row, by key: the characters ("actor key") and the cards that are not characters
+## ("ent:id").
+func _fan_nodes() -> Dictionary:
+	var result: Dictionary = {}
+	for key: String in cards.keys():
+		result[key] = cards[key]
+	for id: String in entity_cards.keys():
+		var card: Node3D = entity_cards[id]
+		if card != null and is_instance_valid(card) and card.has_method("fan_to"):
+			result["ent:%s" % id] = card
+	return result
 
 
 ## Called by the target picker with the card under the pointer ({} = none). Cards of
 ## the hovered camp that would overlap it slide outward (like picking from a hand of
 ## cards); everything returns when the pointer leaves or the selection closes.
 func set_hover_target(actor: Dictionary) -> void:
-	var key: String = "" if actor.is_empty() else actor_key(actor)
+	_apply_hover("" if actor.is_empty() else actor_key(actor))
+
+
+func _apply_hover(key: String) -> void:
 	if key == hover_key:
 		return
 	hover_key = key
 	var offsets: Dictionary = fan_offsets_for(key)
-	for card_key: String in cards.keys():
-		var card: Node3D = cards[card_key]
+	var nodes: Dictionary = _fan_nodes()
+	for card_key: String in nodes.keys():
+		var card: Node3D = nodes[card_key]
 		card.fan_to(offsets.get(card_key, Vector3.ZERO), 0.2 if card_key == key else 0.24, card_key == key)
 
 
 ## Pure layout of the fan: card key -> offset from its home position.
 func fan_offsets_for(key: String) -> Dictionary:
 	var result: Dictionary = {}
-	if key.is_empty() or not cards.has(key):
+	var nodes: Dictionary = _fan_nodes()
+	if key.is_empty() or not nodes.has(key):
 		return result
-	var hovered: Node3D = cards[key]
+	var hovered: Node3D = nodes[key]
 	result[key] = FAN_LIFT
 	var hovered_extent: float = _half_extent(hovered)
 	for side: float in [-1.0, 1.0]:
 		var neighbours: Array = []
-		for other_key: String in cards.keys():
-			var other: Node3D = cards[other_key]
+		for other_key: String in nodes.keys():
+			var other: Node3D = nodes[other_key]
 			if other_key == key or other.is_enemy != hovered.is_enemy:
 				continue
 			if signf(other.home_position.x - hovered.home_position.x) == side:
 				neighbours.append(other_key)
 		neighbours.sort_custom(func(a: String, b: String) -> bool:
-			return absf(cards[a].home_position.x - hovered.home_position.x) < absf(cards[b].home_position.x - hovered.home_position.x)
+			return absf(nodes[a].home_position.x - hovered.home_position.x) < absf(nodes[b].home_position.x - hovered.home_position.x)
 		)
 		var inner_x: float = hovered.home_position.x
 		var inner_extent: float = hovered_extent
 		for other_key: String in neighbours:
-			var other: Node3D = cards[other_key]
+			var other: Node3D = nodes[other_key]
 			var needed: float = inner_extent + _half_extent(other) + FAN_MARGIN
 			var gap: float = side * (other.home_position.x - inner_x)
 			var shift: float = maxf(0.0, needed - gap)
@@ -359,19 +385,66 @@ func _half_extent(card: Node3D) -> float:
 	return card.card_size.x / 2.0 * absf(cos(card.home_rotation.y))
 
 
-## Never slide a card off the screen: shrink the shift until its edge is on screen.
+## Never slide a card out of its camp's band of the screen: shrink the shift until its edge is inside.
 func _limit_shift_to_screen(card: Node3D, side: float, shift: float) -> float:
 	var screen_width: float = get_viewport().get_visible_rect().size.x
-	var margin: float = screen_width * 0.01
+	var band: Vector2 = ENEMY_BAND if card.is_enemy else PARTY_BAND
 	var extent: float = _half_extent(card)
 	for attempt: int in range(10):
 		var centre: Vector3 = card.home_position + Vector3(side * shift, 0.0, 0.0)
 		var edge: Vector3 = centre + Vector3(side * extent, 0.0, 0.0)
 		var x: float = camera.unproject_position(actor_root.to_global(edge)).x
-		if x >= margin and x <= screen_width - margin:
+		if x >= screen_width * band.x and x <= screen_width * band.y:
 			return shift
 		shift *= 0.7
 	return 0.0
+
+
+# --- Hovering with the mouse at any time: the pointed card floats, its neighbours make way ------------
+
+## Polled every frame: the card under the mouse (a character or any other card in a row) is lifted and its
+## neighbours step aside, exactly as when a target is being chosen. Off while a target is being picked (the
+## picker drives the same hover), during cinematics, and while the pointer is over an interface control.
+func _update_pointer_hover() -> void:
+	if not _pointer_hover_enabled:
+		return
+	var picking: bool = _ui != null and _ui.get("target_picker") != null and bool(_ui.target_picker.active)
+	if picking:
+		return
+	var pointer: Vector2 = get_viewport().get_mouse_position()
+	# Someone else (the target picker, a test) set the hover: leave it until the mouse really moves.
+	if pointer == _last_pointer and hover_key != _pointer_hover_key:
+		return
+	_last_pointer = pointer
+	if not enabled or busy or camera == null or get_viewport().gui_get_hovered_control() != null:
+		_apply_hover("")
+	else:
+		_apply_hover(_card_key_at(pointer))
+	_pointer_hover_key = hover_key
+
+## The key of the nearest card (character or other) whose standing place is under `screen_position`.
+func _card_key_at(screen_position: Vector2) -> String:
+	var origin := camera.project_ray_origin(screen_position)
+	var direction := camera.project_ray_normal(screen_position)
+	var nearest: float = INF
+	var found: String = ""
+	var nodes: Dictionary = _fan_nodes()
+	for key: String in nodes.keys():
+		var card: Node3D = nodes[key]
+		if not card.visible:
+			continue
+		# The card is tested where it STANDS (home), so a lifted card never slips from under the pointer.
+		var inverse: Transform3D = (actor_root.global_transform * Transform3D(Basis.from_euler(card.home_rotation), card.home_position)).affine_inverse()
+		var local_origin: Vector3 = inverse * origin
+		var local_direction: Vector3 = inverse.basis * direction
+		if absf(local_direction.z) < 0.0001:
+			continue
+		var distance: float = -local_origin.z / local_direction.z
+		var point: Vector3 = local_origin + local_direction * distance
+		if distance > 0.0 and distance < nearest and absf(point.x) < card.card_size.x / 2.0 and absf(point.y) < card.card_size.y / 2.0:
+			nearest = distance
+			found = key
+	return found
 
 
 # --- Turn-order line-up ---------------------------------------------------------------
@@ -2253,13 +2326,55 @@ func _refresh_ward_auras() -> void:
 
 
 ## The card's own activation (its turn in the order).
-func present_entity_activation(entity: Object) -> void:
+func present_entity_activation(entity: Object, before: int = -1) -> void:
 	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
 	if card == null:
 		return
-	if card.has_method("pulse"):
-		card.pulse()
-	await get_tree().create_timer(0.55).timeout
+	# The card first has to be at the frontier (the right end) - the line-up moves it there - and only then
+	# does its own turn play.
+	await _settle_line_up()
+	if before < 0:
+		# Nothing to count: it only shows that it has taken its turn.
+		if card.has_method("pulse"):
+			card.pulse()
+		await get_tree().create_timer(0.8).timeout
+		return
+	if card.has_method("play_countdown"):
+		await card.play_countdown(before, int(entity.get("duration_turns")))
+	else:
+		if card.has_method("pulse"):
+			card.pulse()
+		await get_tree().create_timer(0.8).timeout
+
+
+## Re-reads the turn order now and waits until every card has finished sliding to its place.
+func _settle_line_up() -> void:
+	var was_busy: bool = busy
+	busy = false
+	_order_signature = ""
+	_order_clock = ORDER_POLL_SECONDS
+	_update_order(0.0)
+	busy = was_busy
+	var guard: int = 0
+	while guard < 400 and (_actor_cards_moving() or _arrival_in_progress() or _row_cards_relocating()):
+		await get_tree().process_frame
+		guard += 1
+
+
+func _actor_cards_moving() -> bool:
+	for card: Node3D in cards.values():
+		if card._motion_tween != null and card._motion_tween.is_valid() and card._motion_tween.is_running():
+			return true
+		if card.has_method("is_relocating") and card.is_relocating():
+			return true
+	return false
+
+
+func _row_cards_relocating() -> bool:
+	for card: Node3D in entity_cards.values():
+		if card.has_method("is_relocating") and card.is_relocating():
+			return true
+	return false
 
 
 ## A paper charm that has spent itself: gold dust and ash lift off the card as it fades.

@@ -1400,7 +1400,9 @@ func _compose_multi_strike_entry(actor: Dictionary, target: Dictionary, skill_da
 	for index: int in range(strikes.size()):
 		var strike: Dictionary = strikes[index]
 		var label: String = "第%s段" % (MULTI_STRIKE_NUMERALS[index] if index < MULTI_STRIKE_NUMERALS.size() else str(index + 1))
-		if bool(strike.get("damage_prevented", false)):
+		if bool(strike.get("blocked", false)):
+			parts.append("%s 被擋下了" % label)
+		elif bool(strike.get("damage_prevented", false)):
 			parts.append("%s 被護住了" % label)
 		elif not bool(strike.get("hit", true)):
 			parts.append("%s %s" % [label, MULTI_STRIKE_DODGES[randi() % MULTI_STRIKE_DODGES.size()]])
@@ -4742,14 +4744,15 @@ func _run_stage_entity_turn(proxy: Dictionary) -> void:
 	# A card with no duration (持鞘) has a turn but nothing to count: no player action, it just goes
 	# to the far left of the row and the turn ends.
 	if int(entity.get("duration_turns")) < 0:
-		# A card has a turn but nothing to count: it keeps its place (cards obey position, not speed).
-		# Nothing to play and nothing to count: a short beat so the player sees the card has taken its turn.
-		if battle_ui != null:
-			await get_tree().create_timer(0.5).timeout
+		# A card has a turn but nothing to count: it keeps its place (cards obey position, not speed). It still
+		# steps to the frontier and holds there for a beat so the player sees it has taken its turn.
+		if battle_ui and battle_ui.has_method("play_stage_entity_activation"):
+			await battle_ui.play_stage_entity_activation(entity, -1)
 		return
+	var before: int = int(entity.get("duration_turns"))
 	var expired: bool = entity.advance_duration() if entity.has_method("advance_duration") else false
 	if battle_ui and battle_ui.has_method("play_stage_entity_activation"):
-		await battle_ui.play_stage_entity_activation(entity)
+		await battle_ui.play_stage_entity_activation(entity, before)
 	if expired:
 		_log_system("【%s】符力散盡，隨風化去。" % name_text)
 		stage_entities.expire_entity(entity, {"reason": "duration"})
@@ -4876,8 +4879,9 @@ func _hit_block_info(target: Dictionary, attacker: Dictionary) -> Dictionary:
 	return {}
 
 
-## The 替身符 that takes the next Hit meant for `target`, or null. It must stand directly beside him in the
-## party's row, still hold its charge, and not have taken a Hit for him already in this action.
+## The 替身符 that takes the Hit meant for `target`, or null. It must stand directly beside him in the
+## party's row and still hold its charge; it takes EVERY Hit that lands on its neighbours in this action (one
+## charge = one enemy action) and breaks when the action is over.
 func _substitute_for(target: Dictionary) -> Object:
 	if stage_entities == null or stage_entities.is_empty() or turn_manager == null:
 		return null
@@ -4894,8 +4898,6 @@ func _substitute_for(target: Dictionary) -> Object:
 		if entity == null or String(entity.get("entity_type")) != "substitute_talisman" or not entity.is_alive():
 			continue
 		var book: Dictionary = _substitute_actions.get(String(entity.get("entity_id")), {"entity": entity, "blocked": {}})
-		if (book.blocked as Dictionary).has(target_key):
-			continue
 		(book.blocked as Dictionary)[target_key] = true
 		_substitute_actions[String(entity.get("entity_id"))] = book
 		return entity

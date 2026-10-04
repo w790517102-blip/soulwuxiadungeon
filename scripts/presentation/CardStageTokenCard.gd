@@ -218,6 +218,9 @@ func relocate(new_home: Vector3, _wrap: bool = false, time_scale: float = 1.0) -
 	if _relocate_tween and _relocate_tween.is_valid():
 		_relocate_tween.kill()
 	home_position = new_home
+	if _fan_tween and _fan_tween.is_valid():
+		_fan_tween.kill()
+	fan_offset = Vector3.ZERO
 	_relocate_tween = create_tween()
 	_relocate_tween.tween_property(self, "position", new_home, 0.4 * time_scale).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
@@ -454,3 +457,54 @@ func set_standby(on: bool) -> void:
 		_standby_label.size = Vector2(own_width + 4.0, name_label.size.y)
 		var centre: float = name_label.position.x + name_label.size.x * 0.5
 		_standby_label.position = Vector2(minf(centre + name_width * 0.5 + 8.0, CANVAS.x - own_width - 8.0), name_label.position.y + 4.0)
+
+
+## The countdown of a card that counts its own turns: the number on the seal swells, ticks from `from_value` to
+## `to_value` with a red "-1" rising from it, and settles. Waits until it has finished.
+func play_countdown(from_value: int, to_value: int) -> void:
+	pulse(Color(0.7, 1.0, 0.85, 0.45))
+	if badge_label == null:
+		await get_tree().create_timer(1.0).timeout
+		return
+	var prefix: String = String((entity.get("card_config") as Dictionary).get("badge_prefix", "×")) if entity != null else "×"
+	badge_label.text = "%s%d" % [prefix, from_value]
+	badge_label.pivot_offset = badge_label.size * 0.5
+	var minus := Label.new()
+	_style_label(minus, 56, Color(1.0, 0.25, 0.22))
+	minus.text = "-1"
+	minus.size = Vector2(108, 58)
+	minus.position = badge_label.position + Vector2(0, -6)
+	minus.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge_label.get_parent().add_child(minus)
+	var tween := create_tween()
+	tween.tween_property(badge_label, "scale", Vector2.ONE * 1.6, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(0.2)
+	tween.tween_callback(func() -> void: badge_label.text = "%s%d" % [prefix, to_value])
+	tween.tween_property(badge_label, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_SINE)
+	var rise := create_tween().set_parallel(true)
+	rise.tween_property(minus, "position:y", minus.position.y - 70.0, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	rise.tween_property(minus, "modulate:a", 0.0, 0.9).set_delay(0.3)
+	await tween.finished
+	await get_tree().create_timer(0.35).timeout
+	minus.queue_free()
+
+
+# --- Hover: lift forward / step aside (same contract as the character cards) -------------------------
+
+var fan_offset: Vector3 = Vector3.ZERO
+var _fan_tween: Tween
+
+
+func fan_to(offset: Vector3, duration: float = 0.2, lifted: bool = false) -> void:
+	if _tween and _tween.is_valid() and _tween.is_running():
+		return   # a flight / entrance owns the card
+	if is_relocating() or is_spawning():
+		return
+	if _fan_tween and _fan_tween.is_valid():
+		_fan_tween.kill()
+	fan_offset = offset
+	if position.is_equal_approx(home_position + offset):
+		_fan_tween = null
+		return
+	_fan_tween = create_tween()
+	_fan_tween.tween_property(self, "position", home_position + offset, duration).set_trans(Tween.TRANS_BACK if lifted else Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)

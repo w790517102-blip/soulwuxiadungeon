@@ -460,9 +460,9 @@ func play_buff_fx(target: Dictionary, kind: String) -> void:
 
 
 ## A stage entity that lives in the turn order takes its own turn (a 臨符 card's activation).
-func play_stage_entity_activation(entity: Object) -> void:
+func play_stage_entity_activation(entity: Object, before: int = -1) -> void:
 	if stage_enabled and stage:
-		await stage.present_entity_activation(entity)
+		await stage.present_entity_activation(entity, before)
 
 
 ## 持鞘: the card strikes (鞘劍連擊), is stowed (收鞘於背) or flashes as it blocks a blow.

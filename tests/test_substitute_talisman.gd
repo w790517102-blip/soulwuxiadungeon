@@ -86,6 +86,7 @@ func _run() -> void:
 	await _check_cast()
 	await _check_cast_placement()
 	await _check_no_lifetime()
+	await _check_multi_hit_block()
 	await _check_layouts()
 	await _check_sheath_combinations()
 	await _check_spent()
@@ -178,10 +179,10 @@ func _check_layouts() -> void:
 	_expect(_hits(shumian) == 1, "[白][替身][劉]: a blow at 白 is blocked")
 	controller._substitute_actions.clear()
 	_expect(_hits(liuyu) == 1, "[白][替身][劉]: a blow at 劉 is blocked")
-	# one charge: the first Hit meant for each character only
+	# one charge = one enemy action: every Hit that lands on a neighbour in it is taken
 	controller._substitute_actions.clear()
-	_expect(_hits(shumian, 3) == 1, "only the first Hit at one character is blocked, the rest land")
-	_expect(_hits(liuyu, 3) == 1, "...and the other neighbour gets its own first Hit blocked (one area attack covers both)")
+	_expect(_hits(shumian, 3) == 3, "all three Hits at one neighbour are blocked")
+	_expect(_hits(liuyu, 3) == 3, "...and so are those at the other neighbour (one area attack covers both)")
 	# [替身][白][劉]: only 白 is beside it
 	_arrange([proxy, shumian, liuyu])
 	order = _names(manager.get_display_row(false))
@@ -224,9 +225,9 @@ func _check_sheath_combinations() -> void:
 	controller._substitute_actions.clear()
 	var answer: Dictionary = controller._hit_block_info(liuyu, controller.enemy_party[0])
 	_expect(bool(answer.get("blocked", false)) and controller._last_blocker == entity, "[持鞘][替身][劉]: the 替身符 blocks for 劉, not the sheath card")
-	# after the 替身符 has taken the first Hit, the sheath card (which is not at the right end here) stays out
+	# the 替身符 keeps taking the Hits of this action; the sheath card is never asked
 	var second: Dictionary = controller._hit_block_info(liuyu, controller.enemy_party[0])
-	_expect(not bool(second.get("blocked", false)) and controller._last_blocker == null, "the next Hit is not blocked by anyone")
+	_expect(bool(second.get("blocked", false)) and controller._last_blocker == entity, "the next Hit of the same action is taken by the 替身符 too")
 
 
 func _check_spent() -> void:
@@ -278,3 +279,25 @@ func _check_no_lifetime() -> void:
 	var proxy: Dictionary = _proxy_of(entity)
 	await controller._run_stage_entity_turn(proxy)
 	_expect(int(entity.duration_turns) == -1 and entity.is_alive() and controller.stage_entities.get_stage_entities().has(entity), "its own turn costs it nothing: no lifetime, no countdown")
+
+
+## A blocked Hit in a multi-hit attack is reported as blocked, never as a dodge, and nothing lands.
+func _check_multi_hit_block() -> void:
+	var liuyu: Dictionary = _liuyu()
+	var shumian: Dictionary = _shumian()
+	await _setup([liuyu, shumian])
+	var entity: Object = await _cast_substitute(shumian)
+	var proxy: Dictionary = _proxy_of(entity)
+	_arrange([shumian, proxy, liuyu])
+	var enemy: Dictionary = controller.enemy_party[0]
+	enemy["weapon_1"] = "槍"
+	var skill: Dictionary = rules.get_skill("skill_molin_breaking_wave_fork")
+	var strikes: Array = controller._roll_strikes(enemy, shumian, controller._resolve_damage_skill_data(skill), {}, 2)
+	var blocked: int = 0
+	for strike: Dictionary in strikes:
+		if bool(strike.get("blocked", false)):
+			blocked += 1
+	_expect(blocked >= 1, "two Hits at 白: those that land are blocked (%d)" % blocked)
+	var text: String = controller._compose_multi_strike_entry(enemy, shumian, skill, strikes)
+	_expect(text.contains("被擋下了") or blocked == 0, "the log calls a blocked Hit blocked, not a dodge")
+	_expect(not text.contains("傷害"), "...and no damage is reported for them: " + text)
