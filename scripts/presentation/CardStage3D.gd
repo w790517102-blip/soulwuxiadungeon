@@ -800,10 +800,7 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 		command_tray.set_enabled(false)
 		_cast_center = Vector3(0.2, 0.9, player_depth + CAST_FRONT)
 		await card.cast_step_forward()
-		# 1. The green ink swirl (the twin dragons) opens first, centred where the glyph will be.
-		#    The sheet is sized so its ring is as tall as the glyph (the dragons reach beyond).
-		await play_swirl_at(_cast_center, CAST_GLYPH_SIZE / SWIRL_RING_FRACTION)
-		# 2. Then the talisman glyph is drawn.
+		# 1. The talisman glyph is drawn (the twin dragons that used to open the cast are gone).
 		_cast_stroke = InkStroke.new()
 		_cast_stroke.size = CAST_GLYPH_SIZE
 		fx_root.add_child(_cast_stroke)
@@ -811,7 +808,7 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 		await _cast_stroke.draw_stroke(2.2)
 		# Heartbeat before the burst: two beats, each throwing a ghost image outward.
 		await _cast_stroke.heartbeat(2, 0.8)
-		# 3. The glyph bursts into ink; the card is born from it (white, spinning about Y).
+		# 2. The glyph bursts into ink; the card is born from it (white, spinning about Y).
 		_spawn_origin = _cast_center
 		_burst_ink(_cast_center)
 		_splash_camera_ink()

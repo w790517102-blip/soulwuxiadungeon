@@ -232,6 +232,15 @@ func react(actor: Dictionary, kind: String) -> void:
 		"hit": card.hit_reaction()
 		"dodge": card.dodge_motion()
 		"guard": card.guard_motion()
+		"defend_on":
+			if card.has_method("set_guarding"):
+				card.set_guarding(true)
+			else:
+				card.guard_motion()
+		"defend_off":
+			if card.has_method("set_guarding"):
+				card.set_guarding(false)
+			card.reset_pose()
 		"reset": card.reset_pose()
 
 

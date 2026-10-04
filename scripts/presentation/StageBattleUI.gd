@@ -518,12 +518,12 @@ func play_guard_react(actor: Dictionary) -> void:
 
 
 func play_defend_motion(actor: Dictionary) -> void:
-	if stage_enabled and stage: stage.react(actor, "guard")
+	if stage_enabled and stage: stage.react(actor, "defend_on")
 	else: super.play_defend_motion(actor)
 
 
 func clear_defend_motion(actor: Dictionary) -> void:
-	if stage_enabled and stage: stage.react(actor, "reset")
+	if stage_enabled and stage: stage.react(actor, "defend_off")
 	else: super.clear_defend_motion(actor)
 
 

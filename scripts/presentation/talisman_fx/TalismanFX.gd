@@ -55,6 +55,7 @@ var seal_alpha: float = 1.0
 var blessing: bool = false
 var card_size: Vector2 = Vector2(2.0, 3.0)
 var miss: bool = false                      # the script lands wide of the card and is not sealed
+var no_seal: bool = false                   # skip the seal over the card (a cast that is not an attack, e.g. 替身符)
 var critical: bool = false
 
 var _air: Array[Dictionary] = []
@@ -177,7 +178,7 @@ func _run(origin: Vector3, target: Vector3) -> void:
 	await get_tree().create_timer(last_arrival + 0.12).timeout
 	# 4. SEAL.
 	sealed.emit()
-	if not miss and not blessing:
+	if not miss and not blessing and not no_seal:
 		_start_seal(brand_centre)
 	_impact(brand_centre, 1.5)
 	await get_tree().create_timer(seal_time * (0.9 if not blessing else 0.5)).timeout

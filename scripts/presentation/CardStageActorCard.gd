@@ -406,7 +406,12 @@ func dodge_motion() -> void:
 
 func guard_motion() -> void:
 	_kill_motion()
-	_flash(Color(0.6, 0.76, 1.0, 0.36))
+	if guarding and _guard_shield != null and is_instance_valid(_guard_shield):
+		# The blow lands on the shield: it dents and ripples; the card itself only rocks a little.
+		_guard_shield.take_hit(_toward(), randf_range(-0.25, 0.35))
+		_flash(Color(0.75, 0.88, 1.0, 0.16))
+	else:
+		_flash(Color(0.6, 0.76, 1.0, 0.36))
 	var away: float = -_toward()
 	_motion_tween = create_tween()
 	_motion_tween.tween_property(self, "position", home_position + Vector3(away * GUARD_BRACE.x, GUARD_BRACE.y, GUARD_BRACE.z), 0.08)
@@ -873,3 +878,88 @@ func shove(push: Vector3, tilt: float, hold: float) -> void:
 	_motion_tween.tween_property(self, "position", home_position, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_motion_tween.parallel().tween_property(self, "rotation", home_rotation, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await _wait_for_motion(_motion_tween)
+
+
+# --- Guard (防禦): a slowly breathing cold shield and a cold-lit interface -------------------------
+
+const GuardShield = preload("res://scripts/presentation/guard_fx/CardStageGuardShield.gd")
+const GuardGlowShader = preload("res://scripts/presentation/shaders/card_guard_glow.gdshader")
+
+var guarding: bool = false
+var _guard_shield: Node3D = null
+var _guard_glow: ColorRect = null
+var _guard_glow_material: ShaderMaterial = null
+var _guard_glow_tween: Tween = null
+
+
+## Takes up (or lets go of) the guard. Raising: a short cold-white flash, then the shield forms and
+## the card's frame and name / status boxes take a slow cold glow. Letting go: the shield draws in
+## and fades like a breath out, and the glow dies away with it.
+func set_guarding(on: bool) -> void:
+	if on == guarding:
+		return
+	guarding = on
+	_build_card()
+	if on:
+		_flash(Color(0.88, 0.95, 1.0, 0.5))
+		if _guard_shield == null or not is_instance_valid(_guard_shield):
+			_guard_shield = GuardShield.new()
+			add_child(_guard_shield)
+			_guard_shield.setup(card_size)
+		_guard_shield.raise()
+		_ensure_guard_glow()
+		_fade_guard_glow(1.0, 0.8)
+	else:
+		if _guard_shield != null and is_instance_valid(_guard_shield):
+			_guard_shield.release()
+		_guard_shield = null
+		_fade_guard_glow(0.0, 0.9)
+
+
+func _ensure_guard_glow() -> void:
+	if _guard_glow != null and is_instance_valid(_guard_glow):
+		return
+	var frame: Rect2 = (template.frame as Rect2).grow(-8)
+	_guard_glow = ColorRect.new()
+	_guard_glow.name = "GuardGlow"
+	_guard_glow.position = frame.position
+	_guard_glow.size = frame.size
+	_guard_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_guard_glow_material = ShaderMaterial.new()
+	_guard_glow_material.shader = GuardGlowShader
+	_guard_glow_material.set_shader_parameter("size_px", frame.size)
+	_guard_glow_material.set_shader_parameter("seed", randf() * 10.0)
+	_guard_glow_material.set_shader_parameter("amount", 0.0)
+	_guard_glow_material.set_shader_parameter("name_rect", _uv_rect(template.get("name", Rect2()), frame))
+	var info: Rect2 = template.get("status", template.get("hp", Rect2()))
+	_guard_glow_material.set_shader_parameter("info_rect", _uv_rect(info, frame))
+	_guard_glow_material.set_shader_parameter("window_rect", _uv_rect(template.get("window", Rect2()), frame))
+	_guard_glow.material = _guard_glow_material
+	_turn_overlay.get_parent().add_child(_guard_glow)
+	_turn_overlay.get_parent().move_child(_guard_glow, _turn_overlay.get_index())
+
+
+func _uv_rect(rect: Rect2, frame: Rect2) -> Vector4:
+	if rect.size.x <= 0.0:
+		return Vector4.ZERO
+	return Vector4((rect.position.x - frame.position.x) / frame.size.x, (rect.position.y - frame.position.y) / frame.size.y, rect.size.x / frame.size.x, rect.size.y / frame.size.y)
+
+
+func _fade_guard_glow(target: float, seconds: float) -> void:
+	if _guard_glow_material == null:
+		return
+	if _guard_glow_tween and _guard_glow_tween.is_valid():
+		_guard_glow_tween.kill()
+	var material: ShaderMaterial = _guard_glow_material
+	var start: float = float(material.get_shader_parameter("amount"))
+	_guard_glow_tween = create_tween()
+	_guard_glow_tween.tween_method(func(value: float) -> void: material.set_shader_parameter("amount", value), start, target, seconds).set_trans(Tween.TRANS_SINE)
+	if target <= 0.0:
+		_guard_glow_tween.tween_callback(_free_guard_glow)
+
+
+func _free_guard_glow() -> void:
+	if _guard_glow != null and is_instance_valid(_guard_glow) and not guarding:
+		_guard_glow.queue_free()
+		_guard_glow = null
+		_guard_glow_material = null
