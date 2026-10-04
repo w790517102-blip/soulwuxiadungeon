@@ -89,10 +89,14 @@ static func resolve_effects(sources: Array) -> Dictionary:
 			continue
 		var value: float = float(source.get("value", 0.0))
 		var rule: String = String(source.get("stack_rule", FAMILIES.get(family, {}).get("stack_rule", "HIGHEST_ONLY")))
-		if not result.has(family):
-			result[family] = value
+		# An effect is a flat amount (default) or a percentage ("mode": "percent"). They are kept apart
+		# under the family's name and "<FAMILY>_PCT", so an inner force can turn a card's +15 into
+		# +15% by changing its mode alone.
+		var slot: String = family + "_PCT" if String(source.get("mode", "flat")) == "percent" else family
+		if not result.has(slot):
+			result[slot] = value
 		elif rule == "ADD":
-			result[family] = float(result[family]) + value
+			result[slot] = float(result[slot]) + value
 		else:
-			result[family] = maxf(float(result[family]), value)
+			result[slot] = maxf(float(result[slot]), value)
 	return result

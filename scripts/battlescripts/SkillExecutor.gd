@@ -103,9 +103,11 @@ func execute(
 	var attack_context := _resolve_effective_attack(user)
 	var base_attack: float = float(attack_context.get("effective_atk", user.get("atk", 10)))
 	# 臨符 cards beside the attacker: strength adds attack (1.2 per point, as the stat does), and an
-	# ATTACK_UP card raises it by a rate. Read live; same family never stacks.
+	# ATTACK_UP card adds flat attack (or, as a percent card, raises it by a rate). Read live; the same
+	# family never stacks.
 	base_attack += floorf(_adjacency(user, "STRENGTH_UP") * 1.2)
-	base_attack *= 1.0 + _adjacency(user, "ATTACK_UP")
+	base_attack += _adjacency(user, "ATTACK_UP")
+	base_attack *= 1.0 + _adjacency(user, "ATTACK_UP_PCT")
 	var effective_attack: float = base_attack + float(scaling_bonus)
 	if effective_attack < 1.0:
 		effective_attack = 1.0
@@ -221,12 +223,17 @@ func execute(
 		float(target.get("def", 0))
 	)
 	# 臨符 cards beside the target add to its defense (same family never stacks: highest only):
-	# constitution adds flat defense (0.8 per point, as the stat does), DEFENSE_UP a rate.
+	# constitution adds flat defense (0.8 per point, as the stat does); DEFENSE_UP adds flat defense
+	# (or, as a percent card, a rate).
 	defense += floorf(_adjacency(target, "CONSTITUTION_UP") * 0.8)
-	var adjacency_bonus: float = _adjacency(target, "DEFENSE_UP")
+	var flat_bonus: float = _adjacency(target, "DEFENSE_UP")
+	defense += flat_bonus
+	var adjacency_bonus: float = _adjacency(target, "DEFENSE_UP_PCT")
 	if adjacency_bonus > 0.0:
 		defense *= 1.0 + adjacency_bonus
 		context["adjacency_def_bonus"] = adjacency_bonus
+	if flat_bonus > 0.0:
+		context["adjacency_def_flat"] = flat_bonus
 	if bool(target.get("defending", false)):
 		defense *= 2.0
 		context["defending"] = true

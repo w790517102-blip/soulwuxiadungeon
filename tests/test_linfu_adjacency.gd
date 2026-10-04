@@ -108,6 +108,8 @@ func _run() -> void:
 	_expect(is_equal_approx(float(two["DEFENSE_UP"]), 0.15), "two cards of equal strength do not stack")
 	var mixed: Dictionary = StageAdjacency.resolve_effects([{"family": "DEFENSE_UP", "value": 0.15}, {"family": "DEFENSE_UP", "value": 0.25}, {"family": "DEFENSE_UP", "value": 0.10}])
 	_expect(is_equal_approx(float(mixed["DEFENSE_UP"]), 0.25), "different strengths of one family: only the highest counts")
+	var modes: Dictionary = StageAdjacency.resolve_effects([{"family": "DEFENSE_UP", "value": 15, "mode": "flat"}, {"family": "DEFENSE_UP", "value": 0.15, "mode": "percent"}])
+	_expect(is_equal_approx(float(modes["DEFENSE_UP"]), 15.0) and is_equal_approx(float(modes["DEFENSE_UP_PCT"]), 0.15), "flat and percent versions of one effect are kept apart (an inner force can switch a card between them)")
 	var apart: Dictionary = StageAdjacency.resolve_effects([{"family": "DEFENSE_UP", "value": 0.15}, {"family": "PARRY_UP", "value": 0.2}])
 	_expect(apart.size() == 2, "different families coexist")
 
