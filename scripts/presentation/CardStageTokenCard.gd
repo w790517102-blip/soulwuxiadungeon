@@ -214,21 +214,26 @@ func is_relocating() -> bool:
 	return _relocate_tween != null and _relocate_tween.is_valid() and _relocate_tween.is_running()
 
 
-func relocate(new_home: Vector3, _wrap: bool = false, time_scale: float = 1.0) -> void:
+func relocate(new_home: Vector3, wrap: bool = false, time_scale: float = 1.0) -> void:
 	if _relocate_tween and _relocate_tween.is_valid():
 		_relocate_tween.kill()
 	home_position = new_home
 	if _fan_tween and _fan_tween.is_valid():
 		_fan_tween.kill()
 	fan_offset = Vector3.ZERO
-	# A long trip (the scabbard walking from the far left to the frontier) takes longer, so it can be followed.
+	# Exactly the way a character card moves: an ordinary slide, or - for the card that has just acted - the walk
+	# back along the row passing behind the others.
 	var start: Vector3 = position
-	var seconds: float = clampf(0.5 + start.distance_to(new_home) * 0.28, 0.5, 1.5) * time_scale
 	_relocate_tween = create_tween()
-	_relocate_tween.tween_method(func(progress: float) -> void:
-		var eased: float = progress * progress * (3.0 - 2.0 * progress)
-		var lift: float = sin(progress * PI) * minf(start.distance_to(new_home), 4.0) * 0.06
-		position = start.lerp(new_home, eased) + Vector3(0.0, lift, lift * 1.5), 0.0, 1.0, seconds)
+	if wrap:
+		var path := func(t: float) -> void:
+			var eased: float = t * t * (3.0 - 2.0 * t)
+			var along: Vector3 = start.lerp(new_home, eased)
+			along.z += -0.9 * sin(t * PI)
+			position = along
+		_relocate_tween.tween_method(path, 0.0, 1.0, 0.7 * time_scale)
+	else:
+		_relocate_tween.tween_property(self, "position", new_home, 0.4 * time_scale).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func set_fade(amount: float) -> void:

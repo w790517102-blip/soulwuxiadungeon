@@ -568,7 +568,7 @@ func apply_order(keys: Array[String], animated: bool) -> void:
 			layout["position"] = position
 			slots[key] = layout
 		if animated:
-			card.relocate(position, is_actor_card and was_front and rank > 0, _relocate_time_scale)
+			card.relocate(position, was_front and rank > 0, _relocate_time_scale)
 		else:
 			card.set_home(position, _yaw_for(card.is_enemy))
 
