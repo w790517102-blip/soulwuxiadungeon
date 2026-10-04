@@ -21,6 +21,8 @@ const BASE_DERIVED_KEYS := ["max_hp", "max_mp", "atk", "def", "speed", "accuracy
 const ACTOR_ID_ALIASES := {
 	"su_mien": "shumian",
 }
+## 劉語塵 learns these at level 1; older saves are topped up in _normalize_known_skills.
+const LIUYU_INNATE_SKILL_IDS := ["skill_bajian_chishao", "skill_shaojian_lianji", "skill_shouqiao_beibei"]
 const YUHENG_SHUMIAN_STORY_PROFILE_ID := "yuheng_shumian_lv6"
 const SHUMIAN_INITIAL_LEVEL := 6
 const SHUMIAN_INITIAL_SKILL_IDS := [
@@ -121,7 +123,7 @@ var all_characters: Dictionary = {
 var current_team_ids: Array = ["liuyu",]# "shumian", "lieshao"]
 var roster_unlocked_actor_ids: Array = ["liuyu"]
 var known_skill_ids_by_actor: Dictionary = {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus", "skill_zhengxinquan"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus", "skill_zhengxinquan", "skill_bajian_chishao", "skill_shaojian_lianji", "skill_shouqiao_beibei"],
 	"shumian": SHUMIAN_INITIAL_SKILL_IDS.duplicate(),
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus"],
 }
@@ -834,6 +836,10 @@ func _normalize_known_skills() -> void:
 			if not _skill_db.is_available_for_actor(skill_id, String(actor_id)):
 				continue
 			normalized.append(skill_id)
+		if String(actor_id) == "liuyu":
+			for innate_id: String in LIUYU_INNATE_SKILL_IDS:
+				if not normalized.has(innate_id):
+					normalized.append(innate_id)
 		if normalized.is_empty():
 			normalized = _get_default_skill_ids_for_actor(String(actor_id))
 		known_skill_ids_by_actor[String(actor_id)] = normalized
