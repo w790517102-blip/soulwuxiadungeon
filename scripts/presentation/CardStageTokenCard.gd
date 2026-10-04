@@ -384,8 +384,8 @@ func play_stow(wielder: Node3D) -> void:
 	await _tween.finished
 
 
-## The card's slant while it is drawn: along the line it travels.
-const DRAW_TILT := -0.5
+## The card stays upright while it is drawn (it only travels along the slanted line).
+const DRAW_TILT := 0.0
 
 
 ## A blow is coming at the wielder: the card flies in front of him, takes it, and goes back to its place.
@@ -396,7 +396,7 @@ func fly_to_block(wielder: Node3D) -> void:
 	var in_front: Vector3 = wielder.position + Vector3(_toward_opponent(wielder) * wielder.card_size.x * 0.42, wielder.card_size.y * 0.02, 0.85)
 	_tween = create_tween()
 	_tween.tween_property(self, "position", in_front, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_tween.parallel().tween_property(self, "rotation:z", -_toward_opponent(wielder) * 0.12, 0.12)
+
 	_tween.tween_callback(pulse.bind(Color(1.0, 0.96, 0.85, 0.45)))
 	_tween.tween_interval(0.3)
 	_tween.tween_property(self, "position", home, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
