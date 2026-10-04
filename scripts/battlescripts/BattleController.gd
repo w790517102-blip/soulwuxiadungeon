@@ -4709,7 +4709,7 @@ func _queue_proxy_for(entity: Object) -> Dictionary:
 		"name": String(entity.get("display_name")),
 		"display_name": String(entity.get("display_name")),
 		"faction": String(entity.get("faction")),
-		"speed": int(entity.get("turn_speed")),
+		"follow_topology": bool(entity.get("follow_topology")),
 		"element": "",
 		"is_stage_entity": true,
 	}

@@ -235,7 +235,7 @@ const SKILLS := {
 			"card_kind": "token",
 			"row": "party",
 			"joins_turn_order": true,
-			"turn_speed": 0,
+			"follow_topology": true,
 			"duration_turns": -1,
 			"grants_stance": "HOLDING_SHEATH",
 			"block_chance": 0.5,

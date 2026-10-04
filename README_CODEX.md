@@ -49,7 +49,7 @@ godot --headless --path . --script tests/test_substitute_talisman.gd
 - 替身符改版：不吸引仇恨，改為擋下緊貼左右兩側角色的第一個 Hit，行動結束後碎裂。
 
 ## 已知疑慮／請 Codex 留意
-1. **卡片已改為只吃順序（見 docs/stage_entities.md 最後一節）**：`turn_speed` 對卡片不再有排序作用；持鞘格擋改為緊貼劉語塵。
+1. **卡片已改為「角色吃速度、卡片吃拓樸」（見 docs/stage_entities.md 最後一節）**：`turn_speed` 對卡片不再有排序作用；持鞘格擋改為緊貼劉語塵；沒有實機驗證。
 2. **替身符沒有期限**（`duration_turns -1`），也不再右移。一次行動內「每位相鄰角色的第一個 Hit」被擋，行動結束才碎裂。
 3. **舊替身符程式碼多半已成死碼**：`_priority_stage_entity_for`、`_perform_enemy_attack_on_entity`、`_advance_stage_entities`、`row_edge_distance`、`ignore_stage_entity_priority` 等。我沒有逐一清理，刪除前請確認沒有其他實體仍在用。
 4. **持鞘格擋只在持鞘卡位於最右端（row[0]）才生效**，這是之前的規則；`_sheath_blocks_hit` 保留原簽名因為測試直接呼叫。與使用者近期描述的鄰接版本是否一致，我沒有重新確認。

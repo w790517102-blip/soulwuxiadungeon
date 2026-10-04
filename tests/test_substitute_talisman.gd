@@ -85,6 +85,7 @@ func _run() -> void:
 	_check_data()
 	await _check_cast()
 	await _check_cast_placement()
+	await _check_no_lifetime()
 	await _check_layouts()
 	await _check_sheath_combinations()
 	await _check_spent()
@@ -266,3 +267,14 @@ func _check_cast_placement() -> void:
 	_expect(Adjacency.key_of(row[row.size() - 1]) == "ent:%s" % String(entity.entity_id), "the new card is at the far left even though 劉語塵 had already acted: " + _names(row))
 	var proxy: Dictionary = _proxy_of(entity)
 	_expect(manager.turn_queue.find(proxy) < 0 or manager.turn_queue.find(proxy) < manager.current_index, "it has no turn left in the round it was drawn")
+
+
+## A card without a turn-based lifetime goes through its own turn without being counted down (NO_LIFETIME).
+func _check_no_lifetime() -> void:
+	var liuyu: Dictionary = _liuyu()
+	var shumian: Dictionary = _shumian()
+	await _setup([liuyu, shumian])
+	var entity: Object = await _cast_substitute(shumian)
+	var proxy: Dictionary = _proxy_of(entity)
+	await controller._run_stage_entity_turn(proxy)
+	_expect(int(entity.duration_turns) == -1 and entity.is_alive() and controller.stage_entities.get_stage_entities().has(entity), "its own turn costs it nothing: no lifetime, no countdown")

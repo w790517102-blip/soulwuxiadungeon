@@ -46,7 +46,9 @@ var grants_stance: String = ""
 ## true: when the card joins the turn order it stands directly to the left of its owner in the row
 ## (instead of at the far left).
 var spawn_beside_owner: bool = false
-var turn_speed: int = 999
+var turn_speed: int = 999   # unused by the line: cards have no speed
+## true: when the character at its right ends his turn, this card goes to the far left with him (hen and chicks).
+var follow_topology: bool = false
 var card_kind: String = "default"
 var card_config: Dictionary = {}
 ## Free-form data for the entity's own behaviour.
@@ -63,7 +65,7 @@ func apply_config(config: Dictionary) -> void:
 	for key: String in ["entity_id", "entity_type", "display_name", "owner_id", "faction", "card_kind", "row", "advance_policy", "grants_stance"]:
 		if config.has(key):
 			set(key, String(config[key]))
-	for key: String in ["targetable", "damageable", "healable", "expire_at_edge", "joins_turn_order", "spawn_beside_owner"]:
+	for key: String in ["targetable", "damageable", "healable", "expire_at_edge", "joins_turn_order", "spawn_beside_owner", "follow_topology"]:
 		if config.has(key):
 			set(key, bool(config[key]))
 	for key: String in ["max_hp", "current_hp", "duration_turns", "priority", "row_edge_distance", "advance_amount", "turn_speed"]:

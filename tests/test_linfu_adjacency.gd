@@ -59,33 +59,33 @@ func _run() -> void:
 
 	# --- 書眠 finishes: the order rotates ---
 	await _step()
-	_expect(_names(manager.get_display_row(false)) == "符書眠左飲語塵", "after 書眠 acts the card still stands at the far left: " + _names(manager.get_display_row(false)))
+	_expect(_names(manager.get_display_row(false)) == "書眠符左飲語塵", "after 書眠 acts the row is [書眠][符][左飲][語塵]: " + _names(manager.get_display_row(false)))
 	var row: Array = manager.get_display_row(false)
 	var at: int = StageAdjacency.index_of(row, "ent:linfu#1")
 	var names_hit: Array[String] = []
 	for recipient: Dictionary in StageAdjacency.recipients(row, at):
 		names_hit.append(String(recipient.name))
 	names_hit.sort()
-	_expect(names_hit == ["書眠"], "a card obeys position, not speed: it covers only the character beside it: " + str(names_hit))
-	_expect(not names_hit.has("語塵"), "a character that is not next to it is not covered")
+	_expect(names_hit.size() == 2 and names_hit.has("書眠") and names_hit.has("左飲"), "the card covers 書眠 and 左飲 only: " + str(names_hit))
+	_expect(not names_hit.has("語塵"), "a card that is not next to it is not covered")
 
 	# --- 語塵 acts: the card still stands between 書眠 and 左飲 ---
 	await _step()
 	row = manager.get_display_row(false)
-	_expect(_names(row) == "符語塵書眠左飲", "after 語塵 acts the card still stands at the far left: " + _names(row))
+	_expect(_names(row) == "語塵書眠符左飲", "after 語塵 acts the row is [語塵][書眠][符][左飲]: " + _names(row))
 	at = StageAdjacency.index_of(row, "ent:linfu#1")
 	names_hit.clear()
 	for recipient: Dictionary in StageAdjacency.recipients(row, at):
 		names_hit.append(String(recipient.name))
-	_expect(names_hit == ["語塵"], "now the one beside it is 語塵: " + str(names_hit))
+	_expect(names_hit.size() == 2 and names_hit.has("書眠") and names_hit.has("左飲"), "still only 書眠 and 左飲: " + str(names_hit))
 
 	# --- 左飲 acts: the card reaches the end of the row, one neighbour only ---
 	await _step()
 	row = manager.get_display_row(false)
-	_expect(_names(row) == "符左飲語塵書眠", "after 左飲 acts the card still stands at the far left: " + _names(row))
+	_expect(_names(row) == "左飲語塵書眠符", "after 左飲 acts the row is [左飲][語塵][書眠][符]: " + _names(row))
 	at = StageAdjacency.index_of(row, "ent:linfu#1")
 	var last_hits: Array = StageAdjacency.recipients(row, at)
-	_expect(last_hits.size() == 1 and String(last_hits[0].name) == "左飲", "at the far left only the character beside it is covered")
+	_expect(last_hits.size() == 1 and String(last_hits[0].name) == "書眠", "at the end of the row only 書眠 is covered, 左飲 is not")
 
 	# --- ends are not neighbours ---
 	var ends: Array = [{"name": "A", "hp": 5, "id": "a"}, {"name": "B", "hp": 5, "id": "b"}, {"name": "C", "hp": 5, "id": "c"}, {"is_stage_entity": true, "entity_id": "t", "name": "符", "hp": 1}]

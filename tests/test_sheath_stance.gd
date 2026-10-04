@@ -106,7 +106,7 @@ func _check_data() -> void:
 		_expect(rules.is_available_for_actor(id, "liuyu") and not rules.is_available_for_actor(id, "shumian"), "%s is not available to anyone else" % id)
 	_expect(_skill("skill_bajian_chishao").weapon_type == "劍" and _skill("skill_bajian_chishao").has("stage_entity"), "拔劍持鞘 is a sword skill that makes a card, not an attack")
 	var config: Dictionary = _skill("skill_bajian_chishao").stage_entity
-	_expect(config.entity_type == "sheath_card" and int(config.turn_speed) == 0 and bool(config.joins_turn_order), "the card has a turn (speed 0), not 'no turn'")
+	_expect(config.entity_type == "sheath_card" and bool(config.follow_topology) and bool(config.joins_turn_order), "the card is on the line (no speed) and follows the character at its right")
 
 
 func _check_cast_and_turn() -> void:
@@ -129,11 +129,11 @@ func _check_cast_and_turn() -> void:
 	_expect(not rules.is_stance_compatible(cast, liuyu), "...and the skill is not offered in the stance")
 	# B. a card obeys position, not speed: its own turn is a plain activation and it stays where it stands
 	var proxy: Dictionary = manager.find_queue_actor(String(entities[0].entity_id))
-	_expect(not proxy.is_empty() and proxy.has("slot_left"), "B: it has a place in the row, not a speed")
-	var place_before: int = int(proxy.slot_left)
+	_expect(not proxy.is_empty() and bool(proxy.get("follow_topology", false)) and not proxy.has("speed"), "B: it is on the line as a follower, with no speed")
+	var row_before: String = _names(manager.get_display_row(false))
 	manager.active_actor = proxy
 	await controller._run_stage_entity_turn(proxy)
-	_expect(int(proxy.slot_left) == place_before and int(proxy.get("left_stamp", 0)) == 0, "B: on its turn it stays where it stands")
+	_expect(_names(manager.get_display_row(false)) == row_before, "B: on its turn it stays where it stands")
 	_expect(not manager.is_waiting_for_player, "B: nobody is asked for a command on its turn")
 
 
@@ -221,7 +221,7 @@ func _check_combo() -> void:
 			_expect(is_equal_approx(float(stub.calls[0].power), 1.0), "D (%s): 劉語塵 strikes at 1.0x" % scenario)
 			_expect(is_equal_approx(float(stub.calls[1].power), 0.5), "D (%s): the card strikes at 0.5x" % scenario)
 		_expect(int(enemy.hp) == hp_before - 15, "D (%s): both strikes land on the same target" % scenario)
-		_expect(int(liuyu.get("left_stamp", 0)) > 0 and int(sheath_proxy.slot_left) == 1, "D (%s): the card went to the far left FIRST, then 劉語塵 (the card is one place in)" % scenario)
+		_expect(int(liuyu.get("left_stamp", 0)) > 0 and sheath_proxy.get("detached_this_turn", false) == true, "D (%s): the card went to the far left FIRST, then 劉語塵" % scenario)
 		_expect(bool(liuyu.get("acted_this_turn", false)), "D (%s): only then does his turn end" % scenario)
 		# his turn ends: the order moves on
 		manager.active_actor = liuyu
@@ -268,6 +268,13 @@ func _check_block() -> void:
 		if controller._sheath_blocks_hit(liuyu, enemy):
 			blocked_single += 1
 	_expect(blocked_single > 240 and blocked_single < 360, "G: about half of the hits are blocked (%d / 600)" % blocked_single)
+	# K: grey (acted this round) is only a look: the passive block still works
+	manager.acted_this_round[manager._actor_key(manager.queue_entities[0])] = true
+	var blocked_grey: int = 0
+	for trial: int in range(300):
+		if controller._sheath_blocks_hit(liuyu, enemy):
+			blocked_grey += 1
+	_expect(blocked_grey > 100 and manager.has_acted(manager.queue_entities[0]), "K: a card that has acted (grey) still blocks (%d / 300)" % blocked_grey)
 	_expect(not controller._sheath_blocks_hit(shumian, enemy), "I: a hit meant for anyone else is never blocked")
 	_expect(not controller._sheath_blocks_hit(liuyu, liuyu), "only enemy blows are blocked")
 	# through the real executor: each Hit rolls on its own
