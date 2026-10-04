@@ -2301,8 +2301,9 @@ func _toward_row(card: Node3D) -> float:
 	return -1.0 if card.is_enemy else 1.0
 
 
-## The card leaves its place in the row, strikes the target with its tail and goes back (the order
-## then settles it at the far left). `result` is the strike's resolved outcome.
+## 鞘劍連擊: the scabbard card leaves its place in the row, steps up to the target and strikes with the
+## STAFF's own effect (the wide sweep of air, the blunt impact, the target shoved aside), then goes back.
+## `result` is the strike's resolved outcome.
 func present_sheath_strike(entity: Object, target: Dictionary, result: Dictionary) -> void:
 	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
 	var destination: Node3D = card_for(target)
@@ -2311,18 +2312,30 @@ func present_sheath_strike(entity: Object, target: Dictionary, result: Dictionar
 	busy = true
 	command_tray.set_enabled(false)
 	var home: Vector3 = card.position
-	var strike_at: Vector3 = destination.position + Vector3(-_toward_row(destination) * destination.card_size.x * 0.1, destination.card_size.y * 0.02, 0.9)
-	var lunge := create_tween()
-	lunge.tween_property(card, "position", home + (strike_at - home) * 0.15 + Vector3(0.0, 0.25, 0.5), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	lunge.tween_property(card, "position", strike_at, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	await lunge.finished
-	if bool(result.get("hit", true)):
-		_hit_spark(destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.9), 1.5, false)
-		destination.hit_reaction()
-		await _hit_stop(0.05)
-	else:
+	var landed: bool = bool(result.get("hit", true))
+	var crit: bool = landed and bool(result.get("crit", false))
+	var side: float = 1.0 if destination.home_position.x >= card.home_position.x else -1.0
+	var centre: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.02, 0.5)
+	# Closing in: a short wind-up away from the target, then a hard step toward it (like a staff wielder).
+	var near: Vector3 = home + (destination.position - home) * STAFF_REACH * 0.7 + Vector3(0.0, 0.1, 0.7)
+	var step := create_tween()
+	step.tween_property(card, "position", home - (destination.position - home).normalized() * 0.3 + Vector3(0.0, 0.0, 0.2), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	step.tween_property(card, "position", near, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await step.finished
+	var params: Dictionary = StaffSweepFX.defaults()
+	params["origin_offset"] = home - centre
+	params["camera_offset"] = camera.global_position - fx_root.to_global(centre)
+	params["direction"] = side
+	params["critical"] = crit
+	if not landed:
+		params["warp_strength"] = 0.0
+		params["shockwave_strength"] = 0.0
 		destination.dodge_motion()
-	await get_tree().create_timer(0.2).timeout
+	var spot: Vector3 = centre if landed else centre + Vector3(side * 1.1, 0.25, -0.6)
+	var fx := StaffSweepFX.play_at(fx_root, spot, destination.card_size, params)
+	if landed:
+		fx.impact.connect(_staff_impact.bind(destination, side, crit))
+	await get_tree().create_timer(0.6).timeout
 	var back := create_tween()
 	back.tween_property(card, "position", home, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await back.finished
@@ -2339,6 +2352,10 @@ func present_sheath_stow(actor: Dictionary, entity: Object) -> void:
 	# The card goes to his side and is slid back in behind him, slowly: a swordsman sheathing a blade.
 	if card.has_method("play_stow"):
 		await card.play_stow(wielder)
+	# The card is gone first (it is behind him now) ...
+	card.visible = false
+	# ... and only a beat later does the row close up and he rejoin the line, so nobody jumps.
+	await get_tree().create_timer(0.25).timeout
 	busy = false
 
 
