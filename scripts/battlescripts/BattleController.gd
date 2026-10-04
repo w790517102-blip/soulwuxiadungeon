@@ -4486,14 +4486,17 @@ func _execute_stage_entity_skill(actor: Dictionary, skill_data: Dictionary) -> v
 	# laid out with it already in it (it takes the last place of the round to come: the far left).
 	if bool(entity.get("joins_turn_order")) and turn_manager != null:
 		stage_entities.assign_entity_id(entity)
-		turn_manager.add_queue_actor(_queue_proxy_for(entity))
+		turn_manager.add_queue_actor(_queue_proxy_for(entity), actor if bool(entity.get("spawn_beside_owner")) else {})
 	stage_entities.register_stage_entity(entity)
 	# A card that puts its owner in a stance (持鞘): the stance is the owner's state; the card only
 	# drives order and position. It ends when the card is gone (see _on_stage_entity_unregistered).
 	var granted_stance: String = String(entity.get("grants_stance"))
 	if granted_stance != "":
 		actor["stance"] = granted_stance
-	_log("【%s】現身於我方陣列最左。" % entity_name)
+	if bool(entity.get("spawn_beside_owner")):
+		_log("【%s】現身於 %s 的左側。" % [entity_name, String(actor.get("name", "???"))])
+	else:
+		_log("【%s】現身於我方陣列最左。" % entity_name)
 	if battle_ui and battle_ui.has_method("play_stage_entity_cast"):
 		await battle_ui.play_stage_entity_cast(actor, skill_data, "finish")
 	_update_ui_for_actor(actor)

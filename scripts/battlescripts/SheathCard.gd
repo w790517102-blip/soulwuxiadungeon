@@ -17,6 +17,7 @@ func apply_config(config: Dictionary) -> void:
 	turn_speed = 0
 	duration_turns = -1
 	grants_stance = STANCE_ID
+	spawn_beside_owner = true
 	targetable = false
 	damageable = false
 	healable = false

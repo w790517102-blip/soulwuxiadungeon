@@ -204,6 +204,9 @@ func _check_combo() -> void:
 			manager.current_index = 1   # 白 has acted; it is 劉's turn
 		await controller.execute_action(liuyu, cast, liuyu)
 		liuyu["acted_this_turn"] = false
+		var after_cast: Array = manager.get_display_row(false)
+		if scenario == "multi":
+			_expect(_names(after_cast) == "白左持鞘劉", "the card appears directly to the left of 劉語塵: " + _names(after_cast))
 		var sheath_entity: Object = controller.find_stance_entity(liuyu)
 		var sheath_proxy: Dictionary = manager.find_queue_actor(String(sheath_entity.entity_id))
 		var stub: Node = _stub_executor()

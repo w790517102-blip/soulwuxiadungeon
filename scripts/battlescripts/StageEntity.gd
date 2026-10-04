@@ -43,6 +43,9 @@ var joins_turn_order: bool = false
 ## A stance the entity puts its owner in for as long as it stands ("" = none). The owner's `stance`
 ## field is set when it appears and cleared when it leaves the stage.
 var grants_stance: String = ""
+## true: when the card joins the turn order it stands directly to the left of its owner in the row
+## (instead of at the far left).
+var spawn_beside_owner: bool = false
 var turn_speed: int = 999
 var card_kind: String = "default"
 var card_config: Dictionary = {}
@@ -60,7 +63,7 @@ func apply_config(config: Dictionary) -> void:
 	for key: String in ["entity_id", "entity_type", "display_name", "owner_id", "faction", "card_kind", "row", "advance_policy", "grants_stance"]:
 		if config.has(key):
 			set(key, String(config[key]))
-	for key: String in ["targetable", "damageable", "healable", "expire_at_edge", "joins_turn_order"]:
+	for key: String in ["targetable", "damageable", "healable", "expire_at_edge", "joins_turn_order", "spawn_beside_owner"]:
 		if config.has(key):
 			set(key, bool(config[key]))
 	for key: String in ["max_hp", "current_hp", "duration_turns", "priority", "row_edge_distance", "advance_amount", "turn_speed"]:

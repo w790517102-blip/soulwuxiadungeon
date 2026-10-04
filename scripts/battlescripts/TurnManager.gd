@@ -241,7 +241,8 @@ func get_all_actors() -> Array:
 ## Puts a stage entity in the turn order. In the middle of a round it takes the LAST place of the round
 ## still to come (it acts after everyone who has not yet acted) and from the next round on it sorts by
 ## its speed like everyone else. `proxy` is {is_stage_entity: true, entity_id, faction, name, speed}.
-func add_queue_actor(proxy: Dictionary) -> void:
+## `beside_actor` puts it directly after that actor instead (his left neighbour in the row).
+func add_queue_actor(proxy: Dictionary, beside_actor: Dictionary = {}) -> void:
 	if queue_entities.has(proxy):
 		return
 	proxy["is_stage_entity"] = true
@@ -251,7 +252,13 @@ func add_queue_actor(proxy: Dictionary) -> void:
 		proxy["battle_order_index"] = 1000 + queue_entities.size()
 	queue_entities.append(proxy)
 	if round_in_progress:
-		turn_queue.append(proxy)
+		# Normally it takes the last place of the round to come; with `beside_actor` it is put in the
+		# order right after that actor, i.e. directly to his left in the row.
+		var owner_index: int = turn_queue.find(beside_actor) if not beside_actor.is_empty() else -1
+		if owner_index >= current_index:
+			turn_queue.insert(owner_index + 1, proxy)
+		else:
+			turn_queue.append(proxy)
 		var key := _actor_key(proxy)
 		if key != "" and not round_roster.has(key):
 			round_roster.append(key)
