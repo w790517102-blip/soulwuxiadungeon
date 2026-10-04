@@ -500,3 +500,16 @@ func has_enemy_area_fx(skill: Dictionary) -> bool:
 func play_substitute_break(entity: Object) -> void:
 	if stage_enabled and stage:
 		await stage.present_substitute_break(entity)
+
+
+## Waits until the action that has just been played is really over on the stage: no cinematic under way, the
+## line-up re-read and every card (characters and the others) at rest. The next action starts only after this
+## AND the battle log has finished.
+func wait_for_action_finished() -> void:
+	if not stage_enabled or stage == null:
+		return
+	await stage.wait_for_lineup_settled()
+	var guard: int = 0
+	while guard < 1800 and (stage.busy or stage.is_lineup_moving() or stage.is_any_card_moving()):
+		await get_tree().process_frame
+		guard += 1

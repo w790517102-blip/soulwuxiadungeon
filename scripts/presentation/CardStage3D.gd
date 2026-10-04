@@ -2781,3 +2781,8 @@ func present_substitute_break(entity: Object) -> void:
 		return
 	await get_tree().create_timer(0.25).timeout
 	await card.play_break()
+
+
+## Any card (a character or another) still sliding to its place or playing a motion.
+func is_any_card_moving() -> bool:
+	return _actor_cards_moving() or _row_cards_relocating()

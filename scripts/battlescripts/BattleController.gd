@@ -2254,8 +2254,21 @@ func safe_end_turn() -> void:
 			if battle_ui:
 				battle_ui.update_enemy_panel()
 				battle_ui.update_ally_panel()
+	# The next action starts only when this one has finished playing on the stage AND in the battle log.
+	await _await_action_finished()
+	if battle_finished or _ending:
+		return
 	if turn_manager:
 		turn_manager.end_turn()
+
+
+## Both must be over before anything else begins: the animations of the action just played (a charm still
+## breaking, cards still sliding) and the battle log still printing its lines.
+func _await_action_finished() -> void:
+	if battle_ui != null and battle_ui.has_method("wait_for_action_finished"):
+		await battle_ui.wait_for_action_finished()
+	if action_log_ui != null and action_log_ui.has_method("wait_for_all_logs"):
+		await action_log_ui.wait_for_all_logs()
 
 
 func check_battle_status() -> void:
