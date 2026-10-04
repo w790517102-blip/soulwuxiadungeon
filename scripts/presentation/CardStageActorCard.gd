@@ -340,6 +340,7 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	for label: Label in [name_label, hp_label, mp_label, species_label]:
 		label.horizontal_alignment = text_side
 	element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if is_character else text_side
+	_place_standby_label()
 
 
 # --- Spatial motion --------------------------------------------------------------
@@ -1031,3 +1032,49 @@ func set_ward_aura(on: bool) -> void:
 				_ward_glow.queue_free()
 				_ward_glow = null
 				_ward_material = null)
+
+
+# --- Standby (this round's turn is over) -----------------------------------------------------------
+# The portrait is dimmed and desaturated and a small red "行動結束" follows the name. Purely visual.
+
+var _standby: bool = false
+var _standby_label: Label = null
+
+
+func set_standby(on: bool) -> void:
+	if on == _standby:
+		return
+	_standby = on
+	if art_material != null:
+		art_material.set_shader_parameter("dim", 1.0 if on else 0.0)
+	if portrait != null:
+		portrait.modulate = Color(0.55, 0.55, 0.58) if on else Color.WHITE
+	_place_standby_label()
+
+
+func _place_standby_label() -> void:
+	if not _standby:
+		if _standby_label != null:
+			_standby_label.hide()
+		return
+	if name_label == null:
+		return
+	if _standby_label == null:
+		var size_px: int = maxi(int(int(template.name_font) * 0.55), 14)
+		_standby_label = _label("Standby", Rect2(0, 0, 200, name_label.size.y), size_px, Color(0.95, 0.24, 0.2))
+		_standby_label.add_theme_font_override("font", TITLE_FONT)
+		_standby_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_standby_label.clip_text = false
+		_outline(_standby_label, 6)
+		_standby_label.text = "行動結束"
+	var font: Font = name_label.get_theme_font("font")
+	var name_size: int = name_label.get_theme_font_size("font_size")
+	var text_width: float = font.get_string_size(name_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size).x
+	var own_width: float = font.get_string_size("行動結束", HORIZONTAL_ALIGNMENT_LEFT, -1, _standby_label.get_theme_font_size("font_size")).x
+	_standby_label.size = Vector2(own_width + 4.0, name_label.size.y)
+	_standby_label.position.y = name_label.position.y
+	if name_label.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT:
+		_standby_label.position.x = name_label.position.x + name_label.size.x - text_width - own_width - 18.0
+	else:
+		_standby_label.position.x = name_label.position.x + text_width + 14.0
+	_standby_label.show()

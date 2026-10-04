@@ -508,7 +508,7 @@ func _update_order(delta: float) -> void:
 		return
 	_order_clock = 0.0
 	_refresh_ward_auras()
-	_refresh_standby_veils()
+	_refresh_standby_marks()
 	var keys: Array[String] = order_keys()
 	if keys.is_empty():
 		return
@@ -900,7 +900,7 @@ func _splash_camera_ink() -> void:
 
 
 ## Extra room beside a sub card (a charm between characters would otherwise be hidden).
-const ENTITY_GAP: float = 1.5
+const ENTITY_GAP: float = 1.9
 const SUB_CARD_FRONT: float = -0.35
 ## The cast and the new card's entrance happen this far in front of the party row, so
 ## nothing (a turned character included) can hide it.
@@ -2210,10 +2210,9 @@ func _spear_impact(card: Node3D, crit: bool) -> void:
 const AdjacencyRules = preload("res://scripts/battlescripts/StageAdjacency.gd")
 
 
-## Marks every card a 臨符 card is covering right now (from the live order, so it follows the rotation).
-## A card whose turn is over this round (a character or a card that has had its turn) is veiled in grey until
-## the next round. The veil is purely visual: a passive ability (the 持鞘 block) does not care about it.
-func _refresh_standby_veils() -> void:
+## A card whose turn is over this round (a character or a card that has had its turn) is darkened and marked until
+## the next round. This is purely visual: a passive ability (the 持鞘 block) does not care about it.
+func _refresh_standby_marks() -> void:
 	var manager: Node = _turn_manager()
 	if manager == null or not manager.has_method("has_acted"):
 		return
@@ -2225,33 +2224,13 @@ func _refresh_standby_veils() -> void:
 		else:
 			card = cards.get(actor_key(entry)) as Node3D
 		if card != null:
-			_set_standby_veil(card, manager.has_acted(entry))
+			if card.has_method("set_standby"):
+				card.set_standby(manager.has_acted(entry))
 
 
-func _set_standby_veil(card: Node3D, on: bool) -> void:
-	var veil: MeshInstance3D = card.get_node_or_null("StandbyVeil") as MeshInstance3D
-	if veil == null:
-		if not on:
-			return
-		var size: Vector2 = card.get("card_size") if card.get("card_size") != null else Vector2(2.0, 3.0)
-		var quad := QuadMesh.new()
-		quad.size = size
-		var material := StandardMaterial3D.new()
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.albedo_color = Color(0.42, 0.43, 0.46, 0.55)
-		material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		material.render_priority = 30
-		quad.material = material
-		veil = MeshInstance3D.new()
-		veil.name = "StandbyVeil"
-		veil.mesh = quad
-		veil.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		veil.position = Vector3(0.0, 0.0, 0.03)
-		card.add_child(veil)
-	veil.visible = on
 
 
+## Marks every card a 臨符 card is covering right now (from the live order, so it follows the rotation).
 func _refresh_ward_auras() -> void:
 	var wanted: Dictionary = {}
 	var manager: Node = _turn_manager()

@@ -72,6 +72,10 @@ static func slot(count: int, rank: int, enemy: bool, size_ratio: float = 1.0, ga
 	var feet: float = 0.5 + (ALLY_FEET - 0.5) * ((ENEMY_HEIGHT if enemy else ALLY_HEIGHT) / ALLY_HEIGHT)
 	var depth_t: float = clampf(float(rank) / 2.0, 0.0, 1.0)
 	var z_stack: float = Z_STACK * (depth_t if enemy else 1.0 - depth_t)
+	# A row with sub cards: every outer rank stands a little further back so two neighbours never meet in
+	# the same plane (their edges would cut into each other).
+	if gaps.size() == count - 1 and count > 1 and not enemy:
+		z_stack -= 0.12 * float(maxi(rank - 1, 0))
 	if count == 1:
 		z_stack = Z_STACK * 0.5
 	return {"rank": rank, "enemy": enemy, "screen_x": screen_x, "height": height, "feet": feet, "z_stack": z_stack}

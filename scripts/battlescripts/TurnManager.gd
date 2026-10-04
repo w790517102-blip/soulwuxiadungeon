@@ -30,6 +30,8 @@ var guest_actor: Dictionary = {}
 ## ({is_stage_entity, entity_id, faction, speed, hp, ...}). They sort by speed like anyone and each
 ## activation is their turn.
 var queue_entities: Array = []
+## Follower cards of a character who has just ended his turn, waiting to come to the frontier one by one.
+var _chick_queue: Array = []
 
 # 每輪依角色當下的最終加權速度排序（若未設定 speed，預設 0）
 func _compare_speed(a: Dictionary, b: Dictionary) -> bool:
@@ -78,6 +80,7 @@ func start_new_round() -> void:
 	round_in_progress = true
 	round_end_emitted = false
 	_clear_left_stamps()
+	_chick_queue.clear()
 	_build_round_roster()
 	emit_signal("round_started", round_count)
 
@@ -96,6 +99,15 @@ func next_turn() -> void:
 	if is_waiting_for_player:
 		print("🛑 尚未完成玩家回合，禁止進入下一角色")
 		return
+
+	# The followers of the character who just left come to the frontier one by one for their own turns.
+	while not _chick_queue.is_empty():
+		var chick: Dictionary = _chick_queue.pop_front()
+		if queue_entities.has(chick) and _is_actor_alive(chick):
+			_bring_to_frontier(chick)
+			active_actor = chick
+			emit_signal("turn_started", active_actor)
+			return
 
 	# A card that has reached the frontier of its camp's row takes its own turn first (no command, no speed).
 	var frontier_card: Dictionary = pending_frontier_card()
@@ -144,10 +156,15 @@ func end_turn() -> void:
 		if moved_by_hand:
 			_character_goes_to_far_left(leaving)
 		else:
-			var group: Array = _group_of(leaving, row_before)
-			for entry: Dictionary in group:
-				if _is_card(entry):
-					acted_this_round[_actor_key(entry)] = true
+			# He goes at once. The followers that have not had their turn this round do NOT go with him: each
+			# one comes to the frontier in its turn, plays its own animation / countdown, and only then goes
+			# to the far left behind him. The ones that already acted (drawn this round) go with him.
+			var group: Array = [leaving]
+			for entry: Dictionary in _group_of(leaving, row_before).slice(1):
+				if has_acted(entry):
+					group.append(entry)
+				else:
+					_chick_queue.append(entry)
 			_left_stamp += 1
 			leaving["left_stamp"] = _left_stamp
 			_commit_row(_row_with_group_at_far_left(row_before, group))
@@ -232,7 +249,7 @@ func _try_end_round() -> void:
 	if not _is_round_complete():
 		return
 	# A card that has reached the frontier still has its turn to take before the round is over.
-	if not pending_frontier_card().is_empty():
+	if not pending_frontier_card().is_empty() or not _chick_queue.is_empty():
 		return
 	round_end_emitted = true
 	round_in_progress = false
@@ -530,3 +547,11 @@ func resort_remaining_characters() -> void:
 	var remaining: Array = turn_queue.slice(index)
 	remaining.sort_custom(Callable(self, "_compare_speed"))
 	turn_queue = turn_queue.slice(0, index) + remaining
+
+
+## A follower waiting for its turn steps to the frontier (the right end) of its camp's row.
+func _bring_to_frontier(card: Dictionary) -> void:
+	var row: Array = get_display_row(is_enemy_side(card))
+	row.erase(card)
+	row.push_front(card)
+	_commit_row(row)

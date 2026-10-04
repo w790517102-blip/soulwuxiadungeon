@@ -4743,6 +4743,9 @@ func _run_stage_entity_turn(proxy: Dictionary) -> void:
 	# to the far left of the row and the turn ends.
 	if int(entity.get("duration_turns")) < 0:
 		# A card has a turn but nothing to count: it keeps its place (cards obey position, not speed).
+		# Nothing to play and nothing to count: a short beat so the player sees the card has taken its turn.
+		if battle_ui != null:
+			await get_tree().create_timer(0.5).timeout
 		return
 	var expired: bool = entity.advance_duration() if entity.has_method("advance_duration") else false
 	if battle_ui and battle_ui.has_method("play_stage_entity_activation"):

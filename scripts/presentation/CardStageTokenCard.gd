@@ -21,6 +21,9 @@ var card_viewport: SubViewport
 var card_mesh: MeshInstance3D
 var card_back: MeshInstance3D
 var name_label: Label
+var _art_rect: TextureRect = null
+var _standby: bool = false
+var _standby_label: Label = null
 var badge_label: Label
 var _crack_layer: Control
 var _flash: ColorRect
@@ -75,6 +78,7 @@ func _build(config: Dictionary) -> void:
 		art.size = window.size
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		window.add_child(art)
+		_art_rect = art
 	_panel(root, Rect2(20, 60, 260, 344), Color.TRANSPARENT, GOLD, 2)
 	name_label = Label.new()
 	name_label.position = Vector2(14, 14)
@@ -426,3 +430,27 @@ func _draw_direction(wielder: Node3D) -> Vector3:
 
 func _toward_opponent(wielder: Node3D) -> float:
 	return -1.0 if wielder.is_enemy else 1.0
+
+
+## This round's turn is over: the art is darker and a small red "行動結束" follows the name. Purely visual.
+func set_standby(on: bool) -> void:
+	if on == _standby:
+		return
+	_standby = on
+	if _art_rect != null:
+		_art_rect.modulate = Color(0.5, 0.5, 0.54) if on else Color.WHITE
+	if on and _standby_label == null and name_label != null:
+		_standby_label = Label.new()
+		_style_label(_standby_label, 20, Color(0.95, 0.24, 0.2))
+		_standby_label.text = "行動結束"
+		name_label.get_parent().add_child(_standby_label)
+	if _standby_label == null:
+		return
+	_standby_label.visible = on
+	if on:
+		var font: Font = name_label.get_theme_font("font")
+		var name_width: float = font.get_string_size(name_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, name_label.get_theme_font_size("font_size")).x
+		var own_width: float = font.get_string_size("行動結束", HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
+		_standby_label.size = Vector2(own_width + 4.0, name_label.size.y)
+		var centre: float = name_label.position.x + name_label.size.x * 0.5
+		_standby_label.position = Vector2(minf(centre + name_width * 0.5 + 8.0, CANVAS.x - own_width - 8.0), name_label.position.y + 4.0)

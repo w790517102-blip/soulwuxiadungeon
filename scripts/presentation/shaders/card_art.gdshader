@@ -8,6 +8,8 @@ uniform sampler2D art : source_color, filter_linear_mipmap;
 uniform vec2 center = vec2(0.0);
 uniform vec2 size = vec2(3.0);
 uniform vec4 clip_rect = vec4(-1.0, -1.0, 1.0, 1.0);
+// 0..1: the card has had its turn this round - darker and less saturated.
+uniform float dim : hint_range(0.0, 1.0) = 0.0;
 
 void fragment() {
 	vec2 local = center + vec2(UV.x - 0.5, 0.5 - UV.y) * size;
@@ -15,6 +17,7 @@ void fragment() {
 		discard;
 	}
 	vec4 colour = texture(art, UV);
-	ALBEDO = colour.rgb;
+	float grey = dot(colour.rgb, vec3(0.299, 0.587, 0.114));
+	ALBEDO = mix(colour.rgb, vec3(grey), dim * 0.7) * (1.0 - 0.5 * dim);
 	ALPHA = colour.a;
 }

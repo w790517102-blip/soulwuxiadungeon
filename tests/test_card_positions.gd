@@ -59,6 +59,7 @@ func _step() -> void:
 
 func _run() -> void:
 	await _test_hen_takes_chicks()
+	await _test_chicks_take_their_turns()
 	await _test_speed_reorder()
 	await _test_death_and_frontier()
 	if _failures.is_empty():
@@ -135,3 +136,26 @@ func _test_death_and_frontier() -> void:
 		turns += 1
 	_expect(turns == 2, "E: both cards took their turns, then nothing is pending (%d)" % turns)
 	_expect(manager.has_acted(a) and manager.has_acted(b), "E: both are marked as having acted this round")
+
+
+## The followers of a character who ends his turn do not jump to the left with him: each one steps to the
+## frontier, takes its own turn, and only then goes to the far left behind him.
+func _test_chicks_take_their_turns() -> void:
+	var white := {"id": "shumian", "name": "白", "hp": 50, "speed": 15}
+	var liu := {"id": "liuyu", "name": "劉", "hp": 50, "speed": 10}
+	await _start([white, liu])
+	var a := _card("a", "甲")
+	var b := _card("b", "乙")
+	manager.add_queue_actor(a, liu)
+	manager.add_queue_actor(b, liu)
+	manager.acted_this_round.clear()   # as if they had been there since the start of the round
+	await _step()   # 白 ends
+	await _step()   # 劉 ends: 乙 and 甲 must now come to the frontier one after the other
+	_expect(manager.active_actor == b, "chicks: the nearest follower (乙) takes its turn first")
+	_expect(manager.get_display_row(false)[0] == b, "chicks: it stands at the frontier for it: " + _names(manager.get_display_row(false)))
+	_expect(not manager.has_acted(a), "chicks: 甲 is still waiting")
+	await _step()
+	_expect(manager.active_actor == a and manager.get_display_row(false)[0] == a, "chicks: then 甲 steps to the frontier")
+	await _step()
+	_expect(_names(manager.get_display_row(false)) == "甲乙劉白", "chicks: finally everyone is back in the same order at the left: " + _names(manager.get_display_row(false)))
+	_expect(manager.has_acted(a) and manager.has_acted(b), "chicks: both are marked as acted")
