@@ -363,6 +363,12 @@ func play_draw(wielder: Node3D, _staging: Vector3 = Vector3.ZERO) -> void:
 	_tween.tween_property(self, "position", crack, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_tween.tween_interval(0.2)
 	_tween.tween_property(self, "position", clear, 0.8).set_trans(Tween.TRANS_LINEAR)
+	# Fully out: it spins once around in the plane of the card (a twirl of the scabbard), then waits to
+	# be put into the row.
+	_tween.tween_interval(0.08)
+	_tween.tween_property(self, "rotation:z", TAU, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tween.tween_callback(func() -> void:
+		rotation.z = 0.0)
 
 
 ## 收鞘: the card goes out to the end of the same line beside the wielder, then is slid back in behind
