@@ -2161,7 +2161,16 @@ func _perform_enemy_aoe_action(enemy: Dictionary, skill: Dictionary, inner_force
 		results.append({"target": actor, "after_hp": int(actor_copy.get("hp", actor.get("hp", 0))), "result": result})
 		if bool(result.get("hit", true)):
 			hit_targets.append(actor)
-	if battle_ui and battle_ui.has_method("play_attack_motion"):
+	# A skill with its own effect style (尾巴掃擊 uses the staff's sweep) plays that instead of the
+	# plain lunge, and shows the blows itself.
+	var styled_area: bool = battle_ui != null and battle_ui.has_method("has_enemy_area_fx") and bool(battle_ui.has_enemy_area_fx(skill))
+	if styled_area:
+		var events: Array = []
+		for row in results:
+			var row_result: Dictionary = row.get("result", {})
+			events.append({"target": row.get("target", {}), "hit": bool(row_result.get("hit", true)), "crit": bool(row_result.get("crit", false))})
+		await battle_ui.play_enemy_area_fx(enemy, skill, events)
+	elif battle_ui and battle_ui.has_method("play_attack_motion"):
 		battle_ui.play_attack_motion(enemy)
 		await get_tree().create_timer(0.35).timeout
 	for row in results:
@@ -2175,7 +2184,7 @@ func _perform_enemy_aoe_action(enemy: Dictionary, skill: Dictionary, inner_force
 			_mark_actor_down(effect_target)
 	# Resolve every confirmed hit independently. The UI methods create their own
 	# per-slot FX/Tweens, so LiuYu and Shumian can react at the same time.
-	if battle_ui and not hit_targets.is_empty():
+	if battle_ui and not hit_targets.is_empty() and not styled_area:
 		if battle_ui.has_method("play_hit_fx_multi"):
 			battle_ui.play_hit_fx_multi(hit_targets, "fx_hit_fist")
 		if battle_ui.has_method("play_damage_react_multi"):

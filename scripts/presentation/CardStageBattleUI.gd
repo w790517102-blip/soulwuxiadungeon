@@ -479,3 +479,13 @@ func play_sheath_stow(actor: Dictionary, entity: Object) -> void:
 func play_sheath_block(target: Dictionary, entity: Object) -> void:
 	if stage_enabled and stage:
 		stage.present_sheath_block(target, entity)
+
+
+## An enemy's area attack with its own effect style (`fx_style`): one wide sweep over the line.
+func play_enemy_area_fx(attacker: Dictionary, skill: Dictionary, events: Array) -> void:
+	if stage_enabled and stage and stage.has_method("present_enemy_area"):
+		await stage.present_enemy_area(attacker, skill, events)
+
+
+func has_enemy_area_fx(skill: Dictionary) -> bool:
+	return stage_enabled and stage != null and stage.has_method("_is_area_style") and bool(stage._is_area_style(skill))

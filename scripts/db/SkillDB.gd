@@ -1307,6 +1307,7 @@ const SKILLS := {
 		"target_scope": "enemy_all",
 		"target_side": "enemy",
 		"tone_event": "tail_sweep",
+		"fx_style": "staff_sweep",
 		"effects": [
 			{"type": "damage", "power": 0.8},
 			{"type": "stun", "turns": 1, "chance": 0.25}
@@ -1324,6 +1325,7 @@ const SKILLS := {
 		"target_scope": "single",
 		"target_side": "enemy",
 		"tone_event": "water_bullet",
+		"fx_style": "water_bullet",
 		"effects": [
 			{"type": "damage", "power": 0.65},
 			{"type": "root", "amount": 10, "turns": 3, "chance": 0.65}

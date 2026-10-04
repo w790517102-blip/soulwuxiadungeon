@@ -1017,6 +1017,9 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	if _is_water_bullet(skill):
+		await _present_water_bullet(attacker, target, result)
+		return
 	if _is_spear_attack(skill):
 		await _present_spear_attack(attacker, target, result)
 		return
@@ -2109,14 +2112,15 @@ func _present_staff_attack(attacker: Dictionary, target: Dictionary, result: Dic
 
 
 ## The head of the sweep reaches the card: a hitch of time, then the card is thrown sideways.
-func _staff_impact(card: Node3D, swing: float, crit: bool) -> void:
+func _staff_impact(card: Node3D, swing: float, crit: bool, with_stop: bool = true) -> void:
 	if not is_instance_valid(card):
 		return
 	var distance: float = STAFF_PUSH_DISTANCE * (1.35 if crit else 1.0)
 
 	# Swept: the whole card slides away along the swing, tilts, hangs for a moment, then springs back.
 	card.shove(Vector3(swing * distance, 0.04, -0.1), -swing * STAFF_TILT * (1.4 if crit else 1.0), 0.14 if crit else 0.10)
-	_hit_stop(STAFF_HIT_STOP * (1.6 if crit else 1.0))
+	if with_stop:
+		_hit_stop(STAFF_HIT_STOP * (1.6 if crit else 1.0))
 	_hit_spark(card.position + Vector3(0.0, card.card_size.y * 0.05, 0.8), 2.0, crit)
 	_blade_hit_feedback(card.position + Vector3(0.0, card.card_size.y * 0.02, 0.5), card.card_size.y, crit, card)
 
@@ -2367,3 +2371,108 @@ func present_sheath_block(target: Dictionary, entity: Object) -> void:
 		return
 	card.block_pending = true
 	card.block_card = entity_cards.get(String(entity.get("entity_id"))) if entity != null else null
+
+
+# --- Skills with their own effect style (`fx_style` in the skill data) ------------------------------------
+
+const WaterBulletFX = preload("res://scripts/presentation/water_fx/WaterBulletFX.gd")
+
+
+func _is_water_bullet(skill: Dictionary) -> bool:
+	return String(skill.get("fx_style", "")) == "water_bullet"
+
+
+## A bolt of turbid water spat at one target (the 墨鱗魘將's 水彈).
+func _present_water_bullet(attacker: Dictionary, target: Dictionary, result: Dictionary) -> void:
+	var source := card_for(attacker)
+	var destination := card_for(target)
+	if not source or not destination:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var landed: bool = bool(result.get("hit", true))
+	var side: float = 1.0 if destination.home_position.x >= source.home_position.x else -1.0
+	# The spitter rears back and lunges its head at the target.
+	source.lunge_to(destination.home_position, 0.35)
+	await get_tree().create_timer(0.22).timeout
+	var tip: Vector3 = source.position + Vector3(side * source.card_size.x * 0.4, source.card_size.y * 0.08, 0.8)
+	var aim: Vector3 = destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.5)
+	var params: Dictionary = WaterBulletFX.defaults()
+	params["missed"] = not landed
+	if not landed:
+		aim += Vector3(side * 1.4, 0.3, -0.4)
+	var fx := WaterBulletFX.play_between(fx_root, tip, aim, destination.card_size, params)
+	if landed:
+		fx.impact.connect(_water_impact.bind(destination))
+	else:
+		destination.dodge_motion()
+	await get_tree().create_timer(1.1).timeout
+	await source.lunge_return()
+	busy = false
+
+
+func _water_impact(card: Node3D) -> void:
+	if not is_instance_valid(card):
+		return
+	card.hit_reaction()
+	card.shudder(0.25, 0.04)
+
+
+func _is_area_style(skill: Dictionary) -> bool:
+	return String(skill.get("fx_style", "")) == "staff_sweep"
+
+
+## An area attack with the staff's effect (the 墨鱗魘將's 尾巴掃擊): the attacker closes in and ONE wide
+## sweep crosses the whole line; each target is struck as the sweep reaches it. `events` is
+## [{target, hit, crit}].
+func present_enemy_area(attacker: Dictionary, skill: Dictionary, events: Array) -> void:
+	var source := card_for(attacker)
+	if source == null or events.is_empty():
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var cards_hit: Array = []
+	var sum: Vector3 = Vector3.ZERO
+	var count: int = 0
+	var biggest: Vector2 = Vector2.ZERO
+	for event: Dictionary in events:
+		var card := card_for(event.target)
+		if card == null:
+			continue
+		sum += card.position
+		count += 1
+		biggest = Vector2(maxf(biggest.x, card.card_size.x), maxf(biggest.y, card.card_size.y))
+	if count == 0:
+		busy = false
+		return
+	var middle: Vector3 = sum / float(count)
+	var centre: Vector3 = middle + Vector3(0.0, biggest.y * 0.02, 0.5)
+	var side: float = 1.0 if middle.x >= source.home_position.x else -1.0
+	source.lunge_to(middle, STAFF_REACH)
+	await get_tree().create_timer(0.2).timeout
+	var params: Dictionary = StaffSweepFX.defaults()
+	params["origin_offset"] = source.home_position - centre
+	params["camera_offset"] = camera.global_position - fx_root.to_global(centre)
+	params["direction"] = side
+	var fx := StaffSweepFX.play_at(fx_root, centre, biggest, params)
+	var body_swing := create_tween().set_parallel(true)
+	body_swing.tween_property(source, "position:x", source.position.x + side * 0.4, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fx.impact.connect(_area_impacts.bind(events, side, middle))
+	await get_tree().create_timer(1.0).timeout
+	await source.lunge_return()
+	busy = false
+
+
+## The sweep reaches the line: every struck target is shoved in turn, nearest to the attacker first.
+func _area_impacts(events: Array, side: float, middle: Vector3) -> void:
+	var first: bool = true
+	for event: Dictionary in events:
+		var card := card_for(event.target)
+		if card == null:
+			continue
+		if bool(event.get("hit", true)):
+			var delay: float = maxf(0.0, (card.position.x - middle.x) * -side) * 0.06
+			get_tree().create_timer(delay).timeout.connect(_staff_impact.bind(card, side, bool(event.get("crit", false)), first))
+			first = false
+		else:
+			card.dodge_motion()
