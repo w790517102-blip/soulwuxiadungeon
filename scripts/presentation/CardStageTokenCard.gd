@@ -394,8 +394,16 @@ func play_stow(wielder: Node3D) -> void:
 const DRAW_TILT := 0.0
 
 
+var _blocking: bool = false
+
+
 ## A blow is coming at the wielder: the card flies in front of him, takes it, and goes back to its place.
 func fly_to_block(wielder: Node3D) -> void:
+	# One blow already has the card in the air (an area attack on two neighbours): it only flashes again.
+	if _blocking:
+		pulse(Color(1.0, 0.96, 0.85, 0.45))
+		return
+	_blocking = true
 	if _tween and _tween.is_valid():
 		_tween.kill()
 	var home: Vector3 = home_position
@@ -407,6 +415,8 @@ func fly_to_block(wielder: Node3D) -> void:
 	_tween.tween_interval(0.3)
 	_tween.tween_property(self, "position", home, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_tween.parallel().tween_property(self, "rotation:z", 0.0, 0.35)
+	_tween.tween_callback(func() -> void:
+		_blocking = false)
 
 
 ## The way out of the wielder's card: up and toward the left of the screen.

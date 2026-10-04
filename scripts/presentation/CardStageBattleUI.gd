@@ -489,3 +489,9 @@ func play_enemy_area_fx(attacker: Dictionary, skill: Dictionary, events: Array) 
 
 func has_enemy_area_fx(skill: Dictionary) -> bool:
 	return stage_enabled and stage != null and stage.has_method("_is_area_style") and bool(stage._is_area_style(skill))
+
+
+## A 替身符 has taken its blow: it tears apart.
+func play_substitute_break(entity: Object) -> void:
+	if stage_enabled and stage:
+		await stage.present_substitute_break(entity)

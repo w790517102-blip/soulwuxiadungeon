@@ -166,15 +166,18 @@ func execute(
 		result["log"] = _build_dodge_log(user, target, skill_name, suppress_attack_opener)
 		return result
 
-	# --- 格擋：一個要落在目標身上的 Hit，可被持鞘卡完全擋下（每個 Hit 各自判定） ---
-	if block_provider.is_valid() and bool(block_provider.call(target, user)):
+	# --- 格擋：一個要落在目標身上的 Hit，可被擋下（持鞘卡、替身符；每個 Hit 各自判定） ---
+	# The provider answers with a Dictionary {"blocked": bool, "text": what happened} (or a plain bool).
+	var block_answer: Variant = block_provider.call(target, user) if block_provider.is_valid() else false
+	var block_info: Dictionary = block_answer if typeof(block_answer) == TYPE_DICTIONARY else {"blocked": bool(block_answer), "text": "以左手劍鞘架住了這一擊，攻勢被完全化去。"}
+	if bool(block_info.get("blocked", false)):
 		result["hit"] = false
 		result["dodged"] = false
 		result["blocked"] = true
 		result["damage"] = 0
 		result["target_down"] = false
 		var block_opener := "" if suppress_attack_opener else "%s 使出「%s」，" % [String(user.get("name", "???")), skill_name]
-		result["log"] = ["%s%s以左手劍鞘架住了這一擊，攻勢被完全化去。" % [block_opener, String(target.get("name", "???"))]]
+		result["log"] = ["%s%s%s" % [block_opener, String(target.get("name", "???")), String(block_info.get("text", ""))]]
 		hit_blocked.emit(target, user, skill_name)
 		return result
 

@@ -175,7 +175,7 @@ func _ready() -> void:
 		skill_executor.adjacency_provider = Callable(self, "get_adjacency_bonus")
 	# Each individual Hit meant for 劉語塵 may be blocked by his 持鞘 card (see _sheath_blocks_hit).
 	if skill_executor and "block_provider" in skill_executor:
-		skill_executor.block_provider = Callable(self, "_sheath_blocks_hit")
+		skill_executor.block_provider = Callable(self, "_hit_block_info")
 		skill_executor.hit_blocked.connect(_on_hit_blocked)
 	call_deferred("_init_battle_safe")
 
@@ -2058,7 +2058,15 @@ func _on_player_action_complete(actor: Dictionary) -> void:
 	safe_end_turn()
 
 
+## An enemy acts. Around the whole action the substitute charms keep their books: each may take the first
+## blow on each neighbour during the action, and is spent when the action is over.
 func perform_enemy_action(enemy: Dictionary) -> void:
+	_substitute_actions.clear()
+	await _perform_enemy_action_core(enemy)
+	await _spend_substitutes()
+
+
+func _perform_enemy_action_core(enemy: Dictionary) -> void:
 	await get_tree().process_frame
 	if battle_finished or _ending:
 		return
@@ -4733,8 +4741,11 @@ func _run_stage_entity_turn(proxy: Dictionary) -> void:
 	# A card with no duration (持鞘) has a turn but nothing to count: no player action, it just goes
 	# to the far left of the row and the turn ends.
 	if int(entity.get("duration_turns")) < 0:
-		_log_system("輪到「%s」：自動歸於陣列最左。" % name_text)
-		turn_manager.send_to_far_left(proxy)
+		# Only a card holding its owner in a stance (持鞘) puts itself at the far left; a plain permanent
+		# card (替身符) simply takes its turn and goes on.
+		if String(entity.get("grants_stance")) != "":
+			_log_system("輪到「%s」：自動歸於陣列最左。" % name_text)
+			turn_manager.send_to_far_left(proxy)
 		return
 	var expired: bool = entity.advance_duration() if entity.has_method("advance_duration") else false
 	if battle_ui and battle_ui.has_method("play_stage_entity_activation"):
@@ -4829,9 +4840,73 @@ func _sheath_blocks_hit(target: Dictionary, attacker: Dictionary) -> bool:
 	return randf() < float(sheath.get("block_chance"))
 
 
+## The card that blocked the Hit being reported (the 替身符 or the 持鞘 card).
+var _last_blocker: Object = null
+## entity_id -> {"entity": Object, "blocked": {target key: true}} for the enemy action under way.
+var _substitute_actions: Dictionary = {}
+
+
 func _on_hit_blocked(target: Dictionary, _attacker: Dictionary, _skill_name: String) -> void:
 	if battle_ui and battle_ui.has_method("play_sheath_block"):
-		battle_ui.play_sheath_block(target, find_stance_entity(target))
+		battle_ui.play_sheath_block(target, _last_blocker if _last_blocker != null else find_stance_entity(target))
+
+
+## Asked once for every individual Hit about to land on `target`: does a card take it? A 替身符 standing
+## directly beside a character takes the first Hit meant for him in this action (and none for the cards
+## beside it that are not characters); only if none does, 劉語塵's 持鞘 card may block (it is never asked
+## when a 替身符 has already taken the Hit, so the two never both appear).
+func _hit_block_info(target: Dictionary, attacker: Dictionary) -> Dictionary:
+	_last_blocker = null
+	if bool(target.get("is_enemy", false)) or not bool(attacker.get("is_enemy", false)):
+		return {}
+	var substitute: Object = _substitute_for(target)
+	if substitute != null:
+		_last_blocker = substitute
+		return {"blocked": true, "text": "身旁的替身符代為擋下了這一擊。"}
+	if _sheath_blocks_hit(target, attacker):
+		_last_blocker = find_stance_entity(target)
+		return {"blocked": true, "text": "以左手劍鞘架住了這一擊，攻勢被完全化去。"}
+	return {}
+
+
+## The 替身符 that takes the next Hit meant for `target`, or null. It must stand directly beside him in the
+## party's row, still hold its charge, and not have taken a Hit for him already in this action.
+func _substitute_for(target: Dictionary) -> Object:
+	if stage_entities == null or stage_entities.is_empty() or turn_manager == null:
+		return null
+	var row: Array = turn_manager.get_display_row(false)
+	var index: int = StanceAdjacency.index_of(row, StanceAdjacency.key_of(target))
+	if index < 0:
+		return null
+	var target_key: String = StanceAdjacency.key_of(target)
+	for neighbour: int in StanceAdjacency.neighbour_indices(row, index):
+		var entry: Dictionary = row[neighbour]
+		if not StanceAdjacency.is_entity(entry):
+			continue
+		var entity: Object = stage_entities.get_entity(String(entry.get("entity_id", "")))
+		if entity == null or String(entity.get("entity_type")) != "substitute_talisman" or not entity.is_alive():
+			continue
+		var book: Dictionary = _substitute_actions.get(String(entity.get("entity_id")), {"entity": entity, "blocked": {}})
+		if (book.blocked as Dictionary).has(target_key):
+			continue
+		(book.blocked as Dictionary)[target_key] = true
+		_substitute_actions[String(entity.get("entity_id"))] = book
+		return entity
+	return null
+
+
+## The enemy action is over: every 替身符 that took a blow breaks.
+func _spend_substitutes() -> void:
+	for book: Dictionary in _substitute_actions.values():
+		var entity: Object = book.entity
+		if entity == null or not stage_entities.get_stage_entities().has(entity):
+			continue
+		entity.set("guard_charges", 0)
+		_log_system("【%s】替我方擋下了這一擊，符紙碎裂。" % String(entity.get("display_name")))
+		if battle_ui and battle_ui.has_method("play_substitute_break"):
+			await battle_ui.play_substitute_break(entity)
+		stage_entities.destroy_entity(entity, {"reason": "blocked"})
+	_substitute_actions.clear()
 
 
 const StanceAdjacency = preload("res://scripts/battlescripts/StageAdjacency.gd")

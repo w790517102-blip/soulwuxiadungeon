@@ -2600,3 +2600,12 @@ func _enemy_region() -> Rect2:
 	if low.x == INF:
 		return Rect2(0.0, 0.0, 1.0, 1.0)
 	return Rect2(low, high - low)
+
+
+## The charm that took a blow tears into pieces (the same break as when it used to be struck).
+func present_substitute_break(entity: Object) -> void:
+	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
+	if card == null or not card.has_method("play_break"):
+		return
+	await get_tree().create_timer(0.25).timeout
+	await card.play_break()
