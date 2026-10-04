@@ -84,6 +84,7 @@ func _run() -> void:
 	rules = SkillDBScript.new()
 	_check_data()
 	await _check_cast()
+	await _check_cast_placement()
 	await _check_layouts()
 	await _check_sheath_combinations()
 	await _check_spent()
@@ -251,3 +252,17 @@ func _check_spent() -> void:
 	controller._substitute_actions.clear()
 	await controller._spend_substitutes()
 	_expect(second != null and controller.stage_entities.get_stage_entities().has(second), "a card that took no blow stays")
+
+
+## 書眠 acts after 劉語塵 (slower): the new card still stands at the far left and has no turn in the round it was drawn.
+func _check_cast_placement() -> void:
+	var liuyu: Dictionary = _liuyu()
+	var shumian: Dictionary = _shumian()
+	shumian["speed"] = 5
+	await _setup([liuyu, shumian])
+	manager.current_index = 1   # 劉 acted; 書眠 is acting
+	var entity: Object = await _cast_substitute(shumian)
+	var row: Array = manager.get_display_row(false)
+	_expect(Adjacency.key_of(row[row.size() - 1]) == "ent:%s" % String(entity.entity_id), "the new card is at the far left even though 劉語塵 had already acted: " + _names(row))
+	var proxy: Dictionary = _proxy_of(entity)
+	_expect(manager.turn_queue.find(proxy) < 0 or manager.turn_queue.find(proxy) < manager.current_index, "it has no turn left in the round it was drawn")

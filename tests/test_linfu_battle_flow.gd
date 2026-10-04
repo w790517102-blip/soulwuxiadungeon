@@ -79,17 +79,17 @@ func _run() -> void:
 	manager.current_index = 1
 	var row_after: Array = manager.get_display_row(false)
 	_expect(String(row_after[0].get("id", "")) == "liuyu", "劉語塵 is next to act")
-	_expect(controller.get_adjacency_bonus(shumian, "DEFENSE_UP") > 0.0 and controller.get_adjacency_bonus(liuyu, "DEFENSE_UP") > 0.0, "after the rotation 書眠 and 劉語塵 are both beside the card")
+	_expect(controller.get_adjacency_bonus(shumian, "DEFENSE_UP") > 0.0 and controller.get_adjacency_bonus(liuyu, "DEFENSE_UP") == 0.0, "after the rotation the card (fixed at the far left) is beside 書眠 only")
 
 	# --- the bonus changes damage, taken from the live order ---
 	var attack: Dictionary = {"id": "basic_attack", "name": "普通攻擊", "power": 1.0, "target_scope": "enemy_single"}
-	var covered_damage: int = _damage(controller, enemy, liuyu, attack)
+	var covered_damage: int = _damage(controller, enemy, shumian, attack)
 	manager.current_index = 1
-	liuyu["hp"] = 100
+	shumian["hp"] = 80
 	# Take the card out of the order: 劉語塵 is no longer covered, same seed.
 	var proxy: Dictionary = manager.queue_entities[0]
 	manager.queue_entities.erase(proxy)
-	var bare_damage: int = _damage(controller, enemy, liuyu, attack)
+	var bare_damage: int = _damage(controller, enemy, shumian, attack)
 	manager.queue_entities.append(proxy)
 	_expect(covered_damage < bare_damage, "a covered character takes less damage (%d < %d)" % [covered_damage, bare_damage])
 

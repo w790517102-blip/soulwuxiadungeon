@@ -4503,7 +4503,12 @@ func _execute_stage_entity_skill(actor: Dictionary, skill_data: Dictionary) -> v
 	# laid out with it already in it (it takes the last place of the round to come: the far left).
 	if bool(entity.get("joins_turn_order")) and turn_manager != null:
 		stage_entities.assign_entity_id(entity)
-		turn_manager.add_queue_actor(_queue_proxy_for(entity), actor if bool(entity.get("spawn_beside_owner")) else {})
+		var proxy: Dictionary = _queue_proxy_for(entity)
+		turn_manager.add_queue_actor(proxy, actor if bool(entity.get("spawn_beside_owner")) else {})
+		# A card that is not put beside its owner stands at the far left at once (after whoever has acted
+		# so far) and has no turn in the round it was drawn in; from the next round it sorts by speed.
+		if not bool(entity.get("spawn_beside_owner")):
+			turn_manager.send_to_far_left(proxy)
 	stage_entities.register_stage_entity(entity)
 	# A card that puts its owner in a stance (持鞘): the stance is the owner's state; the card only
 	# drives order and position. It ends when the card is gone (see _on_stage_entity_unregistered).
