@@ -14,6 +14,8 @@ const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 ## Callable(actor, family) -> float: effects handed out by position in the ADB row (see StageAdjacency),
 ## read at the moment damage is worked out. Unset = none.
 var adjacency_provider: Callable = Callable()
+## The effect family of a 臨符 card that adds to each stat.
+const STAT_FAMILIES: Dictionary = {"str": "STRENGTH_UP", "agi": "AGILITY_UP", "int": "INTELLECT_UP", "con": "CONSTITUTION_UP", "luck": "LUCK_UP"}
 
 func execute(
 	user: Dictionary,
@@ -100,6 +102,10 @@ func execute(
 	# === 基礎傷害計算 ===
 	var attack_context := _resolve_effective_attack(user)
 	var base_attack: float = float(attack_context.get("effective_atk", user.get("atk", 10)))
+	# 臨符 cards beside the attacker: strength adds attack (1.2 per point, as the stat does), and an
+	# ATTACK_UP card raises it by a rate. Read live; same family never stacks.
+	base_attack += floorf(_adjacency(user, "STRENGTH_UP") * 1.2)
+	base_attack *= 1.0 + _adjacency(user, "ATTACK_UP")
 	var effective_attack: float = base_attack + float(scaling_bonus)
 	if effective_attack < 1.0:
 		effective_attack = 1.0
@@ -187,7 +193,7 @@ func execute(
 				dmg *= max(0.0, 1.0 - resist)
 
 	# --- 暴擊 ---
-	var luck_stat := int(user.get("luck", 0))
+	var luck_stat := int(user.get("luck", 0)) + int(_adjacency(user, "LUCK_UP"))
 	var base_crit := 0.05
 	var luck_bonus = floor(float(luck_stat) / 5.0) * 0.01
 	var crit_rate = base_crit + luck_bonus + float(skill_data.get("crit_rate_bonus", 0.0))
@@ -214,12 +220,13 @@ func execute(
 		"def",
 		float(target.get("def", 0))
 	)
-	# A 臨符 card beside the target adds to its defense (same family never stacks: highest only).
-	if adjacency_provider.is_valid():
-		var adjacency_bonus: float = float(adjacency_provider.call(target, "DEFENSE_UP"))
-		if adjacency_bonus > 0.0:
-			defense *= 1.0 + adjacency_bonus
-			context["adjacency_def_bonus"] = adjacency_bonus
+	# 臨符 cards beside the target add to its defense (same family never stacks: highest only):
+	# constitution adds flat defense (0.8 per point, as the stat does), DEFENSE_UP a rate.
+	defense += floorf(_adjacency(target, "CONSTITUTION_UP") * 0.8)
+	var adjacency_bonus: float = _adjacency(target, "DEFENSE_UP")
+	if adjacency_bonus > 0.0:
+		defense *= 1.0 + adjacency_bonus
+		context["adjacency_def_bonus"] = adjacency_bonus
 	if bool(target.get("defending", false)):
 		defense *= 2.0
 		context["defending"] = true
@@ -325,7 +332,7 @@ func _calc_stat_scaling_bonus(user: Dictionary, skill_data: Dictionary) -> int:
 		var coeff: float = float(scaling_dict.get(stat_key, 0.0))
 		if coeff == 0.0:
 			continue
-		total += float(int(user.get(stat_key, 0))) * coeff
+		total += float(int(user.get(stat_key, 0)) + int(_adjacency(user, STAT_FAMILIES.get(stat_key, "")))) * coeff
 	return int(floor(total))
 
 func _resolve_effective_attack(actor: Dictionary) -> Dictionary:
@@ -387,6 +394,8 @@ func _roll_hit(user: Dictionary, target: Dictionary, extra_accuracy: float = 0.0
 		"evasion",
 		float(target.get("evasion", 0))
 	)
+	# 臨符 cards beside the target: agility and luck feed evasion as the stats do (0.7 and 0.3 a point).
+	final_evasion += roundf(_adjacency(target, "AGILITY_UP") * 0.7 + _adjacency(target, "LUCK_UP") * 0.3)
 	var accuracy_mod := final_accuracy - 100.0
 	var evasion_mod := final_evasion
 	# Player Accuracy/Evasion already include the canonical AGI/Luck contribution
@@ -417,3 +426,10 @@ func _build_dodge_log(user: Dictionary, target: Dictionary, skill_name: String, 
 	lines.append(dodge_line.replace("{name}", target_name))
 	lines.append("這一招沒有命中。")
 	return lines
+
+
+## What a 臨符 card beside `actor` gives it right now for one effect family (0.0 when none).
+func _adjacency(actor: Dictionary, family: String) -> float:
+	if not adjacency_provider.is_valid():
+		return 0.0
+	return float(adjacency_provider.call(actor, family))

@@ -14,6 +14,12 @@ extends RefCounted
 ## Effect families and how sources of the same family combine.
 const FAMILIES: Dictionary = {
 	"DEFENSE_UP": {"stack_rule": "HIGHEST_ONLY"},
+	"ATTACK_UP": {"stack_rule": "HIGHEST_ONLY"},
+	"STRENGTH_UP": {"stack_rule": "HIGHEST_ONLY"},
+	"CONSTITUTION_UP": {"stack_rule": "HIGHEST_ONLY"},
+	"AGILITY_UP": {"stack_rule": "HIGHEST_ONLY"},
+	"INTELLECT_UP": {"stack_rule": "HIGHEST_ONLY"},
+	"LUCK_UP": {"stack_rule": "HIGHEST_ONLY"},
 	"DAMAGE_REDUCTION": {"stack_rule": "HIGHEST_ONLY"},
 	"PARRY_UP": {"stack_rule": "HIGHEST_ONLY"},
 	"STATUS_RESIST": {"stack_rule": "HIGHEST_ONLY"},
