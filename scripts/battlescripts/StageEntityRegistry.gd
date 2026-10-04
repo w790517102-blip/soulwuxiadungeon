@@ -9,7 +9,7 @@ signal entity_unregistered(entity)
 signal entity_event(entity, event_name, context)
 
 const EVENTS: Array[String] = [
-	"on_spawn", "on_turn_start", "on_turn_end", "on_before_action", "on_after_action",
+	"on_spawn", "on_activation", "on_turn_start", "on_turn_end", "on_before_action", "on_after_action",
 	"on_damage_taken", "on_healed", "on_destroyed", "on_expire", "on_manual_activate",
 ]
 
@@ -17,12 +17,20 @@ var _entities: Array = []
 var _next_serial: int = 1
 
 
+## Gives the entity its id now (registering does the same if it is called later). Whoever needs the
+## id before the entity is shown - e.g. to give it a place in the turn order - calls this first.
+func assign_entity_id(entity: Object) -> String:
+	if String(entity.get("entity_id")) == "":
+		var type_text: String = String(entity.get("entity_type"))
+		entity.set("entity_id", "%s#%d" % [type_text if type_text != "" else "entity", _next_serial])
+		_next_serial += 1
+	return String(entity.get("entity_id"))
+
+
 func register_stage_entity(entity: Object) -> bool:
 	if entity == null or _entities.has(entity):
 		return false
-	if String(entity.get("entity_id")) == "":
-		entity.set("entity_id", "%s#%d" % [String(entity.get("entity_type")) if String(entity.get("entity_type")) != "" else "entity", _next_serial])
-		_next_serial += 1
+	assign_entity_id(entity)
 	if get_entity(String(entity.get("entity_id"))) != null:
 		return false
 	_entities.append(entity)

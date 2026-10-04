@@ -26,6 +26,10 @@ var enemy_party: Array = []
 ## A scripted guest (e.g. 左飲): it has a place in the turn order and a turn of its own, but no
 ## player action; the controller plays its scripted move when the turn comes. Empty when none.
 var guest_actor: Dictionary = {}
+## Stage entities that take part in the turn order (a 臨符 card...): one proxy dictionary each
+## ({is_stage_entity, entity_id, faction, speed, hp, ...}). They sort by speed like anyone and each
+## activation is their turn.
+var queue_entities: Array = []
 
 # 每輪依角色當下的最終加權速度排序（若未設定 speed，預設 0）
 func _compare_speed(a: Dictionary, b: Dictionary) -> bool:
@@ -223,9 +227,82 @@ func _is_battle_ending() -> bool:
 	return false
 
 
-## Everyone who takes a turn: the party, the enemies and the scripted guest, if any.
+
+## Everyone who takes a turn: the party, the enemies, the scripted guest and the queued stage entities.
 func get_all_actors() -> Array:
 	var everyone: Array = player_party + enemy_party
 	if not guest_actor.is_empty():
 		everyone.append(guest_actor)
+	everyone += queue_entities
 	return everyone
+
+
+## Puts a stage entity in the turn order. In the middle of a round it takes the LAST place of the round
+## still to come (it acts after everyone who has not yet acted) and from the next round on it sorts by
+## its speed like everyone else. `proxy` is {is_stage_entity: true, entity_id, faction, name, speed}.
+func add_queue_actor(proxy: Dictionary) -> void:
+	if queue_entities.has(proxy):
+		return
+	proxy["is_stage_entity"] = true
+	proxy["hp"] = 1
+	proxy["max_hp"] = 1
+	if not proxy.has("battle_order_index"):
+		proxy["battle_order_index"] = 1000 + queue_entities.size()
+	queue_entities.append(proxy)
+	if round_in_progress:
+		turn_queue.append(proxy)
+		var key := _actor_key(proxy)
+		if key != "" and not round_roster.has(key):
+			round_roster.append(key)
+
+
+## Takes a stage entity out of the turn order (it expired or was destroyed). If it still has a place
+## in the round under way, that turn is skipped (the proxy is no longer alive).
+func remove_queue_actor(proxy: Dictionary) -> void:
+	if not queue_entities.has(proxy):
+		return
+	queue_entities.erase(proxy)
+	proxy["hp"] = 0
+	var key := _actor_key(proxy)
+	round_roster.erase(key)
+	acted_this_round.erase(key)
+
+
+func find_queue_actor(entity_id: String) -> Dictionary:
+	for proxy: Dictionary in queue_entities:
+		if String(proxy.get("entity_id", "")) == entity_id:
+			return proxy
+	return {}
+
+
+## The order the cards of both camps are drawn in: whoever is still to act this round, next to act
+## first (the actor whose turn it is included), then everyone who has acted, sorted the way the next
+## round will sort them. Camp rows are this list filtered by side.
+func get_display_order() -> Array:
+	var queue: Array = turn_queue
+	var index: int = clampi(current_index, 0, queue.size())
+	var alive_all: Array = []
+	for actor: Dictionary in get_all_actors():
+		if _is_actor_alive(actor):
+			alive_all.append(actor)
+	var remaining: Array = []
+	for actor: Dictionary in queue.slice(index):
+		if alive_all.has(actor):
+			remaining.append(actor)
+	var acted: Array = []
+	for actor: Dictionary in alive_all:
+		if not remaining.has(actor):
+			acted.append(actor)
+	acted.sort_custom(Callable(self, "_compare_speed"))
+	return remaining + acted
+
+
+func is_enemy_side(entry: Dictionary) -> bool:
+	if bool(entry.get("is_stage_entity", false)):
+		return String(entry.get("faction", "player")) == "enemy"
+	return enemy_party.has(entry) or bool(entry.get("is_enemy", false))
+
+
+## One camp's row of the display order (index 0 = the next of that camp to act).
+func get_display_row(enemy_side: bool) -> Array:
+	return get_display_order().filter(func(entry: Dictionary) -> bool: return is_enemy_side(entry) == enemy_side)

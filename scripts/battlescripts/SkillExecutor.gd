@@ -11,6 +11,10 @@ var tone: ToneMap = ToneMap.new()
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 
+## Callable(actor, family) -> float: effects handed out by position in the ADB row (see StageAdjacency),
+## read at the moment damage is worked out. Unset = none.
+var adjacency_provider: Callable = Callable()
+
 func execute(
 	user: Dictionary,
 	target: Dictionary,
@@ -210,6 +214,12 @@ func execute(
 		"def",
 		float(target.get("def", 0))
 	)
+	# A 臨符 card beside the target adds to its defense (same family never stacks: highest only).
+	if adjacency_provider.is_valid():
+		var adjacency_bonus: float = float(adjacency_provider.call(target, "DEFENSE_UP"))
+		if adjacency_bonus > 0.0:
+			defense *= 1.0 + adjacency_bonus
+			context["adjacency_def_bonus"] = adjacency_bonus
 	if bool(target.get("defending", false)):
 		defense *= 2.0
 		context["defending"] = true

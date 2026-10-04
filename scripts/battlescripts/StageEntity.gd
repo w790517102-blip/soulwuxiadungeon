@@ -37,6 +37,10 @@ var row_edge_distance: int = 0
 var advance_policy: String = "none"
 var advance_amount: int = 1
 var expire_at_edge: bool = false
+## true: the entity has a place in the turn order (ADB) and its own activations, like an actor with no
+## command. `turn_speed` decides where it sorts in each new round (higher = earlier).
+var joins_turn_order: bool = false
+var turn_speed: int = 999
 var card_kind: String = "default"
 var card_config: Dictionary = {}
 ## Free-form data for the entity's own behaviour.
@@ -53,10 +57,10 @@ func apply_config(config: Dictionary) -> void:
 	for key: String in ["entity_id", "entity_type", "display_name", "owner_id", "faction", "card_kind", "row", "advance_policy"]:
 		if config.has(key):
 			set(key, String(config[key]))
-	for key: String in ["targetable", "damageable", "healable", "expire_at_edge"]:
+	for key: String in ["targetable", "damageable", "healable", "expire_at_edge", "joins_turn_order"]:
 		if config.has(key):
 			set(key, bool(config[key]))
-	for key: String in ["max_hp", "current_hp", "duration_turns", "priority", "row_edge_distance", "advance_amount"]:
+	for key: String in ["max_hp", "current_hp", "duration_turns", "priority", "row_edge_distance", "advance_amount", "turn_speed"]:
 		if config.has(key):
 			set(key, int(config[key]))
 	if config.has("max_hp") and not config.has("current_hp"):
@@ -114,6 +118,8 @@ func modify_target_priority(_attacker: Variant, _candidate: Variant, score: floa
 
 # --- Lifecycle hooks (all no-ops; `context` is a Dictionary the dispatcher fills) ----
 func on_spawn(_context: Dictionary) -> void: pass
+## The entity's own turn in the order has come (only for entities with joins_turn_order).
+func on_activation(_context: Dictionary) -> void: pass
 func on_turn_start(_context: Dictionary) -> void: pass
 func on_turn_end(_context: Dictionary) -> void: pass
 func on_before_action(_context: Dictionary) -> void: pass

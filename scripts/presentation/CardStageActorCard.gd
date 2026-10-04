@@ -963,3 +963,54 @@ func _free_guard_glow() -> void:
 		_guard_glow.queue_free()
 		_guard_glow = null
 		_guard_glow_material = null
+
+
+# --- Ward aura (護脈): a faint jade glow while a 臨符 card beside this card protects it ---------------
+
+var _ward_on: bool = false
+var _ward_glow: ColorRect = null
+var _ward_material: ShaderMaterial = null
+var _ward_tween: Tween = null
+
+
+## Shows (or hides) the faint jade-white glow on the frame and boxes that says "a 臨符 card is
+## covering this card right now". Cheap to call every poll: it only reacts to a change.
+func set_ward_aura(on: bool) -> void:
+	if on == _ward_on:
+		return
+	_ward_on = on
+	_build_card()
+	if on and (_ward_glow == null or not is_instance_valid(_ward_glow)):
+		var frame: Rect2 = (template.frame as Rect2).grow(-8)
+		_ward_glow = ColorRect.new()
+		_ward_glow.name = "WardGlow"
+		_ward_glow.position = frame.position
+		_ward_glow.size = frame.size
+		_ward_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_ward_material = ShaderMaterial.new()
+		_ward_material.shader = GuardGlowShader
+		_ward_material.set_shader_parameter("size_px", frame.size)
+		_ward_material.set_shader_parameter("seed", randf() * 10.0)
+		_ward_material.set_shader_parameter("amount", 0.0)
+		_ward_material.set_shader_parameter("ice_tone", Color(0.30, 0.85, 0.68))
+		_ward_material.set_shader_parameter("white_tone", Color(0.78, 1.0, 0.90))
+		_ward_material.set_shader_parameter("name_rect", _uv_rect(template.get("name", Rect2()), frame))
+		_ward_material.set_shader_parameter("info_rect", _uv_rect(template.get("status", template.get("hp", Rect2())), frame))
+		_ward_material.set_shader_parameter("window_rect", Vector4.ZERO)
+		_ward_glow.material = _ward_material
+		_turn_overlay.get_parent().add_child(_ward_glow)
+		_turn_overlay.get_parent().move_child(_ward_glow, _turn_overlay.get_index())
+	if _ward_material == null:
+		return
+	if _ward_tween and _ward_tween.is_valid():
+		_ward_tween.kill()
+	var material: ShaderMaterial = _ward_material
+	var start: float = float(material.get_shader_parameter("amount"))
+	_ward_tween = create_tween()
+	_ward_tween.tween_method(func(value: float) -> void: material.set_shader_parameter("amount", value), start, 0.8 if on else 0.0, 0.5).set_trans(Tween.TRANS_SINE)
+	if not on:
+		_ward_tween.tween_callback(func() -> void:
+			if not _ward_on and _ward_glow != null and is_instance_valid(_ward_glow):
+				_ward_glow.queue_free()
+				_ward_glow = null
+				_ward_material = null)

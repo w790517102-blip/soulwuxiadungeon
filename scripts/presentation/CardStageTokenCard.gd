@@ -145,6 +145,8 @@ func refresh(target_entity: Object) -> void:
 	if badge_label:
 		var charges: Variant = entity.get("guard_charges")
 		var prefix: String = String((entity.get("card_config") as Dictionary).get("badge_prefix", "×"))
+		if charges == null and int(entity.get("duration_turns")) >= 0 and bool(entity.get("joins_turn_order")):
+			charges = int(entity.get("duration_turns"))   # a 臨符 card shows the activations it has left
 		badge_label.text = "%s%d" % [prefix, int(charges)] if charges != null else ""
 
 
@@ -324,3 +326,14 @@ func _panel(parent: Control, rect: Rect2, background: Color, border: Color, widt
 	panel.add_theme_stylebox_override("panel", style)
 	parent.add_child(panel)
 	return panel
+
+
+## The card's own turn in the order: a short warm-jade flash and a small swell.
+func pulse() -> void:
+	if _flash == null:
+		return
+	_flash.color = Color(0.7, 1.0, 0.85, 0.5)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(_flash, "color:a", 0.0, 0.5).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(self, "scale", Vector3.ONE * 1.08, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_property(self, "scale", Vector3.ONE, 0.3).set_trans(Tween.TRANS_SINE)

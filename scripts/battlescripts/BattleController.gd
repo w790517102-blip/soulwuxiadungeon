@@ -168,6 +168,11 @@ func _ready() -> void:
 		print("[BattleController] VictoryHandler=", victory_handler)
 	if enemy_ai and "stage_entities" in enemy_ai:
 		enemy_ai.stage_entities = stage_entities
+	# A stage entity that took part in the turn order leaves it when it leaves the stage.
+	stage_entities.entity_unregistered.connect(_on_stage_entity_unregistered)
+	# Effects handed out by position in the ADB row are read live whenever damage is worked out.
+	if skill_executor and "adjacency_provider" in skill_executor:
+		skill_executor.adjacency_provider = Callable(self, "get_adjacency_bonus")
 	call_deferred("_init_battle_safe")
 
 
@@ -1694,6 +1699,12 @@ func _on_turn_started(actor: Dictionary) -> void:
 		safe_end_turn()
 		return
 
+	# 🎴 A stage entity with a place in the order (臨符): its turn is just its own activation.
+	if bool(actor.get("is_stage_entity", false)):
+		await _run_stage_entity_turn(actor)
+		safe_end_turn()
+		return
+
 	# 🍶 Scripted guest (左飲): his turn comes in the order like anyone's, but he has no command;
 	# he plays the next of his scripted moves and hands over.
 	if bool(actor.get("is_scripted_guest", false)):
@@ -2214,7 +2225,7 @@ func safe_end_turn() -> void:
 		return
 	if turn_manager and status_manager and status_manager.has_method("tick_after_owner_action"):
 		var current_actor = turn_manager.get_current_actor()
-		if typeof(current_actor) == TYPE_DICTIONARY and not current_actor.is_empty():
+		if typeof(current_actor) == TYPE_DICTIONARY and not current_actor.is_empty() and not bool(current_actor.get("is_stage_entity", false)):
 			status_manager.tick_after_owner_action(current_actor)
 			_update_ui_for_actor(current_actor)
 			if battle_ui:
@@ -4441,6 +4452,11 @@ func _execute_stage_entity_skill(actor: Dictionary, skill_data: Dictionary) -> v
 	if battle_ui and battle_ui.has_method("play_stage_entity_cast"):
 		await battle_ui.play_stage_entity_cast(actor, skill_data, "windup")
 	var entity: RefCounted = StageEntityFactory.create(config, String(actor.get("id", "")))
+	# A card that lives in the ADB gets its place in the turn order BEFORE it is shown, so the row is
+	# laid out with it already in it (it takes the last place of the round to come: the far left).
+	if bool(entity.get("joins_turn_order")) and turn_manager != null:
+		stage_entities.assign_entity_id(entity)
+		turn_manager.add_queue_actor(_queue_proxy_for(entity))
 	stage_entities.register_stage_entity(entity)
 	_log("【%s】現身於我方陣列最左。" % entity_name)
 	if battle_ui and battle_ui.has_method("play_stage_entity_cast"):
@@ -4622,3 +4638,79 @@ func _build_guest_turn_actor() -> Dictionary:
 		"is_guest": true,
 		"is_scripted_guest": true,
 	}
+
+
+# --- Stage entities in the ADB (臨符 cards) --------------------------------------------------------
+
+const StageAdjacency = preload("res://scripts/battlescripts/StageAdjacency.gd")
+
+
+## The turn-order stand-in for a stage entity (see TurnManager.add_queue_actor).
+func _queue_proxy_for(entity: Object) -> Dictionary:
+	return {
+		"id": String(entity.get("entity_id")),
+		"entity_id": String(entity.get("entity_id")),
+		"name": String(entity.get("display_name")),
+		"display_name": String(entity.get("display_name")),
+		"faction": String(entity.get("faction")),
+		"speed": int(entity.get("turn_speed")),
+		"element": "",
+		"is_stage_entity": true,
+	}
+
+
+func _on_stage_entity_unregistered(entity: Object) -> void:
+	if turn_manager == null:
+		return
+	var proxy: Dictionary = turn_manager.find_queue_actor(String(entity.get("entity_id")))
+	if not proxy.is_empty():
+		turn_manager.remove_queue_actor(proxy)
+
+
+## The entity's own turn: it ticks one activation off its duration, does whatever it does on
+## activation and, when its duration has run out, dissolves and leaves the order.
+func _run_stage_entity_turn(proxy: Dictionary) -> void:
+	var entity: Object = stage_entities.get_entity(String(proxy.get("entity_id", "")))
+	if entity == null:
+		return
+	var context := {"round": turn_manager.round_count, "proxy": proxy}
+	stage_entities.dispatch_to(entity, "on_activation", context)
+	var expired: bool = entity.advance_duration() if entity.has_method("advance_duration") else false
+	var name_text: String = String(entity.get("display_name"))
+	if battle_ui and battle_ui.has_method("play_stage_entity_activation"):
+		await battle_ui.play_stage_entity_activation(entity)
+	if expired:
+		_log_system("【%s】符力散盡，隨風化去。" % name_text)
+		stage_entities.expire_entity(entity, {"reason": "duration"})
+	else:
+		_log_system("【%s】符力流轉，尚餘 %d 次。" % [name_text, int(entity.get("duration_turns"))])
+
+
+## The effect values (family -> value, highest source only) the stage entities in the ADB row give
+## `actor` RIGHT NOW, from the live order.
+func get_adjacency_effects(actor: Dictionary) -> Dictionary:
+	if stage_entities == null or stage_entities.is_empty() or turn_manager == null:
+		return {}
+	var key: String = StageAdjacency.key_of(actor)
+	if key == "":
+		return {}
+	var sources: Array = []
+	for enemy_side: bool in [false, true]:
+		var row: Array = turn_manager.get_display_row(enemy_side)
+		for index: int in range(row.size()):
+			var entry: Dictionary = row[index]
+			if not StageAdjacency.is_entity(entry):
+				continue
+			var entity: Object = stage_entities.get_entity(String(entry.get("entity_id", "")))
+			if entity == null or not ("adjacency_effects" in entity):
+				continue
+			for recipient: Dictionary in StageAdjacency.recipients(row, index, String(entity.get("adjacency_pattern"))):
+				if StageAdjacency.key_of(recipient) == key:
+					for effect: Variant in entity.get("adjacency_effects"):
+						sources.append(effect)
+	return StageAdjacency.resolve_effects(sources)
+
+
+## One family's bonus for `actor` right now (0.0 when none).
+func get_adjacency_bonus(actor: Dictionary, family: String) -> float:
+	return float(get_adjacency_effects(actor).get(family, 0.0))

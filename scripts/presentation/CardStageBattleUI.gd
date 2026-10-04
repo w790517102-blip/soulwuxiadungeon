@@ -457,3 +457,9 @@ func play_heal_fx(target: Dictionary) -> void:
 func play_buff_fx(target: Dictionary, kind: String) -> void:
 	if stage_enabled and stage:
 		stage.present_buff(target, kind)
+
+
+## A stage entity that lives in the turn order takes its own turn (a 臨符 card's activation).
+func play_stage_entity_activation(entity: Object) -> void:
+	if stage_enabled and stage:
+		await stage.present_entity_activation(entity)

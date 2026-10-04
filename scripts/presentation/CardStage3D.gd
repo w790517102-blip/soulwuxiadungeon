@@ -399,6 +399,18 @@ func order_keys() -> Array[String]:
 	var keys: Array[String] = []
 	if manager == null or manager.get("turn_queue") == null:
 		return keys
+	# The turn manager knows the real order, including stage entities that take part in it (臨符).
+	if manager.has_method("get_display_order"):
+		for entry: Dictionary in manager.get_display_order():
+			if bool(entry.get("is_stage_entity", false)):
+				var entity_key: String = "ent:%s" % String(entry.get("entity_id", ""))
+				if entity_cards.has(String(entry.get("entity_id", ""))):
+					keys.append(entity_key)
+			else:
+				var actor_key_text: String = actor_key(entry)
+				if cards.has(actor_key_text):
+					keys.append(actor_key_text)
+		return keys
 	var queue: Array = manager.turn_queue
 	var index: int = clampi(int(manager.current_index), 0, queue.size())
 	var alive_all: Array = []
@@ -428,7 +440,7 @@ func ranks_from_order(keys: Array[String]) -> Dictionary:
 	for enemy_side: bool in [false, true]:
 		var row: Array[String] = []
 		for key: String in keys:
-			if cards[key].is_enemy == enemy_side:
+			if _row_card(key).is_enemy == enemy_side:
 				row.append(key)
 		var actor_count: int = row.size()
 		var rest: Array = []
@@ -440,6 +452,8 @@ func ranks_from_order(keys: Array[String]) -> Dictionary:
 		# fallen): `row_edge_distance` counts positions in from the outer end.
 		var inserts: Array = []
 		for entity: Object in _row_entities(enemy_side):
+			if bool(entity.get("joins_turn_order")):
+				continue   # a card that takes part in the order is already placed by it
 			var index: int = clampi(actor_count - int(entity.get("row_edge_distance")), 0, actor_count)
 			inserts.append([index, _row_key(entity)])
 		inserts.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0] or (a[0] == b[0] and a[1] > b[1]))
@@ -493,6 +507,7 @@ func _update_order(delta: float) -> void:
 	if _order_clock < ORDER_POLL_SECONDS or cards.is_empty():
 		return
 	_order_clock = 0.0
+	_refresh_ward_auras()
 	var keys: Array[String] = order_keys()
 	if keys.is_empty():
 		return
@@ -568,6 +583,8 @@ func remove_stage_entity_card(entity: Object) -> void:
 	_order_signature = ""
 	if card == null:
 		return
+	if entity.has_method("has_tag") and entity.has_tag("talisman") and card.visible:
+		_paper_dissolve(card)
 	# A card that is still showing (it expired rather than broke) fades before it is freed.
 	if card.has_method("set_fade") and card.get("card_mesh") != null and card.card_mesh.transparency < 0.9:
 		var tween := create_tween()
@@ -2157,3 +2174,104 @@ func _spear_impact(card: Node3D, crit: bool) -> void:
 	await get_tree().create_timer(0.28).timeout
 	if is_instance_valid(card):
 		card.stagger_recover(0.3)
+
+
+# --- 臨符 cards in the ADB: a jade glow on whoever they cover, an activation pulse, a dissolve ----------
+
+const AdjacencyRules = preload("res://scripts/battlescripts/StageAdjacency.gd")
+
+
+## Marks every card a 臨符 card is covering right now (from the live order, so it follows the rotation).
+func _refresh_ward_auras() -> void:
+	var wanted: Dictionary = {}
+	var manager: Node = _turn_manager()
+	if manager != null and manager.has_method("get_display_row") and not _entity_objects.is_empty():
+		for enemy_side: bool in [false, true]:
+			var row: Array = manager.get_display_row(enemy_side)
+			for index: int in range(row.size()):
+				var entry: Dictionary = row[index]
+				if not AdjacencyRules.is_entity(entry):
+					continue
+				var entity: Object = _entity_objects.get(String(entry.get("entity_id", "")))
+				if entity == null or not ("adjacency_effects" in entity) or (entity.get("adjacency_effects") as Array).is_empty():
+					continue
+				for recipient: Dictionary in AdjacencyRules.recipients(row, index, String(entity.get("adjacency_pattern"))):
+					wanted[actor_key(recipient)] = true
+	for key: String in cards.keys():
+		var card: Node3D = cards[key]
+		if card.has_method("set_ward_aura"):
+			card.set_ward_aura(wanted.has(key))
+
+
+## The card's own activation (its turn in the order).
+func present_entity_activation(entity: Object) -> void:
+	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
+	if card == null:
+		return
+	if card.has_method("pulse"):
+		card.pulse()
+	await get_tree().create_timer(0.55).timeout
+
+
+## A paper charm that has spent itself: gold dust and ash lift off the card as it fades.
+func _paper_dissolve(card: Node3D) -> void:
+	var unit: float = card.card_size.y
+	for spec: Array in [
+			[PackedColorArray([Color(1.0, 0.92, 0.6, 1.0), Color(0.6, 0.9, 0.7, 0.7), Color(0.3, 0.6, 0.5, 0.0)]), unit * 0.09, true, 22],
+			[PackedColorArray([Color(0.6, 0.57, 0.52, 0.8), Color(0.35, 0.33, 0.3, 0.6), Color(0.2, 0.19, 0.18, 0.0)]), unit * 0.14, false, 16]]:
+		var particles := GPUParticles3D.new()
+		var process := ParticleProcessMaterial.new()
+		process.direction = Vector3(0.0, 1.0, 0.0)
+		process.spread = 55.0
+		process.initial_velocity_min = unit * 0.1
+		process.initial_velocity_max = unit * 0.45
+		process.damping_min = unit * 0.15
+		process.damping_max = unit * 0.4
+		process.gravity = Vector3(0.0, unit * 0.12, 0.0)
+		process.scale_min = 0.5
+		process.scale_max = 1.3
+		process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+		process.emission_box_extents = Vector3(card.card_size.x * 0.4, card.card_size.y * 0.45, 0.04)
+		process.color_ramp = GhostFire._ramp(spec[0], PackedFloat32Array([0.0, 0.5, 1.0]))
+		particles.process_material = process
+		var mesh := QuadMesh.new()
+		mesh.size = Vector2.ONE * float(spec[1]) * 0.25
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD if bool(spec[2]) else BaseMaterial3D.BLEND_MODE_MIX
+		material.vertex_color_use_as_albedo = true
+		material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		material.render_priority = 43
+		material.albedo_texture = _soft_dot_texture()
+		mesh.material = material
+		particles.draw_pass_1 = mesh
+		particles.amount = int(spec[3])
+		particles.lifetime = 1.1
+		particles.one_shot = true
+		particles.explosiveness = 0.5
+		particles.visibility_aabb = AABB(Vector3(-6, -6, -6), Vector3(12, 12, 12))
+		particles.position = card.position + Vector3(0.0, 0.0, 0.3)
+		fx_root.add_child(particles)
+		particles.emitting = true
+		get_tree().create_timer(1.6).timeout.connect(particles.queue_free)
+
+
+var _soft_dot: Texture2D = null
+
+
+## A soft round dot, so dust and ash are specks of light and not squares.
+func _soft_dot_texture() -> Texture2D:
+	if _soft_dot == null:
+		var gradient := Gradient.new()
+		gradient.offsets = PackedFloat32Array([0.0, 0.4, 1.0])
+		gradient.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0.45), Color(1, 1, 1, 0)])
+		var texture := GradientTexture2D.new()
+		texture.gradient = gradient
+		texture.fill = GradientTexture2D.FILL_RADIAL
+		texture.fill_from = Vector2(0.5, 0.5)
+		texture.fill_to = Vector2(1.0, 0.5)
+		texture.width = 64
+		texture.height = 64
+		_soft_dot = texture
+	return _soft_dot
