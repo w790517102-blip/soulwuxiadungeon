@@ -4504,11 +4504,7 @@ func _execute_stage_entity_skill(actor: Dictionary, skill_data: Dictionary) -> v
 	if bool(entity.get("joins_turn_order")) and turn_manager != null:
 		stage_entities.assign_entity_id(entity)
 		var proxy: Dictionary = _queue_proxy_for(entity)
-		turn_manager.add_queue_actor(proxy, actor if bool(entity.get("spawn_beside_owner")) else {})
-		# A card that is not put beside its owner stands at the far left at once (after whoever has acted
-		# so far) and has no turn in the round it was drawn in; from the next round it sorts by speed.
-		if not bool(entity.get("spawn_beside_owner")):
-			turn_manager.send_to_far_left(proxy)
+		turn_manager.add_queue_actor(proxy, actor if bool(entity.get("spawn_beside_owner")) else {})   # far left, or beside the owner
 	stage_entities.register_stage_entity(entity)
 	# A card that puts its owner in a stance (持鞘): the stance is the owner's state; the card only
 	# drives order and position. It ends when the card is gone (see _on_stage_entity_unregistered).
@@ -4746,11 +4742,7 @@ func _run_stage_entity_turn(proxy: Dictionary) -> void:
 	# A card with no duration (持鞘) has a turn but nothing to count: no player action, it just goes
 	# to the far left of the row and the turn ends.
 	if int(entity.get("duration_turns")) < 0:
-		# Only a card holding its owner in a stance (持鞘) puts itself at the far left; a plain permanent
-		# card (替身符) simply takes its turn and goes on.
-		if String(entity.get("grants_stance")) != "":
-			_log_system("輪到「%s」：自動歸於陣列最左。" % name_text)
-			turn_manager.send_to_far_left(proxy)
+		# A card has a turn but nothing to count: it keeps its place (cards obey position, not speed).
 		return
 	var expired: bool = entity.advance_duration() if entity.has_method("advance_duration") else false
 	if battle_ui and battle_ui.has_method("play_stage_entity_activation"):
@@ -4829,7 +4821,7 @@ func _sheath_proxy(entity: Object) -> Dictionary:
 	return turn_manager.find_queue_actor(String(entity.get("entity_id"))) if turn_manager != null and entity != null else {}
 
 
-## A hit that is about to land on 劉語塵: if his 持鞘 card stands at the right end of the row, each
+## A hit that is about to land on 劉語塵: if his 持鞘 card stands directly beside him in the row, each
 ## individual Hit has a 50% chance of being blocked outright. Never consumes the card.
 func _sheath_blocks_hit(target: Dictionary, attacker: Dictionary) -> bool:
 	if not bool(attacker.get("is_enemy", false)) or bool(target.get("is_enemy", false)):
@@ -4839,8 +4831,15 @@ func _sheath_blocks_hit(target: Dictionary, attacker: Dictionary) -> bool:
 	var sheath: Object = find_stance_entity(target)
 	if sheath == null:
 		return false
+	# The card blocks only while it stands directly beside 劉語塵 in the row (like the 臨符 cards).
 	var row: Array = turn_manager.get_display_row(false)
-	if row.is_empty() or StanceAdjacency.key_of(row[0]) != "ent:%s" % String(sheath.get("entity_id")):
+	var own_index: int = StanceAdjacency.index_of(row, StanceAdjacency.key_of(target))
+	var sheath_key: String = "ent:%s" % String(sheath.get("entity_id"))
+	var beside: bool = false
+	for neighbour: int in StanceAdjacency.neighbour_indices(row, own_index):
+		if StanceAdjacency.key_of(row[neighbour]) == sheath_key:
+			beside = true
+	if not beside:
 		return false
 	return randf() < float(sheath.get("block_chance"))
 

@@ -83,8 +83,9 @@ func start_new_round() -> void:
 
 	turn_queue.clear()
 	turn_queue += get_all_actors()
-	turn_queue = turn_queue.filter(func(a): return _is_actor_alive(a))
+	turn_queue = turn_queue.filter(func(a): return _is_actor_alive(a) and not _is_card(a))
 	turn_queue.sort_custom(Callable(self, "_compare_speed"))
+	_queue_cards_by_position()
 	current_index = 0
 
 	call_deferred("next_turn")
@@ -238,10 +239,12 @@ func get_all_actors() -> Array:
 	return everyone
 
 
-## Puts a stage entity in the turn order. In the middle of a round it takes the LAST place of the round
-## still to come (it acts after everyone who has not yet acted) and from the next round on it sorts by
-## its speed like everyone else. `proxy` is {is_stage_entity: true, entity_id, faction, name, speed}.
-## `beside_actor` puts it directly after that actor instead (his left neighbour in the row).
+## Puts a stage entity (a card) in the turn order. A card obeys POSITION, never speed: it is drawn at the far
+## left of its camp's row (everything that stood there is pushed one place right), or, with `beside_actor`,
+## directly to the left of that actor. It keeps its place in the row (characters only trade places among
+## themselves by speed); its own turn (activation) comes when every character to its right has acted. A card
+## drawn in the middle of a round has no turn in that round. `proxy` is {is_stage_entity, entity_id,
+## faction, name}.
 func add_queue_actor(proxy: Dictionary, beside_actor: Dictionary = {}) -> void:
 	if queue_entities.has(proxy):
 		return
@@ -250,30 +253,36 @@ func add_queue_actor(proxy: Dictionary, beside_actor: Dictionary = {}) -> void:
 	proxy["max_hp"] = 1
 	if not proxy.has("battle_order_index"):
 		proxy["battle_order_index"] = 1000 + queue_entities.size()
+	var enemy_side: bool = is_enemy_side(proxy)
+	var slot: int = 0
+	if not beside_actor.is_empty():
+		var row: Array = get_display_row(is_enemy_side(beside_actor))
+		var owner_index: int = row.find(beside_actor)
+		if owner_index >= 0:
+			slot = row.size() - 1 - owner_index   # his place counted from the left: the card takes it
+	_shift_cards_from(enemy_side, slot, 1)
+	proxy["slot_left"] = slot
 	queue_entities.append(proxy)
-	if round_in_progress:
-		# Normally it takes the last place of the round to come; with `beside_actor` it is put in the
-		# order right after that actor, i.e. directly to his left in the row.
-		var owner_index: int = turn_queue.find(beside_actor) if not beside_actor.is_empty() else -1
-		if owner_index >= current_index:
-			turn_queue.insert(owner_index + 1, proxy)
-		else:
-			turn_queue.append(proxy)
-		var key := _actor_key(proxy)
-		if key != "" and not round_roster.has(key):
-			round_roster.append(key)
 
 
-## Takes a stage entity out of the turn order (it expired or was destroyed). If it still has a place
-## in the round under way, that turn is skipped (the proxy is no longer alive).
+## Takes a stage entity out of the turn order (it expired or was destroyed). The cards that stood to its
+## right close up with everything else.
 func remove_queue_actor(proxy: Dictionary) -> void:
 	if not queue_entities.has(proxy):
 		return
+	var slot: int = int(proxy.get("slot_left", 0))
+	var enemy_side: bool = is_enemy_side(proxy)
 	queue_entities.erase(proxy)
+	_shift_cards_from(enemy_side, slot + 1, -1)
 	proxy["hp"] = 0
 	var key := _actor_key(proxy)
 	round_roster.erase(key)
 	acted_this_round.erase(key)
+	var queue_index: int = turn_queue.find(proxy)
+	if queue_index >= 0:
+		turn_queue.remove_at(queue_index)
+		if queue_index < current_index:
+			current_index -= 1
 
 
 func find_queue_actor(entity_id: String) -> Dictionary:
@@ -283,15 +292,25 @@ func find_queue_actor(entity_id: String) -> Dictionary:
 	return {}
 
 
-## The order the cards of both camps are drawn in: whoever is still to act this round, next to act
-## first (the actor whose turn it is included), then everyone who has acted, sorted the way the next
-## round will sort them. Camp rows are this list filtered by side.
-func get_display_order() -> Array:
+## Cards of one camp whose place counted from the left is `from_slot` or more move `delta` places.
+func _shift_cards_from(enemy_side: bool, from_slot: int, delta: int) -> void:
+	for card: Dictionary in queue_entities:
+		if is_enemy_side(card) == enemy_side and int(card.get("slot_left", 0)) >= from_slot:
+			card["slot_left"] = maxi(int(card.get("slot_left", 0)) + delta, 0)
+
+
+func _is_card(entry: Dictionary) -> bool:
+	return bool(entry.get("is_stage_entity", false))
+
+
+## The characters (never cards), next to act first: whoever is still to act this round, then everyone who
+## has acted, sorted the way the next round will sort them.
+func _character_order() -> Array:
 	var queue: Array = turn_queue
 	var index: int = clampi(current_index, 0, queue.size())
 	var alive_all: Array = []
 	for actor: Dictionary in get_all_actors():
-		if _is_actor_alive(actor):
+		if _is_actor_alive(actor) and not _is_card(actor):
 			alive_all.append(actor)
 	var remaining: Array = []
 	for actor: Dictionary in queue.slice(index):
@@ -305,30 +324,103 @@ func get_display_order() -> Array:
 	return remaining + acted
 
 
+## One camp's row: its characters (speed decides only their order among themselves) with its cards standing
+## in their own places counted from the left.
+func get_display_row(enemy_side: bool) -> Array:
+	var characters: Array = _character_order().filter(func(entry: Dictionary) -> bool: return is_enemy_side(entry) == enemy_side)
+	var cards: Array = queue_entities.filter(func(card: Dictionary) -> bool: return is_enemy_side(card) == enemy_side and _is_actor_alive(card))
+	return _merge_cards(characters, cards)
+
+
+## `characters` run from the right end (index 0) to the left; each card takes its place counted from the left
+## end (0 = far left); the characters fill the places that are left, keeping their order.
+func _merge_cards(characters: Array, cards: Array) -> Array:
+	if cards.is_empty():
+		return characters
+	var total: int = characters.size() + cards.size()
+	var sorted_cards: Array = cards.duplicate()
+	sorted_cards.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if int(a.get("slot_left", 0)) != int(b.get("slot_left", 0)):
+			return int(a.get("slot_left", 0)) < int(b.get("slot_left", 0))
+		return int(a.get("battle_order_index", 0)) < int(b.get("battle_order_index", 0)))
+	var row: Array = []
+	row.resize(total)
+	for card: Dictionary in sorted_cards:
+		var place: int = clampi(int(card.get("slot_left", 0)), 0, total - 1)
+		while row[total - 1 - place] != null:
+			place = (place + 1) % total
+		row[total - 1 - place] = card
+	var next_character: int = 0
+	for index: int in range(total):
+		if row[index] == null:
+			row[index] = characters[next_character]
+			next_character += 1
+	return row
+
+
+## Both camps' rows in one list (each camp keeps its own order). Camp rows are this list filtered by side.
+func get_display_order() -> Array:
+	var rows: Dictionary = {false: get_display_row(false), true: get_display_row(true)}
+	var cursor: Dictionary = {false: 0, true: 0}
+	var result: Array = []
+	for entry: Dictionary in _character_order():
+		var side: bool = is_enemy_side(entry)
+		var row: Array = rows[side]
+		if cursor[side] < row.size():
+			result.append(row[cursor[side]])
+			cursor[side] += 1
+	for side: bool in [false, true]:
+		var row: Array = rows[side]
+		while cursor[side] < row.size():
+			result.append(row[cursor[side]])
+			cursor[side] += 1
+	return result
+
+
 func is_enemy_side(entry: Dictionary) -> bool:
 	if bool(entry.get("is_stage_entity", false)):
 		return String(entry.get("faction", "player")) == "enemy"
 	return enemy_party.has(entry) or bool(entry.get("is_enemy", false))
 
 
-## One camp's row of the display order (index 0 = the next of that camp to act).
-func get_display_row(enemy_side: bool) -> Array:
-	return get_display_order().filter(func(entry: Dictionary) -> bool: return is_enemy_side(entry) == enemy_side)
+## At the start of a round each card gets its turn in the queue: right after the last character of its camp
+## standing to its right (before everyone if there is none). A card drawn mid-round is not in the queue.
+func _queue_cards_by_position() -> void:
+	for enemy_side: bool in [false, true]:
+		var row: Array = get_display_row(enemy_side)
+		var anchor: Dictionary = {}
+		var placed_after: Dictionary = {}
+		for entry: Dictionary in row:
+			if not _is_card(entry):
+				anchor = entry
+				continue
+			if not _is_actor_alive(entry):
+				continue
+			var anchor_key: String = _actor_key(anchor) if not anchor.is_empty() else "<front>"
+			var base: int = turn_queue.find(anchor) + 1 if not anchor.is_empty() else 0
+			var offset: int = int(placed_after.get(anchor_key, 0))
+			placed_after[anchor_key] = offset + 1
+			turn_queue.insert(clampi(base + offset, 0, turn_queue.size()), entry)
 
 
 # --- Explicit placements at the far left of a camp's row ----------------------------------------
-# The order a camp's cards are drawn in is "who still has to act, next first" followed by "who has
-# acted". An effect (the 持鞘 card after its strike, the actor ending his turn after it) can also SEND
-# a card to the far left: it then stands with those who have acted, after everyone else of them,
-# and later stampings stand further left still. Stamps last for the round; the next round sorts by
-# speed as usual.
+# A character that ends up at the far left (the actor after 鞘劍連擊) stands after everyone who has acted,
+# and a card sent there takes place 0 of its camp; whatever stood at the far left is one place in. Stamps
+# last for the round; the next round sorts the characters by speed as usual (cards keep their places).
 
 var _left_stamp: int = 0
 
 
-## Puts `entry` at the far left of the order (after everyone who has acted so far). If it still had
-## a turn to come this round, that turn is used up: it counts as having acted. Returns nothing.
+## Puts `entry` at the far left of its camp's row. A character that still had a turn to come uses it up.
 func send_to_far_left(entry: Dictionary) -> void:
+	var enemy_side: bool = is_enemy_side(entry)
+	if _is_card(entry):
+		var old_slot: int = int(entry.get("slot_left", 0))
+		for card: Dictionary in queue_entities:
+			if card != entry and is_enemy_side(card) == enemy_side and int(card.get("slot_left", 0)) < old_slot:
+				card["slot_left"] = int(card.get("slot_left", 0)) + 1
+		entry["slot_left"] = 0
+		return
 	var index: int = turn_queue.find(entry)
 	if index > current_index:
 		turn_queue.remove_at(index)
@@ -337,6 +429,7 @@ func send_to_far_left(entry: Dictionary) -> void:
 		acted_this_round[key] = true
 	_left_stamp += 1
 	entry["left_stamp"] = _left_stamp
+	_shift_cards_from(enemy_side, 0, 1)
 
 
 func _clear_left_stamps() -> void:
@@ -345,8 +438,8 @@ func _clear_left_stamps() -> void:
 		actor.erase("left_stamp")
 
 
-## Ordering of the cards that have acted: by speed (as the next round will sort them), except that
-## cards sent to the far left stand after all the others, in the order they were sent.
+## Ordering of the characters that have acted: by speed (as the next round will sort them), except that
+## characters sent to the far left stand after all the others, in the order they were sent.
 func _compare_acted(a: Dictionary, b: Dictionary) -> bool:
 	var stamp_a: int = int(a.get("left_stamp", 0))
 	var stamp_b: int = int(b.get("left_stamp", 0))

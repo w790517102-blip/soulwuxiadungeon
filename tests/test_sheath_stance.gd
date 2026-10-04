@@ -127,13 +127,13 @@ func _check_cast_and_turn() -> void:
 	await controller.execute_action(liuyu, cast, liuyu)
 	_expect(registry.get_stage_entities().size() == count_before, "a second 拔劍持鞘 is refused while the card stands")
 	_expect(not rules.is_stance_compatible(cast, liuyu), "...and the skill is not offered in the stance")
-	# B. the card's own turn: no player action, goes to the far left, ends
+	# B. a card obeys position, not speed: its own turn is a plain activation and it stays where it stands
 	var proxy: Dictionary = manager.find_queue_actor(String(entities[0].entity_id))
-	_expect(not proxy.is_empty() and int(proxy.speed) == 0, "B: it has its own entry in the turn order, speed 0")
-	manager.current_index = manager.turn_queue.find(proxy)
+	_expect(not proxy.is_empty() and proxy.has("slot_left"), "B: it has a place in the row, not a speed")
+	var place_before: int = int(proxy.slot_left)
 	manager.active_actor = proxy
 	await controller._run_stage_entity_turn(proxy)
-	_expect(int(proxy.get("left_stamp", 0)) > 0, "B: on its turn it sends itself to the far left (automatically)")
+	_expect(int(proxy.slot_left) == place_before and int(proxy.get("left_stamp", 0)) == 0, "B: on its turn it stays where it stands")
 	_expect(not manager.is_waiting_for_player, "B: nobody is asked for a command on its turn")
 
 
@@ -221,7 +221,7 @@ func _check_combo() -> void:
 			_expect(is_equal_approx(float(stub.calls[0].power), 1.0), "D (%s): 劉語塵 strikes at 1.0x" % scenario)
 			_expect(is_equal_approx(float(stub.calls[1].power), 0.5), "D (%s): the card strikes at 0.5x" % scenario)
 		_expect(int(enemy.hp) == hp_before - 15, "D (%s): both strikes land on the same target" % scenario)
-		_expect(int(sheath_proxy.get("left_stamp", 0)) > 0 and int(liuyu.get("left_stamp", 0)) > int(sheath_proxy.get("left_stamp", 0)), "D (%s): the card went to the far left FIRST, then 劉語塵" % scenario)
+		_expect(int(liuyu.get("left_stamp", 0)) > 0 and int(sheath_proxy.slot_left) == 1, "D (%s): the card went to the far left FIRST, then 劉語塵 (the card is one place in)" % scenario)
 		_expect(bool(liuyu.get("acted_this_turn", false)), "D (%s): only then does his turn end" % scenario)
 		# his turn ends: the order moves on
 		manager.active_actor = liuyu
@@ -247,20 +247,21 @@ func _check_block() -> void:
 	manager.current_index = 1   # 白 acted; 劉's turn
 	await controller.execute_action(liuyu, cast, liuyu)
 	var attack: Dictionary = {"id": "basic_attack", "name": "普通攻擊", "power": 1.0, "target_scope": "enemy_single"}
-	# J: the card is not at the right end (劉 is next to act): never blocks
+	# J: the card is not beside 劉 (another card stands between them): never blocks
+	var proxy: Dictionary = manager.queue_entities[0]
+	var filler: Dictionary = {"id": "filler#1", "entity_id": "filler#1", "name": "符", "faction": "player"}
+	manager.add_queue_actor(filler, liuyu)   # directly to his left: the sheath card is now behind it
 	var row: Array = manager.get_display_row(false)
-	_expect(StageAdjacencyKey.key_of(row[0]) == "liuyu", "J: 劉 is at the right end while it is his own turn")
+	_expect(StageAdjacencyKey.key_of(row[0]) == "liuyu" and StageAdjacencyKey.key_of(row[1]) == "ent:filler#1", "J: another card stands between 劉 and the sheath card: " + _names(row))
 	var blocks_j: int = 0
 	for trial: int in range(300):
 		if controller._sheath_blocks_hit(liuyu, enemy):
 			blocks_j += 1
-	_expect(blocks_j == 0, "J: with the card not at the right end nothing is ever blocked")
-	# the card at the right end: everyone else has acted, it is next
-	var proxy: Dictionary = manager.queue_entities[0]
-	manager.turn_queue = [proxy]
-	manager.current_index = 0
+	_expect(blocks_j == 0, "J: with the card not beside him nothing is ever blocked")
+	manager.remove_queue_actor(filler)
+	# G: the sheath card stands directly beside 劉
 	row = manager.get_display_row(false)
-	_expect(StageAdjacencyKey.key_of(row[0]) == "ent:%s" % String(controller.find_stance_entity(liuyu).entity_id), "G: the card stands at the right end")
+	_expect(StageAdjacencyKey.key_of(row[1]) == "ent:%s" % String(controller.find_stance_entity(liuyu).entity_id), "G: the card stands directly to his left: " + _names(row))
 	seed(5)
 	var blocked_single: int = 0
 	for trial: int in range(600):
