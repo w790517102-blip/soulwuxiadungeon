@@ -411,6 +411,13 @@ func _update_pointer_hover() -> void:
 	var picking: bool = _ui != null and _ui.get("target_picker") != null and bool(_ui.target_picker.active)
 	if picking:
 		return
+	# Only on the player's own turn before he has entered any command (see pointer_hover_allowed in the UI).
+	var allowed: bool = _ui != null and _ui.has_method("pointer_hover_allowed") and bool(_ui.pointer_hover_allowed())
+	if not allowed or busy or is_lineup_moving() or _actor_cards_moving() or _row_cards_relocating():
+		if hover_key != "" and hover_key == _pointer_hover_key:
+			_apply_hover("")
+		_pointer_hover_key = ""
+		return
 	var pointer: Vector2 = get_viewport().get_mouse_position()
 	# Someone else (the target picker, a test) set the hover: leave it until the mouse really moves.
 	if pointer == _last_pointer and hover_key != _pointer_hover_key:
@@ -1090,7 +1097,37 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## Sword attacks: the attacker thrusts at the target and HOLDS; at contact a diagonal cut
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
+## Blows that a card (the scabbard, a substitute charm) takes for the target: for each one the card flies in
+## front of him as the blow arrives. The target does not sidestep for them.
+func _schedule_block_reactions(target: Dictionary, result: Dictionary) -> void:
+	var strikes: Array = result.get("strikes", [])
+	var blocked: int = 0
+	var missed_unblocked: bool = false
+	if strikes.is_empty():
+		blocked = 1 if bool(result.get("blocked", false)) else 0
+	else:
+		for strike_any: Variant in strikes:
+			var strike: Dictionary = strike_any
+			if bool(strike.get("blocked", false)):
+				blocked += 1
+			elif not bool(strike.get("hit", true)):
+				missed_unblocked = true
+	var card: Node3D = card_for(target)
+	if blocked == 0 or card == null or not card.has_method("show_block"):
+		return
+	card.block_pending = false
+	card.dodge_suppressed = not missed_unblocked
+	for index: int in range(blocked):
+		get_tree().create_timer(0.5 + 0.22 * float(index)).timeout.connect(func() -> void:
+			if is_instance_valid(card):
+				card.show_block())
+	get_tree().create_timer(0.5 + 0.22 * float(blocked) + 1.0).timeout.connect(func() -> void:
+		if is_instance_valid(card):
+			card.dodge_suppressed = false)
+
+
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	_schedule_block_reactions(target, result)
 	if _is_water_bullet(skill):
 		await _present_water_bullet(attacker, target, result)
 		return
@@ -2351,7 +2388,6 @@ func present_entity_activation(entity: Object, before: int = -1) -> void:
 func _settle_line_up() -> void:
 	var was_busy: bool = busy
 	busy = false
-	_order_signature = ""
 	_order_clock = ORDER_POLL_SECONDS
 	_update_order(0.0)
 	busy = was_busy

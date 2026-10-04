@@ -121,6 +121,11 @@ func _command_menu_allowed() -> bool:
 		and not _archive_open and not _battle_opening_locked and not battle_result_overlay.visible \
 		and not stage.is_lineup_moving()
 
+## The floating hover of the cards is only for the player's own turn before he has entered any command: no
+## menu, no target picking, no action or animation under way, no card moving.
+func pointer_hover_allowed() -> bool:
+	return _command_menu_allowed() and not (command_menu != null and command_menu.visible)
+
 
 func _same_actor(first: Dictionary, second: Dictionary) -> bool:
 	if first.is_empty() or second.is_empty():

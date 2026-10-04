@@ -1506,7 +1506,7 @@ func _run_multi_strikes(actor: Dictionary, target: Dictionary, skill_data: Dicti
 	var summaries: Array = []
 	for strike_any: Variant in strikes:
 		var one: Dictionary = strike_any
-		summaries.append({"hit": bool(one.get("hit", true)), "crit": bool(one.get("crit", false)), "damage": int(one.get("damage", 0))})
+		summaries.append({"hit": bool(one.get("hit", true)), "crit": bool(one.get("crit", false)), "damage": int(one.get("damage", 0)), "blocked": bool(one.get("blocked", false))})
 	result["strikes"] = summaries
 	return {"result": result, "pairing_bonus": pairing_bonus, "strike_count": strike_count}
 

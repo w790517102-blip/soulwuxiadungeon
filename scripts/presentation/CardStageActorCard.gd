@@ -399,17 +399,30 @@ var block_pending: bool = false
 var block_card: Node3D = null
 
 
+## true: every blow of the attack under way is blocked by a card, so the "attack finds no one" sidestep must
+## not play (the stage plays `show_block` for each blocked blow instead).
+var dodge_suppressed: bool = false
+
+
+## A card (the scabbard, a substitute charm) flies in front of this character and takes the blow; he only
+## braces. Never a sidestep.
+func show_block() -> void:
+	block_pending = false
+	_flash(Color(0.88, 0.94, 1.0, 0.4))
+	if block_card != null and is_instance_valid(block_card):
+		if block_card.has_method("fly_to_block"):
+			block_card.fly_to_block(self)
+		elif block_card.has_method("pulse"):
+			block_card.pulse()
+	guard_motion()
+
+
 func dodge_motion() -> void:
+	if dodge_suppressed:
+		dodge_suppressed = false
+		return
 	if block_pending:
-		block_pending = false
-		_flash(Color(0.88, 0.94, 1.0, 0.4))
-		if block_card != null and is_instance_valid(block_card):
-			# The scabbard card flies in front of him and takes the blow.
-			if block_card.has_method("fly_to_block"):
-				block_card.fly_to_block(self)
-			elif block_card.has_method("pulse"):
-				block_card.pulse()
-		guard_motion()
+		show_block()
 		return
 	_kill_motion()
 	var away: float = -_toward()
