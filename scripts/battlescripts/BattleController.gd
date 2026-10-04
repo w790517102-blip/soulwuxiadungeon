@@ -173,6 +173,10 @@ func _ready() -> void:
 	# Effects handed out by position in the ADB row are read live whenever damage is worked out.
 	if skill_executor and "adjacency_provider" in skill_executor:
 		skill_executor.adjacency_provider = Callable(self, "get_adjacency_bonus")
+	# Each individual Hit meant for 劉語塵 may be blocked by his 持鞘 card (see _sheath_blocks_hit).
+	if skill_executor and "block_provider" in skill_executor:
+		skill_executor.block_provider = Callable(self, "_sheath_blocks_hit")
+		skill_executor.hit_blocked.connect(_on_hit_blocked)
 	call_deferred("_init_battle_safe")
 
 
@@ -2677,6 +2681,11 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
 
+	# A stance can forbid a skill (持鞘: both hands are taken) or offer one only inside it.
+	if not _skill_legal_for_stance(actor, skill_data):
+		_log("%s 目前的姿態下無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
+		return
+
 	if mp_cost > 0 and actor_mp < mp_cost:
 		_log("%s 真氣不足，無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
 		return
@@ -2690,6 +2699,26 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	# A skill that leaves a card on the stage instead of acting on a target (替身符...).
 	if skill_data.has("stage_entity"):
 		await _execute_stage_entity_skill(actor, skill_data)
+		check_battle_status()
+		if battle_finished:
+			return
+		actor["acted_this_turn"] = true
+		_maybe_end_turn()
+		return
+
+	# 收鞘於背: the card goes, the stance ends, the turn ends.
+	if String(skill_data.get("ends_stance", "")) != "":
+		await _execute_end_stance(actor, skill_data)
+		check_battle_status()
+		if battle_finished:
+			return
+		actor["acted_this_turn"] = true
+		_maybe_end_turn()
+		return
+
+	# 鞘劍連擊: two different cards act in turn before 劉語塵's turn ends.
+	if bool(skill_data.get("sheath_combo", false)):
+		await _execute_sheath_combo(actor, skill_data, target)
 		check_battle_status()
 		if battle_finished:
 			return
@@ -4448,7 +4477,8 @@ func _finish_entity_damage(target: Object, result: Dictionary, context: Dictiona
 func _execute_stage_entity_skill(actor: Dictionary, skill_data: Dictionary) -> void:
 	var config: Dictionary = skill_data.get("stage_entity", {})
 	var entity_name: String = String(config.get("display_name", skill_data.get("name", "")))
-	_log("%s 凝神運筆，一筆畫成「%s」。" % [String(actor.get("name", "???")), entity_name])
+	var cast_line: String = String(skill_data.get("cast_log", "%s 凝神運筆，一筆畫成「%s」。"))
+	_log(cast_line % [String(actor.get("name", "???")), entity_name])
 	if battle_ui and battle_ui.has_method("play_stage_entity_cast"):
 		await battle_ui.play_stage_entity_cast(actor, skill_data, "windup")
 	var entity: RefCounted = StageEntityFactory.create(config, String(actor.get("id", "")))
@@ -4458,6 +4488,11 @@ func _execute_stage_entity_skill(actor: Dictionary, skill_data: Dictionary) -> v
 		stage_entities.assign_entity_id(entity)
 		turn_manager.add_queue_actor(_queue_proxy_for(entity))
 	stage_entities.register_stage_entity(entity)
+	# A card that puts its owner in a stance (持鞘): the stance is the owner's state; the card only
+	# drives order and position. It ends when the card is gone (see _on_stage_entity_unregistered).
+	var granted_stance: String = String(entity.get("grants_stance"))
+	if granted_stance != "":
+		actor["stance"] = granted_stance
 	_log("【%s】現身於我方陣列最左。" % entity_name)
 	if battle_ui and battle_ui.has_method("play_stage_entity_cast"):
 		await battle_ui.play_stage_entity_cast(actor, skill_data, "finish")
@@ -4660,6 +4695,13 @@ func _queue_proxy_for(entity: Object) -> Dictionary:
 
 
 func _on_stage_entity_unregistered(entity: Object) -> void:
+	# The stance a card gave its owner ends with the card, whichever way it left (no ghost stance).
+	var stance: String = String(entity.get("grants_stance"))
+	if stance != "":
+		var owner: Dictionary = _find_party_actor(String(entity.get("owner_id")))
+		if not owner.is_empty() and find_stance_entity(owner, stance) == null:
+			owner.erase("stance")
+			_update_ui_for_actor(owner)
 	if turn_manager == null:
 		return
 	var proxy: Dictionary = turn_manager.find_queue_actor(String(entity.get("entity_id")))
@@ -4675,8 +4717,14 @@ func _run_stage_entity_turn(proxy: Dictionary) -> void:
 		return
 	var context := {"round": turn_manager.round_count, "proxy": proxy}
 	stage_entities.dispatch_to(entity, "on_activation", context)
-	var expired: bool = entity.advance_duration() if entity.has_method("advance_duration") else false
 	var name_text: String = String(entity.get("display_name"))
+	# A card with no duration (持鞘) has a turn but nothing to count: no player action, it just goes
+	# to the far left of the row and the turn ends.
+	if int(entity.get("duration_turns")) < 0:
+		_log_system("輪到「%s」：自動歸於陣列最左。" % name_text)
+		turn_manager.send_to_far_left(proxy)
+		return
+	var expired: bool = entity.advance_duration() if entity.has_method("advance_duration") else false
 	if battle_ui and battle_ui.has_method("play_stage_entity_activation"):
 		await battle_ui.play_stage_entity_activation(entity)
 	if expired:
@@ -4714,3 +4762,135 @@ func get_adjacency_effects(actor: Dictionary) -> Dictionary:
 ## One family's bonus for `actor` right now (0.0 when none).
 func get_adjacency_bonus(actor: Dictionary, family: String) -> float:
 	return float(get_adjacency_effects(actor).get(family, 0.0))
+
+
+# --- 拔劍持鞘 (劉語塵): the scabbard card, the stance and the block ---------------------------------
+
+const StanceRules = preload("res://scripts/db/SkillDB.gd")
+var _stance_rules: Object = null
+
+
+func _stance_rules_db() -> Object:
+	if _stance_rules == null:
+		_stance_rules = StanceRules.new()
+	return _stance_rules
+
+
+## The hard rule behind the skill list: can `actor` use this skill in his current stance?
+func _skill_legal_for_stance(actor: Dictionary, skill_data: Dictionary) -> bool:
+	return bool(_stance_rules_db().is_stance_compatible(skill_data, actor))
+
+
+## The stage entity that gives `actor` a stance (his 持鞘 card), or null.
+func find_stance_entity(actor: Dictionary, stance: String = "HOLDING_SHEATH") -> Object:
+	for entity: Object in stage_entities.get_stage_entities():
+		if String(entity.get("grants_stance")) == stance and String(entity.get("owner_id")) == String(actor.get("id", "")):
+			return entity
+	return null
+
+
+func _find_party_actor(actor_id: String) -> Dictionary:
+	for actor: Variant in player_party:
+		if typeof(actor) == TYPE_DICTIONARY and String((actor as Dictionary).get("id", "")) == actor_id:
+			return actor
+	return {}
+
+
+## The sheath card's proxy in the turn order, or an empty dictionary.
+func _sheath_proxy(entity: Object) -> Dictionary:
+	return turn_manager.find_queue_actor(String(entity.get("entity_id"))) if turn_manager != null and entity != null else {}
+
+
+## A hit that is about to land on 劉語塵: if his 持鞘 card stands at the right end of the row, each
+## individual Hit has a 50% chance of being blocked outright. Never consumes the card.
+func _sheath_blocks_hit(target: Dictionary, attacker: Dictionary) -> bool:
+	if not bool(attacker.get("is_enemy", false)) or bool(target.get("is_enemy", false)):
+		return false
+	if String(target.get("stance", "")) != "HOLDING_SHEATH" or turn_manager == null:
+		return false
+	var sheath: Object = find_stance_entity(target)
+	if sheath == null:
+		return false
+	var row: Array = turn_manager.get_display_row(false)
+	if row.is_empty() or StanceAdjacency.key_of(row[0]) != "ent:%s" % String(sheath.get("entity_id")):
+		return false
+	return randf() < float(sheath.get("block_chance"))
+
+
+func _on_hit_blocked(target: Dictionary, _attacker: Dictionary, _skill_name: String) -> void:
+	if battle_ui and battle_ui.has_method("play_sheath_block"):
+		battle_ui.play_sheath_block(target, find_stance_entity(target))
+
+
+const StanceAdjacency = preload("res://scripts/battlescripts/StageAdjacency.gd")
+
+
+## 收鞘於背: the card is destroyed, the stance ends with it (see _on_stage_entity_unregistered).
+func _execute_end_stance(actor: Dictionary, skill_data: Dictionary) -> void:
+	var stance: String = String(skill_data.get("ends_stance", ""))
+	var entity: Object = find_stance_entity(actor, stance)
+	_log("%s 將左手劍鞘重新放回背上。" % String(actor.get("name", "???")))
+	if entity != null:
+		if battle_ui and battle_ui.has_method("play_sheath_stow"):
+			await battle_ui.play_sheath_stow(actor, entity)
+		stage_entities.destroy_entity(entity, {"reason": "stowed"})
+	else:
+		actor.erase("stance")
+	_update_ui_for_actor(actor)
+
+
+## 鞘劍連擊: 劉語塵's own cut (1.0x), then the 持鞘 card leaves its place for a 0.5x strike on the same
+## target and is sent to the far left; only then does 劉語塵's turn end (he too is sent to the far left).
+## The two placements are separate, in that order.
+func _execute_sheath_combo(actor: Dictionary, skill_data: Dictionary, target: Dictionary) -> void:
+	var sheath: Object = find_stance_entity(actor)
+	var actual_target: Dictionary = target if not target.is_empty() else (enemy_party[0] if not enemy_party.is_empty() else {})
+	if actual_target.is_empty():
+		return
+	var inner_force: Dictionary = actor.get("inner_force", {})
+	# 1. 劉語塵's own strike.
+	var first_data := skill_data.duplicate(true)
+	first_data.erase("sheath_combo")
+	var strike_outcome := _execute_single_target_strikes(actor, actual_target, first_data, inner_force)
+	var first_result: Dictionary = strike_outcome.get("result", {})
+	var attack_logs = await _play_attack_cinematic(actor, actual_target, first_data, first_result)
+	for line in attack_logs:
+		_log(line)
+	if attack_logs.size() > 0:
+		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+			await action_log_ui.wait_for_all_logs()
+		await _await_log_stage_continue()
+	if bool(first_result.get("target_down", false)):
+		_mark_actor_down(actual_target)
+		if battle_ui:
+			battle_ui.update_enemy_panel()
+	# 2. The card's strike (his turn is NOT over yet).
+	var sheath_proxy: Dictionary = _sheath_proxy(sheath)
+	if sheath != null and int(actual_target.get("hp", 0)) > 0:
+		var strike_data := skill_data.duplicate(true)
+		strike_data.erase("sheath_combo")
+		strike_data["name"] = "鞘擊"
+		strike_data["weapon_type"] = "通用"
+		strike_data["power"] = float(skill_data.get("sheath_power", 0.5))
+		strike_data["effects"] = [{"type": "damage", "power": float(skill_data.get("sheath_power", 0.5))}]
+		strike_data["_suppress_attack_opener"] = true
+		_log_narration("持鞘離開了陣列中的位置，鞘尾直點向 %s。" % String(actual_target.get("name", "???")))
+		var sheath_result: Dictionary = skill_executor.execute(actor, actual_target, strike_data, {})
+		if battle_ui and battle_ui.has_method("play_sheath_strike"):
+			await battle_ui.play_sheath_strike(sheath, actual_target, sheath_result)
+		for line in sheath_result.get("log", []):
+			_log(line)
+		_update_ui_for_actor(actual_target)
+		if bool(sheath_result.get("target_down", false)):
+			_mark_actor_down(actual_target)
+			if battle_ui:
+				battle_ui.update_enemy_panel()
+		if action_log_ui and action_log_ui.has_method("wait_for_all_logs"):
+			await action_log_ui.wait_for_all_logs()
+		await _await_log_stage_continue()
+	# 3. The card goes back to the far left FIRST ...
+	if turn_manager != null and not sheath_proxy.is_empty():
+		turn_manager.send_to_far_left(sheath_proxy)
+	# 4. ... and only then does 劉語塵 end his turn, going to the far left himself.
+	if turn_manager != null:
+		turn_manager.send_to_far_left(actor)

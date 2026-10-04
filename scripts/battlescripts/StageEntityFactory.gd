@@ -5,6 +5,7 @@ extends RefCounted
 const TYPES: Dictionary = {
 	"substitute_talisman": "res://scripts/battlescripts/SubstituteTalisman.gd",
 	"linfu_talisman": "res://scripts/battlescripts/LinfuTalisman.gd",
+	"sheath_card": "res://scripts/battlescripts/SheathCard.gd",
 }
 
 

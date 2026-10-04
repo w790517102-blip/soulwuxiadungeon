@@ -77,6 +77,7 @@ func start_new_round() -> void:
 
 	round_in_progress = true
 	round_end_emitted = false
+	_clear_left_stamps()
 	_build_round_roster()
 	emit_signal("round_started", round_count)
 
@@ -293,7 +294,7 @@ func get_display_order() -> Array:
 	for actor: Dictionary in alive_all:
 		if not remaining.has(actor):
 			acted.append(actor)
-	acted.sort_custom(Callable(self, "_compare_speed"))
+	acted.sort_custom(Callable(self, "_compare_acted"))
 	return remaining + acted
 
 
@@ -306,3 +307,44 @@ func is_enemy_side(entry: Dictionary) -> bool:
 ## One camp's row of the display order (index 0 = the next of that camp to act).
 func get_display_row(enemy_side: bool) -> Array:
 	return get_display_order().filter(func(entry: Dictionary) -> bool: return is_enemy_side(entry) == enemy_side)
+
+
+# --- Explicit placements at the far left of a camp's row ----------------------------------------
+# The order a camp's cards are drawn in is "who still has to act, next first" followed by "who has
+# acted". An effect (the 持鞘 card after its strike, the actor ending his turn after it) can also SEND
+# a card to the far left: it then stands with those who have acted, after everyone else of them,
+# and later stampings stand further left still. Stamps last for the round; the next round sorts by
+# speed as usual.
+
+var _left_stamp: int = 0
+
+
+## Puts `entry` at the far left of the order (after everyone who has acted so far). If it still had
+## a turn to come this round, that turn is used up: it counts as having acted. Returns nothing.
+func send_to_far_left(entry: Dictionary) -> void:
+	var index: int = turn_queue.find(entry)
+	if index > current_index:
+		turn_queue.remove_at(index)
+	var key := _actor_key(entry)
+	if key != "" and round_roster.has(key):
+		acted_this_round[key] = true
+	_left_stamp += 1
+	entry["left_stamp"] = _left_stamp
+
+
+func _clear_left_stamps() -> void:
+	_left_stamp = 0
+	for actor: Dictionary in get_all_actors():
+		actor.erase("left_stamp")
+
+
+## Ordering of the cards that have acted: by speed (as the next round will sort them), except that
+## cards sent to the far left stand after all the others, in the order they were sent.
+func _compare_acted(a: Dictionary, b: Dictionary) -> bool:
+	var stamp_a: int = int(a.get("left_stamp", 0))
+	var stamp_b: int = int(b.get("left_stamp", 0))
+	if (stamp_a > 0) != (stamp_b > 0):
+		return stamp_b > 0
+	if stamp_a > 0:
+		return stamp_a < stamp_b
+	return _compare_speed(a, b)

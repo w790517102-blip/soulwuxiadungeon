@@ -40,6 +40,9 @@ var expire_at_edge: bool = false
 ## true: the entity has a place in the turn order (ADB) and its own activations, like an actor with no
 ## command. `turn_speed` decides where it sorts in each new round (higher = earlier).
 var joins_turn_order: bool = false
+## A stance the entity puts its owner in for as long as it stands ("" = none). The owner's `stance`
+## field is set when it appears and cleared when it leaves the stage.
+var grants_stance: String = ""
 var turn_speed: int = 999
 var card_kind: String = "default"
 var card_config: Dictionary = {}
@@ -54,7 +57,7 @@ static func from_dict(config: Dictionary) -> RefCounted:
 
 
 func apply_config(config: Dictionary) -> void:
-	for key: String in ["entity_id", "entity_type", "display_name", "owner_id", "faction", "card_kind", "row", "advance_policy"]:
+	for key: String in ["entity_id", "entity_type", "display_name", "owner_id", "faction", "card_kind", "row", "advance_policy", "grants_stance"]:
 		if config.has(key):
 			set(key, String(config[key]))
 	for key: String in ["targetable", "damageable", "healable", "expire_at_edge", "joins_turn_order"]:

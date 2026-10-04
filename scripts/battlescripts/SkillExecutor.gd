@@ -14,6 +14,11 @@ const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 ## Callable(actor, family) -> float: effects handed out by position in the ADB row (see StageAdjacency),
 ## read at the moment damage is worked out. Unset = none.
 var adjacency_provider: Callable = Callable()
+## Callable(target, attacker) -> bool: a hit that is about to be applied to `target` is blocked outright
+## (the 持鞘 card standing at the right end of the row). Asked once per individual Hit. Unset = never.
+var block_provider: Callable = Callable()
+## A Hit was blocked: (target, attacker, skill_name).
+signal hit_blocked(target, attacker, skill_name)
 ## The effect family of a 臨符 card that adds to each stat.
 const STAT_FAMILIES: Dictionary = {"str": "STRENGTH_UP", "agi": "AGILITY_UP", "int": "INTELLECT_UP", "con": "CONSTITUTION_UP", "luck": "LUCK_UP"}
 
@@ -159,6 +164,18 @@ func execute(
 		result["damage"] = 0
 		result["target_down"] = false
 		result["log"] = _build_dodge_log(user, target, skill_name, suppress_attack_opener)
+		return result
+
+	# --- 格擋：一個要落在目標身上的 Hit，可被持鞘卡完全擋下（每個 Hit 各自判定） ---
+	if block_provider.is_valid() and bool(block_provider.call(target, user)):
+		result["hit"] = false
+		result["dodged"] = false
+		result["blocked"] = true
+		result["damage"] = 0
+		result["target_down"] = false
+		var block_opener := "" if suppress_attack_opener else "%s 使出「%s」，" % [String(user.get("name", "???")), skill_name]
+		result["log"] = ["%s%s以左手劍鞘架住了這一擊，攻勢被完全化去。" % [block_opener, String(target.get("name", "???"))]]
+		hit_blocked.emit(target, user, skill_name)
 		return result
 
 	# --- 屬性剋制 ---

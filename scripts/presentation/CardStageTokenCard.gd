@@ -337,3 +337,79 @@ func pulse() -> void:
 	tween.tween_property(_flash, "color:a", 0.0, 0.5).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(self, "scale", Vector3.ONE * 1.08, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.chain().tween_property(self, "scale", Vector3.ONE, 0.3).set_trans(Tween.TRANS_SINE)
+
+
+# --- 持鞘: drawn from behind the wielder, put back behind him, flying in to block -----------------
+
+## 拔鞘: the card starts hidden behind the wielder's card; its edge shows toward the upper left (the
+## scabbard has just been drawn), then it is pulled out slowly, all the way, and stands clear of him.
+## It then walks to `staging` (the outer end of its row) and waits to be inserted, like play_spawn.
+func play_draw(wielder: Node3D, staging: Vector3) -> void:
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	_staged_target = staging
+	var behind: Vector3 = wielder.position + Vector3(0.0, 0.0, -0.12)
+	var out_dir: Vector3 = _draw_direction(wielder)
+	position = behind
+	scale = Vector3.ONE
+	rotation = Vector3(0.0, wielder.rotation.y, 0.0)
+	set_fade(0.0)
+	_awaiting_insert = true
+	_tween = create_tween()
+	# 1. Just the tip shows.
+	_tween.tween_property(self, "position", behind + out_dir * 0.16, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween.parallel().tween_property(self, "rotation:z", -0.10, 0.25)
+	_tween.tween_interval(0.12)
+	# 2. Then the whole card is drawn out, slowly.
+	_tween.tween_property(self, "position", behind + out_dir * 0.78 + Vector3(0.0, 0.0, 0.25), 0.95).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tween.parallel().tween_property(self, "rotation:z", -0.28, 0.95).set_trans(Tween.TRANS_SINE)
+	_tween.tween_interval(0.15)
+	# 3. Then it is carried to its place.
+	_tween.tween_property(self, "position", staging, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tween.parallel().tween_property(self, "rotation:z", 0.0, 0.5)
+	_tween.tween_callback(func() -> void:
+		rotation = home_rotation)
+
+
+## 收鞘: the card goes to the wielder's side, then is slid back in behind him, slowly, like a sword
+## going into its scabbard. Ends hidden behind the wielder.
+func play_stow(wielder: Node3D) -> void:
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	if _relocate_tween and _relocate_tween.is_valid():
+		_relocate_tween.kill()
+	var behind: Vector3 = wielder.position + Vector3(0.0, 0.0, -0.12)
+	var out_dir: Vector3 = _draw_direction(wielder)
+	_tween = create_tween()
+	_tween.tween_property(self, "position", behind + out_dir * 0.78 + Vector3(0.0, 0.0, 0.25), 0.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tween.parallel().tween_property(self, "rotation:z", -0.28, 0.4)
+	_tween.tween_interval(0.12)
+	_tween.tween_property(self, "position", behind + out_dir * 0.16, 0.85).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tween.parallel().tween_property(self, "rotation:z", -0.10, 0.85)
+	_tween.tween_property(self, "position", behind, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_tween.parallel().tween_property(self, "rotation:z", 0.0, 0.25)
+	await _tween.finished
+
+
+## A blow is coming at the wielder: the card flies in front of him, takes it, and goes back to its place.
+func fly_to_block(wielder: Node3D) -> void:
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	var home: Vector3 = home_position
+	var in_front: Vector3 = wielder.position + Vector3(_toward_opponent(wielder) * wielder.card_size.x * 0.42, wielder.card_size.y * 0.02, 0.85)
+	_tween = create_tween()
+	_tween.tween_property(self, "position", in_front, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween.parallel().tween_property(self, "rotation:z", -_toward_opponent(wielder) * 0.12, 0.12)
+	_tween.tween_callback(pulse)
+	_tween.tween_interval(0.3)
+	_tween.tween_property(self, "position", home, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween.parallel().tween_property(self, "rotation:z", 0.0, 0.35)
+
+
+## The way out of the wielder's card: up and toward the left of the screen.
+func _draw_direction(wielder: Node3D) -> Vector3:
+	return Vector3(-1.0, 1.0, 0.0).normalized() * wielder.card_size.y * 0.55
+
+
+func _toward_opponent(wielder: Node3D) -> float:
+	return -1.0 if wielder.is_enemy else 1.0

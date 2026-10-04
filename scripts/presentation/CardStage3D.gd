@@ -671,6 +671,9 @@ const InkStroke = preload("res://scripts/presentation/InkStroke3D.gd")
 const InkDrops = preload("res://scripts/presentation/InkDrops2D.gd")
 
 var _spawn_origin: Variant = null
+## How the next row entity enters: "burst" (the ink burst) or "draw" (pulled from behind `_spawn_wielder`).
+var _spawn_style: String = "burst"
+var _spawn_wielder: Node3D = null
 var _cast_stroke: Node3D = null
 var _cast_center: Vector3 = Vector3.ZERO
 var _drop_layer: CanvasLayer = null
@@ -758,8 +761,13 @@ func _place_row_entity(entity: Object, card: Node3D, animate_in: bool) -> void:
 		var outer: Vector3 = _row_position(card, count, count - 1, enemy_side, [])
 		outer.x += (1.4 if enemy_side else -1.4)
 		outer.z = player_depth + CAST_FRONT - 0.4
-		card.play_spawn(_spawn_origin, outer)
+		if _spawn_style == "draw" and _spawn_wielder != null and is_instance_valid(_spawn_wielder) and card.has_method("play_draw"):
+			card.play_draw(_spawn_wielder, outer)
+		else:
+			card.play_spawn(_spawn_origin, outer)
 	_spawn_origin = null
+	_spawn_style = "burst"
+	_spawn_wielder = null
 	# The actors re-space around it once nothing is moving (see _update_order).
 	_order_signature = ""
 
@@ -808,7 +816,7 @@ func present_entity_attack(attacker: Dictionary, entity: Object, destroyed: bool
 
 ## phase "windup": step forward, draw the stroke, burst, (the controller then registers the
 ## entity, whose card unfolds from the burst). phase "finish": settle and step back.
-func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
+func present_stage_entity_cast(caster: Dictionary, phase: String, animation: String = "ink_talisman") -> void:
 	var card: Node3D = card_for(caster)
 	if card == null:
 		return
@@ -817,6 +825,15 @@ func present_stage_entity_cast(caster: Dictionary, phase: String) -> void:
 		command_tray.set_enabled(false)
 		_cast_center = Vector3(0.2, 0.9, player_depth + CAST_FRONT)
 		await card.cast_step_forward()
+		if animation == "sheath_draw":
+			# 拔劍持鞘: no brush, no ink. A cold glint of the drawn sword; the scabbard card is then pulled
+			# out from behind the wielder toward the upper left (see TokenCard.play_draw).
+			_hit_spark(card.position + Vector3(_toward_row(card) * card.card_size.x * 0.4, card.card_size.y * 0.1, 0.7), 2.2, false)
+			await get_tree().create_timer(0.2).timeout
+			_spawn_origin = card.position
+			_spawn_style = "draw"
+			_spawn_wielder = card
+			return
 		# 1. The talisman glyph is drawn (the twin dragons that used to open the cast are gone).
 		_cast_stroke = InkStroke.new()
 		_cast_stroke.size = CAST_GLYPH_SIZE
@@ -2275,3 +2292,61 @@ func _soft_dot_texture() -> Texture2D:
 		texture.height = 64
 		_soft_dot = texture
 	return _soft_dot
+
+
+# --- 持鞘 (劉語塵's scabbard card) ---------------------------------------------------------------------
+
+## +1 when the opposing camp stands on the +x side of a card.
+func _toward_row(card: Node3D) -> float:
+	return -1.0 if card.is_enemy else 1.0
+
+
+## The card leaves its place in the row, strikes the target with its tail and goes back (the order
+## then settles it at the far left). `result` is the strike's resolved outcome.
+func present_sheath_strike(entity: Object, target: Dictionary, result: Dictionary) -> void:
+	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
+	var destination: Node3D = card_for(target)
+	if card == null or destination == null:
+		return
+	busy = true
+	command_tray.set_enabled(false)
+	var home: Vector3 = card.position
+	var strike_at: Vector3 = destination.position + Vector3(-_toward_row(destination) * destination.card_size.x * 0.1, destination.card_size.y * 0.02, 0.9)
+	var lunge := create_tween()
+	lunge.tween_property(card, "position", home + (strike_at - home) * 0.15 + Vector3(0.0, 0.25, 0.5), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	lunge.tween_property(card, "position", strike_at, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await lunge.finished
+	if bool(result.get("hit", true)):
+		_hit_spark(destination.position + Vector3(0.0, destination.card_size.y * 0.05, 0.9), 1.5, false)
+		destination.hit_reaction()
+		await _hit_stop(0.05)
+	else:
+		destination.dodge_motion()
+	await get_tree().create_timer(0.2).timeout
+	var back := create_tween()
+	back.tween_property(card, "position", home, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await back.finished
+	busy = false
+
+
+## 收鞘於背: the card flies to the wielder's back and is gone.
+func present_sheath_stow(actor: Dictionary, entity: Object) -> void:
+	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
+	var wielder: Node3D = card_for(actor)
+	if card == null or wielder == null:
+		return
+	busy = true
+	# The card goes to his side and is slid back in behind him, slowly: a swordsman sheathing a blade.
+	if card.has_method("play_stow"):
+		await card.play_stow(wielder)
+	busy = false
+
+
+## A blow meant for the wielder is blocked: his next dodge presentation becomes a block, and the
+## scabbard card flashes.
+func present_sheath_block(target: Dictionary, entity: Object) -> void:
+	var card: Node3D = card_for(target)
+	if card == null:
+		return
+	card.block_pending = true
+	card.block_card = entity_cards.get(String(entity.get("entity_id"))) if entity != null else null

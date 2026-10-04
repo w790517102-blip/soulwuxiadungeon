@@ -76,3 +76,12 @@
 係數照 `StatusEffectManager` 原本由屬性換算數值的比例。同一家族只取最高，不同家族可同時存在。測試：`tests/test_linfu_families.gd`。
 
 **固定點數與百分比**：效果資料可帶 `"mode"`，預設 `"flat"`（固定點數）；`"percent"` 則以 `<家族>_PCT` 另外計算（防禦 ×(1+值)、攻擊 ×(1+值)）。目前護脈、燃鋒都是固定 +15。日後內功「讓 +15 點變成 +15%」只要把符卡效果的 `mode` 改成 `percent`、值改成 0.15 即可，不必動結算。
+
+## 拔劍持鞘（劉語塵專屬）：姿態 + 持鞘卡
+- **姿態與卡片分開**：劉語塵的 `stance = "HOLDING_SHEATH"` 是角色狀態（決定技能合法性）；`SheathCard`（`entity_type = sheath_card`）只負責牌序、位置、回合、格擋條件與伴隨攻擊。卡片登記時設定姿態，**不論卡片怎麼離場（收鞘、被銷毀）**，`entity_unregistered` 都會解除姿態，不留幽靈狀態。
+- **技能合法性**：沿用 `SkillDB.is_weapon_compatible`，新增 `STANCES` 表與 `is_stance_compatible`：姿態下只允許 `""`/`通用`/`劍` 與姿態自有技能（`requires_stance`）；`unavailable_in_stance` 隱藏技能（拔劍持鞘）。技能選單與 `BattleController.execute_action` 的硬規則都走同一函式。
+- **三個技能**（`SkillDB`，皆劉語塵 1 級自然習得、`shareable = false`）：`skill_bajian_chishao`（`stage_entity`，`grants_stance`）、`skill_shaojian_lianji`（`sheath_combo`）、`skill_shouqiao_beibei`（`ends_stance`）。
+- **持鞘卡**：`joins_turn_order`、`turn_speed = 0`、無期限。輪到它時（`_run_stage_entity_turn`）自動 `send_to_far_left`、結束回合，沒有玩家指令。
+- **歸左**：`TurnManager.send_to_far_left(entry)`：把卡放在「已行動者」最後，之後再送的站得更左；若它本輪還有回合，這個回合視為用掉；下一輪回到依速度排序。鞘劍連擊先送持鞘、再送劉語塵，兩次是分開的。
+- **鞘擋攻勢（被動）**：`SkillExecutor.block_provider`，每個要落在劉語塵身上的 Hit 各自判定；持鞘卡必須在我方列最右端（顯示順序第 0 位），機率 50%（`block_chance`），不消耗卡片。
+- 測試：`tests/test_sheath_stance.gd`。

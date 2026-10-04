@@ -265,9 +265,9 @@ func _layout_stage_hud() -> void:
 # --- Stage entity presentation entry points (called by BattleController) ------------------
 
 ## Casting a skill that leaves a card on the stage. phase: "windup" / "finish".
-func play_stage_entity_cast(actor: Dictionary, _skill_data: Dictionary, phase: String) -> void:
+func play_stage_entity_cast(actor: Dictionary, skill_data: Dictionary, phase: String) -> void:
 	if stage_enabled and stage:
-		await stage.present_stage_entity_cast(actor, phase)
+		await stage.present_stage_entity_cast(actor, phase, String(skill_data.get("cast_animation", "ink_talisman")))
 
 
 ## An enemy blow (or the shared part of an area blow) lands on a stage entity.
@@ -463,3 +463,19 @@ func play_buff_fx(target: Dictionary, kind: String) -> void:
 func play_stage_entity_activation(entity: Object) -> void:
 	if stage_enabled and stage:
 		await stage.present_entity_activation(entity)
+
+
+## 持鞘: the card strikes (鞘劍連擊), is stowed (收鞘於背) or flashes as it blocks a blow.
+func play_sheath_strike(entity: Object, target: Dictionary, result: Dictionary) -> void:
+	if stage_enabled and stage:
+		await stage.present_sheath_strike(entity, target, result)
+
+
+func play_sheath_stow(actor: Dictionary, entity: Object) -> void:
+	if stage_enabled and stage:
+		await stage.present_sheath_stow(actor, entity)
+
+
+func play_sheath_block(target: Dictionary, entity: Object) -> void:
+	if stage_enabled and stage:
+		stage.present_sheath_block(target, entity)

@@ -209,6 +209,82 @@ const SKILLS := {
 		},
 		"cast_animation": "ink_talisman",
 	},
+	# --- 拔劍持鞘 (劉語塵 only): the scabbard becomes a card, and 劉語塵 holds it in his left hand ---
+	"skill_bajian_chishao": {
+		"id": "skill_bajian_chishao",
+		"name": "拔劍持鞘",
+		"category": "持鞘姿態",
+		"description": "劉語塵右手持劍，左手將劍鞘取在手中。劍鞘化為戰場上的一張「持鞘」卡，立於我方陣列最左，擁有自己的行動順序。持鞘期間雙手各有所持，只能使用通用技能、劍系武學與持鞘專屬招式；持鞘卡仍在場時不能重複施展。",
+		"weapon_type": "劍",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "self",
+		"target_side": "self",
+		"shareable": false,
+		"required_level": 1,
+		"effects": [],
+		"unavailable_in_stance": "HOLDING_SHEATH",
+		"available": {"mode": "include", "actor_ids": ["liuyu"]},
+		"stage_entity": {
+			"entity_type": "sheath_card",
+			"display_name": "持鞘",
+			"faction": "player",
+			"targetable": false,
+			"damageable": false,
+			"healable": false,
+			"card_kind": "token",
+			"row": "party",
+			"joins_turn_order": true,
+			"turn_speed": 0,
+			"duration_turns": -1,
+			"grants_stance": "HOLDING_SHEATH",
+			"block_chance": 0.5,
+			"tags": ["sheath", "liuyu"],
+			"card_config": {
+				"art": "res://assets/sprites/battle_cards/liuyu_sheath.webp",
+				"card_size": Vector2(1.955, 3.1912),
+				"badge_prefix": "",
+			},
+		},
+		"cast_animation": "sheath_draw",
+		"cast_log": "%s 右手持劍，左手將劍鞘取在手中。劍鞘化為戰場上的「%s」。",
+	},
+	"skill_shaojian_lianji": {
+		"id": "skill_shaojian_lianji",
+		"name": "鞘劍連擊",
+		"category": "持鞘專屬",
+		"description": "劉語塵先以劍斬出一擊（1.0 倍），持鞘卡隨即離位，對同一目標補上一擊（0.5 倍），再歸於陣列最左；之後劉語塵才結束行動。持鞘必須在場。",
+		"weapon_type": "劍",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "single",
+		"target_side": "enemy",
+		"shareable": false,
+		"required_level": 1,
+		"power": 1.0,
+		"effects": [{"type": "damage", "power": 1.0}],
+		"requires_stance": "HOLDING_SHEATH",
+		"sheath_combo": true,
+		"sheath_power": 0.5,
+		"available": {"mode": "include", "actor_ids": ["liuyu"]},
+	},
+	"skill_shouqiao_beibei": {
+		"id": "skill_shouqiao_beibei",
+		"name": "收鞘於背",
+		"category": "持鞘專屬",
+		"description": "劉語塵將左手劍鞘重新放回背上：持鞘卡消失，持鞘姿態解除，技能恢復正常。結束本回合。",
+		"weapon_type": "通用",
+		"menu_usable": false,
+		"mp_cost": 0,
+		"target_scope": "self",
+		"target_side": "self",
+		"shareable": false,
+		"required_level": 1,
+		"effects": [],
+		"requires_stance": "HOLDING_SHEATH",
+		"ends_stance": "HOLDING_SHEATH",
+		"available": {"mode": "include", "actor_ids": ["liuyu"]},
+	},
 	"skill_zhengxinquan": {
 		"id": "skill_zhengxinquan",
 		"name": "正心拳",
@@ -1359,7 +1435,7 @@ const LEGACY_NAME_TO_ID := {
 }
 
 const DEFAULT_SKILL_IDS_BY_ACTOR := {
-	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus"],
+	"liuyu": ["skill_lianjuejian", "skill_badaozhan", "skill_duanshuizhan", "skill_diquejian", "skill_mujian_saoye", "skill_qiliaozhang", "skill_xianglong18", "skill_hawkeye_focus", "skill_bajian_chishao", "skill_shaojian_lianji", "skill_shouqiao_beibei"],
 	"shumian": ["skill_luobichengshi", "skill_mobishuxin", "skill_smoky_ink_blind", "skill_linfu_humai", "skill_zhengxinquan", "skill_substitute_talisman"],
 	"lieshao": ["skill_liedaoposhi", "skill_luanyinsuiqin", "skill_huagu_mianzhang", "skill_huanbu_zhang", "skill_liumai_shenjian", "skill_bagua_gunfa", "skill_binding_shadow", "skill_hawkeye_focus", "skill_qin_resonant_focus", "skill_luanxian_banying"],
 	"enemy1": ["skill_enemy_zhishui_yinzhang"],
@@ -1489,8 +1565,34 @@ func is_exclusive_skill(skill_id: String) -> bool:
 	var actor_ids = scope.get("actor_ids", [])
 	return typeof(actor_ids) == TYPE_ARRAY and (actor_ids as Array).size() == 1
 
+## Stances: a state of the body that decides which skills can be used. Not a buff: it changes what
+## the hands are doing. `allowed_weapon_types` lists the skill kinds that stay legal ("通用" stands
+## for skills with no weapon); skills of the stance itself (`requires_stance`) are always legal in it.
+const STANCES: Dictionary = {
+	"HOLDING_SHEATH": {"allowed_weapon_types": ["", "通用", "劍"]},
+}
+
+
+## Stance rules for one skill and one actor (an actor dictionary or an object with a `stance`).
+## Skills with `requires_stance` exist only in that stance; skills with `unavailable_in_stance` are
+## not offered in it; in a stance only its allowed weapon kinds (and its own skills) are legal.
+func is_stance_compatible(skill: Dictionary, actor) -> bool:
+	var stance := String(_actor_get(actor, "stance", ""))
+	var required := String(skill.get("requires_stance", ""))
+	if required != "":
+		return stance == required
+	if stance == "" or not STANCES.has(stance):
+		return true
+	if String(skill.get("unavailable_in_stance", "")) == stance:
+		return false
+	var allowed: Array = (STANCES[stance] as Dictionary).get("allowed_weapon_types", [])
+	return allowed.has(String(skill.get("weapon_type", "")))
+
+
 func is_weapon_compatible(skill: Dictionary, actor) -> bool:
 	if skill.is_empty():
+		return false
+	if not is_stance_compatible(skill, actor):
 		return false
 	var weapon_type := String(skill.get("weapon_type", ""))
 	if weapon_type == "" or weapon_type == "通用":

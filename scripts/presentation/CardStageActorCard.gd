@@ -392,7 +392,24 @@ func hit_reaction(heavy: bool = false) -> void:
 	await _wait_for_motion(_motion_tween)
 
 
+## Set when a Hit meant for this card was blocked by its 持鞘 card: the next "dodge" is then shown as a
+## block (the card braces, the scabbard card flashes) instead of slipping away.
+var block_pending: bool = false
+var block_card: Node3D = null
+
+
 func dodge_motion() -> void:
+	if block_pending:
+		block_pending = false
+		_flash(Color(0.88, 0.94, 1.0, 0.4))
+		if block_card != null and is_instance_valid(block_card):
+			# The scabbard card flies in front of him and takes the blow.
+			if block_card.has_method("fly_to_block"):
+				block_card.fly_to_block(self)
+			elif block_card.has_method("pulse"):
+				block_card.pulse()
+		guard_motion()
+		return
 	_kill_motion()
 	var away: float = -_toward()
 	_motion_tween = create_tween()
