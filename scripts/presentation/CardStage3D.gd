@@ -1689,11 +1689,16 @@ func present_ultimate_fist_rain(attacker: Dictionary, events: Array) -> void:
 		var key: String = actor_key(event.target)
 		var count: int = int(per_target_count.get(key, 0))
 		per_target_count[key] = count + 1
-		# Decorative impacts first: the screen cracks all around the real blow.
+		# The meteor shower: fist-bullets fall slantwise from the upper left, all over the area the enemy
+		# line occupies, each ending in its own impact; the real blow follows among them.
+		var region: Rect2 = _enemy_region()
 		for decor: int in range(RAIN_DECOR_PER_HIT):
-			var spot := Vector3(randf_range(-half_width * 0.85, half_width * 0.85), randf_range(-half_height * 0.6, half_height * 0.8), CAMERA_Z - rain_depth + 0.6)
-			_rain_impact(spot, source.position, randf_range(0.8, 1.7) * destination.card_size.y * 0.5, false, 0.0)
-			camera.position = camera_home + Vector3(randf_range(-0.06, 0.06), randf_range(-0.05, 0.05), 0.0)
+			var spot := Vector3(
+				randf_range(region.position.x - 0.6, region.end.x + 0.6),
+				randf_range(region.position.y - 0.15, region.end.y),
+				destination.position.z + 0.6)
+			_fist_meteor(spot, randf_range(0.8, 1.4) * destination.card_size.y * 0.5, half_height, true)
+			camera.position = camera_home + Vector3(randf_range(-0.04, 0.04), randf_range(-0.03, 0.03), 0.0)
 			hover_clock += RAIN_GAP
 			source.position = hover_position + Vector3(0.0, sin(hover_clock * 24.0) * 0.05, 0.0)
 			await get_tree().create_timer(RAIN_GAP).timeout
@@ -1703,9 +1708,11 @@ func present_ultimate_fist_rain(attacker: Dictionary, events: Array) -> void:
 			var spot2: Vector2 = PUNCH_SPOTS[count % PUNCH_SPOTS.size()]
 			var point: Vector3 = destination.position + Vector3(spot2.x * destination.card_size.x, destination.card_size.y * 0.05 + spot2.y * destination.card_size.y * 0.5, 0.5)
 			var hit_size: float = destination.card_size.y * 0.5
+			# The real blow arrives as a meteor too, a bigger one, and lands on its spot of the card.
+			await _fist_meteor(point, hit_size * (1.5 if heavy else 1.1), half_height, false, 0.3)
 			var params: Dictionary = PunchHitFX.heavy_preset(hit_size) if heavy else PunchHitFX.light_preset(hit_size)
 			params["direction"] = 1.0
-			params["angle"] = _angle_back_to(point, source.position)
+			params["angle"] = atan2(-1.0, 1.0) + 0.2   # the afterimages trail back up the slant, toward the upper left
 			params["critical"] = bool(event.crit)
 			PunchHitFX.play_at(fx_root, point, params)
 			if heavy:
@@ -2476,3 +2483,120 @@ func _area_impacts(events: Array, side: float, middle: Vector3) -> void:
 			first = false
 		else:
 			card.dodge_motion()
+
+
+# --- 真．石破天驚拳: a meteor shower of fist-bullets falling slantwise on the enemy region --------------------
+
+const MeteorShockShader = preload("res://scripts/presentation/shaders/meteor_shock.gdshader")
+var _meteor_streak: Texture2D = null
+var _meteor_dot: Texture2D = null
+
+
+func _meteor_textures() -> void:
+	if _meteor_streak != null:
+		return
+	var tail := Gradient.new()
+	tail.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
+	tail.colors = PackedColorArray([Color(0.55, 0.75, 1.0, 0.0), Color(0.8, 0.9, 1.0, 0.55), Color(1.0, 1.0, 1.0, 1.0)])
+	var streak := GradientTexture2D.new()
+	streak.gradient = tail
+	streak.fill = GradientTexture2D.FILL_LINEAR
+	streak.fill_from = Vector2(0.0, 0.5)
+	streak.fill_to = Vector2(1.0, 0.5)
+	streak.width = 128
+	streak.height = 16
+	_meteor_streak = streak
+	var dot_gradient := Gradient.new()
+	dot_gradient.offsets = PackedFloat32Array([0.0, 0.35, 1.0])
+	dot_gradient.colors = PackedColorArray([Color(1, 1, 1, 1), Color(0.9, 0.95, 1.0, 0.6), Color(0.7, 0.85, 1.0, 0.0)])
+	var dot := GradientTexture2D.new()
+	dot.gradient = dot_gradient
+	dot.fill = GradientTexture2D.FILL_RADIAL
+	dot.fill_from = Vector2(0.5, 0.5)
+	dot.fill_to = Vector2(1.0, 0.5)
+	dot.width = 64
+	dot.height = 64
+	_meteor_dot = dot
+
+
+func _meteor_sprite(texture: Texture2D, size: Vector2, colour: Color) -> MeshInstance3D:
+	var quad := QuadMesh.new()
+	quad.size = size
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = quad
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	material.albedo_texture = texture
+	material.albedo_color = colour
+	material.no_depth_test = true
+	material.render_priority = 45
+	mesh.material_override = material
+	return mesh
+
+
+## One fist-bullet: small and white-hot, falling slantwise from the upper left onto `to` (about 50 degrees,
+## from beyond the top of the picture) and speeding up as it falls. It tears through the air like a meteor:
+## a bow of compressed air just ahead of it, the thin cone of its shock front spreading behind, a ring of
+## condensation, and a comet tail two to three bullet-lengths long. `size` is only a scale (the bullet is
+## about a third of it). With `land_as_decor` it ends in a light impact of its own; the real blows are
+## resolved by the caller. Returns when it has landed.
+func _fist_meteor(to: Vector3, size: float, half_height: float, land_as_decor: bool, flight: float = 0.26) -> void:
+	_meteor_textures()
+	var tilt: float = deg_to_rad(randf_range(44.0, 58.0))
+	var distance: float = half_height * randf_range(1.5, 1.9)
+	var from: Vector3 = to + Vector3(-cos(tilt), sin(tilt), 0.0) * distance
+	var angle: float = atan2(to.y - from.y, to.x - from.x)
+	var comet := Node3D.new()
+	fx_root.add_child(comet)
+	comet.position = from
+	comet.rotation.z = angle
+	var bullet: float = size * 0.34          # the bullet's length
+	var tail_length: float = bullet * randf_range(2.4, 3.0)
+	var tail := _meteor_sprite(_meteor_streak, Vector2(tail_length, bullet * 0.42), Color(0.88, 0.95, 1.0, 0.95))
+	tail.position = Vector3(-tail_length * 0.5 - bullet * 0.2, 0.0, 0.0)
+	comet.add_child(tail)
+	var thin := _meteor_sprite(_meteor_streak, Vector2(tail_length * 1.25, bullet * 0.12), Color(0.7, 0.85, 1.0, 0.7))
+	thin.position = Vector3(-tail_length * 0.62 - bullet * 0.2, bullet * randf_range(-0.15, 0.15), -0.01)
+	comet.add_child(thin)
+	var head := _meteor_sprite(_meteor_dot, Vector2(bullet * 0.95, bullet * 0.7), Color(1.0, 1.0, 1.0, 1.0))
+	comet.add_child(head)
+	var glow := _meteor_sprite(_meteor_dot, Vector2.ONE * bullet * 1.7, Color(0.6, 0.78, 1.0, 0.5))
+	comet.add_child(glow)
+	# The shock barrier around the head, drawn in units of the bullet's length.
+	var shock_material := ShaderMaterial.new()
+	shock_material.shader = MeteorShockShader
+	shock_material.render_priority = 44
+	shock_material.set_shader_parameter("seed", randf() * 10.0)
+	var shock_quad := QuadMesh.new()
+	shock_quad.size = Vector2(bullet * 4.0, bullet * 2.4)
+	var shock := MeshInstance3D.new()
+	shock.mesh = shock_quad
+	shock.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shock.material_override = shock_material
+	shock.position = Vector3(-bullet * 1.0, 0.0, 0.01)   # the quad's x range -3..1 puts the head at 3/4 of its width
+	comet.add_child(shock)
+	var tween := create_tween()
+	tween.tween_property(comet, "position", to, flight).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tween.finished
+	comet.queue_free()
+	if land_as_decor:
+		_rain_impact(to, from, size, false, 0.0)
+
+
+## The area the enemy line occupies: x range, and the bottom and top of the cards.
+func _enemy_region() -> Rect2:
+	var low: Vector2 = Vector2(INF, INF)
+	var high: Vector2 = Vector2(-INF, -INF)
+	for card: Node3D in cards.values():
+		if not card.is_enemy:
+			continue
+		low.x = minf(low.x, card.position.x - card.card_size.x * 0.5)
+		high.x = maxf(high.x, card.position.x + card.card_size.x * 0.5)
+		low.y = minf(low.y, card.position.y - card.card_size.y * 0.5)
+		high.y = maxf(high.y, card.position.y + card.card_size.y * 0.5)
+	if low.x == INF:
+		return Rect2(0.0, 0.0, 1.0, 1.0)
+	return Rect2(low, high - low)
