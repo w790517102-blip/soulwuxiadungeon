@@ -1800,6 +1800,9 @@ func _apply_encounter_round_start(_round_number: int) -> void:
 	}, 1))
 	if not applied:
 		return
+	var shield_record: Variant = (boss.get("status_effects", {}) as Dictionary).get(status_id, {})
+	if typeof(shield_record) == TYPE_DICTIONARY:
+		(shield_record as Dictionary)["source"] = {"kind": "self", "name": "自身招式"}
 	var system_log := String(encounter_mechanic.get("shield_applied_system_log", ""))
 	if system_log != "":
 		_log_system(system_log)
@@ -3431,6 +3434,9 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 	var effect_record := {}
 	if effect_target.has("status_effects") and typeof(effect_target["status_effects"]) == TYPE_DICTIONARY:
 		effect_record = effect_target["status_effects"].get(normalized_effect_id, {})
+	# Where it came from, for Card Inspect (only what is known: the skill and who used it).
+	if typeof(effect_record) == TYPE_DICTIONARY and not effect_record.is_empty() and String(skill_data.get("name", "")) != "":
+		effect_record["source"] = {"kind": "skill", "name": String(skill_data.get("name", "")), "by": String(user.get("display_name", user.get("name", "")))}
 	var desc := ""
 	if status_manager.has_method("describe_effect"):
 		desc = String(status_manager.describe_effect(normalized_effect_id, effect_target, effect_record))

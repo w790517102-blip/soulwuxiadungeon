@@ -25,6 +25,7 @@ func _ready() -> void:
 	stage.active_card_clicked.connect(_on_active_card_clicked)
 	_build_command_menu()
 	_install_log_bar()
+	_build_inspect()
 
 
 func _build_command_menu() -> void:
@@ -183,7 +184,59 @@ func _process(delta: float) -> void:
 		command_hint.global_position = Vector2(24.0, screen.y - 96.0)
 
 
+# --- Card Inspect ------------------------------------------------------------------------------
+
+const CardInspect = preload("res://scripts/presentation/CardInspect.gd")
+var _inspect: Node = null
+
+
+func _build_inspect() -> void:
+	_inspect = CardInspect.new()
+	_inspect.name = "CardInspect"
+	add_child(_inspect)
+	_inspect.setup(self, stage, _stage_hud, MenuUIFont)
+
+
+func is_inspecting() -> bool:
+	return _inspect != null and _inspect.is_open()
+
+
+## Inspect may be opened in the player's own turn while no command menu, target picking or action is under way.
+func inspect_allowed() -> bool:
+	return _inspect != null and not is_inspecting() and _command_menu_allowed() and not (command_menu != null and command_menu.visible)
+
+
+## Mouse buttons and ESC for Card Inspect. Left click: any card except the one that can act now (that one keeps
+## its left click for the command menu). Right click: any card. Closing: ESC, right click, the close button or a
+## click outside the panel. Returns true when the event was used.
+func _handle_inspect_input(event: InputEvent) -> bool:
+	if _inspect == null:
+		return false
+	if is_inspecting():
+		var close: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE) \
+			or (event is InputEventMouseButton and event.pressed and (event.button_index == MOUSE_BUTTON_RIGHT or event.button_index == MOUSE_BUTTON_LEFT))
+		if close:
+			_inspect.close()
+			return true
+		return event is InputEventMouseButton and event.pressed
+	if not (event is InputEventMouseButton and event.pressed):
+		return false
+	if event.button_index != MOUSE_BUTTON_LEFT and event.button_index != MOUSE_BUTTON_RIGHT:
+		return false
+	if not inspect_allowed():
+		return false
+	var key: String = stage._card_key_at(event.position)
+	if key == "":
+		return false
+	if event.button_index == MOUSE_BUTTON_LEFT and not current_actor.is_empty() and key == stage.actor_key(current_actor):
+		return false
+	return _inspect.open_key(key)
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _handle_inspect_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if command_menu and command_menu.visible:
 		var cancel: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE) \
 			or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT)

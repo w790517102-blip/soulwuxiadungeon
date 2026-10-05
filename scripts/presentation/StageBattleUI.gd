@@ -19,6 +19,8 @@ var _menu_selected: int = -1
 var _option_actions: Array = []
 var _view_ready: bool = false
 var _status_clock: float = 0.0
+## true: the battlefield cards show status ICONS (CardStageStatusRow); false: the old single words.
+const BATTLEFIELD_STATUS_ICONS := false
 var _last_input_enabled: bool = false
 var target_picker: Control
 var _target_return_menu: String = "skill"
@@ -303,8 +305,9 @@ func _process(delta: float) -> void:
 			var card: Node = stage.card_for(actor)
 			if card:
 				var packed: Dictionary = _build_status_abbrev_text(actor)
-				if card.has_method("set_status_entries"):
-					# Icons where there is art, the old word where there is not; the old text stays the fallback.
+				if BATTLEFIELD_STATUS_ICONS and card.has_method("set_status_entries"):
+					# Optional: icons on the battlefield card (a word where there is no art). Off by default: the field is for
+					# a quick read (single words) and the details, icons included, are in Card Inspect.
 					card.set_status_entries(packed.get("entries", []) if int(actor.get("hp", 0)) > 0 else [])
 				else:
 					card.status_label.text = String(packed.get("text", ""))

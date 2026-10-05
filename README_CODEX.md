@@ -41,6 +41,9 @@ godot --headless --path . --script tests/test_card_positions.gd
 ### 回合節奏
 `BattleController.safe_end_turn` 在結束行動前會 `_await_action_finished`：舞台演出完全結束（牌陣穩定、卡片停穩）**且**戰報輸出完才放行下一個行動。
 
+### 卡片檢閱（Card Inspect）
+見 `docs/card_inspect.md`：玩家選擇行動期間左／右鍵點任何卡開啟；當前可行動卡左鍵仍是行動。戰場卡面維持單字（`BATTLEFIELD_STATUS_ICONS = false`），ICON 在檢閱面板。
+
 ### 互動
 滑鼠指到任何卡（含符卡）會浮起、鄰居讓開（`CardStage3D._update_pointer_hover`，範圍限制在畫面帶 `PARTY_BAND`/`ENEMY_BAND`）；**只在玩家回合、尚未打開指令選單／選目標／動畫時**啟用（`CardStageBattleUI.pointer_hover_allowed`）。已行動的卡立繪變暗、名稱後出現紅字「行動結束」（`set_standby`）。符卡的移動方式與速度和角色卡相同（一般滑動 0.4 秒；剛行動完的卡 0.7 秒繞到其他卡後方回最左）。
 

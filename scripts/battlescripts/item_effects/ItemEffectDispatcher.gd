@@ -242,6 +242,7 @@ func _handle_buff_speed(controller, user: Dictionary, item: Dictionary, target: 
 	var ok = controller.status_manager.apply_effect(target, "speed_buff", {"speed_delta": amount_spd}, turns)
 	if not ok:
 		return false
+	_tag_source(target, "speed_buff", item, user)
 	var after_spd = int(target.get("speed", before_spd))
 	var added = after_spd - before_spd
 
@@ -286,6 +287,7 @@ func _handle_debuff_speed(controller, user: Dictionary, item: Dictionary, target
 	var ok = controller.status_manager.apply_effect(target, "slow", {"slow_delta": amount_speed}, turns)
 	if not ok:
 		return false
+	_tag_source(target, "slow", item, user)
 	var after_spd = int(target.get("speed", before_spd))
 	var reduced = before_spd - after_spd
 
@@ -522,6 +524,7 @@ func _handle_warm_wine(controller, user: Dictionary, item: Dictionary, target: D
 	}, turns)
 	if not ok:
 		return false
+	_tag_source(target, "warm_wine_buff", item, user)
 
 	if controller.has_method("_log_narration"):
 		controller._log_narration("他仰頭灌下暖身酒，血脈像被火點著，步伐跟著快了；可酒勁一上頭，眼前也微微發顫。")
@@ -561,6 +564,7 @@ func _handle_apply_status_item(controller, user: Dictionary, item: Dictionary, t
 	var ok = controller.status_manager.apply_effect(target, effect_id, payload, turns)
 	if not ok:
 		return false
+	_tag_source(target, effect_id, item, user)
 
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
@@ -666,6 +670,7 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 		)
 		if not ok:
 			return false
+		_tag_source(target, "speed_buff", item, user)
 
 		var after_speed = int(target.get("speed", before_speed))
 		var amount_haste_str = "[color=#ffd000]%d[/color]" % (after_speed - before_speed)
@@ -693,6 +698,7 @@ func _handle_haste_talisman(controller, user: Dictionary, item: Dictionary, targ
 		)
 		if not ok_enemy:
 			return false
+		_tag_source(target, "force_element", item, user)
 
 		if controller.tone_map != null:
 			var use_line2 = controller.tone_map.get_tone_text("item_use", "haste_talisman", user_id)
@@ -729,6 +735,7 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 		var ok = controller.status_manager.apply_effect(target, "atk_up", {"atk_delta": amount_atk}, turns)
 		if not ok:
 			return false
+		_tag_source(target, "atk_up", item, user)
 		if controller.has_method("_update_ui_for_actor"):
 			controller._update_ui_for_actor(target)
 
@@ -822,3 +829,17 @@ func _handle_unimplemented(controller, user: Dictionary, item: Dictionary) -> bo
 		effect
 	])
 	return false
+
+
+## Remembers where a status came from (shown in Card Inspect): the item that was used and who used it.
+func _tag_source(target: Dictionary, effect_id: String, item: Dictionary, user: Dictionary) -> void:
+	var effects: Variant = target.get("status_effects", {})
+	if typeof(effects) != TYPE_DICTIONARY or not (effects as Dictionary).has(effect_id):
+		return
+	var record: Variant = (effects as Dictionary)[effect_id]
+	if typeof(record) != TYPE_DICTIONARY:
+		return
+	var item_name: String = String(item.get("name", ""))
+	if item_name == "":
+		return
+	(record as Dictionary)["source"] = {"kind": "item", "name": item_name, "by": String(user.get("display_name", user.get("name", "")))}
