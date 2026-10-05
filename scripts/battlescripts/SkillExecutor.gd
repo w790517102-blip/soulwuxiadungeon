@@ -111,7 +111,7 @@ func execute(
 	# ATTACK_UP card adds flat attack (or, as a percent card, raises it by a rate). Read live; the same
 	# family never stacks.
 	base_attack += floorf(_adjacency(user, "STRENGTH_UP") * 1.2)
-	base_attack += _adjacency(user, "ATTACK_UP")
+	base_attack += _adjacency(user, "ATTACK_UP") + _adjacency(user, "RALLY_ATTACK_UP")
 	base_attack *= 1.0 + _adjacency(user, "ATTACK_UP_PCT")
 	var effective_attack: float = base_attack + float(scaling_bonus)
 	if effective_attack < 1.0:

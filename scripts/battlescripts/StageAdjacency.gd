@@ -20,6 +20,7 @@ const FAMILIES: Dictionary = {
 	"AGILITY_UP": {"stack_rule": "HIGHEST_ONLY"},
 	"INTELLECT_UP": {"stack_rule": "HIGHEST_ONLY"},
 	"LUCK_UP": {"stack_rule": "HIGHEST_ONLY"},
+	"RALLY_ATTACK_UP": {"stack_rule": "HIGHEST_ONLY"},
 	"DAMAGE_REDUCTION": {"stack_rule": "HIGHEST_ONLY"},
 	"PARRY_UP": {"stack_rule": "HIGHEST_ONLY"},
 	"STATUS_RESIST": {"stack_rule": "HIGHEST_ONLY"},
@@ -28,6 +29,9 @@ const FAMILIES: Dictionary = {
 const BOTH := "both"
 const LEFT_ONLY := "left"
 const RIGHT_ONLY := "right"
+## The nearest character to the entity's right, however many other cards stand in between (the head of its
+## support chain). One character at most.
+const ANCHOR := "anchor"
 
 
 static func is_entity(entry: Variant) -> bool:
@@ -66,6 +70,11 @@ static func neighbour_indices(row: Array, index: int, pattern: String = BOTH) ->
 ## (a guest included); another stage entity beside it is not a recipient and nothing is skipped over.
 static func recipients(row: Array, index: int, pattern: String = BOTH) -> Array:
 	var result: Array = []
+	if pattern == ANCHOR:
+		var head: int = chain_head_index(row, index)
+		if head >= 0 and int((row[head] as Dictionary).get("hp", 0)) > 0:
+			result.append(row[head])
+		return result
 	for neighbour: int in neighbour_indices(row, index, pattern):
 		var entry: Dictionary = row[neighbour]
 		if is_entity(entry):
@@ -100,3 +109,28 @@ static func resolve_effects(sources: Array) -> Dictionary:
 		else:
 			result[slot] = maxf(float(result[slot]), value)
 	return result
+
+
+# --- Support chains ------------------------------------------------------------------------------------
+# A support chain is the run of cards (not characters) standing to the LEFT of a character, up to the previous
+# character. The character at its right end is its head - the card's temporal anchor. This is read from the
+# row every time; nothing is stored, nobody "owns" a card, and a card with no character to its right has no head.
+
+## Index of the nearest character to the right of the card at `index` (smaller indices), or -1.
+static func chain_head_index(row: Array, index: int) -> int:
+	var at: int = index - 1
+	while at >= 0:
+		if not is_entity(row[at]):
+			return at
+		at -= 1
+	return -1
+
+
+## The cards of the chain whose head is the character at `character_index`, nearest first.
+static func support_chain_of(row: Array, character_index: int) -> Array:
+	var chain: Array = []
+	var at: int = character_index + 1
+	while at >= 0 and at < row.size() and is_entity(row[at]):
+		chain.append(row[at])
+		at += 1
+	return chain
