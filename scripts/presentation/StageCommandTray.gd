@@ -21,6 +21,7 @@ var _homes: Array[Vector3] = []
 var _allowed: Dictionary = {}
 var _options: Array[Node3D] = []
 var _option_labels: Array[String] = []
+var _option_tints: Array = []
 var _footer_labels: Array[String] = []
 var _option_source_indices: Array[int] = []
 var _option_tweens: Array[Tween] = []
@@ -118,8 +119,10 @@ func set_expanded(expanded: bool) -> void:
 	_reflow()
 
 
-func set_options(labels: Array, footer_labels: Array = []) -> void:
+func set_options(labels: Array, footer_labels: Array = [], tints: Array = []) -> void:
 	var previous_count: int = _option_labels.size()
+	# Per option: a Color to show it in (a skill that cannot be used right now, muted), or null for the normal look.
+	_option_tints = tints.duplicate()
 	_option_labels.clear()
 	for text: Variant in labels:
 		_option_labels.append(str(text))
@@ -177,6 +180,8 @@ func _add_option_card(text: String, source_index: int, layout_index: int) -> voi
 	_options.append(option)
 	_option_source_indices.append(source_index)
 	option.position = _option_position(layout_index)
+	if source_index >= 0 and source_index < _option_tints.size() and _option_tints[source_index] is Color:
+		(option.get_node("Surface/Panel/Label") as Label).add_theme_color_override("font_color", _option_tints[source_index])
 	var unavailable: bool = (source_index == PREVIOUS_PAGE and _option_page == 0) or (source_index == NEXT_PAGE and _option_page == get_option_page_count() - 1)
 	if unavailable:
 		var label: Label = option.get_node("Surface/Panel/Label") as Label

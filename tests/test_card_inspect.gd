@@ -141,6 +141,7 @@ func _check(fixture: Node) -> void:
 	_expect(node.position.is_equal_approx(home) and node.rotation.is_equal_approx(rotation_home), "the card is back on its slot")
 	_expect(inspect._dim == null and not inspect.panel.visible, "the dimming and the panel are gone")
 	await _check_input(ui, stage, ally, foe)
+	_check_skill_page(ui, ally)
 
 
 func _click(position: Vector2, button: int) -> InputEventMouseButton:
@@ -183,3 +184,64 @@ func _wait(seconds: float) -> void:
 	var start: int = Time.get_ticks_msec()
 	while float(Time.get_ticks_msec() - start) < seconds * 1000.0:
 		await process_frame
+
+
+## The skill page: a list (inner forces, then martial skills) and one description for the selected entry; costs come from
+## the same function as the battle list; the overview no longer lists skills.
+func _check_skill_page(ui: Node, ally: Dictionary) -> void:
+	var skill_view: Script = load("res://scripts/battlescripts/SkillView.gd")
+	var data: Dictionary = InspectData.for_actor(ui, ally, false)
+	_expect(data.has("skill_page"), "a character has a skill page")
+	for block: Dictionary in data.blocks:
+		_expect(String(block.heading) != "武學", "the overview does not list the skills (they have their own page)")
+	var page: Dictionary = data.get("skill_page", {})
+	var headings: Array[String] = []
+	var total: int = 0
+	for section: Dictionary in page.get("sections", []):
+		headings.append(String(section.heading))
+		total += (section.entries as Array).size()
+	_expect(headings.has("武術") and total >= 2, "the page lists the martial skills (%s, %d entries)" % [str(headings), total])
+	# every skill's cost is the shared cost
+	var provider: Object = ui.character_skill_db
+	var force: Dictionary = ally.get("inner_force", {})
+	var checked: int = 0
+	for source: Dictionary in provider.get_skills_by_actor(ally):
+		var effective: Dictionary = provider.resolve_effective_skill(String(source.get("id", "")), ally, {"inner_force": force})
+		var cost: int = skill_view.mp_cost(ally, effective)
+		for section: Dictionary in page.sections:
+			for entry: Dictionary in section.entries:
+				if String(entry.id) == String(effective.get("id", "")) and String(section.heading) == "武術":
+					var text: String = "\n".join(PackedStringArray(entry.lines))
+					checked += 1
+					if cost > 0:
+						_expect(text.contains("消耗：內力 %d" % cost), "%s: the page shows the shared cost %d" % [String(entry.name), cost])
+					else:
+						_expect(not text.contains("消耗"), "%s: a free skill shows no cost line" % String(entry.name))
+	_expect(checked > 0, "at least one skill was compared")
+	# the panel: a skills tab, a list on the left, the description changes with the selection
+	var panel: PanelContainer = ui._inspect.panel
+	panel.show_data(data)
+	_expect(panel.current_page() == "overview", "it opens on the overview")
+	panel._show_page("skills")
+	_expect(panel.current_page() == "skills" and not panel._scroll.visible and panel._skills_root.visible, "the skills tab opens a page of its own")
+	var ids: Array[String] = []
+	for section: Dictionary in page.sections:
+		for entry: Dictionary in section.entries:
+			ids.append(String(entry.id))
+	var texts: Dictionary = {}
+	for entry_id: String in ids:
+		_expect(panel.select_skill_entry_by_id(entry_id), "entry %s can be selected" % entry_id)
+		texts[panel.skills_description_text()] = true
+	_expect(texts.size() == ids.size(), "each entry has its own description (%d distinct of %d)" % [texts.size(), ids.size()])
+	# short of MP: the entry says so and its list label is muted
+	var poor: Dictionary = ally.duplicate(true)
+	poor["mp"] = 0
+	var poor_page: Dictionary = InspectData.skill_page(ui, poor)
+	var found_unusable: bool = false
+	for section: Dictionary in poor_page.sections:
+		for entry: Dictionary in section.entries:
+			if bool(entry.dim):
+				found_unusable = true
+				_expect("\n".join(PackedStringArray(entry.lines)).contains("目前不可用：內力不足"), "an unaffordable skill says why on its page")
+	_expect(found_unusable, "with 0 MP some skill is muted on the page")
+	panel._show_page("overview")

@@ -4,6 +4,8 @@
 # - 若技能有 require_free_hand = true，則至少要空出一隻手才可用
 extends PopupPanel
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
+const CharacterSkillScript = preload("res://scripts/battlescripts/CharacterSkill.gd")
+const SkillViewScript = preload("res://scripts/battlescripts/SkillView.gd")
 
 signal skill_selected(skill_data: Dictionary)
 signal selection_cancelled()
@@ -16,6 +18,10 @@ signal selection_cancelled()
 var skill_provider: Node = null
 var available_skills: Array = []
 var valid_skill_indices: Array = []
+## Per list entry: why it cannot be used right now ("" = it can), and the muted colour the card-stage menu shows it in
+## (null = the normal look).
+var unusable_reasons: Array = []
+var option_tints: Array = []
 var selected_index = -1
 var inner_force = {}
 var equipped_weapons: Array = []
@@ -51,6 +57,8 @@ func show_skills(
 	confirm_button.disabled = true
 	skill_list.clear()
 	valid_skill_indices.clear()
+	unusable_reasons.clear()
+	option_tints.clear()
 	description_label.text = "請選擇一項武學。"
 
 	# 從傳入的 equipped_weapon_list 中設定武器
@@ -110,10 +118,22 @@ func show_skills(
 			continue
 
 		available_skills.append(skill)
-		skill_list.add_item(skill_name)
+		# The cost shown here is the one the controller will charge (SkillView), and the skill stays in the list - and
+		# stays selectable, so its description can be read - when it cannot be used right now: only its colour is
+		# muted (same hue, less saturation and brightness).
+		var cost: int = SkillViewScript.mp_cost(actor, skill)
+		var verdict: Dictionary = SkillViewScript.check(actor, skill)
+		skill_list.add_item("%s　　%d MP" % [skill_name, cost])
 		var ui_index = skill_list.get_item_count() - 1
+		var skill_color := Color.WHITE
 		if skill_provider and skill_provider.has_method("get_skill_color"):
-			skill_list.set_item_custom_fg_color(ui_index, skill_provider.get_skill_color(skill, inner_force))
+			skill_color = skill_provider.get_skill_color(skill, inner_force)
+		var usable: bool = bool(verdict.ok)
+		if not usable:
+			skill_color = SkillViewScript.muted(skill_color)
+		skill_list.set_item_custom_fg_color(ui_index, skill_color)
+		unusable_reasons.append("" if usable else String(verdict.text))
+		option_tints.append(null if usable else skill_color)
 		valid_skill_indices.append(ui_index)
 
 	popup_centered()
@@ -121,12 +141,19 @@ func show_skills(
 func _on_SkillList_item_selected(index: int) -> void:
 	selected_index = index
 	var skill: Dictionary = available_skills[index]
-	var can_use: bool = not skill_list.is_item_disabled(index)
+	var reason: String = String(unusable_reasons[index]) if index < unusable_reasons.size() else ""
+	var can_use: bool = not skill_list.is_item_disabled(index) and reason == ""
 
 	var lines: Array = []
+	if reason != "":
+		lines.append("[color=#ff7b7b]%s[/color]" % reason)
 	lines.append("[b]【%s】[/b]" % String(skill.get("name", "???")))
 	lines.append("類型：%s｜分類：%s" % [String(skill.get("weapon_type", "-")), String(skill.get("category", "外功"))])
+	lines.append("消耗：內力 %d" % SkillViewScript.mp_cost(current_actor, skill))
 	lines.append("說明：%s" % String(skill.get("desc", "（未填說明）")))
+	var strikes: Dictionary = SkillViewScript.strike_info(skill, inner_force)
+	if int(strikes.delta) != 0:
+		lines.append("攻擊段數：基礎 %d 次 → 目前 %d 次（%s專屬 %+d）" % [int(strikes.base), int(strikes.effective), String(strikes.source), int(strikes.delta)])
 	lines.append("效果：%s" % _build_short_effect_summary(skill))
 	for link_line in _build_short_linkage_lines(skill):
 		lines.append(link_line)
@@ -144,25 +171,8 @@ func _on_Cancel_pressed() -> void:
 	hide()
 
 func _build_short_effect_summary(skill: Dictionary) -> String:
-	var effects = skill.get("effects", [])
-	if typeof(effects) != TYPE_ARRAY or (effects as Array).is_empty():
-		return "（無）"
-	var tokens: Array[String] = []
-	for entry_any in effects:
-		if typeof(entry_any) != TYPE_DICTIONARY:
-			continue
-		var entry: Dictionary = entry_any
-		var effect_type := String(entry.get("type", ""))
-		match effect_type:
-			"damage":
-				tokens.append("傷害 %.1fx" % float(entry.get("power", skill.get("power", 1.0))))
-			"heal_hp":
-				tokens.append("回復HP %d" % int(entry.get("amount", 0)))
-			_:
-				tokens.append(effect_type)
-	if tokens.is_empty():
-		return "（無）"
-	return "、".join(tokens)
+	return SkillViewScript.effect_summary(skill)
+
 
 func _build_short_linkage_lines(skill: Dictionary) -> Array:
 	if _skill_data_db == null or not _skill_data_db.has_method("get_inner_force_linkage_entries"):

@@ -5,6 +5,7 @@ const ItemDB = preload("res://scripts/db/ItemDB.gd")
 const BattleIntroDB = preload("res://scripts/db/BattleIntroDB.gd")
 const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 const CharacterSkillScript = preload("res://scripts/battlescripts/CharacterSkill.gd")
+const SkillView = preload("res://scripts/battlescripts/SkillView.gd")
 const StatusEffectManagerScript = preload("res://scripts/battle/StatusEffectManager.gd")
 const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 const StageEntityRegistryScript = preload("res://scripts/battlescripts/StageEntityRegistry.gd")
@@ -25,6 +26,8 @@ var action_log_ui: LogPanel = null  # ✅ LogPanel 掛的腳本
 var last_round_logged: int = -1
 var last_round_regen: int = -1
 var battle_finished: bool = false
+## Why the last `execute_action` refused to run ("" = it ran): a refused skill spends nothing and ends no turn.
+var last_action_rejection: String = ""
 var _ending: bool = false
 # Canonical actors stay owned by TeamData. Battles operate on independent runtime
 # dictionaries so equipment/status fields cannot overwrite permanent character data.
@@ -1227,24 +1230,9 @@ func _apply_inner_force_runtime_bonus_for_actor(actor: Dictionary) -> void:
 	_recalc_actor_status_snapshot(actor)
 
 
+## What the skill costs this actor now. The same function the skill list and Card Inspect show (SkillView).
 func _resolve_skill_mp_cost(actor: Dictionary, skill_data: Dictionary) -> int:
-	var base_mp_cost := int(skill_data.get("mp_cost", 0))
-	if base_mp_cost <= 0:
-		return 0
-	var inner_force: Dictionary = actor.get("inner_force", {}) if typeof(actor.get("inner_force", {})) == TYPE_DICTIONARY else {}
-	if inner_force.is_empty():
-		return base_mp_cost
-	var multiplier := float(inner_force.get("skill_mp_cost_multiplier", 1.0))
-	var skill_weapon_type := String(skill_data.get("weapon_type", ""))
-	var by_weapon = inner_force.get("skill_mp_cost_multiplier_by_weapon", {})
-	if skill_weapon_type != "" and typeof(by_weapon) == TYPE_DICTIONARY:
-		var map: Dictionary = by_weapon
-		if map.has(skill_weapon_type):
-			multiplier *= float(map.get(skill_weapon_type, 1.0))
-	var adjusted := int(floor(float(base_mp_cost) * max(0.0, multiplier)))
-	if adjusted <= 0:
-		return 1
-	return adjusted
+	return SkillView.mp_cost(actor, skill_data)
 
 func _resolve_pairing_bonus(actor: Dictionary, skill_data: Dictionary) -> Dictionary:
 	if actor.is_empty() or skill_data.is_empty():
@@ -2716,13 +2704,17 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	var actor_mp = int(actor.get("mp", 0))
 	var user_name = str(actor.get("name", "???"))
 
-	# A stance can forbid a skill (持鞘: both hands are taken) or offer one only inside it.
-	if not _skill_legal_for_stance(actor, skill_data):
-		_log("%s 目前的姿態下無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
-		return
-
-	if mp_cost > 0 and actor_mp < mp_cost:
-		_log("%s 真氣不足，無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
+	# The real check, made again right before anything is spent (the skill list only pre-checks, and things can change
+	# in between): a stance can forbid a skill (持鞘: both hands are taken), or there is too little MP. A refused skill
+	# costs nothing and does NOT use the actor's turn - the caller sees `last_action_rejection` and goes back to the list.
+	last_action_rejection = ""
+	var verdict: Dictionary = SkillView.check(actor, skill_data)
+	if not bool(verdict.ok):
+		last_action_rejection = String(verdict.code)
+		if String(verdict.code) == SkillView.CODE_STANCE:
+			_log("%s 目前的姿態下無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
+		else:
+			_log("%s 真氣不足，無法施展「%s」（需要 %d，目前 %d）。" % [user_name, str(skill_data.get("name", "???")), int(verdict.need), int(verdict.have)])
 		return
 
 	if mp_cost > 0:

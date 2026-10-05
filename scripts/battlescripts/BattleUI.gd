@@ -8,6 +8,7 @@ const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const ItemDB = preload("res://scripts/db/ItemDB.gd")
 const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const SkillViewScript = preload("res://scripts/battlescripts/SkillView.gd")
 const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/DotGothic16-Regular.ttf"
 const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
@@ -2213,7 +2214,25 @@ func _start_target_select_for_skill(user: Dictionary, skill_data: Dictionary) ->
 		if target_select_popup:
 			target_select_popup.show_targets(candidates)
 
+## Back to the skill list after a refused skill; the actor is still the one to act. The card stage view overrides this.
+func _reopen_skill_list_after_rejection() -> void:
+	pending_skill = {}
+	pending_skill_user = {}
+	on_action_selection = true
+	if action_panel:
+		action_panel.show()
+	_on_btn_skill_pressed()
+
+
 func _on_PopupSkillSelect_skill_selected(skill_data: Dictionary) -> void:
+	# The list pre-checks too (it will not let an unusable skill be confirmed); this is the second look, because
+	# things can change between the list and here.
+	var refusal: String = SkillViewScript.disabled_reason(current_actor, skill_data)
+	if refusal != "":
+		skill_list_popup.hide()
+		_log_system("無法使用「%s」：%s。" % [String(skill_data.get("name", "???")), refusal])
+		_reopen_skill_list_after_rejection()
+		return
 	# 關閉技能選單，本回合仍在進行
 	skill_list_popup.hide()
 	on_action_selection = false
@@ -2485,6 +2504,12 @@ func _apply_skill_and_finish_turn(user: Dictionary, skill_data: Dictionary, targ
 		await combat_controller.execute_action(user, skill_data, target)
 	else:
 		push_error("BattleUI: combat_controller 為 null，無法執行技能。")
+		return
+
+	# The controller refused the skill (not enough MP, a stance that forbids it): nothing was spent and the turn was
+	# NOT used. Go back to the skill list; the character can still act.
+	if String(combat_controller.get("last_action_rejection")) != "":
+		_reopen_skill_list_after_rejection()
 		return
 
 	# ⭐ 整個攻擊流程跑完之後，才結束這一回合

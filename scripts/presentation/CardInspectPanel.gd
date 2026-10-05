@@ -18,6 +18,14 @@ var _font: Font = null
 var _content: VBoxContainer
 var _scroll: ScrollContainer
 var _close_button: Button
+var _tab_overview: Button
+var _tab_skills: Button
+var _skills_root: HBoxContainer
+var _skills_description: RichTextLabel
+var _skill_group: ButtonGroup
+var _data: Dictionary = {}
+var _skills_built: bool = false
+var _page: String = "overview"
 
 
 func _init(font: Font = null) -> void:
@@ -38,7 +46,15 @@ func _init(font: Font = null) -> void:
 	outer.add_theme_constant_override("separation", 8)
 	add_child(outer)
 	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 8)
 	outer.add_child(top)
+	# Two pages: the overview, and the skills (a list with one description). The skills tab exists only for a character.
+	_tab_overview = _tab_button("總覽")
+	_tab_overview.pressed.connect(func() -> void: _show_page("overview"))
+	top.add_child(_tab_overview)
+	_tab_skills = _tab_button("武學")
+	_tab_skills.pressed.connect(func() -> void: _show_page("skills"))
+	top.add_child(_tab_skills)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(spacer)
@@ -58,10 +74,19 @@ func _init(font: Font = null) -> void:
 	_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_content.add_theme_constant_override("separation", 10)
 	_scroll.add_child(_content)
+	_skills_root = HBoxContainer.new()
+	_skills_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_skills_root.add_theme_constant_override("separation", 14)
+	_skills_root.hide()
+	outer.add_child(_skills_root)
 
 
-## Fills the panel. `data` is a CardInspectData container.
+## Fills the panel. `data` is a CardInspectData container. It always opens on the overview.
 func show_data(data: Dictionary) -> void:
+	_data = data
+	_skills_built = false
+	_tab_skills.visible = data.has("skill_page")
+	_show_page("overview")
 	for child: Node in _content.get_children():
 		_content.remove_child(child)
 		child.queue_free()
@@ -191,3 +216,147 @@ func _add_block(block_any: Variant) -> void:
 	_content.add_child(_label(String(block.get("heading", "")), 20, GOLD))
 	for line: Variant in block.get("lines", []):
 		_content.add_child(_rich(String(line)))
+
+
+# --- Pages ------------------------------------------------------------------------------------------------------
+
+func _tab_button(text: String) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.toggle_mode = true
+	button.focus_mode = Control.FOCUS_NONE
+	if _font != null:
+		button.add_theme_font_override("font", _font)
+	button.add_theme_font_size_override("font_size", 22)
+	return button
+
+
+func current_page() -> String:
+	return _page
+
+
+func _show_page(page: String) -> void:
+	if page == "skills" and not _data.has("skill_page"):
+		page = "overview"
+	_page = page
+	_tab_overview.set_pressed_no_signal(page == "overview")
+	_tab_skills.set_pressed_no_signal(page == "skills")
+	_scroll.visible = page == "overview"
+	_skills_root.visible = page == "skills"
+	if page == "skills" and not _skills_built:
+		_build_skills_page()
+
+
+func _list_style(selected: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.16, 0.14, 0.09, 0.95) if selected else Color(0.07, 0.08, 0.1, 0.0)
+	style.border_color = GOLD if selected else Color(0, 0, 0, 0)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 10
+	style.content_margin_right = 8
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	return style
+
+
+## The skill page: the list on the left (inner forces, then martial skills), the description frame on the right.
+func _build_skills_page() -> void:
+	_skills_built = true
+	for child: Node in _skills_root.get_children():
+		_skills_root.remove_child(child)
+		child.queue_free()
+	var left := ScrollContainer.new()
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = 0.9
+	left.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_skills_root.add_child(left)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 3)
+	left.add_child(list)
+	var frame := PanelContainer.new()
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frame.size_flags_stretch_ratio = 1.5
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color(0.04, 0.05, 0.07, 0.96)
+	frame_style.border_color = Color(GOLD, 0.7)
+	frame_style.set_border_width_all(2)
+	frame_style.set_corner_radius_all(4)
+	frame_style.content_margin_left = 16
+	frame_style.content_margin_right = 12
+	frame_style.content_margin_top = 12
+	frame_style.content_margin_bottom = 12
+	frame.add_theme_stylebox_override("panel", frame_style)
+	_skills_root.add_child(frame)
+	var frame_scroll := ScrollContainer.new()
+	frame_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	frame.add_child(frame_scroll)
+	_skills_description = RichTextLabel.new()
+	_skills_description.bbcode_enabled = true
+	_skills_description.fit_content = true
+	_skills_description.scroll_active = false
+	_skills_description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_skills_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if _font != null:
+		_skills_description.add_theme_font_override("normal_font", _font)
+		_skills_description.add_theme_font_override("bold_font", _font)
+	_skills_description.add_theme_font_size_override("normal_font_size", 19)
+	_skills_description.add_theme_font_size_override("bold_font_size", 24)
+	_skills_description.add_theme_color_override("default_color", PAPER)
+	frame_scroll.add_child(_skills_description)
+	_skill_group = ButtonGroup.new()
+	var first: Button = null
+	var page: Dictionary = _data.get("skill_page", {})
+	for section_any: Variant in page.get("sections", []):
+		var section: Dictionary = section_any
+		list.add_child(_label("【%s】" % String(section.get("heading", "")), 20, GOLD))
+		for entry_any: Variant in section.get("entries", []):
+			var entry: Dictionary = entry_any
+			var button := Button.new()
+			var text: String = String(entry.get("name", ""))
+			if String(entry.get("tag", "")) != "":
+				text += "　" + String(entry.get("tag", ""))
+			button.text = text
+			button.toggle_mode = true
+			button.button_group = _skill_group
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.focus_mode = Control.FOCUS_NONE
+			button.clip_text = true
+			if _font != null:
+				button.add_theme_font_override("font", _font)
+			button.add_theme_font_size_override("font_size", 20)
+			var color: Color = entry.get("color", Color.WHITE)
+			for key: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+				button.add_theme_color_override(key, color)
+			button.add_theme_stylebox_override("normal", _list_style(false))
+			button.add_theme_stylebox_override("hover", _list_style(false))
+			button.add_theme_stylebox_override("pressed", _list_style(true))
+			button.add_theme_stylebox_override("hover_pressed", _list_style(true))
+			button.pressed.connect(_select_skill_entry.bind(entry))
+			list.add_child(button)
+			if first == null:
+				first = button
+				first.set_meta("entry", entry)
+	if first != null:
+		first.set_pressed_no_signal(true)
+		_select_skill_entry(first.get_meta("entry"))
+
+
+func _select_skill_entry(entry: Dictionary) -> void:
+	_skills_description.text = "\n".join(PackedStringArray(entry.get("lines", [])))
+
+
+## The text of the description frame (for tests).
+func skills_description_text() -> String:
+	return _skills_description.text if _skills_description != null else ""
+
+
+## Selects the skill-page entry with this id (for tests; the player clicks).
+func select_skill_entry_by_id(entry_id: String) -> bool:
+	for section_any: Variant in (_data.get("skill_page", {}) as Dictionary).get("sections", []):
+		for entry_any: Variant in (section_any as Dictionary).get("entries", []):
+			if String((entry_any as Dictionary).get("id", "")) == entry_id:
+				_select_skill_entry(entry_any)
+				return true
+	return false

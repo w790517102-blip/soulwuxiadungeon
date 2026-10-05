@@ -24,6 +24,7 @@ const BATTLEFIELD_STATUS_ICONS := false
 var _last_input_enabled: bool = false
 var target_picker: Control
 var _target_return_menu: String = "skill"
+var _skill_footer_blocked: bool = false
 var _old_log_mouse_filter: int
 
 
@@ -401,9 +402,16 @@ func _render_menu() -> void:
 			labels.append(("✓ " if i == _menu_selected else "") + list.get_item_text(i))
 			_option_actions.append(i)
 	var footer: Array = ["確認" if _menu_selected >= 0 or _menu == "defend" else "先選擇項目", "取消"]
+	var tints: Array = []
+	if _menu == "skill":
+		# A skill that cannot be used right now stays in the list, in a muted version of its colour; the footer says so.
+		tints = skill_list_popup.option_tints.duplicate()
+		if _menu_selected >= 0 and skill_list_popup.confirm_button.disabled:
+			footer[0] = "無法使用"
+	_skill_footer_blocked = _menu == "skill" and _menu_selected >= 0 and skill_list_popup.confirm_button.disabled
 	_option_actions.append("confirm")
 	_option_actions.append("cancel")
-	stage.command_tray.set_options(labels, footer)
+	stage.command_tray.set_options(labels, footer, tints)
 	stage.command_tray.set_expanded(true)
 	_menu_description.show()
 
@@ -425,8 +433,13 @@ func select_stage_option(index: int) -> void:
 			"item": _menu_description.text = item_list_popup.description.text + "\n" + item_list_popup.quantity_label.text
 			"target": _menu_description.text = target_select_popup.description.text
 		if _menu not in ["skill", "inner_force", "item"]: _render_menu()
+		elif _menu == "skill" and skill_list_popup.confirm_button.disabled != _skill_footer_blocked:
+			_render_menu()   # the footer follows whether the selected skill can be used
 	elif action == "cancel":
 		_cancel_menu()
+	elif action == "confirm" and _menu == "skill" and _menu_selected >= 0 and skill_list_popup.confirm_button.disabled:
+		# The selected skill cannot be used now (not enough MP...). Stay in the list: nothing is spent, no turn is used.
+		return
 	elif action == "confirm" and (_menu_selected >= 0 or _menu == "defend"):
 		var selected_menu: String = _menu
 		_close_menu()
@@ -600,6 +613,15 @@ func _confirm_stage_target(actor: Dictionary) -> void:
 	_close_menu()
 	_on_TargetSelectPopup_target_selected(actor)
 	_sync_input_state()
+
+
+## A skill the controller refused (not enough MP...): back to the same list, the character still to act.
+func _reopen_skill_list_after_rejection() -> void:
+	if not stage_enabled:
+		super._reopen_skill_list_after_rejection()
+		return
+	_target_return_menu = "skill"
+	_return_to_skill_list()
 
 
 func _return_to_skill_list() -> void:

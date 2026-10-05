@@ -100,9 +100,10 @@ static func for_actor(ui: Object, actor: Dictionary, enemy: bool) -> Dictionary:
 			gear.append("徒手（拳／掌）")
 		if not gear.is_empty():
 			(data.blocks as Array).append({"heading": "裝備", "lines": gear})
-		var skills: Array = _skill_lines(ui, actor)
-		if not skills.is_empty():
-			(data.blocks as Array).append({"heading": "武學", "lines": skills})
+		# The skills are not in the overview: they have a page of their own (a list on the left, one description on the right).
+		var page: Dictionary = skill_page(ui, actor)
+		if not (page.sections as Array).is_empty():
+			data["skill_page"] = page
 	else:
 		var intel: Array = _enemy_intel(actor)
 		if not intel.is_empty():
@@ -406,3 +407,117 @@ static func _actor_name(ui: Object, actor_id: String) -> String:
 			if typeof(actor) == TYPE_DICTIONARY and String((actor as Dictionary).get("id", "")) == actor_id:
 				return String((actor as Dictionary).get("display_name", (actor as Dictionary).get("name", "")))
 	return ""
+
+
+# --- The skill page: inner forces and martial skills as a list, with one description for the selected entry ------
+
+## Loaded when first needed: it reaches the project autoloads, which a headless test does not have at compile time.
+static func _sv() -> GDScript:
+	return load("res://scripts/battlescripts/SkillView.gd") as GDScript
+
+const WEAPON_KIND := {"劍": "劍招", "刀": "刀招", "棍": "棍招", "槍": "槍招", "拳": "拳招", "掌": "掌招", "琴": "琴招", "筆": "筆招", "通用": "通用武學"}
+
+## {"sections": [{"heading", "entries": [{"id", "name", "tag", "color", "dim", "lines": [bbcode]}]}]}. Costs, attack counts and
+## the verdict come from SkillView - the very functions the battle list and the controller use.
+static func skill_page(ui: Object, actor: Dictionary) -> Dictionary:
+	var sections: Array = []
+	var force: Dictionary = actor.get("inner_force", {}) if typeof(actor.get("inner_force", {})) == TYPE_DICTIONARY else {}
+	var provider: Object = ui.get("character_skill_db") as Object
+	var skills: Array = []
+	if provider != null and provider.has_method("get_skills_by_actor"):
+		for source: Variant in provider.get_skills_by_actor(actor):
+			if typeof(source) != TYPE_DICTIONARY:
+				continue
+			var effective: Dictionary = source
+			if provider.has_method("resolve_effective_skill"):
+				effective = provider.resolve_effective_skill(String((source as Dictionary).get("id", "")), actor, {"inner_force": force})
+			elif provider.has_method("resolve_runtime_skill"):
+				effective = provider.resolve_runtime_skill(source, force, actor)
+			if not effective.is_empty():
+				skills.append(effective)
+	var forces: Array = _inner_force_entries(actor, force, skills)
+	if not forces.is_empty():
+		sections.append({"heading": "內功", "entries": forces})
+	var arts: Array = []
+	for skill: Dictionary in skills:
+		arts.append(_skill_entry(provider, actor, force, skill))
+	if not arts.is_empty():
+		sections.append({"heading": "武術", "entries": arts})
+	return {"sections": sections}
+
+
+static func _inner_force_entries(actor: Dictionary, running: Dictionary, skills: Array) -> Array:
+	var entries: Array = []
+	var options: Array = actor.get("available_inner_forces", []) if typeof(actor.get("available_inner_forces", [])) == TYPE_ARRAY else []
+	if options.is_empty() and not running.is_empty():
+		options = [running]
+	for force_any: Variant in options:
+		if typeof(force_any) != TYPE_DICTIONARY:
+			continue
+		var force: Dictionary = force_any
+		var is_running: bool = String(force.get("id", "")) == String(running.get("id", ""))
+		var name: String = "%s%s" % [String(force.get("prefix", "")), String(force.get("type", ""))]
+		var lines: Array = ["[b]%s[/b]" % name, "類型：內功"]
+		lines.append("目前運行：%s" % ("是" if is_running else "否"))
+		if String(force.get("element", "")) != "":
+			lines.append("屬性：%s" % String(force.get("element", "")))
+		if String(force.get("description", "")) != "":
+			lines.append("")
+			lines.append(String(force.get("description", "")))
+		lines.append("")
+		lines.append("效果：%s" % InnerForceDB.get_effect_description_line(force, actor))
+		if String(force.get("special_effect_desc", "")) != "":
+			lines.append(String(force.get("special_effect_desc", "")))
+		# What it does to this build right now.
+		var affects: Array = []
+		for skill: Dictionary in skills:
+			var strikes: Dictionary = _sv().strike_info(skill, force)
+			if int(strikes.delta) != 0:
+				affects.append("%s：攻擊段數 %d → %d" % [String(skill.get("name", "")), int(strikes.base), int(strikes.effective)])
+		if not affects.is_empty():
+			lines.append("")
+			lines.append("目前影響：" if is_running else "運行時影響：")
+			lines.append_array(affects)
+		entries.append({"id": String(force.get("id", "")), "name": name, "tag": "運行中" if is_running else "", "color": Color(1, 1, 1), "dim": false, "lines": lines})
+	return entries
+
+
+static func _skill_entry(provider: Object, actor: Dictionary, force: Dictionary, skill: Dictionary) -> Dictionary:
+	var name: String = String(provider.resolve_skill_name(skill, force)) if provider != null and provider.has_method("resolve_skill_name") else String(skill.get("name", ""))
+	var weapon: String = String(skill.get("weapon_type", ""))
+	var verdict: Dictionary = _sv().check(actor, skill, true)
+	var lines: Array = ["[b]%s[/b]" % name]
+	lines.append("類型：%s｜分類：%s" % [String(WEAPON_KIND.get(weapon, weapon if weapon != "" else "武學")), String(skill.get("category", "外功"))])
+	var cost: int = _sv().mp_cost(actor, skill)
+	if cost > 0:
+		lines.append("消耗：內力 %d" % cost)
+	if not bool(verdict.ok):
+		lines.append("[color=#ff7b7b]目前不可用：%s[/color]" % String(verdict.text))
+	var description: String = String(skill.get("desc", skill.get("description", "")))
+	if description != "":
+		lines.append("")
+		lines.append(description)
+	var strikes: Dictionary = _sv().strike_info(skill, force)
+	var shown_effective: bool = false
+	if int(strikes.base) > 1 or int(strikes.delta) != 0:
+		lines.append("")
+		lines.append("基礎攻擊次數：%d" % int(strikes.base))
+		lines.append("目前攻擊次數：%d" % int(strikes.effective))
+		if int(strikes.delta) != 0:
+			lines.append("修正來源：%s %+d" % [String(strikes.source), int(strikes.delta)])
+		shown_effective = true
+	var effects: String = _sv().effect_summary(skill)
+	if effects != "（無）":
+		if not shown_effective:
+			lines.append("")
+		lines.append("效果：%s" % effects)
+	var link_entries: Variant = _sv()._db().get_inner_force_linkage_entries(skill, actor, force)
+	if typeof(link_entries) == TYPE_ARRAY:
+		for row: Variant in link_entries:
+			if typeof(row) == TYPE_DICTIONARY and String((row as Dictionary).get("text_short", "")) != "":
+				var met: bool = bool((row as Dictionary).get("met", false))
+				lines.append("[color=%s]【%s】%s[/color]" % ["#87ffb3" if met else "#9aa0aa", String((row as Dictionary).get("kind", "聯動")), String((row as Dictionary).get("text_short", ""))])
+	var color: Color = provider.get_skill_color(skill, force) if provider != null and provider.has_method("get_skill_color") else Color(1, 1, 1)
+	if not bool(verdict.ok):
+		color = _sv().muted(color)
+	return {"id": String(skill.get("id", "")), "name": name, "tag": "%d MP" % cost if cost > 0 else "", "color": color, "dim": not bool(verdict.ok), "lines": lines}

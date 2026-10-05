@@ -87,6 +87,7 @@ func open_key(key: String) -> bool:
 	stage._apply_hover("")
 	_stop_card_motion(node)
 	_card_scale = node.scale
+	_hide_turn_pulse(node, true)
 	_plan = _focus_plan(node)
 	_freeze_time()
 	_make_dim()
@@ -114,6 +115,7 @@ func _finish_close() -> void:
 		_card.position = _card.home_position
 		_card.rotation = _card.home_rotation
 		_card.scale = _card_scale
+		_hide_turn_pulse(_card, false)
 	if _dim != null:
 		_dim.queue_free()
 		_dim = null
@@ -278,3 +280,16 @@ func _actor_for(key: String) -> Dictionary:
 		if typeof(actor) == TYPE_DICTIONARY and stage.actor_key(actor) == key:
 			return actor
 	return {}
+
+
+## The white pulse that marks whose turn it is would stand frozen at whatever strength it had when time stopped, which
+## washes the card out; it is hidden while the card is inspected and shown again afterwards.
+func _hide_turn_pulse(card: Node3D, hide_it: bool) -> void:
+	var overlay: Variant = card.get("_turn_overlay")
+	if overlay == null or not (overlay is CanvasItem):
+		return
+	if hide_it:
+		card.set_meta("inspect_pulse_visible", (overlay as CanvasItem).visible)
+		(overlay as CanvasItem).hide()
+	else:
+		(overlay as CanvasItem).visible = bool(card.get_meta("inspect_pulse_visible", true))
