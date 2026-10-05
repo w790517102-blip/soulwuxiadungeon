@@ -268,6 +268,10 @@ static func _source_text(source: Variant) -> String:
 			text = "僚卡「%s」" % name
 		"self":
 			text = name if name != "" else "自身招式"
+	# A skill that leaves a named state behind (天殘．地缺劍 -> 殘脈): the skill is the source, the state is a label.
+	var state: String = String(record.get("state", ""))
+	if state != "":
+		text += "→「%s」" % state
 	if by != "" and by != name:
 		text += "（%s）" % by
 	return text

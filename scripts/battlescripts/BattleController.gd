@@ -3008,7 +3008,12 @@ func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeat
 					def_down = abs(amount if amount != 0 else 10)
 				elif effect_type == "blind":
 					acc_down = abs(amount if amount != 0 else 15)
-				var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {"_suppress_status_narration": true})
+				# The skill is the source; 殘脈 (`self_debuff_state_name`) is the name of the state it leaves behind.
+				var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {
+					"name": String(skill_data.get("name", "")),
+					"source_state": String(skill_data.get("self_debuff_state_name", "")),
+					"_suppress_status_narration": true,
+				})
 				if record.is_empty():
 					continue
 				applied_self.append(record)
@@ -3063,7 +3068,7 @@ func _apply_skill_risk_rewards(actor: Dictionary, skill_data: Dictionary, defeat
 		var effect_type := String(entry.get("type", ""))
 		if effect_type == "":
 			continue
-		var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {})
+		var record := _apply_single_skill_effect(actor, actor, effect_type, entry, {"name": String(skill_data.get("name", ""))})
 		if record.is_empty():
 			continue
 		applied_bonus.append(record)
@@ -3436,7 +3441,7 @@ func _apply_single_skill_effect(user: Dictionary, effect_target: Dictionary, eff
 		effect_record = effect_target["status_effects"].get(normalized_effect_id, {})
 	# Where it came from, for Card Inspect (only what is known: the skill and who used it).
 	if typeof(effect_record) == TYPE_DICTIONARY and not effect_record.is_empty() and String(skill_data.get("name", "")) != "":
-		effect_record["source"] = {"kind": "skill", "name": String(skill_data.get("name", "")), "by": String(user.get("display_name", user.get("name", "")))}
+		effect_record["source"] = {"kind": "skill", "name": String(skill_data.get("name", "")), "by": String(user.get("display_name", user.get("name", ""))), "state": String(skill_data.get("source_state", ""))}
 	var desc := ""
 	if status_manager.has_method("describe_effect"):
 		desc = String(status_manager.describe_effect(normalized_effect_id, effect_target, effect_record))

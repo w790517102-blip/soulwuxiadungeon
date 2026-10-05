@@ -85,6 +85,16 @@ func _check(fixture: Node) -> void:
 	_expect(by_name.has("中毒") and String(by_name["中毒"].source) == "", "a status whose source was never recorded shows no invented source")
 	_expect(by_name.has("亂弦") and String(by_name["亂弦"].effect).contains("敏捷") and String(by_name["亂弦"].kind) == "debuff", "an attribute debuff is told as a debuff")
 
+	# --- the source of a self-inflicted status: the skill, with the state it leaves behind as a label (天殘．地缺劍 -> 殘脈)
+	var cursed: Dictionary = ally.duplicate(true)
+	cursed["status_effects"] = {}
+	var applied: Dictionary = controller._apply_single_skill_effect(cursed, cursed, "break_def", {"type": "break_def", "amount": 15, "turns": 2},
+		{"name": "天殘．地缺劍", "source_state": "殘脈", "_suppress_status_narration": true})
+	_expect(not applied.is_empty() and cursed.status_effects.has("break_def"), "the self effect was applied")
+	var cursed_row: Dictionary = InspectData._status_row("break_def", cursed.status_effects.break_def)
+	_expect(String(cursed_row.source).contains("天殘．地缺劍") and String(cursed_row.source).contains("殘脈"), "its source names the skill and the 殘脈 state: " + String(cursed_row.source))
+	_expect(String(cursed_row.name) == "破防" and String(cursed_row.effect) == "防禦 −15", "...next to the status itself")
+
 	# --- data: an enemy (boss shield is a guard, not a debuff)
 	var foe_data: Dictionary = InspectData.for_actor(ui, foe, true)
 	var foe_text: String = _joined(foe_data)
