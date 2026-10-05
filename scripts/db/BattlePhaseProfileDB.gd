@@ -55,7 +55,7 @@ const ZUOYIN_STALACTITE_GUEST_PROFILE := {
 				],
 				[
 					"左飲身形一晃，銀白刀光已先一步劃破濁氣。",
-					"待殘影消散，墨鱗魘將周身的語魅護體也隨之一裂。",
+					"待殘影消散，墨鱗魘將周身的魘鱗護體也隨之一裂。",
 				],
 			],
 			"shield_break_lines": [
