@@ -302,7 +302,12 @@ func _process(delta: float) -> void:
 		for actor in allies + enemies:
 			var card: Node = stage.card_for(actor)
 			if card:
-				card.status_label.text = String(_build_status_abbrev_text(actor).get("text", ""))
+				var packed: Dictionary = _build_status_abbrev_text(actor)
+				if card.has_method("set_status_entries"):
+					# Icons where there is art, the old word where there is not; the old text stays the fallback.
+					card.set_status_entries(packed.get("entries", []) if int(actor.get("hp", 0)) > 0 else [])
+				else:
+					card.status_label.text = String(packed.get("text", ""))
 
 
 func _sync_input_state() -> void:

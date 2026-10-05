@@ -2002,6 +2002,10 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 	var effects: Dictionary = actor.get("status_effects", {}) if typeof(actor.get("status_effects", {})) == TYPE_DICTIONARY else {}
 	var debuff_tokens: Array = []
 	var buff_tokens: Array = []
+	# The same tokens as structured entries for the icon row of the Card Stage (see CardStageStatusRow).
+	var guard_entries: Array = []
+	var debuff_entries: Array = []
+	var buff_entries: Array = []
 	var has_blink := false
 	var blink_visible := sin(float(Time.get_ticks_msec()) / 180.0) > 0.0
 	var has_blind_token := false
@@ -2018,6 +2022,7 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 				has_blink = true
 				dtoken = dtoken if blink_visible else "·"
 			debuff_tokens.append(dtoken)
+			debuff_entries.append({"id": String(effect_id), "glyph": String(DEBUFF_ABBREV[effect_id]), "kind": "debuff", "blink": turns_left == 1})
 			if effect_id == "blind":
 				has_blind_token = true
 			elif effect_id == "root":
@@ -2030,6 +2035,7 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 				has_blink = true
 				btoken = btoken if blink_visible else "·"
 			buff_tokens.append(btoken)
+			buff_entries.append({"id": String(effect_id), "glyph": String(BUFF_ABBREV[effect_id]), "kind": "buff", "blink": turns_left == 1})
 			if effect_id == "focus":
 				has_focus_token = true
 			elif effect_id == "evasion_boost":
@@ -2044,27 +2050,39 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 				has_blink = true
 				blind_token = blind_token if blink_visible else "·"
 			debuff_tokens.append(blind_token)
+			debuff_entries.append({"id": "blind", "glyph": "盲", "kind": "debuff", "blink": int(warm_wine.get("turns_left", 0)) == 1})
 			has_blind_token = true
 
 	if int(actor.get("accuracy_mod", 0)) > 0 and not has_focus_token:
 		buff_tokens.append("命")
+		buff_entries.append({"id": "focus", "glyph": "命", "kind": "buff", "blink": false})
 		has_focus_token = true
 	if int(actor.get("accuracy_mod", 0)) < 0 and not has_blind_token:
 		debuff_tokens.append("盲")
+		debuff_entries.append({"id": "blind", "glyph": "盲", "kind": "debuff", "blink": false})
 		has_blind_token = true
 	if int(actor.get("evasion_mod", 0)) < 0 and not has_root_token:
 		debuff_tokens.append("困")
+		debuff_entries.append({"id": "root", "glyph": "困", "kind": "debuff", "blink": false})
 		has_root_token = true
 	if int(actor.get("evasion_mod", 0)) > 0 and not has_evasion_token:
 		buff_tokens.append("閃")
+		buff_entries.append({"id": "evasion_boost", "glyph": "閃", "kind": "buff", "blink": false})
 		has_evasion_token = true
 
 	var battle_mods = actor.get("battle_modifiers", {})
 	if typeof(battle_mods) == TYPE_DICTIONARY:
 		if float(battle_mods.get("pen_damage_up", 0.0)) > 0.0:
 			buff_tokens.append("攻")
+			buff_entries.append({"id": "pen_damage_up", "glyph": "攻", "kind": "buff", "blink": false})
 		if float(battle_mods.get("pen_damage_resist", 0.0)) > 0.0:
 			buff_tokens.append("防")
+			buff_entries.append({"id": "pen_damage_resist", "glyph": "防", "kind": "buff", "blink": false})
+
+	# 魘鱗護體 (a boss's strong guard): a protective effect, not a debuff. Icon row only (the old word line never
+	# showed it), and never counted in the old text.
+	if effects.has("yumei_entanglement"):
+		guard_entries.append({"id": "yumei_entanglement", "glyph": "護", "kind": "guard", "blink": false})
 
 	var parts: Array = []
 	if debuff_tokens.size() > 0:
@@ -2073,7 +2091,8 @@ func _build_status_abbrev_text(actor: Dictionary) -> Dictionary:
 		parts.append("[color=#67e08a]%s[/color]" % "".join(buff_tokens))
 	return {
 		"text": " ".join(parts),
-		"blink": has_blink
+		"blink": has_blink,
+		"entries": guard_entries + debuff_entries + buff_entries,
 	}
 
 

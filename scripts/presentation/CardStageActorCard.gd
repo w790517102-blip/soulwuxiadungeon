@@ -7,6 +7,7 @@ extends "res://scripts/presentation/StageActorCard.gd"
 
 const Templates = preload("res://scripts/presentation/CardStageTemplates.gd")
 const CardStageArt = preload("res://scripts/presentation/CardStageArt.gd")
+const StatusRow = preload("res://scripts/presentation/CardStageStatusRow.gd")
 
 ## Edge thickness behind the face (was 0.06; reduced by one third).
 const CARD_THICKNESS := 0.04
@@ -153,6 +154,11 @@ func _build_card() -> void:
 	status_label.position = status_rect.position
 	status_label.size = status_rect.size
 	_content.add_child(status_label)
+	# Icons for the statuses (a word where the art is missing). The word label above stays as the fallback path.
+	_status_row = StatusRow.new()
+	_status_row.name = "StatusIcons"
+	_status_row.configure(status_rect, 56.0 if template_key == "boss" else 64.0, int(template.status_font), BODY_FONT)
+	_content.add_child(_status_row)
 	var frame: Rect2 = (template.frame as Rect2).grow(-8)
 	# Slow white pulse that marks whose turn it is (see set_turn_active).
 	_turn_overlay = ColorRect.new()
@@ -281,6 +287,8 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 		for label: Label in [name_label, level_label, hp_label, mp_label, element_label, force_label, species_label, guest_label]:
 			label.text = ""
 		status_label.text = ""
+		if _status_row != null:
+			_status_row.clear()
 		hp_bar.value = 0
 		mp_bar.value = 0
 		reset_pose()
@@ -314,7 +322,7 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	force_label.add_theme_font_size_override("font_size", int(template.get("force_font", 40)) if force_name.length() <= 5 else int(template.get("force_font", 40)) - 18)
 	level_label.text = "LV %d" % int(actor.get("level", 1))
 	level_label.visible = false
-	status_label.text = status_bbcode
+	status_label.text = "" if _status_icons_on else status_bbcode
 	guest_label.visible = guest
 	guest_label.text = "支援・客座" if guest else ""
 	species_label.visible = not is_character
@@ -1091,3 +1099,20 @@ func _place_standby_label() -> void:
 	else:
 		_standby_label.position.x = name_label.position.x + text_width + 14.0
 	_standby_label.show()
+
+
+# --- Status icons ---------------------------------------------------------------------------------------
+
+var _status_row: Control = null
+var _status_icons_on: bool = false
+
+
+## The statuses as icon entries (see CardStageStatusRow). From the first call on the word label stays empty: the
+## row shows an icon, or the word itself where there is no art.
+func set_status_entries(entries: Array) -> void:
+	_build_card()
+	if _status_row == null:
+		return
+	_status_icons_on = true
+	status_label.text = ""
+	_status_row.show_entries(entries)
