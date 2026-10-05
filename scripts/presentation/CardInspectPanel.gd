@@ -18,7 +18,6 @@ var _font: Font = null
 var _content: VBoxContainer
 var _scroll: ScrollContainer
 var _close_button: Button
-var _slide: Tween = null
 
 
 func _init(font: Font = null) -> void:
@@ -164,29 +163,27 @@ func _status_row(status_any: Variant) -> Control:
 	return row
 
 
-## Slides in from the right edge to `target_rect` (the rest of the screen stays where it is).
-func slide_in(target_rect: Rect2) -> void:
-	if _slide != null and _slide.is_valid():
-		_slide.kill()
-	position = Vector2(target_rect.position.x + target_rect.size.x * 0.6, target_rect.position.y)
-	size = target_rect.size
-	modulate.a = 0.0
-	show()
-	_slide = create_tween().set_parallel(true)
-	_slide.tween_property(self, "position", target_rect.position, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_slide.tween_property(self, "modulate:a", 1.0, 0.22)
+## Where the panel stands when fully shown; `set_slide` moves it between hidden (0) and shown (1).
+var _rect: Rect2 = Rect2()
+var _slide_value: float = 0.0
 
 
-func slide_out(on_done: Callable = Callable()) -> void:
-	if _slide != null and _slide.is_valid():
-		_slide.kill()
-	_slide = create_tween().set_parallel(true)
-	_slide.tween_property(self, "position:x", position.x + size.x * 0.5, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	_slide.tween_property(self, "modulate:a", 0.0, 0.2)
-	_slide.chain().tween_callback(func() -> void:
-		hide()
-		if on_done.is_valid():
-			on_done.call())
+func place(rect: Rect2) -> void:
+	_rect = rect
+	size = rect.size
+	set_slide(0.0)
+
+
+func slide_value() -> float:
+	return _slide_value
+
+
+## 0 = off to the right and invisible, 1 = in place. Driven by Card Inspect from the real clock.
+func set_slide(amount: float) -> void:
+	_slide_value = clampf(amount, 0.0, 1.0)
+	visible = _slide_value > 0.001
+	position = Vector2(_rect.position.x + _rect.size.x * 0.6 * (1.0 - _slide_value), _rect.position.y)
+	modulate.a = _slide_value
 
 
 func _add_block(block_any: Variant) -> void:

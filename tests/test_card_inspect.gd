@@ -116,7 +116,8 @@ func _check(fixture: Node) -> void:
 	var before_distance: float = camera.global_position.distance_to(node.global_position)
 	_expect(inspect.open_key(key), "opening the card works")
 	_expect(inspect.is_open() and stage.busy, "while open, the stage is held still")
-	await create_timer(0.7).timeout
+	_expect(Engine.time_scale < 0.01, "...and time on the battlefield stands still (time scale %f)" % Engine.time_scale)
+	await _wait(0.7)
 	var after_distance: float = camera.global_position.distance_to(node.global_position)
 	_expect(after_distance < before_distance, "the card was taken toward the camera (%.2f -> %.2f)" % [before_distance, after_distance])
 	_expect(node.rotation.is_equal_approx(Vector3.ZERO), "...and turned to face the player")
@@ -124,8 +125,9 @@ func _check(fixture: Node) -> void:
 	_expect(inspect._dim != null and (inspect._dim.material_override as StandardMaterial3D).albedo_color.a > 0.3, "the rest of the stage is dimmed")
 	_expect(inspect.panel.visible and inspect.panel.modulate.a > 0.9, "the panel slid in")
 	inspect.close()
-	await create_timer(0.8).timeout
+	await _wait(0.8)
 	_expect(not inspect.is_open() and not stage.busy, "closing releases the stage")
+	_expect(is_equal_approx(Engine.time_scale, 1.0), "...and time runs again")
 	_expect(node.position.is_equal_approx(home) and node.rotation.is_equal_approx(rotation_home), "the card is back on its slot")
 	_expect(inspect._dim == null and not inspect.panel.visible, "the dimming and the panel are gone")
 	await _check_input(ui, stage, ally, foe)
@@ -148,19 +150,26 @@ func _check_input(ui: Node, stage: Node3D, ally: Dictionary, foe: Dictionary) ->
 	ui.current_actor = {}
 	_expect(ui.inspect_allowed(), "inspect is allowed while the player is choosing")
 	_expect(ui._handle_inspect_input(_click(foe_point, MOUSE_BUTTON_LEFT)) and ui.is_inspecting(), "left click on an enemy card opens it")
-	await create_timer(0.5).timeout
+	await _wait(0.5)
 	_expect(ui._handle_inspect_input(_click(Vector2(10, 10), MOUSE_BUTTON_RIGHT)), "a right click while open is taken")
-	await create_timer(0.8).timeout
+	await _wait(0.8)
 	_expect(not ui.is_inspecting(), "right click closes it")
 	ui.current_actor = ally
 	_expect(not ui._handle_inspect_input(_click(ally_point, MOUSE_BUTTON_LEFT)) and not ui.is_inspecting(), "left click on the card that can act now is not an inspect")
 	_expect(ui._handle_inspect_input(_click(ally_point, MOUSE_BUTTON_RIGHT)) and ui.is_inspecting(), "right click on it is")
-	await create_timer(0.5).timeout
+	await _wait(0.5)
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.pressed = true
 	_expect(ui._handle_inspect_input(escape), "ESC is taken while open")
-	await create_timer(0.8).timeout
+	await _wait(0.8)
 	_expect(not ui.is_inspecting() and not stage.busy, "ESC closes it and releases the stage")
 	ui.on_action_selection = false
 	_expect(not ui.inspect_allowed(), "not allowed outside the player's choosing")
+
+
+## Real seconds (the battlefield may be frozen by Card Inspect, so SceneTree timers are not trusted here).
+func _wait(seconds: float) -> void:
+	var start: int = Time.get_ticks_msec()
+	while float(Time.get_ticks_msec() - start) < seconds * 1000.0:
+		await process_frame
