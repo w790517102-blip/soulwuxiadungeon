@@ -5,6 +5,7 @@ const EnemyDBScript = preload("res://scripts/db/EnemyDB.gd")
 const MOLIN_PHASE2_ID := "molin_yanjiang_phase2"
 const MOLIN_PHASE2_MECHANIC_ID := "molin_yanjiang_phase2_shield_cycle"
 const ZUOYIN_STALACTITE_GUEST_ID := "zuoyin_stalactite_guest"
+const StatusDisplay = preload("res://scripts/db/StatusDisplayDB.gd")
 const YUMEI_ENTANGLEMENT_STATUS_ID := "yumei_entanglement"
 const YUHENG_SHUMIAN_STORY_PROFILE_ID := "yuheng_shumian_lv6"
 
@@ -60,7 +61,7 @@ const ZUOYIN_STALACTITE_GUEST_PROFILE := {
 			"shield_break_lines": [
 				"紫黑語魅驟然撕裂，原本密不透風的護體濁氣被這一刀硬生生斬出缺口！",
 			],
-			"shield_break_system_log": "墨鱗魘將的「語魅纏身」被破除了！",
+			"shield_break_system_log": "墨鱗魘將的「%s」被破除了！" % StatusDisplay.GUARD_BARRIER_NAME,
 		},
 	],
 }
@@ -73,7 +74,7 @@ const MOLIN_PHASE2_MECHANIC := {
 	"shield_round_lines": [
 		"四周紫黑色濁氣再度向墨鱗魘將身上聚攏。",
 	],
-	"shield_applied_system_log": "墨鱗魘將獲得了「語魅纏身」！",
+	"shield_applied_system_log": "墨鱗魘將獲得了「%s」！" % StatusDisplay.GUARD_BARRIER_NAME,
 }
 
 

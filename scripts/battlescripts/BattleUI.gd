@@ -787,7 +787,7 @@ func _format_status_effect_line(effect_id: String, data: Dictionary) -> String:
 			var element = str(data.get("payload", {}).get("element", ""))
 			return "元素變化：%s（剩 %d 回合）" % [element, turns]
 		"yumei_entanglement":
-			return "語魅纏身：玩家造成的生命傷害歸零"
+			return "%s：玩家造成的生命傷害歸零" % load("res://scripts/db/StatusDisplayDB.gd").GUARD_BARRIER_NAME
 		_:
 			return "%s（剩 %d 回合）" % [effect_id, turns]
 

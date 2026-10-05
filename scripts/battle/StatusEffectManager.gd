@@ -2,6 +2,7 @@ extends Node
 class_name StatusEffectManager
 
 const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
+const StatusDisplay = preload("res://scripts/db/StatusDisplayDB.gd")
 const DEFAULT_SLOW_DELTA := 10
 const DECREMENT_TIMING_END_OF_ROUND := "end_of_round"
 const DECREMENT_TIMING_AFTER_OWNER_ACTION := "after_owner_action"
@@ -383,7 +384,7 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 		"force_element":
 			return "%s 屬性轉為「%s」（剩 %d 回合）。" % [actor_name, String(payload.get("element", "?")), turns_left]
 		"yumei_entanglement":
-			return "%s 被「語魅纏身」護住，玩家造成的生命傷害將歸零。" % actor_name
+			return "%s 被「%s」護住，玩家造成的生命傷害將歸零。" % [actor_name, StatusDisplay.GUARD_BARRIER_NAME]
 		_:
 			return "%s 附加了 %s（剩 %d 回合）。" % [actor_name, effect_id, turns_left]
 

@@ -59,7 +59,7 @@
 |---|---|---|---|---|---|---|---|---|
 | `warm_wine_buff` | 暖身酒 | Special（同時 Buff＋Debuff） | 攻（BUFF_ABBREV）＋盲（命中 −5 時額外補一個「盲」） | 速度 +10、命中 −5 | 有（道具 3） | 回合結束 | 否 | 現在的字「攻」與實際效果（加速）對不上，是既有行為，不是本輪調整項 |
 | `force_element` | 元素變化 | Special | **無（不顯示）** | 把該角色屬性改成快／柔／遲／剛，到期還原 | 有（2–3） | 回合結束 | 否 | payload 有 `element`，ICON 可能需要四種屬性變體 |
-| `yumei_entanglement` | 語魅纏身 | Special | **無（不顯示）** | 護住該角色：玩家造成的生命傷害歸零 | 無回合數顯示（手動移除） | 手動 | 否 | 墨鱗魘將階段機制（`BattlePhaseProfileDB`） |
+| `yumei_entanglement` | **魘鱗護體**（舊名「語魅纏身」） | Special（Boss 強防護，非 debuff） | **無（不顯示）** | 墨鱗魘將自己獲得的護體：玩家造成的生命傷害歸零；不是施加在我方身上的負面狀態 | 無回合數顯示（手動移除，由左飲「燕行破風斬」破除） | 手動 | 否 | 內部 id 維持不動（Phase Break 邏輯與測試不改）；顯示名與 icon 鍵在 `scripts/db/StatusDisplayDB.gd` |
 
 ### 1.4 不在 `status_effects`、但現在也以單字顯示的狀態
 
@@ -147,7 +147,8 @@
 | `stat_buff_str` / `agi` / `int` / `con` / `luck` | `status_stat_buff_str.png` 等五張 | |
 | `warm_wine_buff` | `status_warm_wine_buff.png` | 同時有增減益，需設計成混合 |
 | `force_element` | `status_force_element.png`（可另加 `status_force_element_fast.png` / `_soft.png` / `_slow.png` / `_hard.png`） | 目前不顯示；是否要顯示由企劃決定 |
-| `yumei_entanglement` | `status_yumei_entanglement.png` | 目前不顯示；Boss 階段機制 |
+| `yumei_entanglement`（魘鱗護體） | **`status_guard_barrier.png`（待補）** | 通用「強防護／無敵／護體」icon，不屬魚怪專屬，其他 Boss／劇情殺招式同類效果可共用。`StatusDisplayDB.icon_key` 已指向此鍵；圖檔未到前不顯示 |
+| （未綁定） | `status_yumei_entanglement.png` | 已存在的「語魅纏身」**DEBUFF 用 icon**，保留不覆蓋、不綁任何現有效果；日後若有適合的負面狀態再使用 |
 | `battle_modifiers.pen_damage_up` | `status_pen_damage_up.png` | 非 `status_effects`，整場有效 |
 | `battle_modifiers.pen_damage_resist` | `status_pen_damage_resist.png` | 同上 |
 
