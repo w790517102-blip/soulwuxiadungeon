@@ -147,7 +147,7 @@
 | `stat_buff_str` / `agi` / `int` / `con` / `luck` | `status_stat_buff_str.png` 等五張 | |
 | `warm_wine_buff` | `status_warm_wine_buff.png` | 同時有增減益，需設計成混合 |
 | `force_element` | `status_force_element.png`（可另加 `status_force_element_fast.png` / `_soft.png` / `_slow.png` / `_hard.png`） | 目前不顯示；是否要顯示由企劃決定 |
-| `yumei_entanglement`（魘鱗護體） | **`status_guard_barrier.png`（待補）** | 通用「強防護／無敵／護體」icon，不屬魚怪專屬，其他 Boss／劇情殺招式同類效果可共用。`StatusDisplayDB.icon_key` 已指向此鍵；圖檔未到前不顯示 |
+| `yumei_entanglement`（魘鱗護體） | **`status_guard_barrier.png`（已提供）** | 通用「強防護／無敵／護體」icon，不屬魚怪專屬，其他 Boss／劇情殺招式同類效果可共用。`StatusDisplayDB.icon_key` 已指向此鍵；尚未接進 UI |
 | （未綁定） | `status_yumei_entanglement.png` | 已存在的「語魅纏身」**DEBUFF 用 icon**，保留不覆蓋、不綁任何現有效果；日後若有適合的負面狀態再使用 |
 | `battle_modifiers.pen_damage_up` | `status_pen_damage_up.png` | 非 `status_effects`，整場有效 |
 | `battle_modifiers.pen_damage_resist` | `status_pen_damage_resist.png` | 同上 |
