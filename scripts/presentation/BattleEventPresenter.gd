@@ -611,3 +611,44 @@ func announce_round(round_number: int) -> void:
 ## The title that is on screen, or null (for tests).
 func current_round_title() -> Node:
 	return _round_title if is_instance_valid(_round_title) else null
+
+
+## The caption at the top of the screen: the name of the skill, item or inner force in use. A plain subtitle; a new one
+## replaces the one still showing.
+const CAPTION_SIZE := 30
+const CAPTION_HOLD := 1.5
+var _caption: Control = null
+
+
+func show_caption(text: String) -> void:
+	history.append({"type": "caption", "text": text, "icon": "", "target": {}})
+	if is_instance_valid(_caption):
+		_caption.queue_free()
+	var screen: Vector2 = get_viewport_rect().size
+	var plate := PanelContainer.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.04, 0.06, 0.78)
+	style.border_color = Color(0.79, 0.65, 0.40, 0.9)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 28.0
+	style.content_margin_right = 28.0
+	style.content_margin_top = 8.0
+	style.content_margin_bottom = 8.0
+	plate.add_theme_stylebox_override("panel", style)
+	var label: Label = _make_label(text, CAPTION_SIZE, Color(0.98, 0.94, 0.8), 4)
+	plate.add_child(label)
+	plate.modulate = Color(1, 1, 1, 0)
+	add_child(plate)
+	_caption = plate
+	# centred at the top once its size is known
+	var width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, CAPTION_SIZE).x + 56.0
+	plate.size = Vector2(width, CAPTION_SIZE + 24.0)
+	plate.position = Vector2((screen.x - width) * 0.5, screen.y * 0.04 - 8.0)
+	var tween: Tween = create_tween()
+	tween.tween_property(plate, "modulate:a", 1.0, 0.12)
+	tween.parallel().tween_property(plate, "position:y", screen.y * 0.04, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(CAPTION_HOLD)
+	tween.tween_property(plate, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(plate.queue_free)

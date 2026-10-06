@@ -14,6 +14,9 @@ const BUTTON_SIZE := Vector2(150, 108)
 const LOG_BAR_TEXTURE := "res://assets/UI/card_stage/log_bar.webp"
 
 var command_menu: PanelContainer
+const HINT_NO_CARD := "將游標移動到卡片上"
+const HINT_ACTIVE_CARD := "按左鍵進行戰鬥指令或右鍵檢視卡片資訊"
+const HINT_OTHER_CARD := "按左鍵或右鍵檢視卡片資訊"
 var command_hint: Label
 var _command_buttons: Dictionary = {}
 
@@ -66,7 +69,7 @@ func _build_command_menu() -> void:
 	_stage_hud.add_child(command_menu)
 	command_hint = Label.new()
 	command_hint.name = "CommandHint"
-	command_hint.text = "點選閃爍的角色卡，下達指令"
+	command_hint.text = HINT_NO_CARD
 	command_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	command_hint.add_theme_font_override("font", MenuUIFont)
 	command_hint.add_theme_font_size_override("font_size", 22)
@@ -174,6 +177,19 @@ func _on_card_command(command: String) -> void:
 	dispatch_stage_command(command)
 
 
+## What the pointer is over decides the hint at the bottom left.
+func _hint_for_pointer() -> String:
+	return _hint_for_key(stage._card_key_at(get_viewport().get_mouse_position()))
+
+
+func _hint_for_key(key: String) -> String:
+	if key == "":
+		return HINT_NO_CARD
+	if not current_actor.is_empty() and key == stage.actor_key(current_actor):
+		return HINT_ACTIVE_CARD
+	return HINT_OTHER_CARD
+
+
 func _process(delta: float) -> void:
 	super._process(delta)
 	if not _view_ready or command_menu == null:
@@ -183,6 +199,7 @@ func _process(delta: float) -> void:
 		_hide_command_menu()
 	command_hint.visible = allowed and not command_menu.visible
 	if command_hint.visible:
+		command_hint.text = _hint_for_pointer()
 		var screen: Vector2 = get_viewport_rect().size
 		command_hint.global_position = Vector2(24.0, screen.y - 96.0)
 
@@ -226,6 +243,12 @@ func play_status_event(target: Dictionary, status_id: String, applied: bool = tr
 func play_battle_event(event: Dictionary) -> void:
 	if stage_enabled and event_presenter != null:
 		event_presenter.show_event(event)
+
+
+## The caption at the top of the screen: the name of the skill, item or inner force that is being used. Nothing else.
+func show_action_caption(text: String) -> void:
+	if stage_enabled and event_presenter != null and text != "":
+		event_presenter.show_caption(text)
 
 
 ## "第 N 回合開始" in the middle of the screen (an announcement, not a number popup).

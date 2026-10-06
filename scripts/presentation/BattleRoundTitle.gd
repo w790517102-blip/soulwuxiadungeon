@@ -28,7 +28,7 @@ const DIR := "res://assets/UI/card_stage/title/"
 const PIECES: Array[String] = ["round_di", "round_huihe", "round_kaishi"]
 ## Height of the title pieces on screen as a fraction of the screen height (開始 is a little bigger).
 const PIECE_HEIGHT := 0.24
-const BEGIN_HEIGHT := 0.30
+const BEGIN_HEIGHT := 0.60
 const NUMBER_STYLE := "counter"
 const NUMBER_HEIGHT := 0.24
 const CENTER_Y := 0.34

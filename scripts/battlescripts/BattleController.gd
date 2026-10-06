@@ -1594,6 +1594,7 @@ func apply_inner_force_switch(actor: Dictionary, force: Dictionary) -> bool:
 	if battle_ui:
 		battle_ui.update_ally_panel()
 
+	_show_caption("%s%s" % [String(force.get("prefix", "")), String(force.get("type", ""))] if String(force.get("prefix", "")) != "" else String(force.get("name", "")))
 	return true
 
 func _refresh_battle_actor_from_team_data(actor: Dictionary, force: Dictionary) -> void:
@@ -2691,6 +2692,12 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 	_maybe_end_turn()
 
 
+## The subtitle at the top of the screen (a skill, item or inner force being used).
+func _show_caption(text: String) -> void:
+	if battle_ui != null and battle_ui.has_method("show_action_caption"):
+		battle_ui.show_action_caption(text)
+
+
 func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionary = {}) -> void:
 	stage_entities.dispatch("on_before_action", {"actor": actor, "skill": skill_data, "target": target})
 	var effect: String = str(skill_data.get("effect", ""))
@@ -2718,6 +2725,8 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 		else:
 			_log("%s 真氣不足，無法施展「%s」（需要 %d，目前 %d）。" % [user_name, str(skill_data.get("name", "???")), int(verdict.need), int(verdict.have)])
 		return
+
+	_show_caption(String(skill_data.get("name", "")))
 
 	if mp_cost > 0:
 		actor["mp"] = actor_mp - mp_cost
@@ -4350,6 +4359,7 @@ func use_item(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
 	if not _is_rule_allowed("allow_items", true):
 		_log_system("本場規則禁止使用道具。")
 		return
+	_show_caption(String(item.get("name", "")))
 	# ✅ 套用效果（dispatcher）
 	var ok = item_dispatcher.apply(self, user, item, target)
 
