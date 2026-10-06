@@ -18,6 +18,9 @@ const ROUND_TITLE_GAP_DURATION := 1.0
 const ROUND_TITLE_PHASE2_DURATION := 0.8
 const ROUND_TITLE_IN_TIME := 0.2
 const ROUND_TITLE_OUT_TIME := 0.35
+## How high 第 X 回合 jumps off its resting point on entering (pixels), and how long 開始 takes to leave on its heartbeat.
+const ROUND_TITLE_JUMP_HEIGHT := 38.0
+const ROUND_TITLE_BEGIN_HEARTBEAT_TIME := 0.8
 
 const DIR := "res://assets/UI/card_stage/title/"
 const PIECES: Array[String] = ["round_di", "round_huihe", "round_kaishi"]
@@ -76,7 +79,7 @@ func play(number: int) -> void:
 	_timeline.tween_callback(_enter_phase2)
 	_timeline.tween_interval(ROUND_TITLE_PHASE2_DURATION)
 	_timeline.tween_callback(_exit_phase2)
-	_timeline.tween_interval(ROUND_TITLE_OUT_TIME)
+	_timeline.tween_interval(ROUND_TITLE_BEGIN_HEARTBEAT_TIME)
 	_timeline.tween_callback(_finish)
 
 
@@ -190,30 +193,32 @@ func _build_phase2() -> Control:
 
 # --- Phases ---------------------------------------------------------------------------------------------------------
 
-## 第 X 回合: flips up from a little below and a little turned, overshoots, settles; a faint larger afterimage fades behind it.
+## 第 X 回合: appears on its resting point, jumps up off it, and drops quickly back onto it; a faint larger afterimage
+## fades behind it.
 func _enter_phase1() -> void:
 	phase = 1
 	_phase1 = _build_phase1()
 	var ghost: Control = _build_phase1()
-	ghost.modulate = Color(1.0, 0.9, 0.6, 0.0)
 	move_child(ghost, 0)
-	for block: Control in [_phase1, ghost]:
-		block.scale = Vector2(0.72, 0.72)
-		block.rotation = -0.10
-		block.position.y += 46.0
-		block.modulate.a = 0.0
-	var rise: Tween = create_tween().set_parallel(true)
-	rise.tween_property(_phase1, "modulate:a", 1.0, ROUND_TITLE_IN_TIME * 0.6)
-	rise.tween_property(_phase1, "scale", Vector2(1.07, 1.07), ROUND_TITLE_IN_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	rise.tween_property(_phase1, "rotation", 0.0, ROUND_TITLE_IN_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	rise.tween_property(_phase1, "position:y", _phase1.position.y - 46.0, ROUND_TITLE_IN_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	rise.chain().tween_property(_phase1, "scale", Vector2.ONE, 0.1)
+	var base_y: float = _phase1.position.y
+	var up: float = ROUND_TITLE_IN_TIME * 0.58
+	var down: float = ROUND_TITLE_IN_TIME - up
+	_phase1.scale = Vector2(0.9, 0.9)
+	_phase1.modulate.a = 0.0
+	ghost.modulate = Color(1.0, 0.9, 0.6, 0.0)
+	var jump: Tween = create_tween()
+	jump.tween_property(_phase1, "position:y", base_y - ROUND_TITLE_JUMP_HEIGHT, up).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	jump.parallel().tween_property(_phase1, "modulate:a", 1.0, up * 0.7)
+	jump.parallel().tween_property(_phase1, "scale", Vector2(1.08, 1.08), up).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	jump.tween_property(_phase1, "position:y", base_y, down).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	jump.parallel().tween_property(_phase1, "scale", Vector2.ONE, down)
+	# a small settle as it lands
+	jump.tween_property(_phase1, "position:y", base_y - 5.0, 0.04).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	jump.tween_property(_phase1, "position:y", base_y, 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	# the afterimage: larger, pale, gone quickly
 	var echo: Tween = create_tween().set_parallel(true)
-	echo.tween_property(ghost, "modulate:a", 0.35, ROUND_TITLE_IN_TIME * 0.5)
+	echo.tween_property(ghost, "modulate:a", 0.35, up)
 	echo.tween_property(ghost, "scale", Vector2(1.16, 1.16), ROUND_TITLE_IN_TIME * 2.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	echo.tween_property(ghost, "rotation", 0.0, ROUND_TITLE_IN_TIME)
-	echo.tween_property(ghost, "position:y", ghost.position.y - 46.0, ROUND_TITLE_IN_TIME)
 	echo.chain().tween_property(ghost, "modulate:a", 0.0, ROUND_TITLE_IN_TIME * 1.5)
 	echo.chain().tween_callback(ghost.queue_free)
 
@@ -247,10 +252,43 @@ func _enter_phase2() -> void:
 		shake.tween_property(_phase2, "position", home + offset, 0.035)
 
 
+## 開始 leaves on a heartbeat: it swells, throws a pale afterimage of itself outward that fades as it grows (the same
+## beat as the ink glyph of the talisman cast), beats once more, and fades away.
 func _exit_phase2() -> void:
 	if _phase2 == null or not is_instance_valid(_phase2):
 		return
-	var away: Tween = create_tween().set_parallel(true)
-	away.tween_property(_phase2, "modulate:a", 0.0, ROUND_TITLE_OUT_TIME)
-	away.tween_property(_phase2, "scale", Vector2(1.12, 1.12), ROUND_TITLE_OUT_TIME)
-	away.chain().tween_callback(_phase2.queue_free)
+	var beat_gap: float = ROUND_TITLE_BEGIN_HEARTBEAT_TIME * 0.28
+	_throw_afterimage(ROUND_TITLE_BEGIN_HEARTBEAT_TIME * 0.7)
+	var pulse: Tween = create_tween()
+	pulse.tween_property(_phase2, "scale", Vector2(1.1, 1.1), 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	pulse.tween_property(_phase2, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_SINE)
+	pulse.tween_interval(maxf(beat_gap - 0.23, 0.0))
+	pulse.tween_callback(_throw_afterimage.bind(ROUND_TITLE_BEGIN_HEARTBEAT_TIME * 0.7))
+	pulse.tween_property(_phase2, "scale", Vector2(1.07, 1.07), 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	pulse.tween_property(_phase2, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_SINE)
+	var fade: Tween = create_tween()
+	fade.tween_interval(ROUND_TITLE_BEGIN_HEARTBEAT_TIME * 0.35)
+	fade.tween_property(_phase2, "modulate:a", 0.0, ROUND_TITLE_BEGIN_HEARTBEAT_TIME * 0.65)
+	fade.tween_callback(_phase2.queue_free)
+
+
+## A semi-transparent copy of 開始 thrown outward: it grows and fades.
+func _throw_afterimage(seconds: float) -> void:
+	if _phase2 == null or not is_instance_valid(_phase2):
+		return
+	var source: TextureRect = _phase2 as TextureRect
+	var ghost := TextureRect.new()
+	ghost.texture = source.texture
+	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ghost.size = source.size
+	ghost.position = source.position
+	ghost.pivot_offset = source.pivot_offset
+	ghost.modulate = Color(1.0, 0.95, 0.8, 0.5)
+	add_child(ghost)
+	move_child(ghost, 0)
+	var throw: Tween = create_tween().set_parallel(true)
+	throw.tween_property(ghost, "scale", Vector2(1.55, 1.55), seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	throw.tween_property(ghost, "modulate:a", 0.0, seconds)
+	throw.chain().tween_callback(ghost.queue_free)
