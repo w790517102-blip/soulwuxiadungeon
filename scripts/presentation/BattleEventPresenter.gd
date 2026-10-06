@@ -599,7 +599,7 @@ func announce_round(round_number: int) -> void:
 	var text: String = "第 %d 回合開始" % round_number
 	history.append({"type": BattleEventScript.ANNOUNCE, "text": text, "icon": "", "target": {}, "round": round_number})
 	if is_instance_valid(_round_title):
-		_round_title.skip()
+		_round_title.dismiss()
 	if not BattleRoundTitle.available():
 		_show_announcement(BattleEventScript.announcement(text))
 		return

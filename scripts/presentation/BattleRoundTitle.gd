@@ -18,6 +18,8 @@ const ROUND_TITLE_GAP_DURATION := 1.0
 const ROUND_TITLE_PHASE2_DURATION := 0.8
 const ROUND_TITLE_IN_TIME := 0.2
 const ROUND_TITLE_OUT_TIME := 0.35
+## Input is ignored for this long after a phase appears.
+const ROUND_TITLE_INPUT_GRACE := 0.3
 ## How high 第 X 回合 jumps off its resting point on entering (pixels), and how long 開始 takes to leave on its heartbeat.
 const ROUND_TITLE_JUMP_HEIGHT := 38.0
 const ROUND_TITLE_BEGIN_HEARTBEAT_TIME := 0.8
@@ -39,6 +41,7 @@ var round_number: int = 1
 var skipped: bool = false
 var phase: int = 0   # 0 not started, 1 第 X 回合, 2 開始, 3 done
 var _timeline: Tween = null
+var _phase_started_ms: int = 0
 var _phase1: Control = null
 var _phase2: Control = null
 
@@ -71,6 +74,7 @@ func _init() -> void:
 func play(number: int) -> void:
 	round_number = number
 	phase = 0
+	_phase_started_ms = Time.get_ticks_msec()
 	_timeline = create_tween()
 	_timeline.tween_callback(_enter_phase1)
 	_timeline.tween_interval(ROUND_TITLE_PHASE1_DURATION)
@@ -83,16 +87,42 @@ func play(number: int) -> void:
 	_timeline.tween_callback(_finish)
 
 
-## Ends the title at once.
+## Ends the title at once (a new round replaces it).
+func dismiss() -> void:
+	skipped = true
+	_finish()
+
+
+## Skips what is on screen: during 第 X 回合 (or the pause after it) it goes straight to 開始; during 開始 it ends the title.
+## The title is not thrown away by the first press, because the same keys (space / click) also carry the battle log on.
 func skip() -> void:
 	if phase == 3:
+		return
+	if phase < 2:
+		_skip_to_phase2()
 		return
 	skipped = true
 	_finish()
 
 
+func _skip_to_phase2() -> void:
+	if _timeline != null and _timeline.is_valid():
+		_timeline.kill()
+	if _phase1 != null and is_instance_valid(_phase1):
+		_phase1.queue_free()
+	_enter_phase2()
+	_timeline = create_tween()
+	_timeline.tween_interval(ROUND_TITLE_PHASE2_DURATION)
+	_timeline.tween_callback(_exit_phase2)
+	_timeline.tween_interval(ROUND_TITLE_BEGIN_HEARTBEAT_TIME)
+	_timeline.tween_callback(_finish)
+
+
 func _input(event: InputEvent) -> void:
 	if phase == 3:
+		return
+	# A press right as a phase appears is most likely the one that was for the battle log, not for the title.
+	if float(Time.get_ticks_msec() - _phase_started_ms) < ROUND_TITLE_INPUT_GRACE * 1000.0:
 		return
 	var pressed: bool = false
 	if event is InputEventKey:
@@ -197,6 +227,7 @@ func _build_phase2() -> Control:
 ## fades behind it.
 func _enter_phase1() -> void:
 	phase = 1
+	_phase_started_ms = Time.get_ticks_msec()
 	_phase1 = _build_phase1()
 	var ghost: Control = _build_phase1()
 	move_child(ghost, 0)
@@ -236,6 +267,7 @@ func _exit_phase1() -> void:
 ## 開始: punches in big, rebounds, flashes, and shakes once like a hit.
 func _enter_phase2() -> void:
 	phase = 2
+	_phase_started_ms = Time.get_ticks_msec()
 	_phase2 = _build_phase2()
 	var home: Vector2 = _phase2.position
 	_phase2.scale = Vector2(1.7, 1.7)

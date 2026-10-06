@@ -43,6 +43,7 @@ func _run() -> void:
 		await _check_banners_and_motion(fixture)
 		await _check_anchors(fixture)
 		await _check_round_title(fixture)
+		await _check_round_title_skip_rules(fixture)
 	fixture.queue_free()
 	await process_frame
 	if _failures.is_empty():
@@ -386,6 +387,7 @@ func _check_round_title(fixture: Node) -> void:
 	var gap: float = float(Time.get_ticks_msec() - started + 600) / 1000.0
 	_expect(title.phase == 2, "then 開始 follows")
 	_expect(absf(gap - (Title.ROUND_TITLE_PHASE1_DURATION + Title.ROUND_TITLE_OUT_TIME + Title.ROUND_TITLE_GAP_DURATION)) < 0.5, "...at the set rhythm (%.2f s after the start)" % gap)
+	await _wait(0.4)
 	var finished: Array = [false]
 	title.finished.connect(func() -> void: finished[0] = true)
 	var key := InputEventKey.new()
@@ -398,6 +400,9 @@ func _check_round_title(fixture: Node) -> void:
 	for case: Array in [["esc", KEY_ESCAPE], ["click", 0]]:
 		presenter.announce_round(4)
 		var again: Node = presenter.current_round_title()
+		again._input(InputEventKey.new())
+		await _wait(0.4)
+		again.phase = 2
 		if String(case[0]) == "esc":
 			var escape := InputEventKey.new()
 			escape.keycode = KEY_ESCAPE
@@ -408,7 +413,7 @@ func _check_round_title(fixture: Node) -> void:
 			click.button_index = MOUSE_BUTTON_LEFT
 			click.pressed = true
 			again._input(click)
-		_expect(again.skipped, "%s skips it too" % String(case[0]))
+		_expect(again.skipped, "%s skips it too (from 開始)" % String(case[0]))
 		await process_frame
 	# a title that is replaced by the next round does not stack
 	presenter.announce_round(5)
@@ -416,7 +421,7 @@ func _check_round_title(fixture: Node) -> void:
 	presenter.announce_round(6)
 	await process_frame
 	_expect(is_instance_valid(first) == false or first.skipped, "a new round replaces a title still on screen")
-	presenter.current_round_title().skip()
+	presenter.current_round_title().dismiss()
 	await process_frame
 	# missing art: plain text, and nothing waits on it
 	Title._textures["round_di"] = null
@@ -426,4 +431,26 @@ func _check_round_title(fixture: Node) -> void:
 	_expect(not Title.available() and presenter.current_round_title() == null and presenter.get_child_count() == before + 1, "without the art it falls back to the text announcement")
 	Title._textures.erase("round_di")
 	await _wait(2.0)
+	presenter.queue_free()
+
+
+## The first press must not throw the whole title away: during 第 X 回合 it goes straight to 開始, and a press right as a
+## phase appears is ignored (it was meant for the battle log).
+func _check_round_title_skip_rules(fixture: Node) -> void:
+	var presenter: Node = Presenter.new()
+	fixture.add_child(presenter)
+	presenter.announce_round(2)
+	var title: Node = presenter.current_round_title()
+	var space := InputEventKey.new()
+	space.keycode = KEY_SPACE
+	space.pressed = true
+	title._input(space)
+	_expect(title.phase < 2 and not title.skipped, "a press right at the start is ignored")
+	await _wait(0.5)
+	title._input(space)
+	_expect(title.phase == 2 and not title.skipped, "a press during 第 X 回合 jumps to 開始 (it is not thrown away)")
+	await _wait(0.4)
+	title._input(space)
+	_expect(title.skipped, "a press during 開始 ends it")
+	await process_frame
 	presenter.queue_free()
