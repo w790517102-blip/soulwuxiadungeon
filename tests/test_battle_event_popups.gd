@@ -1,0 +1,225 @@
+extends SceneTree
+## Battle Event Presentation: damage numbers that accumulate over the strikes of one action (25 -> 50 -> 75 -> 100) and
+## fall only after the last, MISS / 格擋 / 攔截 / 無效 instead of 0, status tags with an icon when the art exists and the
+## word alone when it does not, announcements, healing, and one number per target in an area attack.
+## Run: --headless --path . --script tests/test_battle_event_popups.gd
+
+const BattleEvent = preload("res://scripts/presentation/BattleEvent.gd")
+const Presenter = preload("res://scripts/presentation/BattleEventPresenter.gd")
+
+var _failures: Array[String] = []
+
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _expect(condition: bool, message: String) -> void:
+	if not condition:
+		_failures.append(message)
+
+
+func _wait(seconds: float) -> void:
+	var start: int = Time.get_ticks_msec()
+	while float(Time.get_ticks_msec() - start) < seconds * 1000.0:
+		await process_frame
+
+
+func _run() -> void:
+	var fixture: Node = (load("res://scenes/presentation/card_stage_prototype.tscn") as PackedScene).instantiate()
+	fixture.auto_start = false
+	root.add_child(fixture)
+	for frame: int in range(30):
+		if fixture.prepared:
+			break
+		await process_frame
+	_expect(fixture.prepared, "the card stage prepares")
+	if fixture.prepared:
+		_check_pure()
+		await _check_presenter(fixture)
+		await _check_stage(fixture)
+	fixture.queue_free()
+	await process_frame
+	if _failures.is_empty():
+		print("PASS: battle event popups")
+		quit(0)
+	else:
+		for failure: String in _failures:
+			push_error("FAIL: " + failure)
+		quit(1)
+
+
+## Data only: what each strike is, and the style that follows.
+func _check_pure() -> void:
+	var plan: Array = Presenter.plan_strikes([
+		{"hit": true, "damage": 42},
+		{"hit": false},
+		{"hit": true, "blocked": true, "blocker_type": "substitute_talisman"},
+		{"hit": true, "blocked": true, "blocker_type": "sheath_card"},
+		{"hit": true, "damage_prevented": true, "damage": 0},
+		{"hit": true, "damage": 0},
+		{"hit": true, "damage": 120, "crit": true, "element_advantage": true},
+	])
+	var kinds: Array[String] = []
+	for entry: Dictionary in plan:
+		kinds.append(String(entry.kind))
+	_expect(kinds == ["damage", "miss", "intercept", "block", "nullified", "nullified", "damage"], "strikes classify without ever making a 0: " + str(kinds))
+	_expect(String(plan[6].result_type) == "CRITICAL_COUNTER", "crit + counter is one result type")
+	var normal: Dictionary = Presenter.style_for(BattleEvent.NORMAL_HIT)
+	var counter: Dictionary = Presenter.style_for(BattleEvent.COUNTER_HIT)
+	var crit: Dictionary = Presenter.style_for(BattleEvent.CRITICAL_HIT)
+	var both: Dictionary = Presenter.style_for(BattleEvent.CRITICAL_COUNTER_HIT)
+	_expect(normal.color.r > 0.9 and normal.color.g > 0.85 and normal.color.b < 0.8 and normal.color.b > 0.4, "a normal hit is cream yellow, not pure white")
+	_expect(counter.color.s > normal.color.s and counter.color.g > 0.75 and counter.color.b < 0.3, "a counter hit is saturated gold")
+	_expect(crit.color.r > 0.9 and crit.color.g < 0.3 and int(crit.size) > int(normal.size) and float(crit.power) > float(normal.power), "a critical hit is red, bigger, with a stronger punch")
+	_expect(both.color == crit.color and both.glow.r > 0.9 and both.glow.g > 0.7 and both.glow.a > 0.9, "crit + counter: red number, gold glow (both at once)")
+	var stun: Dictionary = BattleEvent.status("stun", true)
+	_expect(String(stun.primary_text) == "暈眩" and String(stun.icon_key) == "status_stun", "a status event reuses the status icon key and word: %s / %s" % [stun.primary_text, stun.icon_key])
+	_expect(BattleEvent.texture_for("status_poison") != null, "an existing status icon is found")
+	_expect(BattleEvent.texture_for("event_miss") == null, "event art that does not exist yet is simply absent")
+	for key: String in ["event_type", "icon_key", "primary_text", "value", "target", "source", "priority", "duration"]:
+		_expect(BattleEvent.make(BattleEvent.MISS).has(key), "an event carries " + key)
+
+
+func _check_presenter(fixture: Node) -> void:
+	var presenter: Node = Presenter.new()
+	fixture.add_child(presenter)
+	var foe_a: Dictionary = {"battle_uid": "pop_a", "name": "甲"}
+	var foe_b: Dictionary = {"battle_uid": "pop_b", "name": "乙"}
+	# Case B/C: four strikes, one popup: 25 -> 50 -> 75 -> 120 (third a counter, fourth a crit)
+	var result: Dictionary = {"strikes": [
+		{"hit": true, "damage": 25},
+		{"hit": true, "damage": 25},
+		{"hit": true, "damage": 25, "element_advantage": true},
+		{"hit": true, "damage": 45, "crit": true},
+	]}
+	var sequence_id: String = presenter.schedule_strikes(foe_a, result, 0.05, 0.12)
+	_expect(sequence_id != "", "a damaging action gets a sequence id")
+	await _until(presenter, 1)
+	_expect(presenter.current_number_text(sequence_id) == "25", "first strike: 25 (got %s)" % presenter.current_number_text(sequence_id))
+	await _until(presenter, 2)
+	_expect(presenter.current_number_text(sequence_id) == "50", "second strike updates the SAME number to 50 (got %s)" % presenter.current_number_text(sequence_id))
+	_expect(presenter.open_sequence_count() == 1, "one sequence while the strikes come in")
+	await _until(presenter, 3)
+	_expect(presenter.current_number_text(sequence_id) == "75", "third strike: 75")
+	_expect(presenter.has_open_sequence(sequence_id), "...and it is still hanging, not falling")
+	await _until(presenter, 4)
+	_expect(not presenter.has_open_sequence(sequence_id), "the last strike closes the sequence (it falls from here)")
+	var numbers: Array[String] = []
+	var types: Array[String] = []
+	for entry: Dictionary in presenter.history:
+		numbers.append(String(entry.text))
+		types.append(String(entry.get("result_type", "")))
+	_expect(numbers == ["25", "50", "75", "120!"], "25 -> 50 -> 75 -> 120! (cumulative, ! only on the crit): " + str(numbers))
+	_expect(types == ["NORMAL", "NORMAL", "COUNTER", "CRITICAL"], "each strike's own look: " + str(types))
+	_expect(bool(presenter.history[3].final) and not bool(presenter.history[2].final), "only the last strike is final")
+	_expect(presenter.get_child_count() == 1, "one popup node for the whole action (%d)" % presenter.get_child_count())
+	await _wait(1.9)
+	_expect(presenter.get_child_count() == 0, "the number falls and fades away by itself (%d left)" % presenter.get_child_count())
+	# Case A: a single strike is its own first and final
+	presenter.history.clear()
+	var single: String = presenter.schedule_strikes(foe_a, {"hit": true, "damage": 42}, 0.0, 0.0)
+	_expect(single != "" and presenter.history.size() == 1 and String(presenter.history[0].text) == "42" and bool(presenter.history[0].final), "a single strike: 42, first and final at once")
+	_expect(not presenter.has_open_sequence(single), "...and nothing is left hanging")
+	await _wait(1.9)
+	# Case E / F: MISS, 攔截 and 格擋 show words, never 0
+	presenter.history.clear()
+	presenter.schedule_strikes(foe_a, {"hit": false}, 0.0, 0.0)
+	presenter.schedule_strikes(foe_a, {"strikes": [{"blocked": true, "blocker_type": "substitute_talisman", "hit": false}]}, 0.0, 0.0)
+	presenter.schedule_strikes(foe_b, {"strikes": [{"blocked": true, "blocker_type": "sheath_card", "hit": true}]}, 0.0, 0.0)
+	var words: Array[String] = []
+	for entry: Dictionary in presenter.history:
+		words.append(String(entry.text))
+	_expect(words == ["MISS", "攔截", "格擋"], "words instead of 0: " + str(words))
+	_expect(not words.has("0"), "no 0 is ever shown")
+	await _wait(1.5)
+	# a mixed action: miss, hit, hit
+	presenter.history.clear()
+	presenter.schedule_strikes(foe_a, {"strikes": [{"hit": false}, {"hit": true, "damage": 30}, {"hit": true, "damage": 30}]}, 0.0, 0.0)
+	var mixed: Array[String] = []
+	for entry: Dictionary in presenter.history:
+		mixed.append(String(entry.text))
+	_expect(mixed == ["MISS", "30", "60"], "a miss does not disturb the count: " + str(mixed))
+	await _wait(1.9)
+	# Case G: statuses - the icon when the art exists, the word when it does not, never nothing
+	presenter.history.clear()
+	presenter.show_event(BattleEvent.status("poison", true, foe_a))
+	presenter.show_event(BattleEvent.status("made_up_status", true, foe_a))
+	_expect(presenter.history.size() == 2, "both statuses are shown")
+	_expect(String(presenter.history[0].text) == "中毒" and String(presenter.history[0].icon) == "status_poison", "poison: icon + 中毒")
+	_expect(String(presenter.history[1].text) == "made_up_status" and String(presenter.history[1].icon) == "", "no art: the word alone, still shown")
+	_expect(presenter.get_child_count() == 2, "...and both have something on screen")
+	await _wait(1.9)
+	# Case H: an announcement is not a number popup
+	presenter.history.clear()
+	presenter.announce("第 3 回合開始")
+	_expect(presenter.history.size() == 1 and String(presenter.history[0].type) == BattleEvent.ANNOUNCE and String(presenter.history[0].text) == "第 3 回合開始", "round start is an announcement")
+	_expect(presenter.open_sequence_count() == 0, "...and opens no damage sequence")
+	await _wait(2.0)
+	# healing is a number of its own kind
+	presenter.history.clear()
+	presenter.show_heal(BattleEvent.heal_event(foe_a, 45))
+	_expect(String(presenter.history[0].type) == BattleEvent.HEAL and String(presenter.history[0].text) == "+45", "healing reads +45")
+	await _wait(1.6)
+	# an area attack: each target its own number, no shared total
+	presenter.history.clear()
+	var entries: Array = []
+	for pair: Array in [[foe_a, 40], [foe_b, 100], [foe_a, 35], [foe_b, 2]]:
+		entries.append({"target": pair[0], "strike": {"hit": true, "damage": pair[1]}})
+	var made: Dictionary = presenter.schedule_run(entries, 0.0, 0.0)
+	_expect(made.size() == 2 and made["pop_a"] != made["pop_b"], "two targets, two sequences")
+	var by_target: Dictionary = {}
+	for entry: Dictionary in presenter.history:
+		var name: String = String(entry.target.name)
+		by_target[name] = (by_target.get(name, []) as Array) + [String(entry.text)]
+	_expect(by_target.get("甲", []) == ["40", "75"] and by_target.get("乙", []) == ["100", "102"], "each target adds up on its own: " + str(by_target))
+	await _wait(1.9)
+	presenter.queue_free()
+
+
+## Through the stage: an attack's result reaches the renderer by the attack's own timing, an intercepted attack says 攔截.
+func _check_stage(fixture: Node) -> void:
+	var ui: Node = fixture.ui
+	var stage: Node3D = ui.stage
+	_expect(ui.event_presenter != null and stage.event_presenter == ui.event_presenter, "the UI owns a presenter and gives it to the stage")
+	var context: Dictionary = fixture.build_preview_context()
+	var ally: Dictionary = (context.player_party[0] as Dictionary).duplicate(true)
+	var foe: Dictionary = (context.enemy_party[0] as Dictionary).duplicate(true)
+	ally["battle_uid"] = "pop_ally"
+	foe["battle_uid"] = "pop_foe"
+	foe["is_enemy"] = true
+	ui.set_teams([ally], [foe])
+	for frame: int in range(10):
+		await process_frame
+	var presenter: Node = ui.event_presenter
+	presenter.history.clear()
+	var skill: Dictionary = {"id": "x", "name": "測試連擊", "weapon_type": "劍"}
+	var result: Dictionary = {"hit": true, "damage": 60, "strikes": [{"hit": true, "damage": 20}, {"hit": true, "damage": 20}, {"hit": true, "damage": 20}]}
+	stage._show_attack_popups(foe, skill, result, {})
+	await _wait(1.6)
+	var texts: Array[String] = []
+	for entry: Dictionary in presenter.history:
+		texts.append(String(entry.text))
+	_expect(texts == ["20", "40", "60"], "the stage feeds a sword combo to the renderer: " + str(texts))
+	_expect(stage._popup_timing(skill, result).x > 0.2, "the first blow of a sword arrives after the lunge")
+	presenter.history.clear()
+	stage._show_attack_popups(foe, skill, {"hit": false}, {"type": "substitute_talisman", "entity_id": "e"})
+	await _wait(1.2)
+	_expect(presenter.history.size() == 1 and String(presenter.history[0].text) == "攔截", "an intercepted attack says 攔截 (not 0)")
+	presenter.history.clear()
+	ui.play_heal_number(ally, 30)
+	ui.play_heal_number(ally, 0)
+	ui.play_status_event(foe, "stun", true)
+	ui.announce_round(4)
+	var shown: Array[String] = []
+	for entry: Dictionary in presenter.history:
+		shown.append(String(entry.text))
+	_expect(shown == ["+30", "暈眩", "第 4 回合開始"], "the UI entry points feed the presenter (and a heal of 0 shows nothing): " + str(shown))
+	await _wait(2.0)
+
+
+## Waits until the presenter has shown `count` entries (the timers run on real time, so counting beats guessing a delay).
+func _until(presenter: Node, count: int) -> void:
+	var start: int = Time.get_ticks_msec()
+	while presenter.history.size() < count and Time.get_ticks_msec() - start < 3000:
+		await process_frame

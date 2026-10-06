@@ -5,6 +5,8 @@ extends "res://scripts/presentation/StageBattleUI.gd"
 ## character card instead of sitting at the bottom of the screen.
 
 const CardStageScene = preload("res://scenes/presentation/card_stage_3d.tscn")
+const BattleEvent = preload("res://scripts/presentation/BattleEvent.gd")
+const BattleEventPresenter = preload("res://scripts/presentation/BattleEventPresenter.gd")
 ## [id, label, art name, implemented]. 逃跑 and 機關 are placeholders: they do nothing yet.
 const MAIN_COMMANDS: Array = [["skill", "出招", "btn_skill", true], ["inner_force", "內功", "btn_inner_force", true], ["item", "道具", "btn_item", true], ["defend", "防禦", "btn_defend", true], ["flee", "逃跑", "btn_flee", false], ["mechanism", "機關", "btn_mechanism", false]]
 const BUTTON_DIR := "res://assets/UI/card_stage/"
@@ -26,6 +28,7 @@ func _ready() -> void:
 	_build_command_menu()
 	_install_log_bar()
 	_build_inspect()
+	_build_event_presenter()
 
 
 func _build_command_menu() -> void:
@@ -188,6 +191,46 @@ func _process(delta: float) -> void:
 
 const CardInspect = preload("res://scripts/presentation/CardInspect.gd")
 var _inspect: Node = null
+
+
+## Battle Event Presentation: damage / heal numbers, event tags and announcements over the stage.
+var event_presenter: Node = null
+
+
+func _build_event_presenter() -> void:
+	event_presenter = BattleEventPresenter.new()
+	# Its own canvas layer (like Card Inspect): above the stage and the HUD, below the inspection panel.
+	var layer := CanvasLayer.new()
+	layer.name = "BattleEventLayer"
+	layer.layer = 55
+	add_child(layer)
+	layer.add_child(event_presenter)
+	event_presenter.anchor_provider = Callable(stage, "card_screen_rect")
+	stage.event_presenter = event_presenter
+
+
+## A heal number over the healed card (the green breath is play_heal_fx).
+func play_heal_number(target: Dictionary, amount: int) -> void:
+	if stage_enabled and event_presenter != null and amount > 0:
+		event_presenter.show_heal(BattleEvent.heal_event(target, amount))
+
+
+## A status applied (applied = true) or removed beside its card: its icon if there is one, else just the word.
+func play_status_event(target: Dictionary, status_id: String, applied: bool = true) -> void:
+	if stage_enabled and event_presenter != null and status_id != "":
+		event_presenter.show_event(BattleEvent.status(status_id, applied, target))
+
+
+## Any other battle event (BattleEvent.make): MISS, 格擋, 攔截, 免疫, 無效...
+func play_battle_event(event: Dictionary) -> void:
+	if stage_enabled and event_presenter != null:
+		event_presenter.show_event(event)
+
+
+## "第 N 回合開始" in the middle of the screen (an announcement, not a number popup).
+func announce_round(round_number: int) -> void:
+	if stage_enabled and event_presenter != null:
+		event_presenter.announce("第 %d 回合開始" % round_number)
 
 
 func _build_inspect() -> void:

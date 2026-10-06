@@ -1126,7 +1126,59 @@ func _schedule_block_reactions(target: Dictionary, result: Dictionary) -> void:
 			card.dodge_suppressed = false)
 
 
+# --- Battle event popups (damage numbers, MISS / 格擋 / 攔截) ------------------------------------------------------
+
+## Set by the battle UI; null where nobody shows popups (tests, other views).
+var event_presenter: Node = null
+## When the first blow of an attack arrives and the time between blows, per kind of attack - the popups follow the
+## weapon animations by these numbers (the animations are separate code paths). Tune here.
+const POPUP_LUNGE: float = 0.29
+const POPUP_TIMING_DEFAULT: Vector2 = Vector2(0.55, 0.16)
+const POPUP_TIMING_PEN: Vector2 = Vector2(POPUP_LUNGE + 0.08, 0.13)
+
+
+func _popup_timing(skill: Dictionary, result: Dictionary) -> Vector2:
+	var multi: bool = (result.get("strikes", []) as Array).size() > 1
+	if _is_sword_attack(skill) and not (_is_water_bullet(skill) or _is_spear_attack(skill) or _is_staff_attack(skill)):
+		var tap: float = 0.30 if _is_saber_attack(skill) else 0.0
+		return Vector2(POPUP_LUNGE + tap + (0.16 if (multi or not _is_saber_attack(skill)) else 0.05), 0.15)
+	if _is_pen_attack(skill):
+		return POPUP_TIMING_PEN
+	return POPUP_TIMING_DEFAULT
+
+
+## Hands the result of an attack on one target to the popup renderer; it shows each strike at its moment.
+func _show_attack_popups(target: Dictionary, skill: Dictionary, result: Dictionary, intervention: Dictionary) -> void:
+	if event_presenter == null or not is_instance_valid(event_presenter):
+		return
+	if not intervention.is_empty():
+		event_presenter.schedule_strikes(target, {"strikes": [{"blocked": true, "blocker_type": String(intervention.get("type", "")), "hit": false}]}, 0.8, 0.0)
+		return
+	var timing: Vector2 = _popup_timing(skill, result)
+	event_presenter.schedule_strikes(target, result, timing.x, timing.y)
+
+
+## Events of an area attack, in the order the blows land (target, hit, crit, damage, element_advantage per blow): each
+## target gets its own accumulating number. `first_delay` / `gap` as in the presenter's schedule_run.
+func show_area_popups(events: Array, first_delay: float, gap: float) -> void:
+	if event_presenter == null or not is_instance_valid(event_presenter):
+		return
+	var entries: Array = []
+	for event_any: Variant in events:
+		var event: Dictionary = event_any
+		entries.append({"target": event.target, "strike": {
+			"hit": bool(event.get("hit", true)), "crit": bool(event.get("crit", false)), "damage": int(event.get("damage", 1)),
+			"element_advantage": bool(event.get("element_advantage", false)),
+			"blocked": bool(event.get("blocked", String(event.get("blocker_type", "")) != "")), "blocker_type": String(event.get("blocker_type", "")),
+			"damage_prevented": bool(event.get("damage_prevented", false)),
+		}})
+	event_presenter.schedule_run(entries, first_delay, gap)
+
+
+
+
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	_show_attack_popups(target, skill, result, {})
 	_schedule_block_reactions(target, result)
 	if _is_water_bullet(skill):
 		await _present_water_bullet(attacker, target, result)
@@ -1675,6 +1727,7 @@ func present_punch_events(attacker: Dictionary, events: Array) -> void:
 			struck.append(struck_card)
 		else:
 			struck_card.dodge_motion()
+	show_area_popups(events, 0.0, PUNCH_GAP)
 	_suppress_card_spark = true
 	var per_target_count: Dictionary = {}
 	for index: int in range(events.size()):
@@ -1789,6 +1842,7 @@ func present_ultimate_fist_rain(attacker: Dictionary, events: Array) -> void:
 	var view: Vector2 = get_viewport().get_visible_rect().size
 	var half_width: float = half_height * view.x / maxf(view.y, 1.0)
 	var camera_home: Vector3 = camera.position
+	show_area_popups(events, 0.0, RAIN_GAP)
 	_suppress_card_spark = true
 	var per_target_count: Dictionary = {}
 	var hover_clock: float = 0.0

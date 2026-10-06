@@ -1494,7 +1494,7 @@ func _run_multi_strikes(actor: Dictionary, target: Dictionary, skill_data: Dicti
 	var summaries: Array = []
 	for strike_any: Variant in strikes:
 		var one: Dictionary = strike_any
-		summaries.append({"hit": bool(one.get("hit", true)), "crit": bool(one.get("crit", false)), "damage": int(one.get("damage", 0)), "blocked": bool(one.get("blocked", false))})
+		summaries.append({"hit": bool(one.get("hit", true)), "crit": bool(one.get("crit", false)), "damage": int(one.get("damage", 0)), "element_advantage": bool(one.get("element_advantage", false)), "damage_prevented": bool(one.get("damage_prevented", false)), "blocked": bool(one.get("blocked", false))})
 	result["strikes"] = summaries
 	return {"result": result, "pairing_bonus": pairing_bonus, "strike_count": strike_count}
 
@@ -1755,6 +1755,8 @@ func _on_round_started(round_number: int) -> void:
 		return
 	last_round_logged = round_number
 	_log("第 %d 回合開始！" % round_number)
+	if battle_ui != null and battle_ui.has_method("announce_round"):
+		battle_ui.announce_round(round_number)
 	await _apply_encounter_round_start(round_number)
 
 func _on_round_ended(_round_number: int) -> void:
@@ -2568,7 +2570,7 @@ func _execute_shared_random_hits_aoe(actor: Dictionary, skill_data: Dictionary, 
 			group = {"target": pick, "strikes": []}
 			groups.append(group)
 		(group.strikes as Array).append(strike_result)
-		events.append({"target": pick, "hit": bool(strike_result.get("hit", true)), "crit": bool(strike_result.get("crit", false))})
+		events.append({"target": pick, "hit": bool(strike_result.get("hit", true)), "crit": bool(strike_result.get("crit", false)), "damage": int(strike_result.get("damage", 0)), "element_advantage": bool(strike_result.get("element_advantage", false)), "damage_prevented": bool(strike_result.get("damage_prevented", false))})
 		if bool(strike_result.get("hit", true)):
 			any_hit = true
 			if not hit_targets.has(pick):
@@ -2640,7 +2642,7 @@ func _execute_per_target_random_hits_aoe(actor: Dictionary, skill_data: Dictiona
 		if enemy_strikes.is_empty():
 			continue
 		for strike_result: Dictionary in enemy_strikes:
-			events.append({"target": enemy, "hit": bool(strike_result.get("hit", true)), "crit": bool(strike_result.get("crit", false))})
+			events.append({"target": enemy, "hit": bool(strike_result.get("hit", true)), "crit": bool(strike_result.get("crit", false)), "damage": int(strike_result.get("damage", 0)), "element_advantage": bool(strike_result.get("element_advantage", false)), "damage_prevented": bool(strike_result.get("damage_prevented", false))})
 			if bool(strike_result.get("hit", true)):
 				any_hit = true
 				if not hit_targets.has(enemy):
@@ -3321,6 +3323,14 @@ func _should_log_status_record(row: Dictionary) -> bool:
 	return int(target.get("hp", 0)) > 0
 
 
+## A status that has just been applied is also shown beside its target (icon + short word; the persistent row and the log are separate).
+func _present_status_event(row: Dictionary) -> void:
+	var target = row.get("target", {})
+	if battle_ui == null or not battle_ui.has_method("play_status_event") or typeof(target) != TYPE_DICTIONARY or target.is_empty():
+		return
+	battle_ui.play_status_event(target, String(row.get("effect_id", "")), true)
+
+
 func _log_applied_statuses(applied_statuses: Array) -> void:
 	for row in applied_statuses:
 		if typeof(row) != TYPE_DICTIONARY:
@@ -3333,6 +3343,7 @@ func _log_applied_statuses(applied_statuses: Array) -> void:
 		var desc := String(row.get("desc", ""))
 		if desc != "":
 			_log(desc)
+		_present_status_event(row)
 		var tone_suffer := String(row.get("tone_suffer", ""))
 		if tone_suffer != "":
 			_log_narration(tone_suffer)
@@ -3783,6 +3794,8 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 				battle_ui.play_heal_react(t)
 				if battle_ui.has_method("play_heal_fx"):
 					battle_ui.play_heal_fx(t)
+				if battle_ui.has_method("play_heal_number"):
+					battle_ui.play_heal_number(t, int(restored_map.get(String(t.get("id", str(t))), 0)))
 	_play_support_se("heal")
 
 	# 🔁 同步 UI
