@@ -13,6 +13,7 @@ extends Control
 
 const BattleEventScript = preload("res://scripts/presentation/BattleEvent.gd")
 const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const BattleNumberFont = preload("res://scripts/presentation/BattleNumberFont.gd")
 
 const COLOR_NORMAL := Color(0.97, 0.91, 0.66)
 const COLOR_COUNTER := Color(1.0, 0.82, 0.12)
@@ -97,13 +98,12 @@ func _make_label(text: String, size: int, color: Color, outline: int = 7) -> Lab
 ## Colour, glow and size of the number for the latest strike of the sequence.
 static func style_for(result_type: String) -> Dictionary:
 	match result_type:
-		BattleEventScript.CRITICAL_COUNTER_HIT:
-			return {"color": COLOR_CRITICAL, "glow": COLOR_COUNTER, "size": CRIT_SIZE, "power": 1.0, "suffix": "!"}
-		BattleEventScript.CRITICAL_HIT:
+		BattleEventScript.CRITICAL_COUNTER_HIT, BattleEventScript.CRITICAL_HIT:
+			# First version: critical wins over counter (the data keeps both; a double mark can come later).
 			return {"color": COLOR_CRITICAL, "glow": Color(COLOR_CRITICAL, 0.55), "size": CRIT_SIZE, "power": 1.0, "suffix": "!"}
 		BattleEventScript.COUNTER_HIT:
-			return {"color": COLOR_COUNTER, "glow": Color(COLOR_COUNTER, 0.5), "size": NUMBER_SIZE + 4, "power": 0.7, "suffix": ""}
-	return {"color": COLOR_NORMAL, "glow": Color(0, 0, 0, 0), "size": NUMBER_SIZE, "power": 0.5, "suffix": ""}
+			return {"color": COLOR_COUNTER, "glow": Color(COLOR_COUNTER, 0.5), "size": NUMBER_SIZE + 4, "power": 0.7, "suffix": "!"}
+	return {"color": COLOR_NORMAL, "glow": Color(0, 0, 0, 0), "size": NUMBER_SIZE, "power": 0.5, "suffix": "!"}
 
 
 ## One strike of a damage sequence (BattleEvent.damage_hit). The first strike makes the popup, later ones update it,
@@ -125,6 +125,7 @@ func show_damage(event: Dictionary) -> void:
 	label.text = text
 	glow.text = text
 	_apply_style(sequence, style)
+	_sync_image(sequence, BattleNumberFont.style_key(String(event.result_type)), text, style)
 	if first:
 		_play_first_strike(sequence, style)
 	else:
@@ -153,6 +154,36 @@ func _spawn_number(target: Dictionary, style: Dictionary) -> Dictionary:
 		"ground": Vector2(rect.get_center().x, rect.position.y + rect.size.y * GROUND_Y),
 		"hop": null, "move": null,
 	}
+
+
+## The parts of a number that are animated together: the glow and label (text mode) or the image row (image mode).
+func _items(sequence: Dictionary) -> Array:
+	var items: Array = []
+	for key: String in ["glow", "label", "row"]:
+		var part: Variant = sequence.get(key, null)
+		if part is Control and is_instance_valid(part) and (part as Control).visible:
+			items.append(part)
+	return items
+
+
+## Image digits when the art for this style exists, the font label otherwise (never both, never nothing).
+func _sync_image(sequence: Dictionary, style_key: String, text: String, style: Dictionary) -> void:
+	var wrapper: Control = sequence.wrapper
+	var old: Variant = sequence.get("row", null)
+	if old is Control and is_instance_valid(old):
+		(old as Control).queue_free()
+	sequence["row"] = null
+	var row: Control = BattleNumberFont.build_row(style_key, text, float(style.size) * 1.25, Vector2(300, 80))
+	var label: Label = sequence.label
+	var glow: Label = sequence.glow
+	if row == null:
+		label.visible = true
+		glow.visible = (style.glow as Color).a > 0.01
+		return
+	label.visible = false
+	glow.visible = false
+	wrapper.add_child(row)
+	sequence["row"] = row
 
 
 func _apply_style(sequence: Dictionary, style: Dictionary) -> void:
@@ -185,7 +216,7 @@ func _play_first_strike(sequence: Dictionary, style: Dictionary) -> void:
 	sequence["move"] = move
 	var punch: Tween = create_tween().set_parallel(true)
 	var peak: float = 1.3 + 0.35 * power
-	for item: Label in [label, glow]:
+	for item: Control in _items(sequence):
 		punch.tween_property(item, "modulate:a", 1.0, 0.04)
 		punch.tween_property(item, "scale", Vector2(peak, peak), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		punch.chain().tween_property(item, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -209,7 +240,7 @@ func _play_hop(sequence: Dictionary, style: Dictionary) -> void:
 	label.modulate = Color(2.0, 2.0, 1.8, 1.0)
 	glow.modulate = Color.WHITE
 	var hop: Tween = create_tween().set_parallel(true)
-	for item: Label in [label, glow]:
+	for item: Control in _items(sequence):
 		hop.tween_property(item, "position:y", -40.0 - height, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		hop.tween_property(item, "scale", Vector2(peak, peak), 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		hop.chain().tween_property(item, "position:y", -40.0, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -229,16 +260,17 @@ func _schedule_fall(sequence_id: String, sequence: Dictionary, style: Dictionary
 	var fall: Tween = create_tween()
 	fall.tween_interval(delay)
 	fall.tween_property(wrapper, "position", sequence.ground, 0.52).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	fall.tween_callback(_shudder.bind(label, glow, 5.0 + 4.0 * float(style.power)))
+	fall.tween_callback(_shudder.bind(sequence, 5.0 + 4.0 * float(style.power)))
 	fall.tween_interval(0.24)
 	fall.tween_property(wrapper, "modulate:a", 0.0, 0.36)
 	fall.tween_callback(wrapper.queue_free)
 
 
-func _shudder(label: Label, glow: Label, amplitude: float) -> void:
-	if not is_instance_valid(label):
+func _shudder(sequence: Dictionary, amplitude: float) -> void:
+	var wrapper: Control = sequence.wrapper
+	if not is_instance_valid(wrapper):
 		return
-	for item: Label in [label, glow]:
+	for item: Control in _items(sequence):
 		var sequence_tween: Tween = create_tween()
 		sequence_tween.tween_property(item, "position:x", -120.0 + amplitude, 0.03)
 		sequence_tween.tween_property(item, "position:x", -120.0 - amplitude, 0.05)

@@ -38,6 +38,7 @@ func _run() -> void:
 		_check_pure()
 		await _check_presenter(fixture)
 		await _check_stage(fixture)
+		await _check_image_digits(fixture)
 	fixture.queue_free()
 	await process_frame
 	if _failures.is_empty():
@@ -72,7 +73,7 @@ func _check_pure() -> void:
 	_expect(normal.color.r > 0.9 and normal.color.g > 0.85 and normal.color.b < 0.8 and normal.color.b > 0.4, "a normal hit is cream yellow, not pure white")
 	_expect(counter.color.s > normal.color.s and counter.color.g > 0.75 and counter.color.b < 0.3, "a counter hit is saturated gold")
 	_expect(crit.color.r > 0.9 and crit.color.g < 0.3 and int(crit.size) > int(normal.size) and float(crit.power) > float(normal.power), "a critical hit is red, bigger, with a stronger punch")
-	_expect(both.color == crit.color and both.glow.r > 0.9 and both.glow.g > 0.7 and both.glow.a > 0.9, "crit + counter: red number, gold glow (both at once)")
+	_expect(both.color == crit.color and both.size == crit.size, "first version: crit + counter is drawn as a crit (red)")
 	var stun: Dictionary = BattleEvent.status("stun", true)
 	_expect(String(stun.primary_text) == "暈眩" and String(stun.icon_key) == "status_stun", "a status event reuses the status icon key and word: %s / %s" % [stun.primary_text, stun.icon_key])
 	_expect(BattleEvent.texture_for("status_poison") != null, "an existing status icon is found")
@@ -96,12 +97,12 @@ func _check_presenter(fixture: Node) -> void:
 	var sequence_id: String = presenter.schedule_strikes(foe_a, result, 0.05, 0.12)
 	_expect(sequence_id != "", "a damaging action gets a sequence id")
 	await _until(presenter, 1)
-	_expect(presenter.current_number_text(sequence_id) == "25", "first strike: 25 (got %s)" % presenter.current_number_text(sequence_id))
+	_expect(presenter.current_number_text(sequence_id) == "25!", "first strike: 25 (got %s)" % presenter.current_number_text(sequence_id))
 	await _until(presenter, 2)
-	_expect(presenter.current_number_text(sequence_id) == "50", "second strike updates the SAME number to 50 (got %s)" % presenter.current_number_text(sequence_id))
+	_expect(presenter.current_number_text(sequence_id) == "50!", "second strike updates the SAME number to 50 (got %s)" % presenter.current_number_text(sequence_id))
 	_expect(presenter.open_sequence_count() == 1, "one sequence while the strikes come in")
 	await _until(presenter, 3)
-	_expect(presenter.current_number_text(sequence_id) == "75", "third strike: 75")
+	_expect(presenter.current_number_text(sequence_id) == "75!", "third strike: 75")
 	_expect(presenter.has_open_sequence(sequence_id), "...and it is still hanging, not falling")
 	await _until(presenter, 4)
 	_expect(not presenter.has_open_sequence(sequence_id), "the last strike closes the sequence (it falls from here)")
@@ -110,7 +111,7 @@ func _check_presenter(fixture: Node) -> void:
 	for entry: Dictionary in presenter.history:
 		numbers.append(String(entry.text))
 		types.append(String(entry.get("result_type", "")))
-	_expect(numbers == ["25", "50", "75", "120!"], "25 -> 50 -> 75 -> 120! (cumulative, ! only on the crit): " + str(numbers))
+	_expect(numbers == ["25!", "50!", "75!", "120!"], "25! -> 50! -> 75! -> 120! (cumulative): " + str(numbers))
 	_expect(types == ["NORMAL", "NORMAL", "COUNTER", "CRITICAL"], "each strike's own look: " + str(types))
 	_expect(bool(presenter.history[3].final) and not bool(presenter.history[2].final), "only the last strike is final")
 	_expect(presenter.get_child_count() == 1, "one popup node for the whole action (%d)" % presenter.get_child_count())
@@ -119,7 +120,7 @@ func _check_presenter(fixture: Node) -> void:
 	# Case A: a single strike is its own first and final
 	presenter.history.clear()
 	var single: String = presenter.schedule_strikes(foe_a, {"hit": true, "damage": 42}, 0.0, 0.0)
-	_expect(single != "" and presenter.history.size() == 1 and String(presenter.history[0].text) == "42" and bool(presenter.history[0].final), "a single strike: 42, first and final at once")
+	_expect(single != "" and presenter.history.size() == 1 and String(presenter.history[0].text) == "42!" and bool(presenter.history[0].final), "a single strike: 42, first and final at once")
 	_expect(not presenter.has_open_sequence(single), "...and nothing is left hanging")
 	await _wait(1.9)
 	# Case E / F: MISS, 攔截 and 格擋 show words, never 0
@@ -139,7 +140,7 @@ func _check_presenter(fixture: Node) -> void:
 	var mixed: Array[String] = []
 	for entry: Dictionary in presenter.history:
 		mixed.append(String(entry.text))
-	_expect(mixed == ["MISS", "30", "60"], "a miss does not disturb the count: " + str(mixed))
+	_expect(mixed == ["MISS", "30!", "60!"], "a miss does not disturb the count: " + str(mixed))
 	await _wait(1.9)
 	# Case G: statuses - the icon when the art exists, the word when it does not, never nothing
 	presenter.history.clear()
@@ -172,7 +173,7 @@ func _check_presenter(fixture: Node) -> void:
 	for entry: Dictionary in presenter.history:
 		var name: String = String(entry.target.name)
 		by_target[name] = (by_target.get(name, []) as Array) + [String(entry.text)]
-	_expect(by_target.get("甲", []) == ["40", "75"] and by_target.get("乙", []) == ["100", "102"], "each target adds up on its own: " + str(by_target))
+	_expect(by_target.get("甲", []) == ["40!", "75!"] and by_target.get("乙", []) == ["100!", "102!"], "each target adds up on its own: " + str(by_target))
 	await _wait(1.9)
 	presenter.queue_free()
 
@@ -200,7 +201,7 @@ func _check_stage(fixture: Node) -> void:
 	var texts: Array[String] = []
 	for entry: Dictionary in presenter.history:
 		texts.append(String(entry.text))
-	_expect(texts == ["20", "40", "60"], "the stage feeds a sword combo to the renderer: " + str(texts))
+	_expect(texts == ["20!", "40!", "60!"], "the stage feeds a sword combo to the renderer: " + str(texts))
 	_expect(stage._popup_timing(skill, result).x > 0.2, "the first blow of a sword arrives after the lunge")
 	presenter.history.clear()
 	stage._show_attack_popups(foe, skill, {"hit": false}, {"type": "substitute_talisman", "entity_id": "e"})
@@ -223,3 +224,36 @@ func _until(presenter: Node, count: int) -> void:
 	var start: int = Time.get_ticks_msec()
 	while presenter.history.size() < count and Time.get_ticks_msec() - start < 3000:
 		await process_frame
+
+
+## Image digits: used when the whole style set exists, the text label otherwise; never nothing.
+func _check_image_digits(fixture: Node) -> void:
+	var NumberFont: Script = load("res://scripts/presentation/BattleNumberFont.gd")
+	var presenter: Node = Presenter.new()
+	fixture.add_child(presenter)
+	var foe: Dictionary = {"battle_uid": "img_a", "name": "丙"}
+	_expect(not NumberFont.can_render("normal", "25!"), "no art on disk: the text label is used")
+	NumberFont.directory = "user://test_numbers/"
+	NumberFont.reset_cache()
+	DirAccess.make_dir_recursive_absolute("user://test_numbers/normal")
+	var image := Image.create(16, 24, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	for name: String in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "plus", "bang"]:
+		image.save_png("user://test_numbers/normal/%s.png" % name)
+	NumberFont.reset_cache()
+	_expect(NumberFont.can_render("normal", "25!"), "with the set present the style renders as images")
+	_expect(not NumberFont.can_render("crit", "25!"), "a style whose set is missing keeps the text fallback")
+	presenter.schedule_strikes(foe, {"hit": true, "damage": 25}, 0.0, 0.0)
+	var rows: int = 0
+	for child: Node in presenter.get_children():
+		for part: Node in child.get_children():
+			if part is HBoxContainer:
+				rows += 1
+	_expect(rows == 1, "the popup holds one image row")
+	NumberFont.enabled = false
+	_expect(not NumberFont.can_render("normal", "25!"), "the switch forces text")
+	NumberFont.enabled = true
+	NumberFont.directory = "res://assets/UI/card_stage/numbers/"
+	NumberFont.reset_cache()
+	await _wait(1.9)
+	presenter.queue_free()

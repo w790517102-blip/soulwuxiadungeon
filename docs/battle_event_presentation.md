@@ -28,7 +28,7 @@
 - 同一招、同一目標＝一個 `sequence_id`＝一顆 popup：25 → 50 → 75 → 100（累加）。AoE 每個目標各自一顆，不合計。
 - 第一擊：從受擊處被打上去、停住（scale punch）。之後每擊：只更新數字，小跳＋閃一下，不重播出現動畫。
 - 只有最後一擊：停留約 0.34 秒讓玩家看清最終值 → 落下 → bounce → 抖動 → fade。落下的尾巴不鎖戰鬥流程。單段＝第一擊即最後一擊。
-- 顏色：普通＝米黃；相剋＝金黃（淡金光）；暴擊＝紅（字較大、跳更高、punch 更強）；暴擊＋相剋＝紅字＋金黃外光。多段時以最新一擊的性質暫時改變外觀，不加額外統計文字。暴擊字尾加「!」。
+- 顏色：普通＝米黃；相剋＝亮黃（淡金光）；暴擊＝紅（字較大、跳更高、punch 更強）；第一版暴擊＋相剋以暴擊紅呈現（資料仍保留兩者）；治療＝綠。每一擊的傷害數字字尾都有「!」，治療為 `+N`。
 - MISS／格擋／攔截／無效不顯示 0，而是顯示該詞。傷害為 0 且非被格擋者視為「無效」。
 - 治療：`+45`，淡綠，從低處輕輕上升、小 bounce、fade，不用被打上去的重擊感。
 
@@ -40,3 +40,8 @@
 不改 StatusEffectManager、傷害／暴擊／相剋公式、戰場常駐狀態列，也沒重構 BattleController。狀態「解除」事件已有資料與渲染（`BattleEvent.status(id, false)`），尚未在遊戲邏輯接上（沒有統一的解除出口）。
 
 測試：`tests/test_battle_event_popups.gd`（累加、單段、MISS/攔截/格擋、無 ICON fallback、公告、治療、AoE 各自累加、舞台接線）。
+
+## 圖片數字（BattleNumberFont）
+`scripts/presentation/BattleNumberFont.gd`：每種樣式（`normal` 普通 / `counter` 相剋 / `crit` 暴擊 / `heal` 治療）若
+`assets/UI/card_stage/numbers/<style>/<name>.png` 的 12 個字元（`0`–`9`、`plus`、`bang`）齊全，popup 就改用圖片數字；缺任何一個就整個樣式退回文字 label。
+`BattleNumberFont.enabled = false` 可強制文字。素材格式只在 `texture_for()` 一處，要改 spritesheet／bitmap font 只改那裡。
