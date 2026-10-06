@@ -20,6 +20,8 @@ var _scroll: ScrollContainer
 var _close_button: Button
 var _tab_overview: Button
 var _tab_skills: Button
+var _tab_synergy: Button
+var _list_key: String = "skill_page"
 var _skills_root: HBoxContainer
 var _skills_description: RichTextLabel
 var _skill_group: ButtonGroup
@@ -55,6 +57,9 @@ func _init(font: Font = null) -> void:
 	_tab_skills = _tab_button("武學")
 	_tab_skills.pressed.connect(func() -> void: _show_page("skills"))
 	top.add_child(_tab_skills)
+	_tab_synergy = _tab_button("相合")
+	_tab_synergy.pressed.connect(func() -> void: _show_page("synergy"))
+	top.add_child(_tab_synergy)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(spacer)
@@ -86,6 +91,7 @@ func show_data(data: Dictionary) -> void:
 	_data = data
 	_skills_built = false
 	_tab_skills.visible = data.has("skill_page")
+	_tab_synergy.visible = data.has("synergy_page")
 	_show_page("overview")
 	for child: Node in _content.get_children():
 		_content.remove_child(child)
@@ -238,13 +244,21 @@ func current_page() -> String:
 func _show_page(page: String) -> void:
 	if page == "skills" and not _data.has("skill_page"):
 		page = "overview"
+	if page == "synergy" and not _data.has("synergy_page"):
+		page = "overview"
 	_page = page
 	_tab_overview.set_pressed_no_signal(page == "overview")
 	_tab_skills.set_pressed_no_signal(page == "skills")
+	_tab_synergy.set_pressed_no_signal(page == "synergy")
 	_scroll.visible = page == "overview"
-	_skills_root.visible = page == "skills"
-	if page == "skills" and not _skills_built:
-		_build_skills_page()
+	_skills_root.visible = page != "overview"
+	if page != "overview":
+		var key: String = "skill_page" if page == "skills" else "synergy_page"
+		if key != _list_key:
+			_skills_built = false
+		_list_key = key
+		if not _skills_built:
+			_build_skills_page()
 
 
 func _list_style(selected: bool) -> StyleBoxFlat:
@@ -307,7 +321,7 @@ func _build_skills_page() -> void:
 	frame_scroll.add_child(_skills_description)
 	_skill_group = ButtonGroup.new()
 	var first: Button = null
-	var page: Dictionary = _data.get("skill_page", {})
+	var page: Dictionary = _data.get(_list_key, {})
 	for section_any: Variant in page.get("sections", []):
 		var section: Dictionary = section_any
 		list.add_child(_label("【%s】" % String(section.get("heading", "")), 20, GOLD))
@@ -338,6 +352,9 @@ func _build_skills_page() -> void:
 			if first == null:
 				first = button
 				first.set_meta("entry", entry)
+	if first == null:
+		list.add_child(_label("（尚無已習得的相合）", 20, MUTED))
+		_skills_description.text = ""
 	if first != null:
 		first.set_pressed_no_signal(true)
 		_select_skill_entry(first.get_meta("entry"))
@@ -354,7 +371,7 @@ func skills_description_text() -> String:
 
 ## Selects the skill-page entry with this id (for tests; the player clicks).
 func select_skill_entry_by_id(entry_id: String) -> bool:
-	for section_any: Variant in (_data.get("skill_page", {}) as Dictionary).get("sections", []):
+	for section_any: Variant in (_data.get(_list_key, {}) as Dictionary).get("sections", []):
 		for entry_any: Variant in (section_any as Dictionary).get("entries", []):
 			if String((entry_any as Dictionary).get("id", "")) == entry_id:
 				_select_skill_entry(entry_any)

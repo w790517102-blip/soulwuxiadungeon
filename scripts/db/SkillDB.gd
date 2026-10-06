@@ -1,5 +1,7 @@
 extends Node
 
+const MartialSynergyScript = preload("res://scripts/battlescripts/MartialSynergy.gd")
+
 const ACQUISITION_ROUTE_WEAPON_FAMILY_LEVEL := "weapon_family_level"
 const ACQUISITION_ROUTE_ACTOR_GROWTH := "actor_growth"
 const ACQUISITION_ROUTE_QUEST_EVENT := "quest_event"
@@ -1705,51 +1707,18 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 	var weapon_boost_entry := _build_weapon_boost_entry(current_force_id, skill_weapon_type)
 	if not weapon_boost_entry.is_empty():
 		out.append(weapon_boost_entry)
-	match skill_id:
-		"skill_lianjuejian":
-			out.append({
-				"kind": "專屬搭配",
-				"text_long": "流塵訣下可進化為「流塵連決劍」。",
-				"text_short": "專屬：可進化為流塵連決劍。",
-				"met": current_force_id == "liuchen_jue",
-			})
-		"skill_duanshuizhan":
-			out.append({
-				"kind": "專屬搭配",
-				"text_long": "伏潮訣下可進化為「伏潮斷水斬」，命中附加破防 2 回合。",
-				"text_short": "專屬：伏潮斷水斬，命中附加破防2回合。",
-				"met": current_force_id == "fuchao_jue",
-			})
-		"skill_breaking_wave_spear":
-			out.append({
-				"kind": "專屬搭配",
-				"text_long": "沉潮訣下可進化為「沉潮破浪槍」，追加 STR / AGI 加權。",
-				"text_short": "專屬：沉潮破浪槍，追加 STR / AGI 加權。",
-				"met": current_force_id == "chenchao_jue",
-			})
-		"skill_tianjingquan":
-			out.append({
-				"kind": "專屬搭配",
-				"text_long": "石破心法下可進化為「石破天驚拳」，全場共享 2~4 次攻擊。",
-				"text_short": "石破心法：進化為石破天驚拳。",
-				"met": current_force_id == "shipo_xinfa",
-			})
-			var ultimate_met := current_force_id == "shipo_xinfa" and _is_actor_fully_unequipped(actor)
-			out.append({
-				"kind": "奧義條件",
-				"text_long": "石破心法下，且全身無裝備時，可進化為「真．石破天驚拳」，每名敵人各承受 2~4 次攻擊。",
-				"text_short": "奧義：全身無裝備時進化為真．石破天驚拳。",
-				"met": ultimate_met,
-			})
-		"skill_diquejian":
-			out.append({
-				"kind": "絕技分支",
-				"text_long": "天殘訣下可施展「天殘．地缺劍」，消耗目前 HP 的 50%，對全體造成 3.0x ATK 傷害，並受 STR / CON 加權。",
-				"text_short": "絕技：可施展天殘．地缺劍（耗50%HP，全體3.0x ATK，STR/CON加權）。",
-				"met": current_force_id == "tiancan_jue",
-			})
-		_:
-			pass
+	# standard synergies, legendary chains and risk branches all read the one canonical table (MartialSynergy)
+	for record: Dictionary in MartialSynergyScript.for_martial(skill_id):
+		var met: bool = current_force_id == String(record.inner_skill_id)
+		for condition: Dictionary in record.get("conditions", []):
+			if String(condition.get("type", "")) == "fully_unequipped":
+				met = met and _is_actor_fully_unequipped(actor)
+		out.append({
+			"kind": String(record.get("linkage_kind", "專屬搭配")),
+			"text_long": String(record.display_description),
+			"text_short": String(record.short_description),
+			"met": met,
+		})
 	return out
 
 func _build_weapon_boost_entry(force_id: String, skill_weapon_type: String) -> Dictionary:

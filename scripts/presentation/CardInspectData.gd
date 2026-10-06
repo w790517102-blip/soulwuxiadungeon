@@ -104,6 +104,7 @@ static func for_actor(ui: Object, actor: Dictionary, enemy: bool) -> Dictionary:
 		var page: Dictionary = skill_page(ui, actor)
 		if not (page.sections as Array).is_empty():
 			data["skill_page"] = page
+			data["synergy_page"] = synergy_page(ui, actor)
 	else:
 		var intel: Array = _enemy_intel(actor)
 		if not intel.is_empty():
@@ -473,7 +474,7 @@ static func _inner_force_entries(actor: Dictionary, running: Dictionary, skills:
 		for skill: Dictionary in skills:
 			var strikes: Dictionary = _sv().strike_info(skill, force)
 			if int(strikes.delta) != 0:
-				affects.append("%s：攻擊段數 %d → %d" % [String(skill.get("name", "")), int(strikes.base), int(strikes.effective)])
+				affects.append("%s：攻擊段數 %s → %s" % [String(skill.get("name", "")), String(strikes.base_text), String(strikes.effective_text)])
 		if not affects.is_empty():
 			lines.append("")
 			lines.append("目前影響：" if is_running else "運行時影響：")
@@ -499,10 +500,10 @@ static func _skill_entry(provider: Object, actor: Dictionary, force: Dictionary,
 		lines.append(description)
 	var strikes: Dictionary = _sv().strike_info(skill, force)
 	var shown_effective: bool = false
-	if int(strikes.base) > 1 or int(strikes.delta) != 0:
+	if int(strikes.base_max) > 1 or int(strikes.delta) != 0:
 		lines.append("")
-		lines.append("基礎攻擊次數：%d" % int(strikes.base))
-		lines.append("目前攻擊次數：%d" % int(strikes.effective))
+		lines.append("基礎攻擊次數：%s" % String(strikes.base_text))
+		lines.append("目前攻擊次數：%s" % String(strikes.effective_text))
 		if int(strikes.delta) != 0:
 			lines.append("修正來源：%s %+d" % [String(strikes.source), int(strikes.delta)])
 		shown_effective = true
@@ -521,3 +522,129 @@ static func _skill_entry(provider: Object, actor: Dictionary, force: Dictionary,
 	if not bool(verdict.ok):
 		color = _sv().muted(color)
 	return {"id": String(skill.get("id", "")), "name": name, "tag": "%d MP" % cost if cost > 0 else "", "color": color, "dim": not bool(verdict.ok), "lines": lines}
+
+
+# --- The synergy page (相合): which learned inner force makes which learned martial skill more than itself -----------
+# Everything comes from the canonical table (MartialSynergy) and SkillView; nothing here decides a battle rule. Content the
+# character has not learned is not listed. A pairing whose inner force is learned but not running is listed and tagged
+# 「未運行」; its effect is not part of the 目前 layer (SkillView's final result does not apply it either).
+
+static func _synergy() -> GDScript:
+	return load("res://scripts/battlescripts/MartialSynergy.gd") as GDScript
+
+
+static func _learned_force_ids(actor: Dictionary, running: Dictionary) -> Array:
+	var ids: Array = []
+	for source: Variant in [actor.get("available_inner_forces", []), actor.get("known_inner_force_ids", [])]:
+		if typeof(source) != TYPE_ARRAY:
+			continue
+		for entry: Variant in source:
+			var force_id: String = String((entry as Dictionary).get("id", "")) if typeof(entry) == TYPE_DICTIONARY else String(entry)
+			if force_id != "" and not ids.has(force_id):
+				ids.append(force_id)
+	var running_id: String = String(running.get("id", ""))
+	if running_id != "" and not ids.has(running_id):
+		ids.append(running_id)
+	return ids
+
+
+static func _force_name(force_id: String) -> String:
+	var db: Node = load("res://scripts/battlescripts/InnerForceDB.gd").new()
+	var force: Dictionary = db.get_force(force_id)
+	db.free()
+	return "%s%s" % [String(force.get("prefix", "")), String(force.get("type", ""))] if not force.is_empty() else force_id
+
+
+## {"sections": [{"heading", "entries": [{"id", "name", "tag", "color", "dim", "lines"}]}]}; empty sections when nothing applies.
+static func synergy_page(ui: Object, actor: Dictionary) -> Dictionary:
+	var running: Dictionary = actor.get("inner_force", {}) if typeof(actor.get("inner_force", {})) == TYPE_DICTIONARY else {}
+	var provider: Object = ui.get("character_skill_db") as Object
+	var learned_forces: Array = _learned_force_ids(actor, running)
+	var learned_skills: Array = []
+	if provider != null and provider.has_method("get_skills_by_actor"):
+		for source: Variant in provider.get_skills_by_actor(actor):
+			if typeof(source) == TYPE_DICTIONARY and not learned_skills.has(String((source as Dictionary).get("id", ""))):
+				learned_skills.append(String((source as Dictionary).get("id", "")))
+	# every visible relation, in table order
+	var relations: Array = []
+	for record: Dictionary in _synergy().all():
+		if learned_forces.has(String(record.inner_skill_id)) and learned_skills.has(String(record.martial_skill_id)):
+			relations.append(record)
+	var force_entries: Array = []
+	var skill_entries: Array = []
+	var seen_forces: Array = []
+	var seen_skills: Array = []
+	for record: Dictionary in relations:
+		if not seen_forces.has(String(record.inner_skill_id)):
+			seen_forces.append(String(record.inner_skill_id))
+	for record: Dictionary in relations:
+		if not seen_skills.has(String(record.martial_skill_id)):
+			seen_skills.append(String(record.martial_skill_id))
+	for force_id: String in seen_forces:
+		var is_running: bool = force_id == String(running.get("id", ""))
+		var lines: Array = ["[b]%s[/b]" % _force_name(force_id), "與下列武術相合：", ""]
+		for record: Dictionary in relations:
+			if String(record.inner_skill_id) == force_id:
+				lines.append_array(_synergy_block(provider, actor, running, record, _force_name(force_id)))
+				lines.append("")
+		force_entries.append({"id": "force:" + force_id, "name": _force_name(force_id), "tag": "運行中" if is_running else "未運行", "color": Color(1, 1, 1) if is_running else Color(0.7, 0.7, 0.7), "dim": not is_running, "lines": lines})
+	for skill_id: String in seen_skills:
+		var base_skill: Dictionary = _sv()._db().get_skill(skill_id)
+		var any_active: bool = false
+		var lines: Array = ["[b]%s[/b]" % String(base_skill.get("name", skill_id)), "與下列內功相合：", ""]
+		for record: Dictionary in relations:
+			if String(record.martial_skill_id) == skill_id:
+				any_active = any_active or String(record.inner_skill_id) == String(running.get("id", ""))
+				lines.append_array(_synergy_block(provider, actor, running, record, _force_name(String(record.inner_skill_id))))
+				lines.append("")
+		skill_entries.append({"id": "skill:" + skill_id, "name": String(base_skill.get("name", skill_id)), "tag": "相合中" if any_active else "未運行", "color": Color(1.0, 0.62, 0.2) if any_active else Color(0.7, 0.7, 0.7), "dim": not any_active, "lines": lines})
+	var sections: Array = []
+	if not force_entries.is_empty():
+		sections.append({"heading": "內功", "entries": force_entries})
+	if not skill_entries.is_empty():
+		sections.append({"heading": "武術", "entries": skill_entries})
+	return {"sections": sections}
+
+
+## One pairing as lines: the heading with its tags, what it is, then the three layers 基礎 / 相合 / 目前.
+static func _synergy_block(provider: Object, actor: Dictionary, running: Dictionary, record: Dictionary, force_name: String) -> Array:
+	var synergy: GDScript = _synergy()
+	var base_skill: Dictionary = _sv()._db().get_skill(String(record.martial_skill_id))
+	var is_running: bool = String(record.inner_skill_id) == String(running.get("id", ""))
+	var skill_name: String = String(base_skill.get("name", record.martial_skill_id))
+	var runtime_name: String = skill_name
+	if is_running and provider != null and provider.has_method("resolve_runtime_skill"):
+		runtime_name = String((provider.resolve_runtime_skill(base_skill, running, actor) as Dictionary).get("name", skill_name))
+	var active: bool = is_running
+	if String(record.relation_type) != "standard" and is_running:
+		active = runtime_name == String(record.display_name)
+		if not active and (record.conditions as Array).is_empty() and runtime_name != skill_name:
+			active = true   # 真．石破天驚拳 is the higher form of this very chain
+	var lines: Array = []
+	var tags: String = "〔%s〕〔%s〕" % [synergy.relation_label(String(record.relation_type)), "運行中" if is_running else "未運行"]
+	lines.append("[b]%s × %s[/b]" % [force_name, skill_name])
+	lines.append(tags)
+	lines.append(String(record.display_description))
+	for condition: Dictionary in record.conditions:
+		lines.append("條件：%s" % String(condition.get("text", "")))
+	var strikes: Dictionary = _sv().strike_info(base_skill, running if is_running and String(record.relation_type) == "standard" else {})
+	var show_strikes: bool = int(strikes.base_max) > 1 or int(strikes.delta) != 0 or bool(strikes.ranged)
+	var base_strikes: Dictionary = _sv().strike_info(base_skill, {})
+	if show_strikes:
+		lines.append("基礎：%s" % String(base_strikes.base_text))
+	var gain: Array[String] = synergy.modifier_texts(record)
+	lines.append("相合：%s" % ("、".join(gain) if not gain.is_empty() else "（無）"))
+	var current: Array[String] = []
+	if show_strikes:
+		current.append(String(strikes.effective_text))
+	if active:
+		current.append_array(synergy.modifier_texts(record, true))
+		if runtime_name != skill_name:
+			current.append("「%s」" % runtime_name)
+	var text: String = "、".join(current) if not current.is_empty() else "無加成"
+	if not is_running:
+		text += "（%s未運行，相合未生效）" % force_name
+	elif not active:
+		text += "（條件未滿足，相合未生效）"
+	lines.append("目前：%s" % text)
+	return lines

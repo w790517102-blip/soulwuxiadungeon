@@ -7,7 +7,7 @@
 | `mp_cost(actor, skill)` | 這個角色現在實際要付的內力（含內功的消耗倍率） |
 | `check(actor, skill, include_weapon=false)` | `{ok, code, text, need, have}`；目前原因：`mp`（內力不足）、`stance`（姿態禁止）、`weapon`（只在 `include_weapon` 時，給會列出無法裝備招式的畫面）。**新增原因＝在這裡加一個分支**，畫面只顯示 `text` |
 | `can_use` / `disabled_reason` | `check` 的簡寫 |
-| `strike_info(skill, inner_force)` | `{base, effective, delta, source}`：基礎／目前攻擊次數與修正來源 |
+| `strike_info(skill, inner_force)` | `{base, effective, delta, source, ranged, base_min/max, effective_min/max, base_text, effective_text}`：基礎／目前攻擊次數（固定「3擊」／範圍「2～4擊」）與修正來源，只供顯示；見 `docs/martial_synergy.md` |
 | `muted(color)` | 同色相、降低飽和度與亮度（不可用的招式） |
 | `effect_summary(skill)` | 效果簡述 |
 

@@ -76,19 +76,59 @@ static func disabled_reason(actor: Dictionary, skill: Dictionary) -> String:
 	return String(check(actor, skill).text)
 
 
-## Attack count: {"base", "effective", "delta", "source"} - what the skill is and what this build makes of it.
+## The attack count in three layers (基礎 / 相合 / 目前), fixed or ranged:
+## {"base", "effective", "delta", "source", "ranged", "base_min", "base_max", "effective_min", "effective_max",
+##  "base_text", "effective_text"}. `base` / `effective` are the (lowest) counts - for a fixed skill the count itself; the
+## texts read "3擊" or "2～4擊". This is display only: the real count is rolled by BattleController._resolve_strike_count,
+## which adds the same synergy delta.
 static func strike_info(skill: Dictionary, inner_force: Dictionary) -> Dictionary:
 	var base_skill: Dictionary = _db().get_skill(String(skill.get("id", "")))
-	var base: int = int(base_skill.get("strike_count", skill.get("strike_count", 1)))
-	var effective: int = int(skill.get("strike_count", base))
+	if base_skill.is_empty():
+		base_skill = skill
+	var base_range: Vector2i = _strike_range(base_skill)
+	var own_range: Vector2i = _strike_range(skill) if _has_strikes(skill) else base_range
 	var pairing: Dictionary = CharacterSkillScript.get_pairing_rule(String(skill.get("id", "")), String(inner_force.get("id", "")))
 	var delta: int = int((pairing.get("effects", {}) as Dictionary).get("strike_count_delta", 0))
+	var effective_min: int = own_range.x
+	var effective_max: int = own_range.y
 	if delta != 0:
-		effective = base + delta
+		effective_min = maxi(base_range.x + delta, 1)
+		effective_max = maxi(base_range.y + delta, 1)
 	var source: String = ""
-	if effective != base:
+	if effective_min != base_range.x or effective_max != base_range.y:
 		source = String(inner_force.get("prefix", "")) + String(inner_force.get("type", ""))
-	return {"base": base, "effective": effective, "delta": effective - base, "source": source}
+	return {
+		"base": base_range.x, "effective": effective_min, "delta": effective_min - base_range.x, "source": source,
+		"ranged": base_range.x != base_range.y or effective_min != effective_max,
+		"base_min": base_range.x, "base_max": base_range.y, "effective_min": effective_min, "effective_max": effective_max,
+		"base_text": strike_text(base_range.x, base_range.y), "effective_text": strike_text(effective_min, effective_max),
+	}
+
+
+static func strike_text(low: int, high: int) -> String:
+	return "%d擊" % low if low == high else "%d～%d擊" % [low, high]
+
+
+static func _has_strikes(skill: Dictionary) -> bool:
+	return skill.has("strike_count") or skill.has("strike_count_min") or skill.has("strike_count_max")
+
+
+## The same reading BattleController._resolve_strike_count makes of a skill (without rolling).
+static func _strike_range(skill: Dictionary) -> Vector2i:
+	var low: int = int(skill.get("strike_count_min", 0))
+	var high: int = int(skill.get("strike_count_max", 0))
+	if low > 0 or high > 0:
+		if low <= 0:
+			low = high
+		if high <= 0:
+			high = low
+		return Vector2i(mini(low, high), maxi(low, high))
+	var count: int = int(skill.get("strike_count", 0))
+	for key: String in ["attack_count", "hit_count", "hits"]:
+		if count <= 0:
+			count = int(skill.get(key, 0))
+	count = maxi(count, 1)
+	return Vector2i(count, count)
 
 
 ## The same colour with less saturation and brightness - for a skill that cannot be used right now. The hue stays,

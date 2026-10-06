@@ -18,33 +18,9 @@ const SKILL_COLOR_RISK_UPGRADE := Color(0.74, 0.40, 0.96) # 紫（絕技）
 const SKILL_COLOR_EXCLUSIVE := Color(1.00, 0.62, 0.20) # 橘（專屬）
 const SKILL_COLOR_ULTIMATE := Color(1.00, 0.22, 0.22) # 紅（奧義）
 
-# Shared data authority for inner-force × martial synergies.  Runtime skill
-# resolution reads this table after any legendary/risk variant is selected;
-# battle execution can reuse the same rule for strike-count and on-hit effects.
-const SYNERGY_RULES := [
-	{
-		"inner_force_id": "liuchen_jue",
-		"skill_id": "skill_lianjuejian",
-		"effects": {"strike_count_delta": 1},
-		"display_name": "流塵連決劍",
-		"log": "{name} 運轉流塵訣，連決劍勢再起一重，追擊如塵隨風！",
-	},
-	{
-		"inner_force_id": "fuchao_jue",
-		"skill_id": "skill_duanshuizhan",
-		"effects": {
-			"on_hit_status": {"effect_id": "break_def", "amount": 10, "turns": 2}
-		},
-		"display_name": "伏潮斷水斬",
-		"log": "{name} 刀勢忽沉，伏潮勁意先壓後斬，招路更見沉狠。",
-	},
-	{
-		"inner_force_id": "chenchao_jue",
-		"skill_id": "skill_breaking_wave_spear",
-		"effects": {"bonus_stat_scaling": {"str": 0.70, "agi": 0.45}},
-		"display_name": "沉潮破浪槍",
-	},
-]
+# The inner-force x martial synergy table lives in MartialSynergy.gd (one canonical record per pairing). This class
+# applies the runtime part of it; BattleController reads the same rule for strike-count and on-hit effects.
+const MartialSynergyScript = preload("res://scripts/battlescripts/MartialSynergy.gd")
 
 func get_skills(character_id: String) -> Array:
 	var actor = null
@@ -258,14 +234,7 @@ func resolve_runtime_skill(skill: Dictionary, inner_force: Dictionary, actor: Di
 	return runtime_skill
 
 static func get_pairing_rule(skill_id: String, inner_force_id: String) -> Dictionary:
-	if skill_id == "" or inner_force_id == "":
-		return {}
-	for entry in SYNERGY_RULES:
-		if typeof(entry) != TYPE_DICTIONARY:
-			continue
-		if String(entry.get("skill_id", "")) == skill_id and String(entry.get("inner_force_id", "")) == inner_force_id:
-			return (entry as Dictionary).duplicate(true)
-	return {}
+	return MartialSynergyScript.runtime_rule(skill_id, inner_force_id)
 
 func _apply_pairing_synergy(runtime_skill: Dictionary, inner_force: Dictionary) -> void:
 	var rule := get_pairing_rule(String(runtime_skill.get("id", "")), String(inner_force.get("id", "")))

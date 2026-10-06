@@ -153,7 +153,7 @@ func _on_SkillList_item_selected(index: int) -> void:
 	lines.append("說明：%s" % String(skill.get("desc", "（未填說明）")))
 	var strikes: Dictionary = SkillViewScript.strike_info(skill, inner_force)
 	if int(strikes.delta) != 0:
-		lines.append("攻擊段數：基礎 %d 次 → 目前 %d 次（%s專屬 %+d）" % [int(strikes.base), int(strikes.effective), String(strikes.source), int(strikes.delta)])
+		lines.append("攻擊段數：基礎 %s → 目前 %s（%s專屬 %+d）" % [String(strikes.base_text), String(strikes.effective_text), String(strikes.source), int(strikes.delta)])
 	lines.append("效果：%s" % _build_short_effect_summary(skill))
 	for link_line in _build_short_linkage_lines(skill):
 		lines.append(link_line)

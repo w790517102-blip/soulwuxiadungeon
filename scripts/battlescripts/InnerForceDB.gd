@@ -1,5 +1,7 @@
 extends Node
 
+const MartialSynergyScript = preload("res://scripts/battlescripts/MartialSynergy.gd")
+
 const ELEMENT_FINAL_STAT_MULTIPLIERS := {
 	"快": {"speed": 1.15, "def": 0.90},
 	"柔": {"evasion": 1.15, "crit_rate": 0.90},
@@ -190,7 +192,6 @@ const INNER_FORCES := {
 		"prefix": "流塵",
 		"type": "訣",
 		"boost_weapon": "劍",
-		"exclusive_skill_ids": ["skill_lianjuejian"],
 		"element": "快",
 		"agi_flat_bonus": 6,
 		"accuracy_flat_bonus": 10,
@@ -204,7 +205,6 @@ const INNER_FORCES := {
 		"prefix": "伏潮",
 		"type": "訣",
 		"boost_weapon": "刀",
-		"exclusive_skill_ids": ["skill_duanshuizhan"],
 		"element": "遲",
 		"str_flat_bonus": 6,
 		"boost_damage_pct": 0.12,
@@ -293,7 +293,6 @@ const INNER_FORCES := {
 		"description": "沉氣如潮伏於深處，不迎其鋒，不逐其退。先定身勢，再循敵勢尋隙而發。",
 		"available": "all",
 		"required_weapon_aptitude": "槍",
-		"exclusive_skill_ids": ["skill_breaking_wave_spear"],
 		"str_flat_bonus": 3,
 		"con_flat_bonus": 2,
 		"accuracy_flat_bonus": 4,
@@ -321,6 +320,10 @@ func get_force(force_id: String) -> Dictionary:
 	if not INNER_FORCES.has(force_id):
 		return {}
 	var force: Dictionary = (INNER_FORCES[force_id] as Dictionary).duplicate(true)
+	# which skills a force makes exclusive comes from the standard synergies (MartialSynergy), not from a second list
+	var synergy_ids: Array = MartialSynergyScript.exclusive_skill_ids(force_id)
+	if not synergy_ids.is_empty():
+		force["exclusive_skill_ids"] = synergy_ids
 	if not force.has("available"):
 		force["available"] = "all"
 	if not force.has("required_level"):
