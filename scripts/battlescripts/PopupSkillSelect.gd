@@ -21,6 +21,7 @@ var valid_skill_indices: Array = []
 ## Per list entry: why it cannot be used right now ("" = it can), and the muted colour the card-stage menu shows it in
 ## (null = the normal look).
 var unusable_reasons: Array = []
+var row_parts: Array = []   # [name, "N MP"] per row, to pad the cost to the right edge
 var option_tints: Array = []
 var selected_index = -1
 var inner_force = {}
@@ -56,6 +57,7 @@ func show_skills(
 	selected_index = -1
 	confirm_button.disabled = true
 	skill_list.clear()
+	row_parts.clear()
 	valid_skill_indices.clear()
 	unusable_reasons.clear()
 	option_tints.clear()
@@ -124,6 +126,7 @@ func show_skills(
 		var cost: int = SkillViewScript.mp_cost(actor, skill)
 		var verdict: Dictionary = SkillViewScript.check(actor, skill)
 		skill_list.add_item("%s　　%d MP" % [skill_name, cost])
+		row_parts.append([String(skill_name), "%d MP" % cost])
 		var ui_index = skill_list.get_item_count() - 1
 		var skill_color := Color.WHITE
 		if skill_provider and skill_provider.has_method("get_skill_color"):
@@ -137,6 +140,8 @@ func show_skills(
 		valid_skill_indices.append(ui_index)
 
 	popup_centered()
+	_align_costs()
+	_align_costs_next_frame()
 
 func _on_SkillList_item_selected(index: int) -> void:
 	selected_index = index
@@ -193,3 +198,28 @@ func _build_short_linkage_lines(skill: Dictionary) -> Array:
 		var color = "#87ffb3" if met else "#9aa0aa"
 		lines.append("[color=%s]【%s】%s[/color]" % [color, kind, short_text])
 	return lines
+
+
+## Pads each row so its "N MP" ends at the list's right edge, whatever the skill name's length (the row stays
+## "name ... N MP"; only the spaces in between change).
+func _align_costs() -> void:
+	var font: Font = skill_list.get_theme_font("font")
+	var font_size: int = skill_list.get_theme_font_size("font_size")
+	if font == null or row_parts.size() != skill_list.item_count:
+		return
+	var target: float = skill_list.size.x - 40.0   # scrollbar, item padding and the selection frame
+	var space: float = font.get_string_size(" ", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	if target <= 0.0 or space <= 0.0:
+		return
+	for index: int in range(row_parts.size()):
+		var parts: Array = row_parts[index]
+		var used: float = font.get_string_size(String(parts[0]) + String(parts[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		var count: int = maxi(2, int(floor((target - used) / space)))
+		skill_list.set_item_text(index, String(parts[0]) + " ".repeat(count) + String(parts[1]))
+
+
+## The list is laid out a frame after the popup opens; align again once its real width is known.
+func _align_costs_next_frame() -> void:
+	await get_tree().process_frame
+	if visible:
+		_align_costs()
