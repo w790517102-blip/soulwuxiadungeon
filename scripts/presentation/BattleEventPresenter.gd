@@ -41,6 +41,8 @@ const SETTLE_SECONDS := 0.34
 
 ## Callable(target: Dictionary) -> Rect2 (screen rectangle of the target's card).
 var anchor_provider: Callable = Callable()
+## Callable(entity_id: String) -> Rect2: the card of a stage entity (a substitute charm), for events that belong to it.
+var entity_anchor_provider: Callable = Callable()
 
 var _sequences: Dictionary = {}
 var _next_sequence: int = 0
@@ -79,6 +81,17 @@ func _rect_of(target: Dictionary) -> Rect2:
 			return rect
 	var screen: Vector2 = get_viewport_rect().size
 	return Rect2(screen * 0.5 - Vector2(60, 90), Vector2(120, 180))
+
+
+## Where an event is shown: on its own card when it names one (an interception happens on the charm that took the blow, not
+## on the protected character), else on the target.
+func _rect_for_event(event: Dictionary, target: Dictionary) -> Rect2:
+	var entity_id: String = String(event.get("anchor_entity_id", ""))
+	if entity_id != "" and entity_anchor_provider.is_valid():
+		var rect: Rect2 = entity_anchor_provider.call(entity_id)
+		if rect.size.x > 1.0:
+			return rect
+	return _rect_of(target)
 
 
 func _make_label(text: String, size: int, color: Color, outline: int = 7) -> Label:
@@ -369,7 +382,7 @@ func show_event(event: Dictionary) -> void:
 	if String(event.event_type) == BattleEventScript.ANNOUNCE:
 		_show_announcement(event)
 		return
-	var rect: Rect2 = _rect_of(target)
+	var rect: Rect2 = _rect_for_event(event, target)
 	if texture != null and String(event.get("icon_key", "")).begins_with("event_"):
 		_show_banner(texture, rect, event)
 		return
@@ -381,7 +394,8 @@ func show_event(event: Dictionary) -> void:
 	var total: float = icon_width + word_size.x
 	var holder := Control.new()
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.position = Vector2(rect.get_center().x - total * 0.5, rect.position.y + rect.size.y * 0.26 + float(stack) * (TAG_ICON + 8.0))
+	holder.position = Vector2(rect.get_center().x - total * 0.5, rect.position.y + rect.size.y * 0.52 + float(stack) * (TAG_ICON + 8.0))
+	holder.position = _on_screen(holder.position, Vector2(total, TAG_ICON + 8.0))
 	add_child(holder)
 	if texture != null:
 		var icon := TextureRect.new()
@@ -411,7 +425,7 @@ func _show_banner(texture: Texture2D, rect: Rect2, event: Dictionary) -> void:
 	var side: float = clampf(rect.size.y * BANNER_HEIGHT, 90.0, 220.0)
 	var holder := Control.new()
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.position = Vector2(rect.get_center().x, rect.position.y - rect.size.y * 0.02)
+	holder.position = _on_screen(Vector2(rect.get_center().x, rect.position.y + rect.size.y * 0.25), Vector2(side, side), true)
 	add_child(holder)
 	var image := TextureRect.new()
 	image.texture = texture
@@ -433,6 +447,16 @@ func _show_banner(texture: Texture2D, rect: Rect2, event: Dictionary) -> void:
 	pop.tween_interval(maxf(life - 0.6, 0.15))
 	pop.tween_property(image, "modulate:a", 0.0, 0.25)
 	pop.tween_callback(holder.queue_free)
+
+
+## Keeps a popup inside the screen (with a margin); `centered` means the position is the middle of the popup.
+func _on_screen(position: Vector2, size: Vector2, centered: bool = false) -> Vector2:
+	var screen: Vector2 = get_viewport_rect().size
+	var margin: float = 12.0
+	var half: Vector2 = size * 0.5 if centered else Vector2.ZERO
+	var low: Vector2 = Vector2(margin, margin) + half
+	var high: Vector2 = screen - Vector2(margin, margin) - (size - half)
+	return Vector2(clampf(position.x, low.x, maxf(low.x, high.x)), clampf(position.y, low.y, maxf(low.y, high.y)))
 
 
 ## Tags on the same target stack downwards while the earlier ones are still up; the stack resets when they are gone.
@@ -516,7 +540,7 @@ func schedule_run(entries: Array, first_delay: float, gap: float, sequence_id: S
 			group["cumulative"] = int(group.cumulative) + int(item.damage)
 			event = BattleEventScript.damage_hit(String(group.sequence), target, int(group.landed_seen), int(group.landed), int(item.damage), int(group.cumulative), String(item.result_type), int(group.landed_seen) == int(group.landed))
 		else:
-			event = BattleEventScript.make(String(item.kind), target)
+			event = BattleEventScript.make(String(item.kind), target, "", {"anchor_entity_id": String(item.get("entity_id", ""))})
 		var delay: float = first_delay + float(index) * gap
 		if delay <= 0.0:
 			_dispatch(event)
@@ -548,7 +572,7 @@ static func plan_strikes(strikes: Array) -> Array:
 		var strike: Dictionary = strike_any
 		var blocker: String = String(strike.get("blocker_type", ""))
 		if bool(strike.get("blocked", false)):
-			plan.append({"kind": BattleEventScript.INTERCEPT if blocker == "substitute_talisman" else BattleEventScript.BLOCK})
+			plan.append({"kind": BattleEventScript.INTERCEPT if blocker == "substitute_talisman" else BattleEventScript.BLOCK, "entity_id": String(strike.get("blocker_entity_id", "")) if blocker == "substitute_talisman" else ""})
 		elif bool(strike.get("damage_prevented", false)):
 			plan.append({"kind": BattleEventScript.NULLIFIED})
 		elif not bool(strike.get("hit", true)):

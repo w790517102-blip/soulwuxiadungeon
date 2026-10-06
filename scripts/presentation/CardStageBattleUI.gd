@@ -206,6 +206,7 @@ func _build_event_presenter() -> void:
 	add_child(layer)
 	layer.add_child(event_presenter)
 	event_presenter.anchor_provider = Callable(stage, "card_screen_rect")
+	event_presenter.entity_anchor_provider = Callable(stage, "entity_screen_rect")
 	stage.event_presenter = event_presenter
 
 

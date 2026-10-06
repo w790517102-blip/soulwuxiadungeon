@@ -1152,10 +1152,23 @@ func _show_attack_popups(target: Dictionary, skill: Dictionary, result: Dictiona
 	if event_presenter == null or not is_instance_valid(event_presenter):
 		return
 	if not intervention.is_empty():
-		event_presenter.schedule_strikes(target, {"strikes": [{"blocked": true, "blocker_type": String(intervention.get("type", "")), "hit": false}]}, 0.8, 0.0)
+		event_presenter.schedule_strikes(target, {"strikes": [{"blocked": true, "blocker_type": String(intervention.get("type", "")), "blocker_entity_id": String(intervention.get("entity_id", "")), "hit": false}]}, 0.8, 0.0)
 		return
 	var timing: Vector2 = _popup_timing(skill, result)
 	event_presenter.schedule_strikes(target, result, timing.x, timing.y)
+
+
+## Screen rectangle of a stage entity card (a substitute charm, the scabbard), or an empty rectangle if it is not on the stage.
+func entity_screen_rect(entity_id: String) -> Rect2:
+	var card: Node3D = entity_cards.get(entity_id) as Node3D
+	if card == null or not is_instance_valid(card) or not card.visible:
+		return Rect2()
+	var size: Vector2 = card.get("card_size") if card.get("card_size") is Vector2 else Vector2(1.0, 1.5)
+	var half: Vector2 = size / 2.0
+	var result := Rect2(camera.unproject_position(card.to_global(Vector3.ZERO)), Vector2.ZERO)
+	for corner: Vector2 in [Vector2(-1, -1), Vector2(-1, 1), Vector2(1, -1), Vector2(1, 1)]:
+		result = result.expand(camera.unproject_position(card.to_global(Vector3(corner.x * half.x, corner.y * half.y, 0))))
+	return result
 
 
 ## Events of an area attack, in the order the blows land (target, hit, crit, damage, element_advantage per blow): each

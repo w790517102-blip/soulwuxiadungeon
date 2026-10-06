@@ -41,6 +41,7 @@ func _run() -> void:
 		await _check_image_digits(fixture)
 		await _check_sheath_strike(fixture)
 		await _check_banners_and_motion(fixture)
+		await _check_anchors(fixture)
 	fixture.queue_free()
 	await process_frame
 	if _failures.is_empty():
@@ -337,4 +338,30 @@ func _check_banners_and_motion(fixture: Node) -> void:
 				rising = false
 		last_y = y
 	_expect(bounces == 2, "after landing it bounces twice (counted %d)" % bounces)
+	presenter.queue_free()
+
+
+## 攔截 belongs to the charm that took the blow; nothing flies off the screen.
+func _check_anchors(fixture: Node) -> void:
+	var presenter: Node = Presenter.new()
+	fixture.add_child(presenter)
+	var asked: Array = []
+	presenter.entity_anchor_provider = func(entity_id: String) -> Rect2:
+		asked.append(entity_id)
+		return Rect2(400, 300, 100, 150)
+	presenter.anchor_provider = func(_target: Dictionary) -> Rect2:
+		return Rect2(-900, -900, 120, 180)
+	var foe: Dictionary = {"battle_uid": "anc_a", "name": "戊"}
+	presenter.schedule_strikes(foe, {"strikes": [{"blocked": true, "blocker_type": "substitute_talisman", "blocker_entity_id": "sub1", "hit": false}]}, 0.0, 0.0)
+	_expect(asked == ["sub1"], "an interception is placed on the substitute card (asked for: %s)" % str(asked))
+	presenter.schedule_strikes(foe, {"strikes": [{"blocked": true, "blocker_type": "sheath_card", "blocker_entity_id": "sheath1", "hit": true}]}, 0.0, 0.0)
+	_expect(asked == ["sub1"], "a block stays on the protected character")
+	# a card far outside the screen: tags and banners are pulled back inside
+	presenter.show_event(BattleEvent.status("poison", true, foe))
+	presenter.show_event(BattleEvent.make(BattleEvent.MISS, foe))
+	var screen: Rect2 = presenter.get_viewport_rect()
+	for holder: Node in presenter.get_children():
+		if holder is Control:
+			_expect(screen.has_point((holder as Control).position), "popups are kept on screen: " + str((holder as Control).position))
+	await _wait(1.8)
 	presenter.queue_free()
