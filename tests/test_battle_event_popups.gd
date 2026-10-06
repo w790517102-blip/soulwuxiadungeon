@@ -42,6 +42,7 @@ func _run() -> void:
 		await _check_sheath_strike(fixture)
 		await _check_banners_and_motion(fixture)
 		await _check_anchors(fixture)
+		await _check_round_title(fixture)
 	fixture.queue_free()
 	await process_frame
 	if _failures.is_empty():
@@ -364,4 +365,65 @@ func _check_anchors(fixture: Node) -> void:
 		if holder is Control:
 			_expect(screen.has_point((holder as Control).position), "popups are kept on screen: " + str((holder as Control).position))
 	await _wait(1.8)
+	presenter.queue_free()
+
+
+## 第 X 回合 / 開始: its own title, two phases, skippable, with a text fallback when the art is missing.
+func _check_round_title(fixture: Node) -> void:
+	var Title: Script = load("res://scripts/presentation/BattleRoundTitle.gd")
+	var presenter: Node = Presenter.new()
+	fixture.add_child(presenter)
+	_expect(Title.available(), "the three title pieces are found")
+	presenter.announce_round(3)
+	var title: Node = presenter.current_round_title()
+	_expect(title != null, "a round start makes a title (not a tag, not a number)")
+	_expect(presenter.history.size() == 1 and String(presenter.history[0].type) == BattleEvent.ANNOUNCE and String(presenter.history[0].text) == "第 3 回合開始", "it is recorded as an announcement")
+	await _wait(0.6)
+	_expect(title.phase == 1 and title.get_child_count() >= 1, "phase 1 (第 3 回合) is up")
+	var started: int = Time.get_ticks_msec()
+	while title.phase < 2 and Time.get_ticks_msec() - started < 5000:
+		await process_frame
+	var gap: float = float(Time.get_ticks_msec() - started + 600) / 1000.0
+	_expect(title.phase == 2, "then 開始 follows")
+	_expect(absf(gap - (Title.ROUND_TITLE_PHASE1_DURATION + Title.ROUND_TITLE_OUT_TIME + Title.ROUND_TITLE_GAP_DURATION)) < 0.5, "...at the set rhythm (%.2f s after the start)" % gap)
+	var finished: Array = [false]
+	title.finished.connect(func() -> void: finished[0] = true)
+	var key := InputEventKey.new()
+	key.keycode = KEY_SPACE
+	key.pressed = true
+	title._input(key)
+	_expect(finished[0] and title.skipped, "space skips the title at once")
+	await process_frame
+	_expect(presenter.current_round_title() == null, "...and nothing is left on screen")
+	for case: Array in [["esc", KEY_ESCAPE], ["click", 0]]:
+		presenter.announce_round(4)
+		var again: Node = presenter.current_round_title()
+		if String(case[0]) == "esc":
+			var escape := InputEventKey.new()
+			escape.keycode = KEY_ESCAPE
+			escape.pressed = true
+			again._input(escape)
+		else:
+			var click := InputEventMouseButton.new()
+			click.button_index = MOUSE_BUTTON_LEFT
+			click.pressed = true
+			again._input(click)
+		_expect(again.skipped, "%s skips it too" % String(case[0]))
+		await process_frame
+	# a title that is replaced by the next round does not stack
+	presenter.announce_round(5)
+	var first: Node = presenter.current_round_title()
+	presenter.announce_round(6)
+	await process_frame
+	_expect(is_instance_valid(first) == false or first.skipped, "a new round replaces a title still on screen")
+	presenter.current_round_title().skip()
+	await process_frame
+	# missing art: plain text, and nothing waits on it
+	Title._textures["round_di"] = null
+	presenter.history.clear()
+	var before: int = presenter.get_child_count()
+	presenter.announce_round(7)
+	_expect(not Title.available() and presenter.current_round_title() == null and presenter.get_child_count() == before + 1, "without the art it falls back to the text announcement")
+	Title._textures.erase("round_di")
+	await _wait(2.0)
 	presenter.queue_free()

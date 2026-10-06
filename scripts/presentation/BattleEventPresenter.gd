@@ -14,6 +14,7 @@ extends Control
 const BattleEventScript = preload("res://scripts/presentation/BattleEvent.gd")
 const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const BattleNumberFont = preload("res://scripts/presentation/BattleNumberFont.gd")
+const BattleRoundTitle = preload("res://scripts/presentation/BattleRoundTitle.gd")
 
 const COLOR_NORMAL := Color(0.97, 0.91, 0.66)
 const COLOR_COUNTER := Color(1.0, 0.82, 0.12)
@@ -49,6 +50,7 @@ var _next_sequence: int = 0
 var _tag_stacks: Dictionary = {}   # target uid -> {"count": int, "stamp": int}
 ## What was shown, newest last (for tests and for a future event log): {"type", "text", "icon", "target"}.
 var history: Array = []
+var _round_title: Control = null
 
 
 func _init() -> void:
@@ -589,3 +591,23 @@ static func plan_strikes(strikes: Array) -> Array:
 
 func announce(text: String) -> void:
 	show_event(BattleEventScript.announcement(text))
+
+
+## The round-start title: the dedicated stage announcement (第 X 回合, then 開始) when the title art is there, plain text
+## otherwise. Not queued with the event tags; a new round replaces a title still on screen.
+func announce_round(round_number: int) -> void:
+	var text: String = "第 %d 回合開始" % round_number
+	history.append({"type": BattleEventScript.ANNOUNCE, "text": text, "icon": "", "target": {}, "round": round_number})
+	if is_instance_valid(_round_title):
+		_round_title.skip()
+	if not BattleRoundTitle.available():
+		_show_announcement(BattleEventScript.announcement(text))
+		return
+	_round_title = BattleRoundTitle.new()
+	add_child(_round_title)
+	_round_title.play(round_number)
+
+
+## The title that is on screen, or null (for tests).
+func current_round_title() -> Node:
+	return _round_title if is_instance_valid(_round_title) else null

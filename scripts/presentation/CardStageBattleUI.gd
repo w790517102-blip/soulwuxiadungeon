@@ -231,7 +231,7 @@ func play_battle_event(event: Dictionary) -> void:
 ## "第 N 回合開始" in the middle of the screen (an announcement, not a number popup).
 func announce_round(round_number: int) -> void:
 	if stage_enabled and event_presenter != null:
-		event_presenter.announce("第 %d 回合開始" % round_number)
+		event_presenter.announce_round(round_number)
 
 
 func _build_inspect() -> void:
