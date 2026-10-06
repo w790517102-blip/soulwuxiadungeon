@@ -39,6 +39,7 @@ func _run() -> void:
 		await _check_presenter(fixture)
 		await _check_stage(fixture)
 		await _check_image_digits(fixture)
+		await _check_sheath_strike(fixture)
 	fixture.queue_free()
 	await process_frame
 	if _failures.is_empty():
@@ -258,3 +259,39 @@ func _check_image_digits(fixture: Node) -> void:
 	NumberFont.reset_cache()
 	await _wait(1.9)
 	presenter.queue_free()
+
+
+class FakeSheath:
+	var entity_id: String = "fake_sheath"
+
+
+## A sheath card's blow (one strike of a 持鞘 combo) shows its damage too.
+func _check_sheath_strike(fixture: Node) -> void:
+	var ui: Node = fixture.ui
+	var stage: Node3D = ui.stage
+	var context: Dictionary = fixture.build_preview_context()
+	var foe: Dictionary = (context.enemy_party[0] as Dictionary).duplicate(true)
+	foe["battle_uid"] = "sheath_foe"
+	foe["is_enemy"] = true
+	var ally: Dictionary = (context.player_party[0] as Dictionary).duplicate(true)
+	ally["battle_uid"] = "sheath_ally"
+	ui.set_teams([ally], [foe])
+	for frame: int in range(10):
+		await process_frame
+	var stub := Node3D.new()
+	var stub_script := GDScript.new()
+	stub_script.source_code = "extends Node3D
+var home_position := Vector3.ZERO
+"
+	stub_script.reload()
+	stub.set_script(stub_script)
+	stage.add_child(stub)
+	stage.entity_cards["fake_sheath"] = stub
+	var presenter: Node = ui.event_presenter
+	presenter.history.clear()
+	stage.present_sheath_strike(FakeSheath.new(), foe, {"hit": true, "damage": 33})
+	await _until(presenter, 1)
+	_expect(presenter.history.size() == 1 and String(presenter.history[0].text) == "33!", "the sheath card's blow shows its damage: " + str(presenter.history))
+	await _wait(2.0)
+	stage.entity_cards.erase("fake_sheath")
+	stub.queue_free()

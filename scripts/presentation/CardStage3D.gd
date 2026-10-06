@@ -2559,6 +2559,9 @@ func present_sheath_strike(entity: Object, target: Dictionary, result: Dictionar
 	step.tween_property(card, "position", home - (destination.position - home).normalized() * 0.3 + Vector3(0.0, 0.0, 0.2), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	step.tween_property(card, "position", near, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await step.finished
+	# The card's blow is one strike: its damage (or MISS / 無效) shows as the sweep lands.
+	if event_presenter != null and is_instance_valid(event_presenter):
+		event_presenter.schedule_strikes(target, result, 0.2, 0.0)
 	var params: Dictionary = StaffSweepFX.defaults()
 	params["origin_offset"] = home - centre
 	params["camera_offset"] = camera.global_position - fx_root.to_global(centre)
