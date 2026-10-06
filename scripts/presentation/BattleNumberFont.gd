@@ -65,13 +65,18 @@ static func can_render(style: String, text: String) -> bool:
 static func build_row(style: String, text: String, height: float, box: Vector2) -> Control:
 	if not can_render(style, text):
 		return null
+	# A holder the size of a label slot (so the popup's hop / shudder maths is the same for text and images) and the row
+	# of images centred in it, growing both ways for long numbers.
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.size = box
+	holder.position = Vector2(-box.x * 0.5, -box.y * 0.5)
+	holder.pivot_offset = box * 0.5
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", -2)
-	row.size = box
-	row.position = Vector2(-box.x * 0.5, -box.y * 0.5)
-	row.pivot_offset = box * 0.5
+	row.add_theme_constant_override("separation", -int(height * 0.07))
+	holder.add_child(row)
 	for index: int in range(text.length()):
 		var texture: Texture2D = texture_for(style, text.substr(index, 1))
 		var image := TextureRect.new()
@@ -82,4 +87,7 @@ static func build_row(style: String, text: String, height: float, box: Vector2) 
 		var aspect: float = float(texture.get_width()) / maxf(float(texture.get_height()), 1.0)
 		image.custom_minimum_size = Vector2(height * aspect, height)
 		row.add_child(image)
-	return row
+	row.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+	row.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	row.grow_vertical = Control.GROW_DIRECTION_BOTH
+	return holder

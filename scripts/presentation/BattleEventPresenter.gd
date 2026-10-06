@@ -173,7 +173,7 @@ func _sync_image(sequence: Dictionary, style_key: String, text: String, style: D
 	if old is Control and is_instance_valid(old):
 		(old as Control).queue_free()
 	sequence["row"] = null
-	var row: Control = BattleNumberFont.build_row(style_key, text, float(style.size) * 1.25, Vector2(300, 80))
+	var row: Control = BattleNumberFont.build_row(style_key, text, float(style.size) * 1.9, Vector2(240, 80))
 	var label: Label = sequence.label
 	var glow: Label = sequence.glow
 	if row == null:
@@ -206,10 +206,9 @@ func _play_first_strike(sequence: Dictionary, style: Dictionary) -> void:
 	var glow: Label = sequence.glow
 	var power: float = float(style.power)
 	var rise: float = 1.0 + 0.35 * power
-	label.modulate = Color(1, 1, 1, 0)
-	label.scale = Vector2(0.5, 0.5)
-	glow.scale = label.scale
-	glow.modulate = label.modulate
+	for item: Control in _items(sequence):
+		item.modulate = Color(1, 1, 1, 0)
+		item.scale = Vector2(0.5, 0.5)
 	var move: Tween = create_tween()
 	move.tween_property(wrapper, "position", sequence.hover - Vector2(0, 18.0 * rise), 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	move.tween_property(wrapper, "position", sequence.hover, 0.09).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -233,19 +232,18 @@ func _play_hop(sequence: Dictionary, style: Dictionary) -> void:
 	var power: float = float(style.power)
 	var height: float = 10.0 + 10.0 * power
 	var peak: float = 1.16 + 0.12 * power
-	label.position = Vector2(-120, -40)
-	glow.position = label.position
-	label.scale = Vector2.ONE
-	glow.scale = Vector2.ONE
-	label.modulate = Color(2.0, 2.0, 1.8, 1.0)
-	glow.modulate = Color.WHITE
+	for item: Control in _items(sequence):
+		item.position = Vector2(-120, -40)
+		item.scale = Vector2.ONE
+		item.modulate = Color(2.0, 2.0, 1.8, 1.0) if item != glow else Color.WHITE
 	var hop: Tween = create_tween().set_parallel(true)
 	for item: Control in _items(sequence):
 		hop.tween_property(item, "position:y", -40.0 - height, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		hop.tween_property(item, "scale", Vector2(peak, peak), 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		hop.chain().tween_property(item, "position:y", -40.0, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		hop.parallel().tween_property(item, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	hop.parallel().tween_property(label, "modulate", Color.WHITE, 0.14)
+	for item: Control in _items(sequence):
+		hop.parallel().tween_property(item, "modulate", Color.WHITE, 0.14)
 	sequence["hop"] = hop
 
 
@@ -317,13 +315,21 @@ func show_heal(event: Dictionary) -> void:
 	label.pivot_offset = Vector2(120, 40)
 	label.modulate = Color(1, 1, 1, 0)
 	wrapper.add_child(label)
+	# Image digits when the heal set exists, otherwise the label.
+	var visual: Control = label
+	var image_row: Control = BattleNumberFont.build_row("heal", String(event.primary_text), NUMBER_SIZE * 1.9, Vector2(240, 80))
+	if image_row != null:
+		label.visible = false
+		wrapper.add_child(image_row)
+		visual = image_row
+		visual.modulate = Color(1, 1, 1, 0)
 	var rise: Tween = create_tween()
-	rise.tween_property(label, "modulate:a", 1.0, 0.18)
+	rise.tween_property(visual, "modulate:a", 1.0, 0.18)
 	rise.parallel().tween_property(wrapper, "position:y", wrapper.position.y - rect.size.y * 0.22, 0.62).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	rise.tween_property(label, "scale", Vector2(1.1, 1.1), 0.1)
-	rise.tween_property(label, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	rise.tween_property(visual, "scale", Vector2(1.1, 1.1), 0.1)
+	rise.tween_property(visual, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	rise.tween_interval(0.35)
-	rise.tween_property(label, "modulate:a", 0.0, 0.4)
+	rise.tween_property(visual, "modulate:a", 0.0, 0.4)
 	rise.tween_callback(wrapper.queue_free)
 
 

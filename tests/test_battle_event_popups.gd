@@ -232,7 +232,7 @@ func _check_image_digits(fixture: Node) -> void:
 	var presenter: Node = Presenter.new()
 	fixture.add_child(presenter)
 	var foe: Dictionary = {"battle_uid": "img_a", "name": "丙"}
-	_expect(not NumberFont.can_render("normal", "25!"), "no art on disk: the text label is used")
+	_expect(NumberFont.can_render("normal", "25!") and NumberFont.can_render("heal", "+45!"), "the delivered sheet covers every style")
 	NumberFont.directory = "user://test_numbers/"
 	NumberFont.reset_cache()
 	DirAccess.make_dir_recursive_absolute("user://test_numbers/normal")
@@ -247,8 +247,9 @@ func _check_image_digits(fixture: Node) -> void:
 	var rows: int = 0
 	for child: Node in presenter.get_children():
 		for part: Node in child.get_children():
-			if part is HBoxContainer:
-				rows += 1
+			for inner: Node in part.get_children():
+				if inner is HBoxContainer:
+					rows += 1
 	_expect(rows == 1, "the popup holds one image row")
 	NumberFont.enabled = false
 	_expect(not NumberFont.can_render("normal", "25!"), "the switch forces text")
