@@ -27,11 +27,13 @@ const NUMBER_SIZE := 38
 const CRIT_SIZE := 50
 const TAG_SIZE := 24
 const TAG_ICON := 26.0
+## Height of a banner (event art with its own word) as a fraction of the target card.
+const BANNER_HEIGHT := 0.62
 const ANNOUNCE_SIZE := 50
 ## Where on the target card (fractions of its screen rectangle, from the top) the number is struck out of, hovers, and lands.
-const STRIKE_Y := 0.55
-const HOVER_Y := -0.04
-const GROUND_Y := 0.50
+const STRIKE_Y := 0.66
+const HOVER_Y := 0.22
+const GROUND_Y := 0.66
 ## A sequence nobody has updated for this long lets go (a strike that never came must not leave a number hanging).
 const STALE_SECONDS := 3.0
 ## After the last strike the number holds for this long (so the final value can be read), then falls.
@@ -257,7 +259,14 @@ func _schedule_fall(sequence_id: String, sequence: Dictionary, style: Dictionary
 	var delay: float = SETTLE_SECONDS + (0.22 if just_spawned else 0.0)
 	var fall: Tween = create_tween()
 	fall.tween_interval(delay)
-	fall.tween_property(wrapper, "position", sequence.ground, 0.52).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	# Falls from where it hangs back to where it was struck, then bounces twice (high, then low) and settles.
+	var ground: Vector2 = sequence.ground
+	var drop: float = maxf(ground.y - wrapper.position.y, 40.0)
+	fall.tween_property(wrapper, "position", ground, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.tween_property(wrapper, "position", ground - Vector2(0, drop * 0.34), 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	fall.tween_property(wrapper, "position", ground, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.tween_property(wrapper, "position", ground - Vector2(0, drop * 0.12), 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	fall.tween_property(wrapper, "position", ground, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	fall.tween_callback(_shudder.bind(sequence, 5.0 + 4.0 * float(style.power)))
 	fall.tween_interval(0.24)
 	fall.tween_property(wrapper, "modulate:a", 0.0, 0.36)
@@ -361,6 +370,9 @@ func show_event(event: Dictionary) -> void:
 		_show_announcement(event)
 		return
 	var rect: Rect2 = _rect_of(target)
+	if texture != null and String(event.get("icon_key", "")).begins_with("event_"):
+		_show_banner(texture, rect, event)
+		return
 	var stack: int = _claim_tag_slot(target)
 	var color: Color = _tag_color(event)
 	var word: Label = _make_label(String(event.primary_text), TAG_SIZE, color, 6)
@@ -391,6 +403,36 @@ func show_event(event: Dictionary) -> void:
 	tag.tween_interval(maxf(life - 0.4, 0.2))
 	tag.tween_property(holder, "modulate:a", 0.0, 0.3)
 	tag.tween_callback(holder.queue_free)
+
+
+## Event art that carries its own word (event_miss, event_block ...): the picture alone, large, punched in over the target and gone
+## quickly - there is no extra text beside it. Status icons are small tags (above); only `event_*` art is a banner.
+func _show_banner(texture: Texture2D, rect: Rect2, event: Dictionary) -> void:
+	var side: float = clampf(rect.size.y * BANNER_HEIGHT, 90.0, 220.0)
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.position = Vector2(rect.get_center().x, rect.position.y - rect.size.y * 0.02)
+	add_child(holder)
+	var image := TextureRect.new()
+	image.texture = texture
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.size = Vector2(side, side)
+	image.position = -image.size * 0.5
+	image.pivot_offset = image.size * 0.5
+	image.scale = Vector2(0.4, 0.4)
+	image.modulate = Color(1, 1, 1, 0)
+	holder.add_child(image)
+	var life: float = float(event.get("duration", 1.0))
+	var pop: Tween = create_tween()
+	pop.tween_property(image, "modulate:a", 1.0, 0.06)
+	pop.parallel().tween_property(image, "scale", Vector2(1.15, 1.15), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	pop.tween_property(image, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.parallel().tween_property(holder, "position:y", holder.position.y - 10.0, maxf(life - 0.3, 0.3))
+	pop.tween_interval(maxf(life - 0.6, 0.15))
+	pop.tween_property(image, "modulate:a", 0.0, 0.25)
+	pop.tween_callback(holder.queue_free)
 
 
 ## Tags on the same target stack downwards while the earlier ones are still up; the stack resets when they are gone.

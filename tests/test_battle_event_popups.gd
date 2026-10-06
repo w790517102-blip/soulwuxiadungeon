@@ -40,6 +40,7 @@ func _run() -> void:
 		await _check_stage(fixture)
 		await _check_image_digits(fixture)
 		await _check_sheath_strike(fixture)
+		await _check_banners_and_motion(fixture)
 	fixture.queue_free()
 	await process_frame
 	if _failures.is_empty():
@@ -78,7 +79,7 @@ func _check_pure() -> void:
 	var stun: Dictionary = BattleEvent.status("stun", true)
 	_expect(String(stun.primary_text) == "暈眩" and String(stun.icon_key) == "status_stun", "a status event reuses the status icon key and word: %s / %s" % [stun.primary_text, stun.icon_key])
 	_expect(BattleEvent.texture_for("status_poison") != null, "an existing status icon is found")
-	_expect(BattleEvent.texture_for("event_miss") == null, "event art that does not exist yet is simply absent")
+	_expect(BattleEvent.texture_for("event_immune") == null, "event art that does not exist yet is simply absent")
 	for key: String in ["event_type", "icon_key", "primary_text", "value", "target", "source", "priority", "duration"]:
 		_expect(BattleEvent.make(BattleEvent.MISS).has(key), "an event carries " + key)
 
@@ -295,3 +296,45 @@ var home_position := Vector3.ZERO
 	await _wait(2.0)
 	stage.entity_cards.erase("fake_sheath")
 	stub.queue_free()
+
+
+## Banners: event art that carries its own word is shown as the picture alone; the number now rises from low and falls back
+## with two bounces.
+func _check_banners_and_motion(fixture: Node) -> void:
+	var presenter: Node = Presenter.new()
+	fixture.add_child(presenter)
+	var foe: Dictionary = {"battle_uid": "ban_a", "name": "丁"}
+	_expect(BattleEvent.texture_for("event_miss") != null and BattleEvent.texture_for("event_block") != null and BattleEvent.texture_for("event_intercept") != null and BattleEvent.texture_for("event_nullified") != null, "the four delivered banners are found")
+	presenter.show_event(BattleEvent.make(BattleEvent.MISS, foe))
+	_expect(presenter.get_child_count() == 1, "a banner is one picture")
+	var holder: Node = presenter.get_child(0)
+	_expect(holder.get_child_count() == 1 and holder.get_child(0) is TextureRect, "...with no extra word beside it")
+	presenter.history.clear()
+	presenter.show_event(BattleEvent.make(BattleEvent.IMMUNE, foe))
+	_expect(presenter.get_child_count() == 2 and presenter.get_child(1).get_child_count() == 1 and presenter.get_child(1).get_child(0) is Label, "an event without art keeps its word")
+	await _wait(1.8)
+	# the number: struck out of a low spot, hangs at a modest height, lands where it was struck
+	_expect(Presenter.STRIKE_Y > Presenter.HOVER_Y and Presenter.HOVER_Y > 0.0, "the number starts low and hangs below the top of the card")
+	_expect(is_equal_approx(Presenter.GROUND_Y, Presenter.STRIKE_Y), "it lands where it was struck")
+	var sequence_id: String = presenter.schedule_strikes(foe, {"hit": true, "damage": 10}, 0.0, 0.0)
+	var wrapper: Control = presenter.get_child(0)
+	var lowest: float = -INF
+	var highest: float = INF
+	var bounces: int = 0
+	var rising: bool = false
+	var last_y: float = wrapper.position.y
+	var start: int = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - start < 1700 and is_instance_valid(wrapper):
+		await process_frame
+		if not is_instance_valid(wrapper):
+			break
+		var y: float = wrapper.position.y
+		if Time.get_ticks_msec() - start > 600:
+			if y < last_y - 0.5 and not rising:
+				rising = true
+				bounces += 1
+			elif y > last_y + 0.5:
+				rising = false
+		last_y = y
+	_expect(bounces == 2, "after landing it bounces twice (counted %d)" % bounces)
+	presenter.queue_free()
