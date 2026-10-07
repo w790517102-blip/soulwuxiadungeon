@@ -140,8 +140,6 @@ const CAVE_EXIT_START_STAGGER_SECONDS := 0.5
 ## 左飲先走；另外兩人先看著他，這麼久之後才跟上。
 const CAVE_EXIT_FOLLOW_DELAY_SECONDS := 2.0
 const CAVE_EXIT_GAZE_STEP_SECONDS := 0.12
-## 左飲的走路速度（px/s）；走路動畫是 5 格/秒的 4 格循環。
-const ZUOYIN_EXIT_WALK_SPEED := 95.0
 ## The BlackOverlay starts to fade in as they start walking and is fully black by the end of this.
 const CAVE_EXIT_FADE_SECONDS := 4.6
 
@@ -159,6 +157,9 @@ var _phase_break_return_pending := false
 ## pre-battle spot and gives control back AFTER this scene's _ready, so the cutscene has to re-apply his place and pose then
 ## (prepare_battle_return_actor), exactly as the phase break return does.
 var _phase2_victory_cutscene_active := false
+## While the ending cutscene runs, the NPCs (and the carp) are drawn in front of / behind each other by their y, like Liu Yu
+## (his script sets z_index = y every frame; these nodes have no script of their own and would stay at 0, i.e. always behind him).
+var _depth_sync_active := false
 var _phase_transition_boss: Node2D = null
 var _phase_absorption_fx: Node2D = null
 var _yumei_particle_texture: Texture2D = null
@@ -231,6 +232,20 @@ func _ready() -> void:
 	# 若此戰已完成，玩家重回此圖時不再觸發。
 	if _get_flag(F_FISH_BOSS_WON, false):
 		_disable_event_trigger()
+
+
+## Same rule as the player and the other NPC scripts: z_index = int(global_y + z_index_offset), so whoever stands lower on
+## the screen is drawn in front. Never a sudden swap: it follows the y of each node every frame.
+func _process(_delta: float) -> void:
+	if not _depth_sync_active:
+		return
+	var offset: int = 0
+	var player := _get_player()
+	if player:
+		offset = int(player.get("z_index_offset"))
+	for actor: Node2D in [zuoyin_npc, shumian_npc, _phase_transition_boss]:
+		if is_instance_valid(actor) and actor.visible:
+			actor.z_index = int(actor.global_position.y) + offset
 
 
 func get_map_display_name() -> String:
@@ -1707,6 +1722,7 @@ func _play_phase2_victory_cutscene() -> void:
 		push_warning("鐘乳石洞戰後演出找不到劉語塵或 BlackOverlay，略過演出直接進入返程字幕。")
 		return
 	var boss := _prepare_phase2_victory_stage(player)
+	_depth_sync_active = true
 	await _fade_cave_in(CAVE_VICTORY_FADE_IN_SECONDS)
 	await get_tree().create_timer(CAVE_VICTORY_BEAT_SECONDS).timeout
 
@@ -1722,6 +1738,7 @@ func _play_phase2_victory_cutscene() -> void:
 
 	# 4. 離場：三人朝左下出口走，BlackOverlay 同時開始淡入
 	await _walk_out_and_fade_to_black(player)
+	_depth_sync_active = false
 
 
 func _fade_cave_in(seconds: float) -> void:
@@ -1902,7 +1919,7 @@ func _walk_zuoyin_along_exit_path(path: Path2D, follow: PathFollow2D) -> void:
 			return
 		follow.progress = progress
 		zuoyin_npc.global_position = follow.global_position
-	, 0.0, length, length / ZUOYIN_EXIT_WALK_SPEED)
+	, 0.0, length, length / CAVE_EXIT_WALK_SPEED)
 
 
 ## 目光跟著 leader：每隔一小段時間朝向他現在的位置（八方向待機動畫），持續 seconds 秒。
