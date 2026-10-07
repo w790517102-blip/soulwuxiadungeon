@@ -126,21 +126,15 @@ void fragment() {
 @export var carp_water_offset := Vector2(215.0, 8.0)
 const CAVE_VICTORY_FADE_IN_SECONDS := 1.0
 const CAVE_VICTORY_BEAT_SECONDS := 0.7
-## 魘將：原地變身五格（每格多久）、停一下，再掙扎著沿撤退路線彈向水邊（總時間、每彈多遠、彈多高），
-## 最後無力地滑進水裡（距離、時間、弧高、入水下沉、淡出）。
+## 魘將：原地變身五格（每格多久）、停一下，再一跳進水（飛行時間、拋物線高度），入水後加速下沉、水波、淡出。
 const CARP_TRANSFORM_FRAME_SECONDS := 0.4
 const CARP_STRUGGLE_PAUSE_SECONDS := 0.5
-const CARP_RETREAT_SECONDS := 1.3
-const CARP_HOP_STRIDE := 38.0
-const CARP_HOP_HEIGHT := 14.0
-const CARP_SLIP_DISTANCE := 22.0
-const CARP_SLIP_SECONDS := 0.5
-const CARP_SLIP_HEIGHT := 9.0
+const CARP_JUMP_SECONDS := 0.5
+const CARP_JUMP_HEIGHT := 70.0
+const CARP_JUMP_FALLBACK_DISTANCE := 120.0
 const CARP_SINK_DEPTH := 10.0
-const CARP_SPLASH_SECONDS := 0.55
+const CARP_SPLASH_SECONDS := 0.4
 const CARP_SINK_SECONDS := 0.6
-## 跳水的落點離鏡頭邊緣至少這麼遠（世界像素），才看得見整個動作。
-const CARP_VIEW_MARGIN := 90.0
 ## They keep their guard up this long after the carp is gone, then lower it one after another.
 const CAVE_VICTORY_WATCH_SECONDS := 1.3
 const CAVE_VICTORY_RELAX_STAGGER_SECONDS := 0.7
@@ -1809,11 +1803,11 @@ func _stage_liuyu_for_phase2_victory(player: Node2D) -> void:
 	_play_actor_animation(player, &"ready_fight_idle_right_down", true)
 
 
-## 墨鱗魘將變成鯉魚、掙扎著逃回水裡。只用既有的兩張動畫，逐格播放、不用整段循環：
+## 墨鱗魘將變成鯉魚、一跳回到水裡。只用既有的兩張動畫，逐格播放、不用整段循環：
 ##  1. 在撤退路線的起點原地把 phase2_defeated 五格播完（魚怪 -> 紫霧散開 -> 一尾躺著的鯉魚），
-##  2. 鯉魚離水，沿 Molingyanjiang_path/4_transfer_to_fish 迅速地一彈一彈挪向岩石與水的邊界（用 jump_into_pond 的躺著／蜷身兩格），越接近水越慢、越無力，
-##  3. 到了邊界，不是跳進去，而是最後一次無力的彈動，滑進水裡：入水（第四格）-> 水波（第五格）-> 消失。
-## 位移由 Root（CharacterBody2D）負責，影子跟著 Root；只有 AnimatedSprite2D 做上下的彈跳。整段都留在鏡頭可見範圍內。
+##  2. 一跳：沿 Molingyanjiang_path/4_transfer_to_fish 直接跳到路線盡頭（岩石與水的邊界）的水裡，垂直方向是自由落體（等加速度的拋物線，沒有滯空），
+##  3. 一落水就只剩尾巴與水花（第四格），加速沉下去，水波（第五格），消失。
+## 位移由 Root（CharacterBody2D）負責，影子跟著 Root；只有 AnimatedSprite2D 做上下的位移。
 func _play_fish_defeat_and_escape(boss: Node2D) -> void:
 	if not is_instance_valid(boss):
 		return
@@ -1831,61 +1825,16 @@ func _play_fish_defeat_and_escape(boss: Node2D) -> void:
 	if not is_instance_valid(boss):
 		return
 	await get_tree().create_timer(CARP_STRUGGLE_PAUSE_SECONDS).timeout
-	# 2. 掙扎著沿路線彈向水邊
-	var final_direction: Vector2 = Vector2.DOWN
-	if path and follow and path.curve and path.curve.get_baked_length() > 0.0:
-		var length: float = path.curve.get_baked_length()
-		var flops: int = maxi(3, int(round(length / CARP_HOP_STRIDE)))
-		follow.progress = 0.0
-		var retreat := create_tween()
-		retreat.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		retreat.tween_method(func(progress: float) -> void:
-			if not is_instance_valid(boss) or not is_instance_valid(sprite):
-				return
-			follow.progress = progress * length
-			boss.global_position = follow.global_position
-			# 一彈一彈：越靠近水，彈得越矮越無力
-			var arc: float = absf(sin(progress * float(flops) * PI))
-			var tiredness: float = 1.0 - 0.6 * progress
-			sprite.position.y = base_y - arc * CARP_HOP_HEIGHT * tiredness
-			_show_actor_frame(sprite, &"jump_into_pond", 1 if arc > 0.3 else 0)
-		, 0.0, 1.0, CARP_RETREAT_SECONDS)
-		await retreat.finished
-		var before_end: Vector2 = path.to_global(path.curve.sample_baked(maxf(length - 24.0, 0.0)))
-		if boss.global_position.distance_to(before_end) > 0.5:
-			final_direction = (boss.global_position - before_end).normalized()
-	else:
-		# 沒有撤退路線時：原地掙扎後朝右邊的水池滑去
-		var fallback_marker := get_node_or_null("SpawnPoints/molingyanjiana_fight") as Marker2D
-		var fallback_origin: Vector2 = fallback_marker.global_position if fallback_marker else boss.global_position
-		final_direction = (fallback_origin + carp_water_offset - boss.global_position).normalized()
-	sprite.position.y = base_y
-	_show_actor_frame(sprite, &"jump_into_pond", 0)
-	await get_tree().create_timer(0.35).timeout
 	if not is_instance_valid(boss):
 		return
-	await _carp_slip_into_water(boss, sprite, base_y, final_direction)
-
-
-## 到了水邊：最後一次無力的彈動，身子滑進水裡（不是跳）。入水（第四格）-> 水波（第五格）-> 淡出。落點限制在鏡頭範圍內。
-func _carp_slip_into_water(boss: Node2D, sprite: AnimatedSprite2D, base_y: float, direction: Vector2) -> void:
-	var start: Vector2 = boss.global_position
-	var land: Vector2 = _clamp_into_view(start, start + direction * CARP_SLIP_DISTANCE)
-	_show_actor_frame(sprite, &"jump_into_pond", 1)
-	var slip := create_tween()
-	slip.tween_method(func(progress: float) -> void:
-		if not is_instance_valid(boss) or not is_instance_valid(sprite):
-			return
-		boss.global_position = start.lerp(land, progress)
-		sprite.position.y = base_y - sin(progress * PI) * CARP_SLIP_HEIGHT
-	, 0.0, 1.0, CARP_SLIP_SECONDS)
-	await slip.finished
+	# 2. 一跳進水
+	await _carp_jump_into_water(boss, sprite, base_y, path, follow)
 	if not is_instance_valid(boss):
 		return
-	# 入水：尾巴還露在水面，慢慢沉下去
+	# 3. 入水：尾巴與水花、加速下沉、水波、消失
 	_show_actor_frame(sprite, &"jump_into_pond", 3)
 	var sink := create_tween()
-	sink.tween_property(sprite, "position:y", base_y + CARP_SINK_DEPTH, CARP_SPLASH_SECONDS)
+	sink.tween_property(sprite, "position:y", base_y + CARP_SINK_DEPTH, CARP_SPLASH_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await sink.finished
 	if not is_instance_valid(boss):
 		return
@@ -1898,6 +1847,41 @@ func _carp_slip_into_water(boss: Node2D, sprite: AnimatedSprite2D, base_y: float
 	sprite.position.y = base_y
 
 
+## 一跳：水平方向沿撤退路線等速走完，垂直方向是自由落體的拋物線 lift(t) = v0·t − g·t²/2，在 CARP_JUMP_SECONDS 後正好回到地面
+## （高度 CARP_JUMP_HEIGHT，重力由此推出）；沒有任何停在空中的時間，整個過程只受重力。
+func _carp_jump_into_water(boss: Node2D, sprite: AnimatedSprite2D, base_y: float, path: Path2D, follow: PathFollow2D) -> void:
+	var flight: float = CARP_JUMP_SECONDS
+	var gravity: float = 8.0 * CARP_JUMP_HEIGHT / (flight * flight)
+	var launch_speed: float = 4.0 * CARP_JUMP_HEIGHT / flight
+	var length: float = 0.0
+	var start: Vector2 = boss.global_position
+	var land: Vector2 = start + Vector2.DOWN * CARP_JUMP_FALLBACK_DISTANCE
+	if path and follow and path.curve and path.curve.get_baked_length() > 0.0:
+		length = path.curve.get_baked_length()
+		follow.progress = 0.0
+	else:
+		# 沒有撤退路線時：朝右邊的水池跳
+		var fallback_marker := get_node_or_null("SpawnPoints/molingyanjiana_fight") as Marker2D
+		var fallback_origin: Vector2 = fallback_marker.global_position if fallback_marker else start
+		land = fallback_origin + carp_water_offset
+	_show_actor_frame(sprite, &"jump_into_pond", 2)
+	var jump := create_tween()
+	jump.tween_method(func(elapsed: float) -> void:
+		if not is_instance_valid(boss) or not is_instance_valid(sprite):
+			return
+		var progress: float = clampf(elapsed / flight, 0.0, 1.0)
+		if length > 0.0:
+			follow.progress = progress * length
+			boss.global_position = follow.global_position
+		else:
+			boss.global_position = start.lerp(land, progress)
+		sprite.position.y = base_y - maxf(launch_speed * elapsed - 0.5 * gravity * elapsed * elapsed, 0.0)
+	, 0.0, flight, flight)
+	await jump.finished
+	if is_instance_valid(sprite):
+		sprite.position.y = base_y
+
+
 ## 停在某動畫的某一格（不循環）。
 func _show_actor_frame(sprite: AnimatedSprite2D, animation_name: StringName, frame_index: int) -> void:
 	if sprite == null or sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(animation_name):
@@ -1906,24 +1890,6 @@ func _show_actor_frame(sprite: AnimatedSprite2D, animation_name: StringName, fra
 		sprite.animation = animation_name
 	sprite.pause()
 	sprite.frame = clampi(frame_index, 0, sprite.sprite_frames.get_frame_count(animation_name) - 1)
-
-
-## 目前鏡頭看得到的範圍（世界座標）。
-func _visible_world_rect() -> Rect2:
-	var viewport := get_viewport()
-	return viewport.get_canvas_transform().affine_inverse() * viewport.get_visible_rect()
-
-
-## 把 target 往 from 的方向拉回鏡頭範圍內（留 CARP_VIEW_MARGIN 的邊）；拉不回來時就留在原地。
-func _clamp_into_view(from: Vector2, target: Vector2) -> Vector2:
-	var view: Rect2 = _visible_world_rect().grow(-CARP_VIEW_MARGIN)
-	if view.has_point(target):
-		return target
-	for step in range(1, 11):
-		var candidate: Vector2 = target.lerp(from, float(step) / 10.0)
-		if view.has_point(candidate):
-			return candidate
-	return from
 
 
 ## 逐漸放下戰意：左飲先收劍（既有 unsheathe_right 反向播放），接著劉語塵收劍站定，最後白書眠放鬆。
