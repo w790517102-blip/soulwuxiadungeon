@@ -137,8 +137,13 @@ const CAVE_VICTORY_SETTLE_SECONDS := 0.9
 const CAVE_VICTORY_PAUSE_BEFORE_PEACE_SECONDS := 1.1
 const CAVE_EXIT_WALK_SPEED := 150.0
 const CAVE_EXIT_START_STAGGER_SECONDS := 0.5
+## 左飲先走；另外兩人先看著他，這麼久之後才跟上。
+const CAVE_EXIT_FOLLOW_DELAY_SECONDS := 2.0
+const CAVE_EXIT_GAZE_STEP_SECONDS := 0.12
+## 左飲的走路速度（px/s）；走路動畫是 5 格/秒的 4 格循環。
+const ZUOYIN_EXIT_WALK_SPEED := 95.0
 ## The BlackOverlay starts to fade in as they start walking and is fully black by the end of this.
-const CAVE_EXIT_FADE_SECONDS := 3.6
+const CAVE_EXIT_FADE_SECONDS := 4.6
 
 var story_locked := false
 var transition_locked := false
@@ -1856,20 +1861,79 @@ func _play_phase2_victory_dialogue() -> void:
 	])
 
 
-## 三人朝左下方的洞口（SpawnPoints/from_yuheng_sewer_final_room，即 To_yuheng_sewer_final_room 的出入口）走去；
-## BlackOverlay 與離場同時開始淡入，全黑時回傳，之後不解除，直接接既有返程字幕。
+## 左飲帶頭離場：沿場景裡的 Zuo_yin_jump_in/exit（Path2D）走向出口；另外兩人的目光跟著他，
+## CAVE_EXIT_FOLLOW_DELAY_SECONDS 之後才跟上。BlackOverlay 與左飲出發同時開始淡入，全黑時回傳，
+## 之後不解除，直接接既有返程字幕。
 func _walk_out_and_fade_to_black(player: Node2D) -> void:
+	var exit_path := get_node_or_null("Zuo_yin_jump_in/exit") as Path2D
+	var exit_follow := get_node_or_null("Zuo_yin_jump_in/exit/PathFollow2D") as PathFollow2D
 	var exit_marker := get_node_or_null("SpawnPoints/from_yuheng_sewer_final_room") as Marker2D
-	var exit_point: Vector2 = exit_marker.global_position if exit_marker else player.global_position + Vector2(-400.0, 300.0)
+	# 其他兩人跟上的終點：左飲這條路的盡頭（沒有這條路時退回洞口標記）
+	var follow_point: Vector2 = exit_marker.global_position if exit_marker else player.global_position + Vector2(-400.0, 300.0)
+	if exit_path and exit_path.curve and exit_path.curve.point_count > 0:
+		follow_point = exit_path.to_global(exit_path.curve.get_point_position(exit_path.curve.point_count - 1))
 	overlay.visible = true
 	overlay.modulate.a = 0.0
 	var fade := overlay.create_tween()
 	fade.tween_property(overlay, "modulate:a", 1.0, CAVE_EXIT_FADE_SECONDS)
-	# 左飲先轉身，另外兩人跟上；終點錯開一點，不互相穿模
-	_walk_actor_to(zuoyin_npc, &"walk_left_down", exit_point + Vector2(40.0, -22.0), 0.0)
-	_walk_actor_to(shumian_npc, &"idle_left_down", exit_point + Vector2(18.0, -10.0), CAVE_EXIT_START_STAGGER_SECONDS)
-	_walk_actor_to(player, &"walk_left_down", exit_point, CAVE_EXIT_START_STAGGER_SECONDS * 2.0)
+	# 左飲先走；另外兩人先看著他，過了 CAVE_EXIT_FOLLOW_DELAY_SECONDS 才邁步跟上，終點錯開避免穿模
+	if exit_path and exit_follow and exit_path.curve and zuoyin_npc:
+		_walk_zuoyin_along_exit_path(exit_path, exit_follow)
+	else:
+		_walk_actor_to(zuoyin_npc, &"walk_left_down", follow_point, 0.0)
+	_watch_leader(shumian_npc, zuoyin_npc, CAVE_EXIT_FOLLOW_DELAY_SECONDS)
+	_watch_leader(player, zuoyin_npc, CAVE_EXIT_FOLLOW_DELAY_SECONDS)
+	_walk_actor_to(shumian_npc, &"idle_left_down", follow_point + Vector2(26.0, -12.0), CAVE_EXIT_FOLLOW_DELAY_SECONDS)
+	_walk_actor_to(player, &"walk_left_down", follow_point + Vector2(-8.0, 8.0), CAVE_EXIT_FOLLOW_DELAY_SECONDS + CAVE_EXIT_START_STAGGER_SECONDS)
 	await fade.finished
+
+
+## 左飲沿 Path2D 走；走路動畫用 Zuo_yin3 的 walk_left_down（路徑一路朝左下）。
+func _walk_zuoyin_along_exit_path(path: Path2D, follow: PathFollow2D) -> void:
+	var length: float = path.curve.get_baked_length()
+	if length <= 0.0:
+		return
+	follow.progress = 0.0
+	zuoyin_npc.global_position = follow.global_position
+	_play_actor_animation(zuoyin_npc, &"walk_left_down")
+	var tween := create_tween()
+	tween.tween_method(func(progress: float) -> void:
+		if not is_instance_valid(zuoyin_npc):
+			return
+		follow.progress = progress
+		zuoyin_npc.global_position = follow.global_position
+	, 0.0, length, length / ZUOYIN_EXIT_WALK_SPEED)
+
+
+## 目光跟著 leader：每隔一小段時間朝向他現在的位置（八方向待機動畫），持續 seconds 秒。
+func _watch_leader(actor: Node2D, leader: Node2D, seconds: float) -> void:
+	actor.set_meta("gaze_stop", false)
+	var until_ms: int = Time.get_ticks_msec() + int(seconds * 1000.0)
+	while Time.get_ticks_msec() < until_ms and is_instance_valid(actor) and is_instance_valid(leader) and not bool(actor.get_meta("gaze_stop", false)):
+		_play_actor_animation(actor, _idle_animation_toward(leader.global_position - actor.global_position))
+		await get_tree().create_timer(CAVE_EXIT_GAZE_STEP_SECONDS).timeout
+
+
+## 與劉語塵腳本相同的八方向切分（idle_<方向>）。
+func _idle_animation_toward(direction: Vector2) -> StringName:
+	if direction.length() < 0.01:
+		return &"idle_down"
+	var angle: float = direction.angle()
+	if angle >= -PI * 7.0 / 8.0 and angle < -PI * 5.0 / 8.0:
+		return &"idle_left_up"
+	elif angle >= -PI * 5.0 / 8.0 and angle < -PI * 3.0 / 8.0:
+		return &"idle_up"
+	elif angle >= -PI * 3.0 / 8.0 and angle < -PI * 1.0 / 8.0:
+		return &"idle_right_up"
+	elif angle >= -PI * 1.0 / 8.0 and angle < PI * 1.0 / 8.0:
+		return &"idle_right"
+	elif angle >= PI * 1.0 / 8.0 and angle < PI * 3.0 / 8.0:
+		return &"idle_right_down"
+	elif angle >= PI * 3.0 / 8.0 and angle < PI * 5.0 / 8.0:
+		return &"idle_down"
+	elif angle >= PI * 5.0 / 8.0 and angle < PI * 7.0 / 8.0:
+		return &"idle_left_down"
+	return &"idle_left"
 
 
 ## 沿直線走向目標。沒有行走動畫的角色（白書眠）用面向左下的站姿滑行；左飲用 Zuo_yin3 的 walk_left_down。
@@ -1883,6 +1947,7 @@ func _walk_actor_to(actor: Node2D, animation_name: StringName, target: Vector2, 
 		tween.tween_interval(delay)
 	tween.tween_callback(func() -> void:
 		if is_instance_valid(actor):
+			actor.set_meta("gaze_stop", true)
 			_play_actor_animation(actor, animation_name)
 	)
 	tween.tween_property(actor, "global_position", target, seconds)
