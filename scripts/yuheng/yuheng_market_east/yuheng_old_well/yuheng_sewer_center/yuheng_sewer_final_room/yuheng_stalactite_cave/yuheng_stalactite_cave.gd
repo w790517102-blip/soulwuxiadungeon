@@ -1784,7 +1784,8 @@ func _prepare_phase2_victory_stage(player: Node2D) -> Node2D:
 		if retreat_path and retreat_path.curve and retreat_path.curve.point_count > 0:
 			_phase_transition_boss.global_position = retreat_path.to_global(retreat_path.curve.get_point_position(0))
 		_phase_transition_boss.visible = true
-		_play_actor_animation(_phase_transition_boss, &"phase2_idle_left_down")
+		# 一開始就停在 phase2_defeated 的第一格（變身動畫的起點），不先播 idle
+		_show_actor_frame(_phase_transition_boss.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D, &"phase2_defeated", 0)
 	return _phase_transition_boss
 
 
