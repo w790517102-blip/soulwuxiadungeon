@@ -120,6 +120,26 @@ void fragment() {
 }
 """
 
+# --- Phase 2 victory: the cave ending cutscene (between the return to the cave and the BlackOverlay) ----------------
+## Where the carp hops to, relative to the boss's own spot (SpawnPoints/molingyanjiana_fight): the pond right of the
+## stone platform, measured on the cave picture. Change it if the platform art moves.
+@export var carp_water_offset := Vector2(215.0, 8.0)
+const CAVE_VICTORY_FADE_IN_SECONDS := 1.0
+const CAVE_VICTORY_BEAT_SECONDS := 0.7
+const CARP_JUMP_SECONDS := 2.8
+const CARP_HOP_COUNT := 5
+const CARP_HOP_HEIGHT := 34.0
+const CARP_SINK_SECONDS := 0.45
+## They keep their guard up this long after the carp is gone, then lower it one after another.
+const CAVE_VICTORY_WATCH_SECONDS := 1.3
+const CAVE_VICTORY_RELAX_STAGGER_SECONDS := 0.7
+const CAVE_VICTORY_SETTLE_SECONDS := 0.9
+const CAVE_VICTORY_PAUSE_BEFORE_PEACE_SECONDS := 1.1
+const CAVE_EXIT_WALK_SPEED := 150.0
+const CAVE_EXIT_START_STAGGER_SECONDS := 0.5
+## The BlackOverlay starts to fade in as they start walking and is fully black by the end of this.
+const CAVE_EXIT_FADE_SECONDS := 3.6
+
 var story_locked := false
 var transition_locked := false
 var _waiting_for_dialog := false
@@ -1599,6 +1619,8 @@ func on_fish_boss_battle_won() -> void:
 			global_state.remove_meta("battle_zuoyin_assist_ai")
 	_set_flag("battle_party_slot_3_controllable", false)
 
+	# 回到洞中後、BlackOverlay 之前：魚怪變回鯉魚跳入水中、三人放下戒備交談，離場時黑幕同時淡入。
+	await _play_phase2_victory_cutscene()
 	await _transition_to_yin_yue_manor_night()
 
 
@@ -1659,6 +1681,197 @@ func _on_to_yuheng_sewer_final_room_body_entered(body: Node2D) -> void:
 			return
 
 	get_tree().change_scene_to_file(yuheng_sewer_final_room)
+
+
+# ------------------------------------------------------------
+# Phase 2 勝利後的鐘乳石洞收尾演出
+#   魚怪 -> 鯉魚 -> 跳入水中 -> 三人放下戒備 -> 對話 -> 離場 + BlackOverlay 同時淡入
+# 之後接既有的七段返程字幕與飲月山莊轉場（不在這裡處理）。
+# ------------------------------------------------------------
+func _play_phase2_victory_cutscene() -> void:
+	var player := _get_player()
+	if player == null or overlay == null:
+		push_warning("鐘乳石洞戰後演出找不到劉語塵或 BlackOverlay，略過演出直接進入返程字幕。")
+		return
+	var boss := _prepare_phase2_victory_stage(player)
+	await _fade_cave_in(CAVE_VICTORY_FADE_IN_SECONDS)
+	await get_tree().create_timer(CAVE_VICTORY_BEAT_SECONDS).timeout
+
+	# 1. 魚怪 -> 鯉魚 -> 朝水面跳去 -> 入水消失（沒有旁白；三人仍在戒備）
+	await _play_fish_defeat_and_escape(boss)
+
+	# 2. 三人先盯著水面，確認牠真的走了，才一個一個放下戒備
+	await get_tree().create_timer(CAVE_VICTORY_WATCH_SECONDS).timeout
+	await _relax_after_victory(player)
+
+	# 3. 對話
+	await _play_phase2_victory_dialogue()
+
+	# 4. 離場：三人朝左下出口走，BlackOverlay 同時開始淡入
+	await _walk_out_and_fade_to_black(player)
+
+
+func _fade_cave_in(seconds: float) -> void:
+	overlay.visible = true
+	var tween := overlay.create_tween()
+	tween.tween_property(overlay, "modulate:a", 0.0, seconds)
+	await tween.finished
+
+
+## 三人與魚怪回到戰鬥結束時的位置與姿態（戒備、備戰）。
+func _prepare_phase2_victory_stage(player: Node2D) -> Node2D:
+	var liuyu_marker := get_node_or_null("SpawnPoints/Liu_yu_fight_scene") as Marker2D
+	var shumian_marker := get_node_or_null("SpawnPoints/Su_mien_fight_scene") as Marker2D
+	var zuoyin_marker := get_node_or_null("SpawnPoints/zuo_yin_fight_scene") as Marker2D
+	var boss_marker := get_node_or_null("SpawnPoints/molingyanjiana_fight") as Marker2D
+	player.visible = true
+	player.set("can_move", false)
+	player.set("override_idle_animation", true)
+	if liuyu_marker:
+		player.global_position = liuyu_marker.global_position
+	_set_phase_transition_initial_shadow(player)
+	_play_actor_animation(player, &"ready_fight_idle_right_down", true)
+	if shumian_npc:
+		if shumian_marker:
+			shumian_npc.global_position = shumian_marker.global_position
+		shumian_npc.visible = true
+		_play_actor_animation(shumian_npc, &"ready_for_fight_right_down", true)
+	if zuoyin_npc:
+		if zuoyin_marker:
+			zuoyin_npc.global_position = zuoyin_marker.global_position
+		zuoyin_npc.visible = true
+		# 劍已出鞘的站姿（既有「拔劍後」動畫停在最後一格）
+		_play_actor_animation(zuoyin_npc, &"post_draw_sword_resonance_right", true)
+	if not is_instance_valid(_phase_transition_boss):
+		_phase_transition_boss = MolinYanjiangScene.instantiate() as Node2D
+		if _phase_transition_boss:
+			get_node("NPC").add_child(_phase_transition_boss)
+	if _phase_transition_boss:
+		if boss_marker:
+			_phase_transition_boss.global_position = boss_marker.global_position
+		_phase_transition_boss.scale = Vector2.ONE * PHASE_TRANSITION_BOSS_SCALE
+		_phase_transition_boss.modulate = Color.WHITE
+		_phase_transition_boss.visible = true
+		_play_actor_animation(_phase_transition_boss, &"phase2_idle_left_down")
+	return _phase_transition_boss
+
+
+## 墨鱗魘將（既有 phase2_defeated，五格）變回鯉魚，再用既有的 jump_into_pond（鯉魚跳動）一路跳向水面。
+## 位移由 Root（CharacterBody2D）負責，影子跟著 Root；只有 AnimatedSprite2D 做上下的彈跳。
+func _play_fish_defeat_and_escape(boss: Node2D) -> void:
+	if not is_instance_valid(boss):
+		return
+	var sprite := boss.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	var defeat_seconds := _start_actor_animation_once_and_hold(boss, &"phase2_defeated", 5.0 / 3.0)
+	await get_tree().create_timer(defeat_seconds + 0.9).timeout
+	if sprite == null:
+		boss.visible = false
+		return
+	var start: Vector2 = boss.global_position
+	var boss_marker := get_node_or_null("SpawnPoints/molingyanjiana_fight") as Marker2D
+	var water: Vector2 = (boss_marker.global_position if boss_marker else start) + carp_water_offset
+	var base_y: float = sprite.position.y
+	_play_actor_animation(boss, &"jump_into_pond")
+	var hop := create_tween()
+	hop.tween_method(func(progress: float) -> void:
+		if not is_instance_valid(boss) or not is_instance_valid(sprite):
+			return
+		boss.global_position = start.lerp(water, progress)
+		# 每一跳：落地時 y 回到 0，空中抬高
+		var phase := progress * float(CARP_HOP_COUNT)
+		sprite.position.y = base_y - absf(sin(phase * PI)) * CARP_HOP_HEIGHT
+	, 0.0, 1.0, CARP_JUMP_SECONDS)
+	await hop.finished
+	if not is_instance_valid(boss):
+		return
+	# 落水：下沉、淡出、消失
+	sprite.position.y = base_y
+	var sink := create_tween().set_parallel(true)
+	sink.tween_property(sprite, "position:y", base_y + 18.0, CARP_SINK_SECONDS)
+	sink.tween_property(boss, "modulate:a", 0.0, CARP_SINK_SECONDS)
+	await sink.finished
+	boss.visible = false
+	boss.modulate.a = 1.0
+	sprite.position.y = base_y
+
+
+## 逐漸放下戰意：左飲先收劍（既有 unsheathe_right 反向播放），接著劉語塵收劍站定，最後白書眠放鬆。
+func _relax_after_victory(player: Node2D) -> void:
+	if zuoyin_npc:
+		_ensure_reversed_actor_animation(zuoyin_npc, &"unsheathe_right_reversed", &"unsheathe_right")
+		var zuoyin_duration := _start_actor_animation_once_and_hold(zuoyin_npc, &"unsheathe_right_reversed", 1.2)
+		await get_tree().create_timer(zuoyin_duration).timeout
+		_play_actor_animation(zuoyin_npc, &"idle_right_down")
+	await get_tree().create_timer(CAVE_VICTORY_RELAX_STAGGER_SECONDS).timeout
+	# 劉語塵沒有「收劍」專用動畫：用既有的 take_sword_and_stand_right（收劍站起），再回到普通站姿
+	var liuyu_duration := _start_actor_animation_once_and_hold(player, &"take_sword_and_stand_right", 0.8)
+	await get_tree().create_timer(maxf(liuyu_duration, 0.5)).timeout
+	_clear_phase_transition_initial_shadow(player)
+	_play_actor_animation(player, &"idle_right_down")
+	await get_tree().create_timer(CAVE_VICTORY_RELAX_STAGGER_SECONDS * 0.6).timeout
+	# 白書眠沒有「收筆」動畫：備戰站姿 -> 普通站姿（最接近的既有動畫）
+	_play_actor_animation(shumian_npc, &"idle_right_down")
+	await get_tree().create_timer(CAVE_VICTORY_SETTLE_SECONDS).timeout
+
+
+func _play_phase2_victory_dialogue() -> void:
+	await _show_dialog([
+		_l("結……結束了？", shumian_speaker_id, shumian_portrait_path),
+		_l("剛才讓我們吃盡苦頭的……竟只是一尾尋常鯉魚。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("魚是尋常。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("把牠養成那副模樣的東西，可不是。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("舊水道裡積了太久的穢氣……", liuyu_speaker_id, liuyu_portrait_path),
+		_l("是那些被徽音的琴聲壓下去、本來屬於鎮民的怒意麼？", shumian_speaker_id, shumian_portrait_path),
+		_l("不只怒意。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("怨、惱、爭執、不甘……人與人活在一處，本來就不可能什麼衝突都沒有。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("可那些東西沒有真的消失。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("嗯。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("壓得久了，又全往一處積。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("自然就成了牠最好的養料。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+	])
+	# 停頓一下
+	await get_tree().create_timer(CAVE_VICTORY_PAUSE_BEFORE_PEACE_SECONDS).timeout
+	await _show_dialog([
+		_l("……一切都恢復平靜了。", shumian_speaker_id, shumian_portrait_path),
+		_l("至少眼下如此。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("回去吧。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("回去？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("……？", shumian_speaker_id, shumian_portrait_path),
+		_l("我是說，來飲月山莊吧。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("有些事情，該坐下來說清楚了。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+	])
+
+
+## 三人朝左下方的洞口（SpawnPoints/from_yuheng_sewer_final_room，即 To_yuheng_sewer_final_room 的出入口）走去；
+## BlackOverlay 與離場同時開始淡入，全黑時回傳，之後不解除，直接接既有返程字幕。
+func _walk_out_and_fade_to_black(player: Node2D) -> void:
+	var exit_marker := get_node_or_null("SpawnPoints/from_yuheng_sewer_final_room") as Marker2D
+	var exit_point: Vector2 = exit_marker.global_position if exit_marker else player.global_position + Vector2(-400.0, 300.0)
+	overlay.visible = true
+	overlay.modulate.a = 0.0
+	var fade := overlay.create_tween()
+	fade.tween_property(overlay, "modulate:a", 1.0, CAVE_EXIT_FADE_SECONDS)
+	# 左飲先轉身，另外兩人跟上；終點錯開一點，不互相穿模
+	_walk_actor_to(zuoyin_npc, &"idle_left_down", exit_point + Vector2(40.0, -22.0), 0.0)
+	_walk_actor_to(shumian_npc, &"idle_left_down", exit_point + Vector2(18.0, -10.0), CAVE_EXIT_START_STAGGER_SECONDS)
+	_walk_actor_to(player, &"walk_left_down", exit_point, CAVE_EXIT_START_STAGGER_SECONDS * 2.0)
+	await fade.finished
+
+
+## 沿直線走向目標。沒有行走動畫的角色（白書眠、左飲）用面向左下的站姿滑行（素材裡沒有他們的行走動畫）。
+func _walk_actor_to(actor: Node2D, animation_name: StringName, target: Vector2, delay: float) -> void:
+	if not is_instance_valid(actor):
+		return
+	var distance: float = actor.global_position.distance_to(target)
+	var seconds: float = maxf(distance / CAVE_EXIT_WALK_SPEED, 0.1)
+	var tween := actor.create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(actor):
+			_play_actor_animation(actor, animation_name)
+	)
+	tween.tween_property(actor, "global_position", target, seconds)
 
 
 func _transition_to_yin_yue_manor_night() -> void:
