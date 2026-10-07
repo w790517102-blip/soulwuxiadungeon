@@ -1866,13 +1866,13 @@ func _walk_out_and_fade_to_black(player: Node2D) -> void:
 	var fade := overlay.create_tween()
 	fade.tween_property(overlay, "modulate:a", 1.0, CAVE_EXIT_FADE_SECONDS)
 	# 左飲先轉身，另外兩人跟上；終點錯開一點，不互相穿模
-	_walk_actor_to(zuoyin_npc, &"idle_left_down", exit_point + Vector2(40.0, -22.0), 0.0)
+	_walk_actor_to(zuoyin_npc, &"walk_left_down", exit_point + Vector2(40.0, -22.0), 0.0)
 	_walk_actor_to(shumian_npc, &"idle_left_down", exit_point + Vector2(18.0, -10.0), CAVE_EXIT_START_STAGGER_SECONDS)
 	_walk_actor_to(player, &"walk_left_down", exit_point, CAVE_EXIT_START_STAGGER_SECONDS * 2.0)
 	await fade.finished
 
 
-## 沿直線走向目標。沒有行走動畫的角色（白書眠、左飲）用面向左下的站姿滑行（素材裡沒有他們的行走動畫）。
+## 沿直線走向目標。沒有行走動畫的角色（白書眠）用面向左下的站姿滑行；左飲用 Zuo_yin3 的 walk_left_down。
 func _walk_actor_to(actor: Node2D, animation_name: StringName, target: Vector2, delay: float) -> void:
 	if not is_instance_valid(actor):
 		return
