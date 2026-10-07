@@ -150,6 +150,10 @@ var _skip_wait_escape_release := false
 var _skip_wait_mouse_release := false
 var _event_trigger_requires_exit := false
 var _phase_break_return_pending := false
+## True from the first frame of a phase 2 victory return until the ending cutscene is over. GameRoot puts Liu Yu back at his
+## pre-battle spot and gives control back AFTER this scene's _ready, so the cutscene has to re-apply his place and pose then
+## (prepare_battle_return_actor), exactly as the phase break return does.
+var _phase2_victory_cutscene_active := false
 var _phase_transition_boss: Node2D = null
 var _phase_absorption_fx: Node2D = null
 var _yumei_particle_texture: Texture2D = null
@@ -165,6 +169,7 @@ func _ready() -> void:
 	_phase_break_return_pending = _is_phase_break_result(pending_result)
 	var phase2_victory_return_pending := _is_phase2_victory_result(pending_result)
 	if phase2_victory_return_pending:
+		_phase2_victory_cutscene_active = true
 		# Battle UI and its reward confirmation have already closed before the map
 		# return. Keep the first visible cave frame black for the chapter epilogue.
 		_prime_phase_transition_black()
@@ -455,6 +460,9 @@ func get_fish_boss_battle_config() -> Dictionary:
 
 
 func prepare_battle_return_actor(player: Node2D) -> void:
+	if _phase2_victory_cutscene_active:
+		_stage_liuyu_for_phase2_victory(player)
+		return
 	if not _is_phase_break_result(GlobalState.get_meta("pending_battle_result", {})):
 		return
 	story_locked = true
@@ -1720,17 +1728,10 @@ func _fade_cave_in(seconds: float) -> void:
 
 ## 三人與魚怪回到戰鬥結束時的位置與姿態（戒備、備戰）。
 func _prepare_phase2_victory_stage(player: Node2D) -> Node2D:
-	var liuyu_marker := get_node_or_null("SpawnPoints/Liu_yu_fight_scene") as Marker2D
 	var shumian_marker := get_node_or_null("SpawnPoints/Su_mien_fight_scene") as Marker2D
 	var zuoyin_marker := get_node_or_null("SpawnPoints/zuo_yin_fight_scene") as Marker2D
 	var boss_marker := get_node_or_null("SpawnPoints/molingyanjiana_fight") as Marker2D
-	player.visible = true
-	player.set("can_move", false)
-	player.set("override_idle_animation", true)
-	if liuyu_marker:
-		player.global_position = liuyu_marker.global_position
-	_set_phase_transition_initial_shadow(player)
-	_play_actor_animation(player, &"ready_fight_idle_right_down", true)
+	_stage_liuyu_for_phase2_victory(player)
 	if shumian_npc:
 		if shumian_marker:
 			shumian_npc.global_position = shumian_marker.global_position
@@ -1754,6 +1755,18 @@ func _prepare_phase2_victory_stage(player: Node2D) -> Node2D:
 		_phase_transition_boss.visible = true
 		_play_actor_animation(_phase_transition_boss, &"phase2_idle_left_down")
 	return _phase_transition_boss
+
+
+## 劉語塵站回 Liu_yu_fight_scene，持劍戒備（ready_fight_idle_right_down）；不讓玩家腳本接管動畫與移動。
+func _stage_liuyu_for_phase2_victory(player: Node2D) -> void:
+	var liuyu_marker := get_node_or_null("SpawnPoints/Liu_yu_fight_scene") as Marker2D
+	player.visible = true
+	player.set("can_move", false)
+	player.set("override_idle_animation", true)
+	if liuyu_marker:
+		player.global_position = liuyu_marker.global_position
+	_set_phase_transition_initial_shadow(player)
+	_play_actor_animation(player, &"ready_fight_idle_right_down", true)
 
 
 ## 墨鱗魘將（既有 phase2_defeated，五格）變回鯉魚，再用既有的 jump_into_pond（鯉魚跳動）一路跳向水面。
@@ -1803,8 +1816,9 @@ func _relax_after_victory(player: Node2D) -> void:
 		await get_tree().create_timer(zuoyin_duration).timeout
 		_play_actor_animation(zuoyin_npc, &"idle_right_down")
 	await get_tree().create_timer(CAVE_VICTORY_RELAX_STAGGER_SECONDS).timeout
-	# 劉語塵沒有「收劍」專用動畫：用既有的 take_sword_and_stand_right（收劍站起），再回到普通站姿
-	var liuyu_duration := _start_actor_animation_once_and_hold(player, &"take_sword_and_stand_right", 0.8)
+	# 劉語塵收劍：ready_fight_right_down（拔劍備戰）倒著播，吻合 sprite sheet 的動作邏輯，再回到普通站姿
+	_ensure_reversed_actor_animation(player, &"ready_fight_right_down_reversed", &"ready_fight_right_down")
+	var liuyu_duration := _start_actor_animation_once_and_hold(player, &"ready_fight_right_down_reversed", 0.8)
 	await get_tree().create_timer(maxf(liuyu_duration, 0.5)).timeout
 	_clear_phase_transition_initial_shadow(player)
 	_play_actor_animation(player, &"idle_right_down")
