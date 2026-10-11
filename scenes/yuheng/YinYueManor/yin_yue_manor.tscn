@@ -6212,6 +6212,7 @@ position = Vector2(695, -650)
 position = Vector2(-166, -38)
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
+visible = false
 z_index = 1999
 offset_left = -1273.0
 offset_top = -1327.0
@@ -6263,7 +6264,7 @@ position = Vector2(-109, -174)
 [node name="forbidden_zone" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="forbidden_zone"]
-position = Vector2(-75.9409, -123.957)
+position = Vector2(-37, -156)
 rotation = 0.424115
 skew = 0.534071
 shape = SubResource("RectangleShape2D_2cjik")
