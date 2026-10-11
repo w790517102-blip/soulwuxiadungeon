@@ -1,9 +1,10 @@
-[gd_scene load_steps=11 format=4 uid="uid://uctnullajsmy"]
+[gd_scene load_steps=22 format=4 uid="uid://uctnullajsmy"]
 
 [ext_resource type="Script" uid="uid://qrqnhocelxb0" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_final_room/yuheng_stalactite_cave/yuheng_stalactite_cave.gd" id="1_keorb"]
 [ext_resource type="Texture2D" uid="uid://gcg5eo14pror" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_final_room/yuheng_Stalactite_Cave/yuheng_Stalactite_Cave.jpg" id="2_vlvc2"]
 [ext_resource type="PackedScene" uid="uid://cykxkyibmttl1" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Su_mien.tscn" id="3_vlvc2"]
 [ext_resource type="PackedScene" uid="uid://be5jvmk4r64mc" path="res://scenes/yuheng/YinYueManor/yin_yue_manor_room/zuo_yin.tscn" id="4_odvg3"]
+[ext_resource type="VideoStream" uid="uid://d1bswb1bghr83" path="res://assets/movie/yuheng_stalactite_cave.ogv" id="5_stalactite_video"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_odvg3"]
 texture = ExtResource("2_vlvc2")
@@ -6056,6 +6057,66 @@ _data = {
 }
 point_count = 2
 
+[sub_resource type="Curve2D" id="Curve2D_yye6m"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -903, 110, 0, 0, 0, 0, -782, -48, -181.231, 1.94872, 181.231, -1.94872, -470, -191, -89.641, -42.8718, 89.641, 42.8718, -131, -111, 0, 0, 0, 0, 112, 80)
+}
+point_count = 5
+
+[sub_resource type="Curve2D" id="Curve2D_7qmjn"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 103, 80, 0, 0, 0, 0, -206, 121, 0, 0, 0, 0, -338, 280)
+}
+point_count = 3
+
+[sub_resource type="Curve2D" id="Curve2D_8qk8h"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -93, 90, -108.9, 14.3, 108.9, -14.3, 110, -27, 0, 0, 0, 0, 264, 52)
+}
+point_count = 3
+
+[sub_resource type="Curve2D" id="Curve2D_k8pdu"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 265, 49, 102.9, -4.2, -102.9, 4.2, 120, 50, 0, 0, 0, 0, -97, 86)
+}
+point_count = 3
+
+[sub_resource type="Curve2D" id="Curve2D_5drlq"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -98, 86, 0, 0, 0, 0, -18, -18)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_5jvkr"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 338, 25, 0, 0, 0, 0, 312, -15)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_okbwa"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 311, -18, 0, 0, 0, 0, 312, 39)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_kmc3g"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 307, 42, 50, -62.7273, -50, 62.7273, 188, 140, 34.0545, -73.3, -34.0545, 73.3, 119, 258)
+}
+point_count = 3
+
+[sub_resource type="Curve2D" id="Curve2D_5cf7y"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, -1.655, 3, -24.52, 0, 0, 0, 0, 162, 68)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_x7o8y"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 164, 70, 0, 0, 0, 0, 56, 29)
+}
+point_count = 2
+
 [node name="yuheng_Stalactite_Cave" type="Node2D"]
 script = ExtResource("1_keorb")
 
@@ -6073,6 +6134,7 @@ skew = -0.322886
 shape = SubResource("RectangleShape2D_yye6m")
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
+visible = false
 z_index = 1999
 offset_left = -1318.0
 offset_top = -808.0
@@ -6100,6 +6162,20 @@ offset_top = 129.0
 offset_right = 463.0
 offset_bottom = 185.0
 
+[node name="StalactiteIntroVideoLayer" type="CanvasLayer" parent="."]
+layer = 200
+visible = false
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="StalactiteIntroVideoLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stream = ExtResource("5_stalactite_video")
+expand = true
+
 [node name="CameraBounds" type="Area2D" parent="."]
 position = Vector2(0.35, 0)
 
@@ -6114,6 +6190,21 @@ position = Vector2(-572, 392)
 
 [node name="from_yuheng_sewer_true" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-572, 392)
+
+[node name="Su_mien_fight_scene" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(10, -125)
+
+[node name="Liu_yu_fight_scene" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-90.925, 96.91)
+
+[node name="molingyanjiana_fight" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(337.19, 30.685)
+
+[node name="zuo_yin_fight_scene" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(106.125, 76.835)
+
+[node name="Liu_yu_after_fight" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-129.915, 35.95)
 
 [node name="Su_mien_event_trigger2" type="Node2D" parent="."]
 
@@ -6134,11 +6225,92 @@ rotation = -0.798613
 [node name="NPC" type="Node2D" parent="."]
 
 [node name="Su_mien" parent="NPC" instance=ExtResource("3_vlvc2")]
+texture_filter = 5
 position = Vector2(23, -126)
 scale = Vector2(0.3, 0.3)
 
 [node name="Zuo_yin" parent="NPC" instance=ExtResource("4_odvg3")]
-position = Vector2(418, -686)
+texture_filter = 5
+position = Vector2(558, -710)
 scale = Vector2(1.3, 1.3)
+
+[node name="Zuo_yin_jump_in" type="Node2D" parent="."]
+
+[node name="Path2D" type="Path2D" parent="Zuo_yin_jump_in"]
+curve = SubResource("Curve2D_yye6m")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Zuo_yin_jump_in/Path2D"]
+position = Vector2(-903, 110)
+rotation = -0.917245
+
+[node name="exit" type="Path2D" parent="Zuo_yin_jump_in"]
+curve = SubResource("Curve2D_7qmjn")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Zuo_yin_jump_in/exit"]
+position = Vector2(103, 80)
+rotation = 3.00968
+
+[node name="Liu_yu_path" type="Node2D" parent="."]
+
+[node name="1_jump_to_attack" type="Path2D" parent="Liu_yu_path"]
+curve = SubResource("Curve2D_8qk8h")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Liu_yu_path/1_jump_to_attack"]
+position = Vector2(-93, 90)
+rotation = -0.522852
+
+[node name="3_jump_backward" type="Path2D" parent="Liu_yu_path"]
+curve = SubResource("Curve2D_k8pdu")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Liu_yu_path/3_jump_backward"]
+position = Vector2(265, 49)
+rotation = 3.1347
+
+[node name="6_help_su_mien" type="Path2D" parent="Liu_yu_path"]
+curve = SubResource("Curve2D_5drlq")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Liu_yu_path/6_help_su_mien"]
+position = Vector2(-98, 86)
+rotation = -0.915101
+
+[node name="Molingyanjiang_path" type="Node2D" parent="."]
+
+[node name="2_dodge_attack" type="Path2D" parent="Molingyanjiang_path"]
+curve = SubResource("Curve2D_5jvkr")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Molingyanjiang_path/2_dodge_attack"]
+position = Vector2(338, 25)
+rotation = -2.14717
+
+[node name="3_attack_liuyu" type="Path2D" parent="Molingyanjiang_path"]
+curve = SubResource("Curve2D_okbwa")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Molingyanjiang_path/3_attack_liuyu"]
+position = Vector2(311, -18)
+rotation = 1.55325
+
+[node name="4_transfer_to_fish" type="Path2D" parent="Molingyanjiang_path"]
+curve = SubResource("Curve2D_kmc3g")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Molingyanjiang_path/4_transfer_to_fish"]
+position = Vector2(307, 42)
+rotation = 2.45267
+
+[node name="Su_mien_path" type="Node2D" parent="."]
+position = Vector2(10, -100)
+
+[node name="4_su_mien_attack" type="Path2D" parent="Su_mien_path"]
+curve = SubResource("Curve2D_5cf7y")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Su_mien_path/4_su_mien_attack"]
+position = Vector2(3, -24.52)
+rotation = -1.5708
+
+[node name="5_hit_fall" type="Path2D" parent="Su_mien_path"]
+curve = SubResource("Curve2D_x7o8y")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Su_mien_path/5_hit_fall"]
+position = Vector2(164, 70)
+rotation = -2.77877
 
 [connection signal="body_entered" from="To_yuheng_sewer_final_room" to="." method="_on_to_yuheng_sewer_final_room_body_entered"]

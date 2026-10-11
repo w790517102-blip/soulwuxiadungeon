@@ -125,10 +125,13 @@ void fragment() {
 ## stone platform, measured on the cave picture. Change it if the platform art moves.
 @export var carp_water_offset := Vector2(215.0, 8.0)
 const CAVE_VICTORY_FADE_IN_SECONDS := 1.0
-const CAVE_VICTORY_BEAT_SECONDS := 0.7
+## 場景轉換（淡入）之後，先等這麼久才開始劇情。
+const CAVE_VICTORY_BEAT_SECONDS := 2.0
 ## 魘將：原地變身五格（每格多久）、停一下，再一跳進水（飛行時間、拋物線高度），入水後加速下沉、水波、淡出。
 const CARP_TRANSFORM_FRAME_SECONDS := 0.4
 const CARP_STRUGGLE_PAUSE_SECONDS := 0.5
+## 魘將（語魅）崩散到完全消失的時間。
+const CARP_BOSS_DISSOLVE_SECONDS := 1.0
 const CARP_JUMP_SECONDS := 0.5
 const CARP_JUMP_HEIGHT := 70.0
 const CARP_JUMP_FALLBACK_DISTANCE := 120.0
@@ -165,6 +168,8 @@ var _phase2_victory_cutscene_active := false
 ## While the ending cutscene runs, the NPCs (and the carp) are drawn in front of / behind each other by their y, like Liu Yu
 ## (his script sets z_index = y every frame; these nodes have no script of their own and would stay at 0, i.e. always behind him).
 var _depth_sync_active := false
+## 宿主：戰後獨立留下的那尾普通鯉魚（與墨鱗魘將是兩個不同的節點；魘將是寄在牠身上的語魅）。
+var _carp_host: Node2D = null
 var _phase_transition_boss: Node2D = null
 var _phase_absorption_fx: Node2D = null
 var _yumei_particle_texture: Texture2D = null
@@ -248,7 +253,7 @@ func _process(_delta: float) -> void:
 	var player := _get_player()
 	if player:
 		offset = int(player.get("z_index_offset"))
-	for actor: Node2D in [zuoyin_npc, shumian_npc, _phase_transition_boss]:
+	for actor: Node2D in [zuoyin_npc, shumian_npc, _phase_transition_boss, _carp_host]:
 		if is_instance_valid(actor) and actor.visible:
 			actor.z_index = int(actor.global_position.y) + offset
 
@@ -1731,8 +1736,11 @@ func _play_phase2_victory_cutscene() -> void:
 	await _fade_cave_in(CAVE_VICTORY_FADE_IN_SECONDS)
 	await get_tree().create_timer(CAVE_VICTORY_BEAT_SECONDS).timeout
 
-	# 1. 魚怪 -> 鯉魚 -> 朝水面跳去 -> 入水消失（沒有旁白；三人仍在戒備）
-	await _play_fish_defeat_and_escape(boss)
+	# 1. 墨鱗魘將（寄在鯉魚身上的語魅）的最後怒吼與遺言 -> 語魅崩散 -> 被裹住的鯉魚獨立留下 -> 鯉魚逃回水裡
+	#    （沒有旁白；三人仍在戒備）
+	await _boss_last_words(boss)
+	var carp := await _boss_collapse_into_host(boss)
+	await _play_carp_escape(carp)
 
 	# 2. 三人先盯著水面，確認牠真的走了，才一個一個放下戒備
 	await get_tree().create_timer(CAVE_VICTORY_WATCH_SECONDS).timeout
@@ -1804,47 +1812,87 @@ func _stage_liuyu_for_phase2_victory(player: Node2D) -> void:
 	_play_actor_animation(player, &"ready_fight_idle_right_down", true)
 
 
-## 墨鱗魘將變成鯉魚、一跳回到水裡。只用既有的兩張動畫，逐格播放、不用整段循環：
-##  1. 在撤退路線的起點原地把 phase2_defeated 五格播完（魚怪 -> 紫霧散開 -> 一尾躺著的鯉魚），
-##  2. 一跳：沿 Molingyanjiang_path/4_transfer_to_fish 直接跳到路線盡頭（岩石與水的邊界）的水裡，垂直方向是自由落體（等加速度的拋物線，沒有滯空），
-##  3. 一落水就只剩尾巴與水花（第四格），加速沉下去，水波（第五格），消失。
-## 位移由 Root（CharacterBody2D）負責，影子跟著 Root；只有 AnimatedSprite2D 做上下的位移。
-func _play_fish_defeat_and_escape(boss: Node2D) -> void:
+## 墨鱗魘將 ≠ 那條鯉魚：魘將是寄在鯉魚身上的語魅（加上長期積累的鎮民情緒穢氣），鯉魚只是被牠裹住的宿主。
+## 這裡先是魘將的最後怒吼與遺言（魘將仍站在戰鬥結束時的位置，停在 phase2_defeated 的第一格）。
+## 魚怪變成鯉魚這一段只用 Chibi Sprite 的動畫演出，不用 Tween（原地播放，不位移、不淡出）。
+func _boss_last_words(boss: Node2D) -> void:
 	if not is_instance_valid(boss):
 		return
-	var sprite := boss.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	await _show_dialog([_l("啊……啊啊啊啊——！！", boss_speaker_id, boss_phase2_portrait_path, "墨鱗魘將")])
+	await _show_dialog([
+		_l("可惡……！", boss_speaker_id, boss_phase2_portrait_path, "墨鱗魘將"),
+		_l("你們以為……把我打散，就算結束了嗎……！", boss_speaker_id, boss_phase2_portrait_path, "墨鱗魘將"),
+		_l("只要那些人還在忍……還在怨……還在恨……", boss_speaker_id, boss_phase2_portrait_path, "墨鱗魘將"),
+		_l("就還會有下一個……！", boss_speaker_id, boss_phase2_portrait_path, "墨鱗魘將"),
+		_l("你們……壓不完的……！", boss_speaker_id, boss_phase2_portrait_path, "墨鱗魘將"),
+	])
+
+
+## 語魅崩散：魘將播放 phase2_defeated 的前三格（魚怪 -> 紫霧散開），第四格起換成另一個獨立的節點——被裹住的普通鯉魚
+## （phase2_defeated 的第四、五格）留在同一處。回傳那尾鯉魚。魘將節點此後隱藏，不再出現。
+func _boss_collapse_into_host(boss: Node2D) -> Node2D:
+	var sprite: AnimatedSprite2D = null
+	if is_instance_valid(boss):
+		sprite = boss.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	var carp: Node2D = MolinYanjiangScene.instantiate() as Node2D
+	if carp == null or sprite == null:
+		return null
+	get_node("NPC").add_child(carp)
+	carp.global_position = boss.global_position
+	carp.scale = boss.scale
+	carp.visible = false
+	_carp_host = carp
+	var carp_sprite := carp.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	# 魘將：從第一格開始播動畫，播到第三格就換手
+	sprite.play(&"phase2_defeated")
+	sprite.set_frame_and_progress(0, 0.0)
+	while is_instance_valid(sprite) and sprite.frame < 3:
+		await sprite.frame_changed
+	boss.visible = false
+	sprite.pause()
+	# 鯉魚：第四格 -> 第五格（動畫續播，停在最後一格）
+	carp.visible = true
+	carp_sprite.play(&"phase2_defeated")
+	carp_sprite.set_frame_and_progress(3, 0.0)
+	await get_tree().create_timer(1.0 / maxf(carp_sprite.sprite_frames.get_animation_speed(&"phase2_defeated"), 0.01)).timeout
+	carp_sprite.pause()
+	carp_sprite.set_frame_and_progress(4, 0.0)
+	return carp
+
+
+## 宿主恢復後：鯉魚在岩地上停一下，然後跳回水裡——沿 Molingyanjiang_path/4_transfer_to_fish 一跳到路線盡頭的水裡
+## （垂直方向是自由落體，見 _carp_jump_into_water），入水後只剩尾巴與水花（jump_into_pond 第四格），加速下沉，
+## 水波（第五格），消失。變成魚的那一段（上面）用 Chibi Sprite 動畫；跳水這段維持原本的位移與路徑。
+func _play_carp_escape(carp: Node2D) -> void:
+	if not is_instance_valid(carp):
+		return
+	var sprite := carp.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	if sprite == null:
-		boss.visible = false
+		carp.visible = false
 		return
 	var base_y: float = sprite.position.y
 	var path := get_node_or_null("Molingyanjiang_path/4_transfer_to_fish") as Path2D
 	var follow := get_node_or_null("Molingyanjiang_path/4_transfer_to_fish/PathFollow2D") as PathFollow2D
-	# 1. 原地變成鯉魚：五格全在原地
-	for frame_index in range(5):
-		_show_actor_frame(sprite, &"phase2_defeated", frame_index)
-		await get_tree().create_timer(CARP_TRANSFORM_FRAME_SECONDS).timeout
-	if not is_instance_valid(boss):
-		return
 	await get_tree().create_timer(CARP_STRUGGLE_PAUSE_SECONDS).timeout
-	if not is_instance_valid(boss):
+	if not is_instance_valid(carp):
 		return
-	# 2. 一跳進水
-	await _carp_jump_into_water(boss, sprite, base_y, path, follow)
-	if not is_instance_valid(boss):
+	# 一跳進水
+	await _carp_jump_into_water(carp, sprite, base_y, path, follow)
+	if not is_instance_valid(carp):
 		return
-	# 3. 入水：尾巴與水花、加速下沉、水波、消失
+	# 入水：尾巴與水花、加速下沉、水波、消失
 	_show_actor_frame(sprite, &"jump_into_pond", 3)
 	var sink := create_tween()
 	sink.tween_property(sprite, "position:y", base_y + CARP_SINK_DEPTH, CARP_SPLASH_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await sink.finished
-	if not is_instance_valid(boss):
+	if not is_instance_valid(carp):
 		return
 	_show_actor_frame(sprite, &"jump_into_pond", 4)
 	var fade := create_tween()
-	fade.tween_property(boss, "modulate:a", 0.0, CARP_SINK_SECONDS)
+	fade.tween_property(carp, "modulate:a", 0.0, CARP_SINK_SECONDS)
 	await fade.finished
-	boss.visible = false
-	boss.modulate.a = 1.0
+	carp.visible = false
+	carp.modulate.a = 1.0
 	sprite.position.y = base_y
 
 
@@ -1916,19 +1964,26 @@ func _relax_after_victory(player: Node2D) -> void:
 func _play_phase2_victory_dialogue() -> void:
 	await _show_dialog([
 		_l("結……結束了？", shumian_speaker_id, shumian_portrait_path),
-		_l("剛才讓我們吃盡苦頭的……竟只是一尾尋常鯉魚。", liuyu_speaker_id, liuyu_portrait_path),
-		_l("魚是尋常。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
-		_l("把牠養成那副模樣的東西，可不是。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
-		_l("舊水道裡積了太久的穢氣……", liuyu_speaker_id, liuyu_portrait_path),
+		_l("沒想到……剛才讓我們吃盡苦頭的，竟只是一尾尋常鯉魚。", liuyu_speaker_id, liuyu_portrait_path),
+		# 左飲立刻校正：剛才的敵人是寄生的語魅，不是鯉魚
+		_l("不是牠。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("嗯？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("方才跟我們廝殺、開口說話的，不是那尾鯉魚。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("是寄在牠身上的語魅。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("那條魚，只是被牠裹了進去。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("語魅一散，自然也就變回原來的模樣。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		# 從宿主帶回玉衡鎮真正的問題（不揭露完整循環）
+		_l("也就是說……真正把事情弄到這個地步的，還是舊水道裡積下來的那些東西。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("是那些被徽音的琴聲壓下去、本來屬於鎮民的怒意麼？", shumian_speaker_id, shumian_portrait_path),
 		_l("不只怒意。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
-		_l("怨、惱、爭執、不甘……人與人活在一處，本來就不可能什麼衝突都沒有。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("怨、惱、爭執、不甘……", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("人與人活在一處，本來就不可能什麼衝突都沒有。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
 		_l("可那些東西沒有真的消失。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("嗯。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
 		_l("壓得久了，又全往一處積。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
-		_l("自然就成了牠最好的養料。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
+		_l("最後連一尾尋常鯉魚，都能被養成方才那副模樣。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
 	])
-	# 停頓一下
+	# 短暫沉默
 	await get_tree().create_timer(CAVE_VICTORY_PAUSE_BEFORE_PEACE_SECONDS).timeout
 	await _show_dialog([
 		_l("……一切都恢復平靜了。", shumian_speaker_id, shumian_portrait_path),
@@ -1939,6 +1994,7 @@ func _play_phase2_victory_dialogue() -> void:
 		_l("我是說，來飲月山莊吧。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
 		_l("有些事情，該坐下來說清楚了。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
 	])
+
 
 
 ## 左飲帶頭離場：沿場景裡的 Zuo_yin_jump_in/exit（Path2D）走向出口；另外兩人的目光跟著他，
