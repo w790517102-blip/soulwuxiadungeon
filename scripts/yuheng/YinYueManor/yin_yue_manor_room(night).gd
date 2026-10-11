@@ -34,11 +34,13 @@ class_name YinYueManorRoomNight
 }
 
 # 對話頭像 / speaker id，若你專案 ID 不同可在 Inspector 調。
+## 頭像規則：劉語塵固定用原本的頭像、固定走下方對話框（speaker id 2）。其他角色：在上方對話框（speaker id 不是 2，
+## 這裡是 4 / 5 / 6）用原本的頭像；若改成下方對話框（speaker id 2，例如洞穴的戰後對話）則用結尾是 2 的那張（*_headshot2.png）。
 @export var empty_portrait_path := "res://assets/sprites/empty.png"
 @export var liuyu_portrait_path := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
-@export var shumian_portrait_path := "res://assets/sprites/Shu_mian/ShuMian_headshot.png"
-@export var zuoyin_portrait_path := "res://assets/sprites/Zuo_yin/ZuoYin_headshot.png"
-@export var huiyin_portrait_path := "res://assets/sprites/Huiyin/Huiyin_headshot.png"
+@export var shumian_portrait_path := "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot.png"
+@export var zuoyin_portrait_path := "res://assets/sprites/NPC/Yuheng/Zuo_Yin_headshot.png"
+@export var huiyin_portrait_path := "res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin_headshot.png"
 
 @export var narration_speaker_id := 0
 @export var liuyu_speaker_id := 2
@@ -59,6 +61,30 @@ class_name YinYueManorRoomNight
 
 @onready var shumian_npc: Node2D = get_node_or_null("Su_mien")
 @onready var zuoyin_npc: Node2D = get_node_or_null("Zuo_yin")
+@onready var huiyin_npc: Node2D = get_node_or_null("Hong_Huei_Yin")
+@onready var huiyin_initial_point: Marker2D = get_node_or_null("SpawnPoints/hong_hui_yin_point")
+
+## 紅徽音站著（idle_<方向>）與坐著（sit_<方向>）的動畫在 Hong_Huei_Yin.tscn；夜間會談她站在 hong_hui_yin_point，朝向座墊。
+const HUIYIN_STAND_ANIMATION := "idle_right_down"
+## 場景轉換（淡入與地圖名稱）之後，先等這麼久才開始劇情。
+const SCENE_START_DELAY_SECONDS := 2.0
+const HUIYIN_SIT_ANIMATION := "sit_right_down"
+## 紅徽音的顏色比原圖淡一點（1.0 = 原色）；她的大小用醉月茶坊的比例（場景裡實例縮放 0.8）。
+const HUIYIN_SATURATION := 0.62
+const HUIYIN_DESATURATE_SHADER := """
+shader_type canvas_item;
+uniform float saturation : hint_range(0.0, 1.0) = 0.62;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV) * COLOR;
+	float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+	COLOR = vec4(mix(vec3(grey), c.rgb, saturation), c.a);
+}
+"""
+## 入座的順序：兩人同時走向座墊，白書眠先坐，很快紅徽音再坐，頓一下之後劉語塵才坐。
+const SHUMIAN_PATH_SECONDS := 1.0
+const LIUYU_PATH_SECONDS := 1.25
+const HUIYIN_SIT_DELAY_SECONDS := 0.4
+const LIUYU_SIT_PAUSE_SECONDS := 0.6
 
 signal dialog_closed
 
@@ -86,7 +112,13 @@ var _waiting_for_dialog := false
 
 func _ready() -> void:
 	if zuoyin_initial_point and zuoyin_npc:
-		zuoyin_npc.global_position = zuoyin_initial_point.global_position
+		_play_anim(zuoyin_npc, "idle_left_down")
+		_place_feet_on_marker(zuoyin_npc, zuoyin_initial_point)
+
+	if huiyin_npc:
+		_play_anim(huiyin_npc, HUIYIN_STAND_ANIMATION)
+		_place_feet_on_marker(huiyin_npc, huiyin_initial_point)
+		_desaturate_huiyin()
 
 	if shumian_initial_point and shumian_npc and not _get_flag(F_NIGHT_MEETING_DONE, false):
 		shumian_npc.global_position = shumian_initial_point.global_position
@@ -103,6 +135,8 @@ func _ready() -> void:
 	if _get_flag(F_NIGHT_MEETING_DONE, false):
 		_setup_post_meeting_state()
 	else:
+		# 場景轉換之後先等一下，才開始劇情（回訪這個場景時不用等）
+		await get_tree().create_timer(SCENE_START_DELAY_SECONDS).timeout
 		await _check_initial_overlap_for_event()
 
 
@@ -138,6 +172,96 @@ func show_map_name() -> void:
 		map_popup.visible = false
 	else:
 		push_warning("MapNamePopup 找不到！請確認 CanvasLayer 裡有加 Label")
+
+
+## 角色站在出生點（SpawnPoints 的 Marker2D）上，指的是「畫面上看到的腳底中心」對準 marker，而不是場景裡人物節點
+## 的原點（各角色的節點原點與 sprite 位置不同）。由目前這一格圖的不透明像素算出腳底中心，再把節點平移到對得上。
+var _feet_cache: Dictionary = {}
+
+
+func _feet_offset_in_sprite(sprite: AnimatedSprite2D) -> Vector2:
+	var frames := sprite.sprite_frames
+	if frames == null or not frames.has_animation(sprite.animation):
+		return Vector2.ZERO
+	var texture: Texture2D = frames.get_frame_texture(sprite.animation, sprite.frame)
+	if texture == null:
+		return Vector2.ZERO
+	var key := "%s|%s" % [texture.get_rid().get_id(), str(texture.get_size())]
+	if texture is AtlasTexture:
+		key = "%d|%s" % [(texture as AtlasTexture).atlas.get_rid().get_id(), str((texture as AtlasTexture).region)]
+	if not _feet_cache.has(key):
+		var image := texture.get_image()
+		var bottom := -1
+		var left := 1 << 30
+		var right := -1
+		if image != null:
+			for y in range(image.get_height() - 1, -1, -1):
+				for x in range(image.get_width()):
+					if image.get_pixel(x, y).a > 0.3:
+						bottom = maxi(bottom, y)
+						left = mini(left, x)
+						right = maxi(right, x)
+				if bottom >= 0 and y < bottom - 6:
+					break
+		var size := texture.get_size()
+		_feet_cache[key] = Vector2(((left + right) * 0.5 + 0.5 - size.x * 0.5) if right >= 0 else 0.0, (bottom + 1.0 - size.y * 0.5) if bottom >= 0 else size.y * 0.5)
+	var local: Vector2 = _feet_cache[key]
+	return sprite.position + local * sprite.scale
+
+
+## 把 node 平移到：畫面上的腳底中心正好落在 marker 上。
+func _place_feet_on_marker(node: Node2D, marker: Marker2D) -> void:
+	if node == null or marker == null:
+		return
+	var sprite := _find_animated_sprite(node)
+	if sprite == null:
+		node.global_position = marker.global_position
+		return
+	var foot_global: Vector2 = node.to_global(_feet_offset_in_sprite(sprite))
+	node.global_position += marker.global_position - foot_global
+
+
+## 前後遮擋：誰在畫面上站得比較低（腳底的 y 比較大），誰就畫在前面。劉語塵的腳本是 z_index = 他的原點 y + z_index_offset，
+## 但各角色的節點原點離腳底的距離不同（白書眠、紅徽音、左飲的節點本身沒有腳本，z 一直是 0），所以這裡每一幀用「腳底」的 y
+## 算出所有人的 z：NPC 直接設 z_index，劉語塵則調整他的 z_index_offset（離開場景時還原）。
+func _process(_delta: float) -> void:
+	_sync_depth_with_feet()
+
+
+func _exit_tree() -> void:
+	var player := _get_player()
+	if player != null and is_instance_valid(player):
+		player.set("z_index_offset", 0)
+		_set_liuyu_sit_scale(player, false)
+
+
+func _sync_depth_with_feet() -> void:
+	for npc: Node2D in [zuoyin_npc, shumian_npc, huiyin_npc]:
+		if npc == null or not is_instance_valid(npc):
+			continue
+		var sprite := _find_animated_sprite(npc)
+		if sprite == null:
+			continue
+		npc.z_index = int(npc.to_global(_feet_offset_in_sprite(sprite)).y)
+	var player := _get_player()
+	if player != null and is_instance_valid(player):
+		var player_sprite := _find_animated_sprite(player)
+		if player_sprite != null:
+			var feet_y: float = player.to_global(_feet_offset_in_sprite(player_sprite)).y
+			player.set("z_index_offset", int(feet_y - player.global_position.y))
+
+
+## 紅徽音的顏色壓低飽和度（只對這個場景的實例）。
+func _desaturate_huiyin() -> void:
+	var sprite := _find_animated_sprite(huiyin_npc)
+	if sprite == null:
+		return
+	var shader := Shader.new()
+	shader.code = HUIYIN_DESATURATE_SHADER
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("saturation", HUIYIN_SATURATION)
+	sprite.material = material
 
 
 func _check_initial_overlap_for_event() -> void:
@@ -189,14 +313,14 @@ func _start_night_meeting() -> void:
 	# 左飲說「坐」以後，角色真的移動到座位。
 	await _move_liuyu_and_shumian_to_seats()
 
-	_play_anim(liuyu, "sit_right_up")
-	_play_anim(shumian_npc, "sit_right_up")
-
 	await _show_dialog(_build_meeting_main_lines())
 
 	# 會談結尾，兩人先起身。書眠回等待位置，讓玩家可以找她觸發支線。
+	_set_liuyu_sit_scale(liuyu, false)
 	_play_anim(liuyu, "idle_right_up")
 	_play_anim(shumian_npc, "idle_right_up")
+	_play_anim(huiyin_npc, HUIYIN_STAND_ANIMATION)
+	_place_feet_on_marker(huiyin_npc, huiyin_initial_point)
 
 	await _move_node_along_path(shumian_npc, shumian_back_path, 1.2, "walk_right_up", "idle_right_up")
 
@@ -484,14 +608,40 @@ func _transition_to_qingfeng_bamboo() -> void:
 func _move_liuyu_and_shumian_to_seats() -> void:
 	var liuyu := _get_player()
 
-	var tween_liuyu := _create_move_tween_along_path(liuyu, liuyu_go_path, 1.25, "walk_right_up", "sit_right_up")
-	var tween_shumian := _create_move_tween_along_path(shumian_npc, shumian_go_path, 1.25, "walk_right_up", "sit_right_up")
+	# 兩人同時走向座墊（到了才各自入座，所以這裡不帶結束動畫）
+	var tween_liuyu := _create_move_tween_along_path(liuyu, liuyu_go_path, LIUYU_PATH_SECONDS, "walk_right_up", "")
+	var tween_shumian := _create_move_tween_along_path(shumian_npc, shumian_go_path, SHUMIAN_PATH_SECONDS, "walk_right_up", "")
 
-	if tween_liuyu:
-		await tween_liuyu.finished
-
-	if tween_shumian and tween_shumian.is_running():
+	# 白書眠先坐
+	if tween_shumian:
 		await tween_shumian.finished
+	_play_anim(shumian_npc, "sit_right_up")
+
+	# 很快，紅徽音再坐下
+	await get_tree().create_timer(HUIYIN_SIT_DELAY_SECONDS).timeout
+	_play_anim(huiyin_npc, HUIYIN_SIT_ANIMATION)
+	_place_feet_on_marker(huiyin_npc, huiyin_initial_point)
+
+	# 最後頓一下，劉語塵才坐（他先走到座墊，站著等一下）
+	if tween_liuyu and tween_liuyu.is_running():
+		await tween_liuyu.finished
+	await get_tree().create_timer(LIUYU_SIT_PAUSE_SECONDS).timeout
+	_set_liuyu_sit_scale(liuyu, true)
+	_play_anim(liuyu, "sit_right_up")
+
+
+## 劉語塵的坐下動畫（chibi sprite sheet）比其他姿勢小一圈，坐著時把 AnimatedSprite2D 放大一點，起身後還原。
+const LIUYU_SIT_SPRITE_SCALE := 1.1
+
+
+func _set_liuyu_sit_scale(liuyu: Node, sitting: bool) -> void:
+	var sprite := _find_animated_sprite(liuyu)
+	if sprite == null:
+		return
+	if not sprite.has_meta("stand_scale"):
+		sprite.set_meta("stand_scale", sprite.scale)
+	var stand_scale: Vector2 = sprite.get_meta("stand_scale")
+	sprite.scale = stand_scale * (LIUYU_SIT_SPRITE_SCALE if sitting else 1.0)
 
 
 func _move_node_along_path(node: Node2D, path: Path2D, duration: float, moving_anim := "", end_anim := "") -> void:
@@ -558,11 +708,24 @@ func _play_anim(node: Node, anim_name: String) -> void:
 	if sprite == null:
 		return
 
-	if sprite.sprite_frames and sprite.sprite_frames.has_animation(anim_name):
-		sprite.play(anim_name)
+	# 白書眠的坐姿動畫叫 Sit_right_up（大寫 S），其他角色是 sit_right_up：名稱不分大小寫地找
+	var resolved := _resolve_animation_name(sprite, anim_name)
+	if resolved != "":
+		sprite.play(resolved)
 	else:
 		# 動畫不存在時不報錯，只保留現狀。
 		print("動畫不存在：", anim_name, " node=", node.name)
+
+
+func _resolve_animation_name(sprite: AnimatedSprite2D, anim_name: String) -> String:
+	if sprite.sprite_frames == null:
+		return ""
+	if sprite.sprite_frames.has_animation(anim_name):
+		return anim_name
+	for candidate in sprite.sprite_frames.get_animation_names():
+		if String(candidate).to_lower() == anim_name.to_lower():
+			return String(candidate)
+	return ""
 
 
 func _find_animated_sprite(node: Node) -> AnimatedSprite2D:

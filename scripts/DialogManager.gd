@@ -131,6 +131,31 @@ func show_synchronized_dialog_pair(lines: Array, npc_node: Node2D = null) -> voi
 	emit_signal("dialog_finished")
 
 
+## 文字區：對話框內、頭像以外的範圍，文字自動換行在這裡面，不會超出框，也不會蓋到頭像。
+## 上方欄（旁白與其他角色）頭像在右邊，文字從左邊起；下方欄（劉語塵）頭像在左邊，文字從頭像右邊起。
+const TEXT_SIDE_PADDING := 61.0
+const TEXT_PORTRAIT_GAP := 24.0
+const TEXT_MIN_WIDTH := 160.0
+var _label_home_x: Dictionary = {}
+
+
+func _fit_label_to_lane(dialog_box: Control, headshot: Sprite2D, label: Label, top_lane: bool) -> void:
+	if not _label_home_x.has(label):
+		_label_home_x[label] = label.position.x
+	var left: float = float(_label_home_x[label])
+	var right: float = dialog_box.size.x - TEXT_SIDE_PADDING
+	if headshot != null and headshot.visible and headshot.texture != null:
+		var half_width: float = float(headshot.texture.get_width()) * absf(headshot.scale.x) * 0.5
+		if top_lane:
+			right = minf(right, headshot.position.x - half_width - TEXT_PORTRAIT_GAP)
+		else:
+			left = maxf(left, headshot.position.x + half_width + TEXT_PORTRAIT_GAP)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # CJK-aware: no line starts with a comma / full stop
+	label.position.x = left
+	label.custom_minimum_size.x = maxf(right - left, TEXT_MIN_WIDTH)
+	label.size = Vector2(label.custom_minimum_size.x, 0.0)
+
+
 func _configure_synchronized_dialog_lane(
 	dialog_box: CanvasItem,
 	headshot: Sprite2D,
@@ -147,6 +172,7 @@ func _configure_synchronized_dialog_lane(
 	if portrait_path != "":
 		headshot.texture = load(portrait_path)
 		headshot.visible = headshot.texture != null
+	_fit_label_to_lane(dialog_box as Control, headshot, label, dialog_box == dialog_box_1)
 	dialog_box.visible = true
 	dialog_box.modulate.a = 0.0
 	headshot.modulate.a = 0.0
@@ -205,6 +231,7 @@ func _head_dialog(
 	if not is_narration and portrait_path != "":
 		headshot.texture = load(portrait_path)
 		headshot.visible = headshot.texture != null
+	_fit_label_to_lane(dialog_box as Control, headshot, label, uses_top_lane)
 
 	dialog_box.visible = true
 	dialog_box.modulate.a = 0.0

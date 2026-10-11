@@ -2,43 +2,237 @@
 
 [ext_resource type="Texture2D" uid="uid://cfei6uiedsd4s" path="res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin.png" id="1_uur71"]
 [ext_resource type="Texture2D" uid="uid://dbu3yhlbpmn6u" path="res://assets/sprites/Liu_Yu/shadow.png" id="4_6mlmy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/NPC/Yuheng/hong_huiyin_idle.png" id="idle_sheet"]
+[ext_resource type="Texture2D" path="res://assets/sprites/NPC/Yuheng/hong_huiyin_sit.png" id="sit_sheet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_xtot4"]
 size = Vector2(38, 14)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_oi6f5"]
-atlas = ExtResource("1_uur71")
-region = Rect2(461, 0, 461, 512)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_uur71"]
 atlas = ExtResource("1_uur71")
 region = Rect2(0, 0, 461, 512)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_47ljs"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_oi6f5"]
 atlas = ExtResource("1_uur71")
-region = Rect2(0, 512, 461, 512)
+region = Rect2(461, 0, 461, 512)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_plqab"]
 atlas = ExtResource("1_uur71")
 region = Rect2(461, 512, 461, 512)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_47ljs"]
+atlas = ExtResource("1_uur71")
+region = Rect2(0, 512, 461, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_down"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(0, 0, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_right_down"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(500, 0, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_right"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(1000, 0, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_right_up"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(1500, 0, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_up"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(0, 650, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_left_up"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(500, 650, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_left"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(1000, 650, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_left_down"]
+atlas = ExtResource("idle_sheet")
+region = Rect2(1500, 650, 500, 650)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_down"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(0, 0, 500, 600)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_up"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(500, 0, 500, 600)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_right_down"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(1000, 0, 500, 600)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_left"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(1500, 0, 500, 600)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_right"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(0, 600, 500, 600)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_right_up"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(500, 600, 500, 600)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_left_up"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(1000, 600, 500, 600)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit_left_down"]
+atlas = ExtResource("sit_sheet")
+region = Rect2(1500, 600, 500, 600)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_jf2vu"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_oi6f5")
-}, {
-"duration": 1.0,
 "texture": SubResource("AtlasTexture_uur71")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_47ljs")
+"texture": SubResource("AtlasTexture_oi6f5")
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_plqab")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_47ljs")
 }],
 "loop": true,
 "name": &"play_qin",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_down")
+}],
+"loop": true,
+"name": &"idle_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_right_down")
+}],
+"loop": true,
+"name": &"idle_right_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_right")
+}],
+"loop": true,
+"name": &"idle_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_right_up")
+}],
+"loop": true,
+"name": &"idle_right_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_up")
+}],
+"loop": true,
+"name": &"idle_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_left_up")
+}],
+"loop": true,
+"name": &"idle_left_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_left")
+}],
+"loop": true,
+"name": &"idle_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle_left_down")
+}],
+"loop": true,
+"name": &"idle_left_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_down")
+}],
+"loop": true,
+"name": &"sit_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_up")
+}],
+"loop": true,
+"name": &"sit_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_right_down")
+}],
+"loop": true,
+"name": &"sit_right_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_left")
+}],
+"loop": true,
+"name": &"sit_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_right")
+}],
+"loop": true,
+"name": &"sit_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_right_up")
+}],
+"loop": true,
+"name": &"sit_right_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_left_up")
+}],
+"loop": true,
+"name": &"sit_left_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit_left_down")
+}],
+"loop": true,
+"name": &"sit_left_down",
 "speed": 5.0
 }]
 
@@ -57,7 +251,7 @@ scale = Vector2(0.3, 0.3)
 sprite_frames = SubResource("SpriteFrames_jf2vu")
 animation = &"play_qin"
 autoplay = "play_qin"
-frame_progress = 0.855843
+frame_progress = 0.977238
 
 [node name="TextureRect" type="TextureRect" parent="."]
 visible = false
