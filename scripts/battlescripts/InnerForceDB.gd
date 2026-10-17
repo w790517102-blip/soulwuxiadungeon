@@ -39,6 +39,50 @@ static func resolve_element_advantage_multiplier(attacker_element: String, defen
 	return 1.0
 
 
+## 清渠護印（清渠共印的防護）：同一份防護有兩個來源——白書眠正在運行《清渠共印》（內功被動），以及《清渠澄心落筆》施放後
+## 留在隊員身上的「清渠護印」狀態（3 回合）。兩者是同一類防護，合併時只算一次：遲屬性防禦取較大值、語魅傷害倍率取較小值，
+## 不會 +30 或 ×0.81。其他來源的防禦／減傷（def_up、臨符、石破心法等）不受影響，照舊各自疊加。
+const WARD_STATUS_ID := "qingqu_ward"
+
+
+## The ward protection an actor has right now, from both sources merged without double counting:
+## {"def_vs_element": {attacker_element: flat defense}, "damage_mult_vs_family": {enemy family: final damage multiplier}}.
+static func resolve_ward_protection(actor: Dictionary) -> Dictionary:
+	var def_vs_element: Dictionary = {}
+	var damage_mult_vs_family: Dictionary = {}
+	var sources: Array = []
+	var force = actor.get("inner_force", {})
+	if typeof(force) == TYPE_DICTIONARY:
+		sources.append(force)
+	var effects = actor.get("status_effects", {})
+	if typeof(effects) == TYPE_DICTIONARY and (effects as Dictionary).has(WARD_STATUS_ID):
+		var record = (effects as Dictionary)[WARD_STATUS_ID]
+		if typeof(record) == TYPE_DICTIONARY and typeof((record as Dictionary).get("payload", {})) == TYPE_DICTIONARY:
+			sources.append((record as Dictionary).get("payload", {}))
+	for source_any in sources:
+		var source: Dictionary = source_any
+		var def_map = source.get("ward_def_vs_element", {})
+		if typeof(def_map) == TYPE_DICTIONARY:
+			for element in (def_map as Dictionary).keys():
+				var value := float((def_map as Dictionary)[element])
+				def_vs_element[String(element)] = maxf(float(def_vs_element.get(String(element), 0.0)), value)
+		var mult_map = source.get("ward_damage_mult_vs_family", {})
+		if typeof(mult_map) == TYPE_DICTIONARY:
+			for family in (mult_map as Dictionary).keys():
+				var mult := float((mult_map as Dictionary)[family])
+				damage_mult_vs_family[String(family)] = minf(float(damage_mult_vs_family.get(String(family), 1.0)), mult)
+	return {"def_vs_element": def_vs_element, "damage_mult_vs_family": damage_mult_vs_family}
+
+
+## The payload a 清渠護印 status carries: the very numbers of the inner force that defines it (one place to tune).
+static func ward_payload_from_force(force_id: String) -> Dictionary:
+	var force: Dictionary = (INNER_FORCES.get(force_id, {}) as Dictionary)
+	return {
+		"ward_def_vs_element": (force.get("ward_def_vs_element", {}) as Dictionary).duplicate(true),
+		"ward_damage_mult_vs_family": (force.get("ward_damage_mult_vs_family", {}) as Dictionary).duplicate(true),
+	}
+
+
 static func _compute_runtime_effects(force: Dictionary, actor: Dictionary = {}) -> Dictionary:
 	if force.is_empty():
 		return {}
@@ -298,6 +342,18 @@ const INNER_FORCES := {
 		"accuracy_flat_bonus": 4,
 		"max_mp_flat_bonus": 6,
 		"skill_mp_cost_multiplier_by_weapon": {"槍": 0.90},
+	},
+	"qingqu_gongyin": {
+		"id": "qingqu_gongyin",
+		"prefix": "清渠",
+		"type": "共印",
+		"element": "遲",
+		"description": "清渠共印，是書眠回到舊水道、把自己貼下的符一張張看完之後才悟出的內功。不再把一切獨自壓在心底，而是讓水路有口可流，守住自己，也替身邊的人留一條出路。",
+		"extra_effect_desc": "運行時：受到遲屬性攻擊，防禦 +15；受到語魅造成的傷害，最終傷害 ×0.9。\n與「澄心落筆」相合：清渠澄心落筆。",
+		"extra_effect_summary": "遲屬性防禦、語魅減傷",
+		"ward_def_vs_element": {"遲": 15},
+		"ward_damage_mult_vs_family": {"yumei": 0.9},
+		"available": ["shumian"],
 	},
 	"tiancan_jue": {
 		"id": "tiancan_jue",

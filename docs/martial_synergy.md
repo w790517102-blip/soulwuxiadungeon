@@ -18,7 +18,7 @@ hit_count / status_apply / stat_scaling / target_rule / damage / mp_cost / eleme
 `SkillDB.get_inner_force_linkage_entries` 的「專屬搭配／奧義條件／絕技分支」文字、Inspect「相合」頁。
 
 ## 新增一組標準相合
-在 `RECORDS` 加一筆 `relation_type = standard`、寫 `effects`（目前戰鬥認得 `strike_count_delta`、`on_hit_status`、`bonus_stat_scaling`）。
+在 `RECORDS` 加一筆 `relation_type = standard`、寫 `effects`（目前戰鬥認得 `strike_count_delta`、`on_hit_status`、`bonus_stat_scaling`，以及支援招式用的 `team_status`：施放當下依施術者目前運行的內功成立，讓全隊獲得該狀態；清渠共印×澄心落筆用它）。
 新的效果種類要先讓 BattleController / CharacterSkill 認得，表只是資料。不要在別處再寫一份文字。
 
 ## 三層顯示（基礎／相合／目前）

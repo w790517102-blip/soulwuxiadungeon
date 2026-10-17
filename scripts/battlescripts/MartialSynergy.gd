@@ -63,6 +63,21 @@ const RECORDS := [
 		"conditions": [],
 		"effects": {"bonus_stat_scaling": {"str": 0.70, "agi": 0.45}},
 	},
+	{
+		"synergy_id": "qingqu_gongyin__skill_chengxin_luobi",
+		"relation_type": RELATION_STANDARD,
+		"inner_skill_id": "qingqu_gongyin",
+		"martial_skill_id": "skill_chengxin_luobi",
+		"display_name": "清渠澄心落筆",
+		"display_description": "清渠共印下可進化為「清渠澄心落筆」：保留澄心落筆的解控與回復，並使全隊獲得 3 回合的清渠護印。",
+		"short_description": "專屬：清渠澄心落筆，全隊獲得3回合清渠護印。",
+		"linkage_kind": "專屬搭配",
+		"conditions": [],
+		# On cast the whole party gets the 清渠護印 status; its numbers are the inner force's own (InnerForceDB.ward_payload_from_force).
+		"effects": {"team_status": {"effect_id": "qingqu_ward", "turns": 3, "payload_from_inner_force": true}},
+		"modifiers": {"target_rule": "全隊獲得清渠護印（3 回合）", "other": ["遲屬性攻擊：防禦 +15", "語魅造成的傷害 ×0.9"]},
+		"log": "{name} 運轉清渠共印，筆意順著水路淌開，替同伴把守住了出口。",
+	},
 	# --- described only; the runtime is SkillDB.legendary_chain / risk_upgrade and is not moved here
 	{
 		"synergy_id": "shipo_xinfa__skill_tianjingquan",

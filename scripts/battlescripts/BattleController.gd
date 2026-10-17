@@ -7,6 +7,7 @@ const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 const CharacterSkillScript = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillView = preload("res://scripts/battlescripts/SkillView.gd")
 const StatusEffectManagerScript = preload("res://scripts/battle/StatusEffectManager.gd")
+const InnerForceDBScript = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const BattleDamageGuard = preload("res://scripts/battle/BattleDamageGuard.gd")
 const StageEntityRegistryScript = preload("res://scripts/battlescripts/StageEntityRegistry.gd")
 const StageTargeting = preload("res://scripts/battlescripts/StageTargeting.gd")
@@ -78,6 +79,10 @@ const SE_SEARCH_DIRS := [
 ]
 const SE_EXTENSIONS := [".ogg", ".wav", ".mp3"]
 const SE_VARIANT_MAX := 4
+## Names of the statuses a support skill can cleanse, for the log line.
+const SUPPORT_CLEANSE_NAMES := {"confuse": "混亂"}
+## 鞘擊音效：從持鞘卡開始動作，到鞘尾碰上目標的時間（蓄勢 0.08 秒、前踏 0.14 秒、之後揮擊命中）。
+const SHEATH_STRIKE_SE_DELAY_SECONDS := 0.3
 const WEAPON_SE_MAP := {
 	"刀": "sword",
 	"劍": "sword",
@@ -3582,6 +3587,52 @@ func defend_action(actor: Dictionary) -> void:
 #  - 氣療掌：單體補血
 #  - 墨筆舒心：全體少量補血
 # =========================
+## 支援招式在回血之外的附帶效果：
+##  1) `cleanse_statuses`：目標身上若有這些狀態就化開（沒有的狀態不會憑空出現）。
+##  2) 相合的 `team_status`（見 MartialSynergy）：施放當下、依施術者「目前運行」的內功成立；成立就讓我方全隊（活著的）獲得該狀態。
+##     狀態一旦掛上就是各隊員身上的正式 Status Effect，之後施術者換功不會取消它，剩餘回合也不重算。
+func _apply_support_extras(user: Dictionary, skill_data: Dictionary, targets: Array) -> void:
+	var cleanse = skill_data.get("cleanse_statuses", [])
+	if typeof(cleanse) == TYPE_ARRAY and not (cleanse as Array).is_empty():
+		for t in targets:
+			if typeof(t) != TYPE_DICTIONARY:
+				continue
+			for status_id in cleanse:
+				if status_manager.has_effect(t, String(status_id)):
+					status_manager.remove_effect(t, String(status_id))
+					_log("%s 身上的「%s」被化開了。" % [String(t.get("name", "???")), String(SUPPORT_CLEANSE_NAMES.get(String(status_id), String(status_id)))])
+			_update_ui_for_actor(t)
+
+	var rule: Dictionary = _resolve_pairing_bonus(user, skill_data)
+	var effects = rule.get("effects", {})
+	var team_status = (effects as Dictionary).get("team_status", {}) if typeof(effects) == TYPE_DICTIONARY else {}
+	if typeof(team_status) != TYPE_DICTIONARY or (team_status as Dictionary).is_empty():
+		return
+	var status_id: String = String(team_status.get("effect_id", ""))
+	var turns: int = int(team_status.get("turns", 3))
+	var payload: Dictionary = {}
+	if bool(team_status.get("payload_from_inner_force", false)):
+		payload = InnerForceDBScript.ward_payload_from_force(String(rule.get("inner_force_id", "")))
+	elif typeof(team_status.get("payload", {})) == TYPE_DICTIONARY:
+		payload = (team_status.get("payload", {}) as Dictionary).duplicate(true)
+	if status_id == "" or turns <= 0:
+		return
+	var log_line: String = String(rule.get("log", ""))
+	if log_line != "":
+		_log_narration(log_line.replace("{name}", String(user.get("name", "俠士"))))
+	var applied_names: Array = []
+	for ally in player_party:
+		if typeof(ally) != TYPE_DICTIONARY or int(ally.get("hp", 0)) <= 0:
+			continue
+		# Re-casting refreshes the same status to its full turns; it never stacks a second copy.
+		if status_manager.apply_effect(ally, status_id, payload, turns):
+			applied_names.append(String(ally.get("name", "???")))
+			_update_ui_for_actor(ally)
+	if not applied_names.is_empty():
+		_log("「清渠護印」籠罩全隊（%d 回合）：%s。" % [turns, "、".join(applied_names)])
+		_play_support_se("buff")
+
+
 func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, target: Dictionary) -> void:
 	var user_name: String  = user.get("name", "???")
 	var user_id: String    = user.get("id", "")
@@ -3628,6 +3679,9 @@ func _execute_support_heal_action(user: Dictionary, skill_data: Dictionary, targ
 		if actual_target.is_empty():
 			actual_target = user
 		targets.append(actual_target)
+
+	# 回復之外的附帶效果（化開狀態、相合帶來的全隊狀態）。全隊滿血時也照樣生效，所以放在「有沒有補到血」的判斷之前。
+	_apply_support_extras(user, skill_data, targets)
 
 	# 🔢 回復量：優先 heal_amount，沒有就用 power
 	var base_amount: int = int(skill_data.get("heal_amount", skill_data.get("power", 0)))

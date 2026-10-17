@@ -141,7 +141,7 @@ func _check_all(fixture: Node) -> void:
 	for record: Dictionary in table.all():
 		if String(record.relation_type) == "standard":
 			standard += 1
-	_expect(standard == 3, "the table holds exactly the three standard pairings")
+	_expect(standard == 4, "the table holds exactly the four standard pairings (流塵連決劍、伏潮斷水斬、沉潮破浪槍、清渠澄心落筆)")
 	_expect(table.exclusive_skill_ids("liuchen_jue") == ["skill_lianjuejian"], "exclusive ids derive from the table")
 	var lian_lines: Array = base_db.get_inner_force_linkage_entries(lian, with_force, liuchen)
 	var found_linkage: bool = false

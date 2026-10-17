@@ -248,6 +248,13 @@ func execute(
 	defense += floorf(_adjacency(target, "CONSTITUTION_UP") * 0.8)
 	var flat_bonus: float = _adjacency(target, "DEFENSE_UP")
 	defense += flat_bonus
+	# 清渠護印（清渠共印的內功被動，與清渠澄心落筆留下的狀態，兩個來源合併後只算一次）：對遲屬性等指定屬性的攻擊，防禦加一個固定值。
+	# 和上面的臨符同樣在「防守時 ×2」之前加進防禦。
+	var ward: Dictionary = InnerForceDB.resolve_ward_protection(target)
+	var ward_defense: float = float((ward.get("def_vs_element", {}) as Dictionary).get(user_element, 0.0))
+	if ward_defense > 0.0:
+		defense += ward_defense
+		context["ward_def_flat"] = ward_defense
 	var adjacency_bonus: float = _adjacency(target, "DEFENSE_UP_PCT")
 	if adjacency_bonus > 0.0:
 		defense *= 1.0 + adjacency_bonus
@@ -268,6 +275,15 @@ func execute(
 		dmg *= (1.0 - reduction)
 		if dmg < 1.0:
 			dmg = 1.0
+
+	# 清渠護印：受到語魅（敵人資料的正式 family = "yumei"）造成的傷害，在 ATK、DEF、屬性防禦等都算完之後的最終待承受傷害再 ×倍率。
+	# 不看招式屬性：語魅用任何屬性的攻擊都適用。
+	var ward_family_multiplier: float = float((ward.get("damage_mult_vs_family", {}) as Dictionary).get(String(user.get("family", "")), 1.0))
+	if ward_family_multiplier < 1.0:
+		dmg *= maxf(ward_family_multiplier, 0.0)
+		if dmg < 1.0:
+			dmg = 1.0
+		context["ward_damage_multiplier"] = ward_family_multiplier
 
 	# 裝備效果在最終取整前套用；只認敵人資料的正式 family，不由名稱或外觀推斷。
 	if String(user.get("family", "")) == "animal":

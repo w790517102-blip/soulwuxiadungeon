@@ -13,6 +13,7 @@ const GUARD_BARRIER_NAME := "魘鱗護體"
 const GUARD_BARRIER_ICON := "status_guard_barrier"
 
 const OVERRIDES: Dictionary = {
+	"qingqu_ward": {"name": "清渠護印", "icon": "status_def_up", "kind": ""},
 	"yumei_entanglement": {"name": GUARD_BARRIER_NAME, "icon": GUARD_BARRIER_ICON, "kind": "guard"},
 }
 

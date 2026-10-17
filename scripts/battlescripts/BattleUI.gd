@@ -197,6 +197,7 @@ const BUFF_ABBREV := {
 	"speed_buff": "速",
 	"warm_wine_buff": "攻",
 	"atk_up": "攻",
+	"qingqu_ward": "渠",
 	"def_up": "防",
 	"focus": "命",
 	"evasion_boost": "閃",

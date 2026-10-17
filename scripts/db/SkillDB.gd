@@ -130,6 +130,25 @@ const SKILLS := {
 		"effects": [{"type": "heal_hp", "amount": 40}],
 		"available": {"mode": "all"},
 	},
+	"skill_chengxin_luobi": {
+		"id": "skill_chengxin_luobi",
+		"name": "澄心落筆",
+		"category": "單體恢復",
+		"description": "落筆之前先靜心。筆鋒輕點，化開友軍的混亂，並回復 100 點生命。",
+		"weapon_type": "筆",
+		"menu_usable": true,
+		"mp_cost": 75,
+		"target_scope": "single",
+		"target_side": "ally",
+		"effects": [{"type": "heal_hp", "amount": 100}],
+		# Removed from the target when present. (沉默 is not a status of this battle system, so it is not listed.)
+		"cleanse_statuses": ["confuse"],
+		# Not 書眠-only: eligibility and sharing follow the ordinary martial-skill rules. At the end of 《渠燈補封》 書眠 learns it by her own
+		# insight and 劉語塵 by resonance (both TeamData.learn_skill, Lv1 is enough); nobody gets it through a manual, and it is not
+		# companion-insight enabled, so no automatic 共鳴 can happen before that scene. Once 劉語塵 knows it, the existing sharing
+		# rule (his personal knowledge reaching eligible teammates) applies.
+		"available": {"mode": "all"},
+	},
 	"skill_xianglong18": {
 		"id": "skill_xianglong18",
 		"name": "翔龍十八掌",

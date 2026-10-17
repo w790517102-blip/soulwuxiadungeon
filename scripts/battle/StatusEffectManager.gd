@@ -154,6 +154,15 @@ func apply_effect(target: Dictionary, effect_id: String, payload: Dictionary, tu
 			"root":
 				if int(effect_payload.get("evasion_delta", 0)) == 0:
 					effect_payload["evasion_delta"] = -20
+			"qingqu_ward":
+				# 清渠護印：遲屬性防禦與語魅最終傷害倍率（數字由施放時帶進來；結算在 SkillExecutor 經 InnerForceDB.resolve_ward_protection）
+				var ward_def = effect_payload.get("ward_def_vs_element", {})
+				var ward_mult = effect_payload.get("ward_damage_mult_vs_family", {})
+				if typeof(ward_def) != TYPE_DICTIONARY or typeof(ward_mult) != TYPE_DICTIONARY:
+					return false
+				if (ward_def as Dictionary).is_empty() and (ward_mult as Dictionary).is_empty():
+					return false
+				effect_payload = {"ward_def_vs_element": (ward_def as Dictionary).duplicate(true), "ward_damage_mult_vs_family": (ward_mult as Dictionary).duplicate(true)}
 			_:
 				return false
 
@@ -383,6 +392,8 @@ func describe_effect(effect_id: String, actor: Dictionary, effect_record: Dictio
 			return "%s 速度下降 %d（剩 %d 回合）。" % [actor_name, int(payload.get("slow_delta", 0)), turns_left]
 		"force_element":
 			return "%s 屬性轉為「%s」（剩 %d 回合）。" % [actor_name, String(payload.get("element", "?")), turns_left]
+		"qingqu_ward":
+			return "%s 受到「清渠護印」守護：受遲屬性攻擊防禦 +15，受語魅傷害 ×0.9（剩 %d 回合）。" % [actor_name, turns_left]
 		"yumei_entanglement":
 			return "%s 被「%s」護住，玩家造成的生命傷害將歸零。" % [actor_name, StatusDisplay.GUARD_BARRIER_NAME]
 		_:

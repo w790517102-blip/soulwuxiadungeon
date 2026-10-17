@@ -19,13 +19,14 @@ const STATUS_NAMES := {
 	"weaken": "無力", "atk_up": "昂勢", "def_up": "護脈", "break_def": "破防", "weak": "虛弱", "seal_mp": "封穴",
 	"blind": "目盲", "focus": "凝神", "evasion_boost": "輕身", "root": "定身", "warm_wine_buff": "暖身酒",
 	"force_element": "元素變化",
+	"qingqu_ward": "清渠護印",
 	"stat_buff_str": "強身", "stat_buff_agi": "敏捷", "stat_buff_int": "啟慧", "stat_buff_con": "健體", "stat_buff_luck": "聚福",
 	"stat_debuff_str": "壓勁", "stat_debuff_agi": "亂弦", "stat_debuff_int": "惑思", "stat_debuff_con": "奪息", "stat_debuff_luck": "厄運",
 }
 const GLYPHS := {
 	"speed_buff": "速", "slow": "緩", "poison": "毒", "stun": "暈", "confuse": "亂", "weaken": "弱", "atk_up": "攻",
 	"def_up": "防", "break_def": "破", "weak": "衰", "seal_mp": "損", "blind": "盲", "focus": "命", "evasion_boost": "閃",
-	"root": "困", "warm_wine_buff": "攻", "force_element": "元",
+	"root": "困", "warm_wine_buff": "攻", "force_element": "元", "qingqu_ward": "渠",
 }
 const NEGATIVE := ["poison", "stun", "confuse", "slow", "weaken", "break_def", "weak", "seal_mp", "blind", "root"]
 const STAT_NAMES := {"str": "力量", "agi": "敏捷", "int": "智慧", "con": "體能", "luck": "幸運"}
@@ -219,6 +220,8 @@ static func _effect_text(id: String, payload: Dictionary) -> String:
 			return "速度 −%d" % abs(int(payload.get("slow_delta", 0)))
 		"poison":
 			return "每回合結束損失生命"
+		"qingqu_ward":
+			return _ward_text(payload)
 		"stun":
 			return "無法行動"
 		"confuse":
@@ -648,3 +651,17 @@ static func _synergy_block(provider: Object, actor: Dictionary, running: Diction
 		text += "（條件未滿足，相合未生效）"
 	lines.append("目前：%s" % text)
 	return lines
+
+
+## 清渠護印 payload as one line: "遲屬性攻擊：防禦 +15；語魅傷害 ×0.9".
+static func _ward_text(payload: Dictionary) -> String:
+	var parts: Array[String] = []
+	var def_map = payload.get("ward_def_vs_element", {})
+	if typeof(def_map) == TYPE_DICTIONARY:
+		for element in (def_map as Dictionary).keys():
+			parts.append("%s屬性攻擊：防禦 +%d" % [String(element), int((def_map as Dictionary)[element])])
+	var mult_map = payload.get("ward_damage_mult_vs_family", {})
+	if typeof(mult_map) == TYPE_DICTIONARY:
+		for family in (mult_map as Dictionary).keys():
+			parts.append("%s傷害 ×%s" % ["語魅" if String(family) == "yumei" else String(family), str(snappedf(float((mult_map as Dictionary)[family]), 0.01))])
+	return "；".join(parts)
