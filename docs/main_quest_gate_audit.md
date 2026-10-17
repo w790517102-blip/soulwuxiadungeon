@@ -32,9 +32,9 @@
 | 舊井／舊水道入口 | Area2D 切圖。 | `STAGE_YH_SEWER_STARTED` | 建議 `event_huiyin_first_talk_done` 或 `main_yh_zhuoqu_xunzong_started` | 進入舊水道後可標 `main_yh_sewer_entered` | 目前入口可能缺主線 gate；後續需補，避免未聽紅徽音就進主線水道。 |
 | 舊水道三機關與終端房 | 水道房間互動與終端房封印。 | `STAGE_YH_SEWER_MECHANISMS` | `sewer_alchemy_solved`, `sewer_music_solved`, `sewer_talisman_solved` | `sewer_final_seal_opened` | 目前終端房有三機關 flags；建議解除封印時 advance 到 stage 9 前置。 |
 | 鐘乳石洞魚怪戰 | 進入鐘乳石洞後 intro/battle。 | `STAGE_YH_STALACTITE_CAVE` | `sewer_final_seal_opened`; not `event_stalactite_shumian_intro_done` / not `battle_stalactite_fish_boss_won` | `battle_stalactite_fish_boss_*`, `main_yh_manor_after_fish_ready` | 必須要求終端房封印已開，不可只靠 stage >= 9。 |
-| 飲月山莊夜間會談 | 夜間山莊 event_area / ready。 | `STAGE_YH_NIGHT_MEETING` | `main_yh_manor_after_fish_ready`, not `event_yin_yue_night_meeting_done` | `event_yin_yue_night_meeting_done`, `main_yh_ready_for_qingfeng`, `party_shumian_join_*` | 必須要求魚怪戰完成後旗標。 |
-| 書眠《渠燈補封》支線入口 | 舊水道真房／書眠相關互動。 | 建議 stage 10 前後 | `shumian_pre_departure_available`, not `shumian_clean_sewer_done` | `shumian_clean_sewer_done` | 不應阻斷主線，但若影響夜會選項需以 flag 判斷。 |
-| 左飲出發清風竹林事件 | 夜會後轉場。 | `STAGE_YH_LIEFENG_STARTED` | `event_yin_yue_night_meeting_done`, `main_yh_ready_for_qingfeng`, `main_yh_zuoyin_supplies_received` | `main_chapter_liefeng_started` | 不可只靠 stage >= 11；需確認夜會與補給完成。 |
+| 飲月山莊夜間會談 | 夜間山莊 event_area / ready。 | `STAGE_YH_NIGHT_MEETING` | `main_yh_manor_after_fish_ready`, not `event_yin_yue_night_meeting_done` | `event_yin_yue_night_meeting_done`, `main_yh_ready_for_qingfeng`, `shumian_pre_departure_available`, `party_shumian_join_pending`，接著留宿黑幕（`event_yin_yue_overnight_done`）→ 飲月山莊白天 | 必須要求魚怪戰完成後旗標；夜談只開放翌日選擇，不再直接接支線或入隊。 |
+| 書眠《渠燈補封》支線入口 | 翌日白天飲月山莊，主動與書眠對話並答應。 | 序章收尾階段（夜談已完成、尚未啟程） | `shumian_pre_departure_available`, not `shumian_qudeng_accepted`, not `shumian_clean_sewer_done`, not `shumian_qudeng_missed` | `shumian_qudeng_accepted`、書眠入隊（`party_shumian_joined`）、SideQuestManager `shumian_qudeng`；完成 `shumian_clean_sewer_done`；啟程時未完成則 `shumian_qudeng_missed`（任務紀錄顯示「已錯過」） | 入隊、支線進度、是否啟程是三件獨立的事（`YuhengPrologueState.gd`）；拒絕邀請不改任何狀態。 |
+| 左飲出發烈風寨事件 | 翌日白天飲月山莊，主動與左飲對話並確認。 | `STAGE_YH_LIEFENG_STARTED` | `event_yin_yue_night_meeting_done`；支線未完成要二次確認 | `main_yh_zuoyin_supplies_received`, `main_chapter_liefeng_started`，書眠確保入隊，支線結算 | 轉場目標不可用時不留下任何狀態；不可只靠 stage >= 11。 |
 
 ## 目前優先跳關風險
 

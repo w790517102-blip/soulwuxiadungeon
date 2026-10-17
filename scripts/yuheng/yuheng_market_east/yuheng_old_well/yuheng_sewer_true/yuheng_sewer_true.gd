@@ -17,7 +17,7 @@ class_name YuhengSewerTrue
 
 @export_file("*.tscn") var yuheng_old_well: String = "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_old_well.tscn"
 @export_file("*.tscn") var yuheng_stalactite_cave: String = "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_final_room/yuheng_stalactite_cave/yuheng_stalactite_cave.tscn"
-@export_file("*.tscn") var yuheng_sewer_true_room: String = "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_true/yuheng_sewer_true_room.tscn"
+@export_file("*.tscn") var yuheng_sewer_true_room: String = "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_true/yuheng_sewer_true_room/yuheng_sewer_true_room.tscn"
 
 @export var old_well_spawn_point := "from_yuheng_sewer_true"
 @export var stalactite_cave_spawn_point := "from_yuheng_sewer_true"
@@ -42,6 +42,12 @@ signal dialog_closed
 
 const F_QUDENG_STARTED := "shumian_qudeng_started"
 const F_QUDENG_INTRO_SEEN := "shumian_qudeng_intro_seen"
+
+## 第一次進入時，黑幕淡出結束到開始初見對白之間的等待秒數（這段時間玩家不能動）。
+const INTRO_DELAY_AFTER_FADE_SECONDS := 1.5
+
+## 已遷移到 InteractionZones 的互動 ID（舊的 Area2D 退役）。
+const MIGRATED_INTERACTION_IDS := ["memory_qin", "memory_writing_desk", "memory_medicine_cabinet", "loot_herb_basket", "loot_qi_box", "loot_haste_scroll"]
 
 const MEMORY_IDS := [
 	"memory_qin",
@@ -89,14 +95,26 @@ var _space_was_down := false
 
 
 func _ready() -> void:
+	YuhengPrologueState.repair_sewer_loot_items()
 	_connect_transition_areas()
 	_connect_interaction_areas()
+	_bind_interaction_zones()
+
+	# 第一次進來（還沒看過初見對白）：玩家一進場就不能動，等黑幕淡出結束、再過一小段時間才開始對白，對白結束才恢復操作。
+	var first_visit: bool = not bool(_get_flag(F_QUDENG_INTRO_SEEN, false))
+	if first_visit:
+		interaction_locked = true
+		_set_player_movable(false)
 
 	await _play_entry_fade()
-	await show_map_name()
 
-	if not _get_flag(F_QUDENG_INTRO_SEEN, false):
+	if first_visit:
+		# 地圖名稱照常顯示，但不擋住對白的時間點
+		show_map_name()
+		await get_tree().create_timer(INTRO_DELAY_AFTER_FADE_SECONDS).timeout
 		await _show_intro_once()
+	else:
+		await show_map_name()
 
 
 func get_map_display_name() -> String:
@@ -254,7 +272,10 @@ func _handle_loot(loot_id: String) -> void:
 	for line in data.get("lines", []):
 		lines.append(_n_or_speaker(str(line)))
 
-	_add_item(item_id, amount)
+	# 真正放進背包成功才算領取：領取旗標、背包實際變化、取得提示三者一致。失敗就不寫旗標、不顯示「獲得」，之後還能再拿。
+	if not _add_item(item_id, amount):
+		await _show_dialog([_n("（背包出了點問題，這件東西沒能收下。請回報。）")])
+		return
 	_set_flag(flag_name, true)
 
 	lines.append(_n("獲得 %s ×%d。" % [display_name, amount]))
@@ -280,6 +301,26 @@ func _connect_transition_areas() -> void:
 		to_yuheng_sewer_true_room.body_entered.connect(_on_to_yuheng_sewer_true_room_body_entered)
 
 
+## 新互動系統（碰撞區／蛋黃區／蛋白區，見 InteractionTarget）：每個 InteractionZones 底下的目標，名字就是互動 ID。
+## 只有空白鍵（臉朝蛋黃區、人在蛋白區裡）或滑鼠點蛋黃區才會互動；走進蛋白區本身不會觸發任何事。
+func _bind_interaction_zones() -> void:
+	var zones := get_node_or_null("InteractionZones")
+	if zones == null:
+		return
+	for child in zones.get_children():
+		var target := child as InteractionTarget
+		if target == null:
+			continue
+		var interaction_id := String(target.name)
+		target.availability = _interaction_available
+		target.handler = func(_player: Node2D) -> void:
+			await _handle_interaction(interaction_id)
+
+
+func _interaction_available() -> bool:
+	return not interaction_locked and not transition_locked
+
+
 func _connect_interaction_areas() -> void:
 	var containers := [
 		get_node_or_null("InvestigationAreas"),
@@ -291,6 +332,11 @@ func _connect_interaction_areas() -> void:
 			continue
 
 		for child in container.get_children():
+			# 已經遷移到新互動系統（InteractionZones 的三層區域）的舊 Area2D 退役：不再監聽，也不再偵測，避免新舊兩套同時觸發。
+			if MIGRATED_INTERACTION_IDS.has(String(child.name)):
+				if child is Area2D:
+					(child as Area2D).set_deferred("monitoring", false)
+				continue
 			if child is Area2D:
 				_connect_interaction_area(child as Area2D, child.name)
 
@@ -362,23 +408,8 @@ func _fade_out() -> void:
 	await tween.finished
 
 
-func _add_item(item_id: String, amount: int) -> void:
-	var inventory := _get_first_node([
-		"/root/InventoryManager",
-		"/root/GameRoot/InventoryManager",
-		"/root/InventorySync",
-		"/root/GameRoot/InventorySync",
-	])
-
-	if inventory:
-		if inventory.has_method("add_item"):
-			inventory.add_item(item_id, amount)
-			return
-		if inventory.has_method("add"):
-			inventory.add(item_id, amount)
-			return
-
-	_set_flag("received_item_%s" % item_id, true)
+func _add_item(item_id: String, amount: int) -> bool:
+	return YuhengPrologueState.grant_item(item_id, amount)
 
 
 func _is_interact_pressed() -> bool:

@@ -297,6 +297,12 @@ func load_from_slot(slot_index: int) -> void:
 		QuestManager.load_main_quest(_as_dict(data.get("main_quest", {})))
 	if TeamData and TeamData.has_method("import_team_state"):
 		TeamData.import_team_state(_as_dict(data.get("team_data", {})))
+	# 舊存檔裡已經正式入隊、卻停在 Lv2 的書眠：補到序章該有的 Lv6（條件與細節見 YuhengPrologueState）
+	YuhengPrologueState.repair_shumian_join_level()
+	# 舊存檔：補符支線已完成、書眠卻沒有真的學會澄心落筆／清渠共印（舊版只寫旗標）→ 補發（條件與細節見 YuhengPrologueState）
+	YuhengPrologueState.repair_qudeng_rewards()
+	# 舊存檔：舊水道搜刮只寫了領取旗標與假記號、背包沒有東西 → 補發（條件很窄，見 YuhengPrologueState.repair_sewer_loot_items）
+	YuhengPrologueState.repair_sewer_loot_items()
 	if InventorySync and InventorySync.has_method("import_inventory_state"):
 		InventorySync.import_inventory_state(_as_dict(data.get("inventory_data", {})))
 

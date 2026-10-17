@@ -12,6 +12,8 @@ const MolinPhase2ParryTexture: Texture2D = preload("res://assets/sprites/NPC/Yuh
 # ------------------------------------------------------------
 @export_file("*.tscn") var yuheng_sewer_final_room: String = "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_final_room/yuheng_sewer_final_room.tscn"
 @export_file("*.tscn") var yin_yue_manor_room_night: String = "res://scenes/yuheng/YinYueManor/yin_yue_manor_room/yin_yue_manor_room(night).tscn"
+## 飲月山莊夜談之後，鐘乳石洞的出口接到「淨化後的舊水道」，不再回到被語魅污染的終端房。
+@export_file("*.tscn") var yuheng_sewer_true: String = "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_true/yuheng_sewer_true.tscn"
 
 @export var music_tag := "yuheng_sewer"
 @export var map_display_name: String = "玉衡鎮地下鐘乳石洞"
@@ -209,6 +211,9 @@ func _ready() -> void:
 		_play_actor_animation(shumian_npc, &"idle_right_up", true)
 	if zuoyin_npc:
 		zuoyin_npc.visible = false
+	# 主線進到飲月山莊夜談之後：劇情演出用的書眠不再留在洞裡（她已經回到玩家身邊）。
+	if shumian_npc and not phase2_victory_return_pending and YuhengPrologueState.flag(YuhengPrologueState.F_NIGHT_MEETING_DONE):
+		_remove_story_shumian_from_cave()
 
 	if event_trigger:
 		if not event_trigger.body_entered.is_connected(_on_su_mien_event_trigger_body_entered):
@@ -246,6 +251,17 @@ func _ready() -> void:
 
 ## Same rule as the player and the other NPC scripts: z_index = int(global_y + z_index_offset), so whoever stands lower on
 ## the screen is drawn in front. Never a sudden swap: it follows the y of each node every frame.
+## 讓洞裡的劇情書眠消失：看不見、碰撞與感應都關掉、不再執行腳本。節點留著不刪，其他程式對她的參考才不會失效。
+func _remove_story_shumian_from_cave() -> void:
+	shumian_npc.visible = false
+	for child in shumian_npc.find_children("*", "CollisionShape2D", true, false):
+		(child as CollisionShape2D).set_deferred("disabled", true)
+	for child in shumian_npc.find_children("*", "Area2D", true, false):
+		(child as Area2D).set_deferred("monitoring", false)
+		(child as Area2D).set_deferred("monitorable", false)
+	shumian_npc.process_mode = Node.PROCESS_MODE_DISABLED
+
+
 func _process(_delta: float) -> void:
 	if not _depth_sync_active:
 		return
@@ -1711,14 +1727,17 @@ func _on_to_yuheng_sewer_final_room_body_entered(body: Node2D) -> void:
 
 	await _fade_out()
 
+	# 主線推進到飲月山莊夜談之後，水道已經淨化：從洞裡回去走淨化後的舊水道（兩個場景的入口標記同名：from_yuheng_stalactite_cave）
+	var exit_scene: String = yuheng_sewer_true if YuhengPrologueState.flag(YuhengPrologueState.F_NIGHT_MEETING_DONE) else yuheng_sewer_final_room
+
 	var game_root := get_node_or_null("/root/GameRoot")
 	if game_root:
 		game_root.spawn_point_name = sewer_final_room_spawn_point_name
 		if game_root.has_method("change_map_to"):
-			game_root.change_map_to(yuheng_sewer_final_room)
+			game_root.change_map_to(exit_scene)
 			return
 
-	get_tree().change_scene_to_file(yuheng_sewer_final_room)
+	get_tree().change_scene_to_file(exit_scene)
 
 
 # ------------------------------------------------------------

@@ -543,21 +543,22 @@ func _build_quest_entries() -> Array:
 			if sq.is_empty():
 				continue
 			var sq_finished := bool(sq.get("is_finished", false))
+			var sq_missed := bool(sq.get("is_missed", false)) and not sq_finished
 			var sq_note_lines: Array = sq.get("notes", [])
 			var sq_note_text := _format_notes_for_display(sq_note_lines)
 			entries.append({
 				"id": quest_id,
 				"title": String(sq.get("title", quest_id)),
 				"type": "支線",
-				"status": "已完成" if sq_finished else "進行中",
+				"status": "已完成" if sq_finished else ("已錯過" if sq_missed else "進行中"),
 				"description": String(sq.get("description", "尚無支線描述。")),
 				"objective": String(sq.get("current_objective", sq.get("objective", sq.get("current_goal", sq.get("description", "請追蹤線索。"))))),
 				"note": sq_note_text if sq_note_text != "" else String(sq.get("note", sq.get("liuyu_note", sq.get("observation", "")))),
 				"stage": int(sq.get("stage", 0)),
 			})
 	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		var a_finished := String(a.get("status", "")) == "已完成"
-		var b_finished := String(b.get("status", "")) == "已完成"
+		var a_finished := ["已完成", "已錯過"].has(String(a.get("status", "")))
+		var b_finished := ["已完成", "已錯過"].has(String(b.get("status", "")))
 		if a_finished != b_finished:
 			return not a_finished
 		return String(a.get("id", "")) < String(b.get("id", ""))
@@ -591,10 +592,11 @@ func _refresh_quest_list_for_category(category: String) -> void:
 				if qtype != "主線" or status == "已完成":
 					continue
 			"支線":
-				if qtype != "支線" or status == "已完成":
+				if qtype != "支線" or status == "已完成" or status == "已錯過":
 					continue
 			"已完成":
-				if status != "已完成":
+				# 已錯過的支線也收在這一頁（終止狀態，標題旁的狀態會顯示「已錯過」）
+				if status != "已完成" and status != "已錯過":
 					continue
 		filtered.append(entry)
 	for entry in filtered:

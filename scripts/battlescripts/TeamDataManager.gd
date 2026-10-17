@@ -169,6 +169,40 @@ func unlock_roster(actor_id: String) -> bool:
 	refresh_liuyu_companion_insights()
 	return true
 
+## 書眠正式入隊（飲月山莊的支線同意，或啟程時自動入隊）時呼叫：確保她是玉衡鎮序章的正式 Lv6。
+## 新遊戲的書眠本來就是 Lv6（_initialize_canonical_character_states_once）；但舊存檔裡的書眠卡片（Lv1 時代留下的
+## 進度，例如 Lv2）會在讀檔時蓋掉它。這裡只「補到 Lv6」，不會降級，也不會重複套用：
+##  - 等級已經 >= 6：什麼都不做（包含已經超過 6 級的書眠，以及已經修正過的書眠）。
+##  - 等級 < 6：走正式的升級管線（_level_up_actor）一級一級升到 6，能力值、HP／MP 與劉語塵升級時同一套公式；
+##    經驗值保留（玩家已經賺到的不扣），學武／內功只補齊缺的，不覆蓋。
+## 回傳是否真的升了級。只動永久角色資料，不碰 Boss 戰的劇情戰鬥卡片（get_story_battle_party_for_actor_ids）。
+func ensure_shumian_story_join_level() -> bool:
+	var actor_id := "shumian"
+	if not all_characters.has(actor_id):
+		return false
+	_initialize_canonical_character_states_once()
+	var actor: Dictionary = all_characters[actor_id]
+	_normalize_character(actor)
+	var changed := false
+	if int(actor.get("level", 1)) < SHUMIAN_INITIAL_LEVEL:
+		while int(actor.get("level", 1)) < SHUMIAN_INITIAL_LEVEL:
+			_level_up_actor(actor)
+		var next_exp_cap := exp_required(int(actor.get("level", 1))) - 1
+		actor["exp"] = clampi(int(actor.get("exp", 0)), 0, next_exp_cap)
+		all_characters[actor_id] = actor
+		changed = true
+	# 序章就該會的起始武學（只補缺的）
+	var known := get_known_skill_ids(actor_id)
+	for skill_id in SHUMIAN_INITIAL_SKILL_IDS:
+		if not known.has(skill_id):
+			if learn_skill(actor_id, String(skill_id), false):
+				changed = true
+	if changed:
+		refresh_natural_skill_learning(actor_id)
+		refresh_liuyu_companion_insights()
+	return changed
+
+
 func get_roster_unlocked_actor_ids() -> Array:
 	return roster_unlocked_actor_ids.duplicate()
 

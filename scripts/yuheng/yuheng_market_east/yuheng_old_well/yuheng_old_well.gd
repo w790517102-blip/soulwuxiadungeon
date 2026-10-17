@@ -72,6 +72,9 @@ func _on_to_yuheng_market_east_body_entered(body: Node2D):
 func _on_to_yuheng_sewer_center_body_entered(body: Node2D) -> void:
 	if not _is_sewer_route_unlocked():
 		return
+	if not YuhengPrologueState.can_enter_clean_sewer():
+		await _play_clean_sewer_not_ready_dialog(body)
+		return
 	if MapTransitionGuard.can_transition(body, sewer_transition):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
@@ -80,6 +83,27 @@ func _on_to_yuheng_sewer_center_body_entered(body: Node2D) -> void:
 		await tween.finished
 		get_node("/root/GameRoot").spawn_point_name = "from_yuheng_old_well"
 		get_node("/root/GameRoot").change_map_to(yuheng_sewer_true)
+
+
+## 夜談之後，舊水道的補符是書眠的支線：還沒答應陪她（或已錯過）就不下去。
+func _play_clean_sewer_not_ready_dialog(body: Node2D) -> void:
+	if body == null or body.name != "LiuYu":
+		return
+	var dialog_manager := get_node_or_null("/root/GameRoot/DialogManager")
+	if dialog_manager == null or bool(dialog_manager.get("dialog_active")):
+		return
+	var lines: Array
+	if YuhengPrologueState.get_side_quest_state() == YuhengPrologueState.SideQuestState.MISSED:
+		lines = [{"text": "舊水道的符已經交給時間了。玉衡鎮這邊，先告一段落。", "speaker": LIUYU_SPEAKER_ID, "portrait": LIUYU_PORTRAIT_PATH}]
+	else:
+		lines = [
+			{"text": "（舊水道裡的符，是書眠姑娘親手貼的。）", "speaker": LIUYU_SPEAKER_ID, "portrait": LIUYU_PORTRAIT_PATH},
+			{"text": "（要下去，還是先回飲月山莊問問她的意思。）", "speaker": LIUYU_SPEAKER_ID, "portrait": LIUYU_PORTRAIT_PATH},
+		]
+	body.set("can_move", false)
+	dialog_manager.show_dialog_sequence(lines, self)
+	await dialog_manager.dialog_sequence_finished
+	body.set("can_move", true)
 
 
 func _is_sewer_route_unlocked() -> bool:

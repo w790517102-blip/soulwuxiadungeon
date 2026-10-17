@@ -6,6 +6,9 @@ const ShopUI = preload("res://scripts/ui/ShopUI.gd")
 @export var portrait_path := "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot1.png"
 @export var speaker_id := 1
 @export var shop_id: String = "bai_jian_jue_bookstore"
+## 白箋居裡的書眠平常都面向右下（站在櫃檯後）。除非有動畫演出或之後的劇情要她轉向，否則不會因為玩家靠近、對話而轉頭。
+@export var default_idle_animation := "idle_right_down"
+@export var turn_to_face_player := false
 @onready var animated_sprite := $AnimatedSprite2D
 
 var dialog_manager: Node = null
@@ -20,11 +23,20 @@ func _ready():
 	if dialog_manager == null:
 		push_warning("[TeaGirl] DialogManager 沒抓到！")
 	# 若主線已超過 1，視為已遇過（僅用於避免場內重播初見）
+	_play_default_idle()
 	var main_stage := _get_main_stage_safely()
 func _process(_delta):
 	z_index = int(global_position.y + z_index_offset)
 
+func _play_default_idle() -> void:
+	if animated_sprite and animated_sprite.sprite_frames and animated_sprite.sprite_frames.has_animation(default_idle_animation):
+		animated_sprite.play(default_idle_animation)
+
+
 func face_towards(target_position: Vector2) -> void:
+	if not turn_to_face_player:
+		_play_default_idle()
+		return
 	var direction = (target_position - global_position).normalized()
 	var anim_name = _get_anim_by_vector(direction, "idle")
 	if $AnimatedSprite2D.sprite_frames.has_animation(anim_name):

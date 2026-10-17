@@ -1,8 +1,10 @@
-[gd_scene load_steps=8 format=4 uid="uid://cl8yvga4xodxw"]
+[gd_scene load_steps=10 format=4 uid="uid://cl8yvga4xodxw"]
 
 [ext_resource type="Script" uid="uid://bqxs1dmroypvb" path="res://scripts/yuheng/YinYueManor/yin_yue_manor_room(day).gd" id="1_d51pn"]
 [ext_resource type="Texture2D" uid="uid://c35tqefsseml2" path="res://assets/background/Yuheng_Town/yin_yue_manor/yin_yue_manor_room(day).jpg" id="1_hbvvw"]
 [ext_resource type="PackedScene" uid="uid://be5jvmk4r64mc" path="res://scenes/yuheng/YinYueManor/yin_yue_manor_room/zuo_yin.tscn" id="3_5djl6"]
+[ext_resource type="Script" path="res://scripts/yuheng/YinYueManor/yin_yue_manor_day_shumian.gd" id="su_day_script"]
+[ext_resource type="PackedScene" uid="uid://cykxkyibmttl1" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Su_mien.tscn" id="su_mien_scene"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_d51pn"]
 texture = ExtResource("1_hbvvw")
@@ -6097,7 +6099,6 @@ scale = Vector2(0.871308, 2.18516)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="to_yin_yue_manor"]
 position = Vector2(-512.44, 240.324)
 rotation = 0.303687
-scale = Vector2(1, 1)
 skew = 0.994838
 shape = SubResource("RectangleShape2D_rfo5i")
 
@@ -6109,5 +6110,10 @@ position = Vector2(-352, 420)
 [node name="Zuo_yin" parent="." instance=ExtResource("3_5djl6")]
 position = Vector2(60, 7)
 scale = Vector2(1.3, 1.3)
+
+[node name="Su_mien" parent="." instance=ExtResource("su_mien_scene")]
+position = Vector2(-40, 20)
+scale = Vector2(0.3, 0.3)
+script = ExtResource("su_day_script")
 
 [connection signal="body_entered" from="to_yin_yue_manor" to="." method="_on_to_yin_yue_manor_body_entered"]

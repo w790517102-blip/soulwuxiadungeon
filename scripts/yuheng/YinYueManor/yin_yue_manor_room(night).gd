@@ -8,30 +8,17 @@ class_name YinYueManorRoomNight
 # 流程：
 # 1. 鐘乳石洞魚怪戰後進入本場景，踩到 trigger 後啟動會談。
 # 2. 左飲說「坐」後，劉語塵與書眠沿 Path2D 移動到座位，播放 sit_right_up。
-# 3. 會談結束，書眠沿 Su_mien_back_path 回到等待位置。
-# 4. 玩家恢復自由行動，可準備補給、接書眠支線，或找左飲出發下一章。
-# 5. 找左飲出發時，左飲給 500 文與補給，書眠正式入隊，切換到清風竹林入口。
+# 3. 會談結束，眾人起身；黑幕留宿一晚（旁白字幕），切換到飲月山莊白天場景。
+# 4. 翌日白天的自由探索、書眠支線入口與左飲啟程入口都在 yin_yue_manor_room(day).gd；
+#    狀態（旗標、入隊、支線）統一放在 YuhengPrologueState.gd。
 # ------------------------------------------------------------
 
 @export var music_tag := "yuheng"
 @export var map_display_name: String = "飲月山莊・夜間"
 
-# 下一章入口。請在 Inspector 裡改成你的清風竹林入口場景。
-@export_file("*.tscn") var qingfeng_bamboo_entrance_scene_path := ""
-
-@export var qingfeng_spawn_point_name := "from_yin_yue_manor"
-@export var money_reward := 500
-
-# 左飲補給。ItemDB 已確認這些 ID 存在。
-@export var supply_items: Dictionary = {
-	"med_jinchuang_small": 2,
-	"med_stopbleed_herb": 3,
-	"med_qi_restore_small": 2,
-	"med_calm_pill": 1,
-	"med_awaken_tonic": 1,
-	"med_antidote_powder": 1,
-	"food_dried_rations": 3,
-}
+## 留宿一晚之後的飲月山莊白天場景與出生點（沿用既有的白天場景資源）。
+@export_file("*.tscn") var yin_yue_manor_room_day := "res://scenes/yuheng/YinYueManor/yin_yue_manor_room/yin_yue_manor_room(day).tscn"
+@export var day_spawn_point_name := "from_YinYueManor"
 
 # 對話頭像 / speaker id，若你專案 ID 不同可在 Inspector 調。
 ## 頭像規則：劉語塵固定用原本的頭像、固定走下方對話框（speaker id 2）。其他角色：在上方對話框（speaker id 不是 2，
@@ -85,28 +72,29 @@ const SHUMIAN_PATH_SECONDS := 1.0
 const LIUYU_PATH_SECONDS := 1.25
 const HUIYIN_SIT_DELAY_SECONDS := 0.4
 const LIUYU_SIT_PAUSE_SECONDS := 0.6
+## 夜談結束、大家起身之後，到黑幕留宿之前的停頓。
+const MEETING_END_PAUSE_SECONDS := 1.0
+## 留宿字幕（每段淡入、停留、淡出，之後的白天場景自己淡入）。
+const OVERNIGHT_CAPTIONS := [
+	"夜已深了。左飲命人收拾客房，留你與白書眠在飲月山莊歇息一晚。",
+	"這一夜，山莊難得平靜。",
+	"待你再次睜眼時，晨光已悄然透過窗紙。",
+]
+const OVERNIGHT_CAPTION_FADE_SECONDS := 0.3
+const OVERNIGHT_CAPTION_HOLD_SECONDS := 1.8
+const OVERNIGHT_CAPTION_GAP_SECONDS := 0.2
 
 signal dialog_closed
 
 # ------------------------------------------------------------
 # Flags
 # ------------------------------------------------------------
-const F_AFTER_FISH_READY := "main_yh_manor_after_fish_ready"
-const F_NIGHT_MEETING_DONE := "event_yin_yue_night_meeting_done"
-
-const F_READY_FOR_QINGFENG := "main_yh_ready_for_qingfeng"
-const F_SHUMIAN_SIDE_AVAILABLE := "shumian_pre_departure_available"
-const F_SHUMIAN_CLEAN_SEWER_DONE := "shumian_clean_sewer_done"
-
-const F_SHUMIAN_JOIN_PENDING := "party_shumian_join_pending"
-const F_SHUMIAN_JOINED := "party_shumian_joined"
-
-const F_ZUOYIN_SUPPLIES_RECEIVED := "main_yh_zuoyin_supplies_received"
-const F_LIEFENG_CHAPTER_STARTED := "main_chapter_liefeng_started"
+const F_AFTER_FISH_READY := YuhengPrologueState.F_AFTER_FISH_READY
+const F_NIGHT_MEETING_DONE := YuhengPrologueState.F_NIGHT_MEETING_DONE
+const F_OVERNIGHT_DONE := YuhengPrologueState.F_OVERNIGHT_DONE
 
 var story_locked := false
 var transition_locked := false
-var post_meeting_interaction_locked := false
 var _waiting_for_dialog := false
 
 
@@ -122,6 +110,8 @@ func _ready() -> void:
 
 	if shumian_initial_point and shumian_npc and not _get_flag(F_NIGHT_MEETING_DONE, false):
 		shumian_npc.global_position = shumian_initial_point.global_position
+		# 夜談開始前，書眠站著、面向右上（Su_mien.tscn 的預設姿勢是共用的，不能靠它；隔天白天在日間場景才改成右下）
+		_play_anim(shumian_npc, "idle_right_up")
 
 	if event_area:
 		if not event_area.body_entered.is_connected(_on_yin_yue_manor_event_trigger_body_entered):
@@ -133,7 +123,9 @@ func _ready() -> void:
 	await show_map_name()
 
 	if _get_flag(F_NIGHT_MEETING_DONE, false):
-		_setup_post_meeting_state()
+		# 夜談已經結束：不重播夜談，也不重複留宿（留宿字幕只在尚未留宿時播一次）
+		_disable_event_area()
+		await _go_to_next_morning(not _get_flag(F_OVERNIGHT_DONE, false))
 	else:
 		# 場景轉換之後先等一下，才開始劇情（回訪這個場景時不用等）
 		await get_tree().create_timer(SCENE_START_DELAY_SECONDS).timeout
@@ -315,24 +307,22 @@ func _start_night_meeting() -> void:
 
 	await _show_dialog(_build_meeting_main_lines())
 
-	# 會談結尾，兩人先起身。書眠回等待位置，讓玩家可以找她觸發支線。
+	# 會談結尾，大家起身。夜談到此結束：書眠的支線與烈風寨的啟程都留到翌日白天，由玩家自己選。
 	_set_liuyu_sit_scale(liuyu, false)
 	_play_anim(liuyu, "idle_right_up")
 	_play_anim(shumian_npc, "idle_right_up")
 	_play_anim(huiyin_npc, HUIYIN_STAND_ANIMATION)
 	_place_feet_on_marker(huiyin_npc, huiyin_initial_point)
 
-	await _move_node_along_path(shumian_npc, shumian_back_path, 1.2, "walk_right_up", "idle_right_up")
+	await get_tree().create_timer(MEETING_END_PAUSE_SECONDS).timeout
 
 	_set_flag(F_NIGHT_MEETING_DONE, true)
-	_set_flag(F_READY_FOR_QINGFENG, true)
-	_set_flag(F_SHUMIAN_SIDE_AVAILABLE, true)
-	_set_flag(F_SHUMIAN_JOIN_PENDING, true)
+	_set_flag(YuhengPrologueState.F_READY_FOR_QINGFENG, true)
+	_set_flag(YuhengPrologueState.F_SHUMIAN_SIDE_AVAILABLE, true)
+	_set_flag(YuhengPrologueState.F_SHUMIAN_JOIN_PENDING, true)
 
-	_setup_post_meeting_state()
-
-	_set_player_movable(true)
-	story_locked = false
+	# 留宿一晚（黑幕＋旁白字幕）→ 飲月山莊白天。留宿只在這裡走一次。
+	await _go_to_next_morning(true)
 
 
 func _build_meeting_opening_lines() -> Array:
@@ -457,149 +447,88 @@ func _build_meeting_main_lines() -> Array:
 		_n("她頓了一下。"),
 		_l("……但現在不是計較這些的時候。", huiyin_speaker_id, huiyin_portrait_path),
 		_l("劉少俠，我也去。", shumian_speaker_id, shumian_portrait_path),
-		_l("妳留下。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("左莊主？", shumian_speaker_id, shumian_portrait_path),
-		_l("先留下。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("舊水道，妳還沒回去看。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_n("白書眠沉默。"),
-		_l("那些符是妳貼的。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("妳一直說，是自己沒有補好。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("既然如此，就先回去看清楚。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("我不是要妳留在玉衡鎮。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("我是要妳先把自己不敢回頭看的地方，看完。", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("看完了，妳若還想走——", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("我不攔。", zuoyin_speaker_id, zuoyin_portrait_path),
+		_l("書眠，舊水道的那些符，妳還沒回去看。", zuoyin_speaker_id, zuoyin_portrait_path),
+		_l("……我知道。", shumian_speaker_id, shumian_portrait_path),
+		_l("若還有放不下的事，就趁出發前去看一眼。", zuoyin_speaker_id, zuoyin_portrait_path),
+		_l("但路要怎麼走，妳自己決定。", zuoyin_speaker_id, zuoyin_portrait_path),
 		_l("……書眠。", huiyin_speaker_id, huiyin_portrait_path),
 		_n("白書眠抬頭。"),
 		_l("去看看吧。", huiyin_speaker_id, huiyin_portrait_path),
 		_l("不是為了補給誰看。", huiyin_speaker_id, huiyin_portrait_path),
 		_l("只是去看看。", huiyin_speaker_id, huiyin_portrait_path),
-		_l("劉少俠。", shumian_speaker_id, shumian_portrait_path),
-		_l("嗯？", liuyu_speaker_id, liuyu_portrait_path),
-		_l("出發以前……能陪我去一趟舊水道嗎？", shumian_speaker_id, shumian_portrait_path),
-		_l("去看那些符？", liuyu_speaker_id, liuyu_portrait_path),
-		_n("白書眠微微點頭。"),
-		_l("墨鱗魘將已退，語魅也散了。", shumian_speaker_id, shumian_portrait_path),
-		_l("那裡現在已經沒有什麼要躲的了。", shumian_speaker_id, shumian_portrait_path),
-		_l("所以我想回去。", shumian_speaker_id, shumian_portrait_path),
-		_l("把能補的補好，也把該看的看完。", shumian_speaker_id, shumian_portrait_path),
-		_l("好。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("主線更新：準備前往烈風寨。"),
-		_n("可與書眠對話，前往舊水道查看封印。"),
-		_n("準備完成後，與左飲對話，即可出發。"),
 	]
 
 
 # ------------------------------------------------------------
-# 會談後：自由行動與左飲出發事件
+# 夜談之後：留宿一晚 → 飲月山莊白天
 # ------------------------------------------------------------
-func _setup_post_meeting_state() -> void:
-	_disable_event_area()
-
-	var liuyu := _get_player()
-	_play_anim(liuyu, "idle_right_up")
-	_play_anim(shumian_npc, "idle_right_up")
-	_play_anim(zuoyin_npc, "idle_left_down")
-
-	# 若重載場景，讓書眠站回等待點；沒有 marker 時，就停留目前位置。
-	var back_follow := _get_path_follow(shumian_back_path)
-	if shumian_npc and back_follow:
-		back_follow.progress_ratio = 1.0
-		shumian_npc.global_position = back_follow.global_position
-
-	_set_flag(F_READY_FOR_QINGFENG, true)
-	_set_flag(F_SHUMIAN_SIDE_AVAILABLE, true)
-	_set_flag(F_SHUMIAN_JOIN_PENDING, true)
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-		if story_locked or transition_locked or post_meeting_interaction_locked:
-			return
-		if not _get_flag(F_NIGHT_MEETING_DONE, false):
-			return
-
-		var player := _get_player()
-		if player == null:
-			return
-
-		if zuoyin_npc and player.global_position.distance_to(zuoyin_npc.global_position) <= 90.0:
-			await _start_departure_with_zuoyin()
-
-
-func _start_departure_with_zuoyin() -> void:
-	if transition_locked or post_meeting_interaction_locked:
+## 黑幕遮住畫面 → （第一次才）旁白字幕 → 載入白天場景 → 白天場景自己淡入，並把控制權還給玩家。
+## 留宿只走一次：F_OVERNIGHT_DONE 在載入白天場景之前才設定，之後再回到這個場景只會直接前往白天，不再播字幕。
+func _go_to_next_morning(play_captions: bool) -> void:
+	if transition_locked:
 		return
-
-	post_meeting_interaction_locked = true
-	_set_player_movable(false)
-
-	await _show_dialog([
-		_l("準備好了？", zuoyin_speaker_id, zuoyin_portrait_path),
-		_l("嗯。", liuyu_speaker_id, liuyu_portrait_path),
-		_l("那就出發。", zuoyin_speaker_id, zuoyin_portrait_path),
-	])
-
-	if not _get_flag(F_ZUOYIN_SUPPLIES_RECEIVED, false):
-		_give_zuoyin_supplies()
-		await _show_dialog(_build_supply_received_lines())
-
-	_set_flag(F_ZUOYIN_SUPPLIES_RECEIVED, true)
-	_set_flag(F_SHUMIAN_JOINED, true)
-	_set_flag(F_SHUMIAN_JOIN_PENDING, false)
-	_set_flag(F_LIEFENG_CHAPTER_STARTED, true)
-
-	_add_shumian_to_party()
-
-	await _show_dialog([
-		_n("書眠加入隊伍。"),
-		_n("主線更新：前往清風竹林，尋找通往烈風寨的道路。"),
-	])
-
-	await _transition_to_qingfeng_bamboo()
-
-	post_meeting_interaction_locked = false
-
-
-func _build_supply_received_lines() -> Array:
-	return [
-		_n("獲得 500 文。"),
-		_n("獲得 金創藥·小 ×2。"),
-		_n("獲得 止血草 ×3。"),
-		_n("獲得 回氣散·小 ×2。"),
-		_n("獲得 清心丸 ×1。"),
-		_n("獲得 醒神湯 ×1。"),
-		_n("獲得 解毒散 ×1。"),
-		_n("獲得 乾糧 ×3。"),
-	]
-
-
-func _give_zuoyin_supplies() -> void:
-	_add_money(money_reward)
-	for item_id in supply_items.keys():
-		_add_item(str(item_id), int(supply_items[item_id]))
-
-
-func _transition_to_qingfeng_bamboo() -> void:
 	transition_locked = true
 	_set_player_movable(false)
 
 	await _fade_out()
+	if play_captions:
+		await _play_overnight_captions()
 
-	if qingfeng_bamboo_entrance_scene_path == "":
-		push_warning("尚未設定 qingfeng_bamboo_entrance_scene_path，無法前往清風竹林。")
-		_set_player_movable(true)
-		transition_locked = false
-		return
+	_set_flag(F_OVERNIGHT_DONE, true)
+	_advance_main_quest_after_night_meeting()
 
 	var game_root := get_node_or_null("/root/GameRoot")
-	if game_root:
-		game_root.spawn_point_name = qingfeng_spawn_point_name
-		if game_root.has_method("change_map_to"):
-			game_root.change_map_to(qingfeng_bamboo_entrance_scene_path)
-			return
+	if game_root and game_root.has_method("change_map_to"):
+		game_root.spawn_point_name = day_spawn_point_name
+		game_root.change_map_to(yin_yue_manor_room_day)
+		return
 
-	get_tree().change_scene_to_file(qingfeng_bamboo_entrance_scene_path)
+	get_tree().change_scene_to_file(yin_yue_manor_room_day)
+
+
+func _advance_main_quest_after_night_meeting() -> void:
+	# 夜談結束時主線進到「準備前往烈風寨」；真正啟程（轉場成功）才會進到烈風寨章（左飲 NPC 那邊處理）。
+	if QuestManager and QuestManager.get_main_stage() < QuestManager.STAGE_YH_NIGHT_MEETING + 1:
+		QuestManager.advance_main_quest(
+			QuestManager.STAGE_YH_NIGHT_MEETING,
+			"準備前往烈風寨。可先與書眠談談，準備好了再與左飲對話出發。"
+		)
+
+
+## 黑幕上的旁白字幕（和鐘乳石洞戰後的返程字幕同一種做法：CanvasLayer 上的置中文字，逐段淡入、停留、淡出）。
+func _play_overnight_captions() -> void:
+	var canvas_layer := get_node_or_null("CanvasLayer") as CanvasLayer
+	if canvas_layer == null:
+		push_warning("飲月山莊夜間場景找不到 CanvasLayer，留宿字幕將略過。")
+		return
+
+	var caption := Label.new()
+	caption.name = "OvernightCaption"
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	caption.add_theme_color_override("font_color", Color(0.96, 0.96, 0.94, 1.0))
+	caption.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	caption.add_theme_constant_override("outline_size", 6)
+	caption.add_theme_font_size_override("font_size", 24)
+	caption.modulate.a = 0.0
+	canvas_layer.add_child(caption)
+	var viewport_size := get_viewport_rect().size
+	caption.position = Vector2(viewport_size.x * 0.1, 0.0)
+	caption.size = Vector2(viewport_size.x * 0.8, viewport_size.y)
+
+	for caption_text in OVERNIGHT_CAPTIONS:
+		caption.text = String(caption_text)
+		caption.modulate.a = 0.0
+		var caption_tween := caption.create_tween()
+		caption_tween.tween_property(caption, "modulate:a", 1.0, OVERNIGHT_CAPTION_FADE_SECONDS)
+		caption_tween.tween_interval(OVERNIGHT_CAPTION_HOLD_SECONDS)
+		caption_tween.tween_property(caption, "modulate:a", 0.0, OVERNIGHT_CAPTION_FADE_SECONDS)
+		await caption_tween.finished
+		await get_tree().create_timer(OVERNIGHT_CAPTION_GAP_SECONDS).timeout
+
+	caption.queue_free()
 
 
 # ------------------------------------------------------------
@@ -742,78 +671,6 @@ func _find_animated_sprite(node: Node) -> AnimatedSprite2D:
 			return found
 
 	return null
-
-
-# ------------------------------------------------------------
-# Party / Inventory
-# ------------------------------------------------------------
-func _add_shumian_to_party() -> void:
-	var party_manager := _get_first_node([
-		"/root/PartyManager",
-		"/root/GameRoot/PartyManager",
-		"/root/PartyController",
-		"/root/GameRoot/PartyController",
-	])
-
-	if party_manager:
-		if party_manager.has_method("add_member"):
-			party_manager.add_member("shumian")
-			return
-		if party_manager.has_method("set_party_member"):
-			party_manager.set_party_member(2, "shumian")
-			return
-		if party_manager.has_method("add_party_member"):
-			party_manager.add_party_member("shumian")
-			return
-
-	_set_flag("party_slot_2", "shumian")
-
-
-func _add_item(item_id: String, amount: int) -> void:
-	var inventory := _get_first_node([
-		"/root/InventoryManager",
-		"/root/GameRoot/InventoryManager",
-		"/root/InventorySync",
-		"/root/GameRoot/InventorySync",
-	])
-
-	if inventory:
-		if inventory.has_method("add_item"):
-			inventory.add_item(item_id, amount)
-			return
-		if inventory.has_method("add"):
-			inventory.add(item_id, amount)
-			return
-
-	# 找不到背包時，至少用 flag 記錄已給過。
-	_set_flag("received_item_%s" % item_id, true)
-
-
-func _add_money(amount: int) -> void:
-	var inventory := _get_first_node([
-		"/root/InventoryManager",
-		"/root/GameRoot/InventoryManager",
-		"/root/InventorySync",
-		"/root/GameRoot/InventorySync",
-		"/root/EconomyManager",
-		"/root/GameRoot/EconomyManager",
-	])
-
-	if inventory:
-		if inventory.has_method("add_money"):
-			inventory.add_money(amount)
-			return
-		if inventory.has_method("add_currency"):
-			inventory.add_currency("wen", amount)
-			return
-		if inventory.has_method("add_gold"):
-			inventory.add_gold(amount)
-			return
-
-	var current_money := int(_get_flag("money", 0))
-	_set_flag("money", current_money + amount)
-	var current_wen := int(_get_flag("wen", 0))
-	_set_flag("wen", current_wen + amount)
 
 
 # ------------------------------------------------------------

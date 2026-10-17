@@ -38,6 +38,9 @@ const F_QD_WATERHEAD_CHECKED := "shumian_qd_waterhead_checked"
 const F_QD_LAMPS_REFILLED := "shumian_qd_lamps_refilled"
 const F_QD_DONE := "shumian_clean_sewer_done"
 
+## 最後一道符完成後，各段之間的留白秒數。
+const LAST_TALISMAN_PAUSE_SECONDS := 1.4
+
 const F_SKILL_CHENGXIN := "shumian_skill_chengxin_luobi_unlocked"
 const F_SKILL_QINGQU := "shumian_skill_qingqu_gongyin_unlocked"
 
@@ -82,6 +85,7 @@ var _space_was_down := false
 
 
 func _ready() -> void:
+	YuhengPrologueState.repair_sewer_loot_items()
 	_connect_transition_area()
 	_connect_interaction_areas()
 
@@ -209,7 +213,10 @@ func _handle_loot(loot_id: String) -> void:
 	for line in data.get("lines", []):
 		lines.append(_n_or_speaker(str(line)))
 
-	_add_item(item_id, amount)
+	# 真正放進背包成功才算領取：領取旗標、背包實際變化、取得提示三者一致。失敗就不寫旗標、不顯示「獲得」，之後還能再拿。
+	if not _add_item(item_id, amount):
+		await _show_dialog([_n("（背包出了點問題，這件東西沒能收下。請回報。）")])
+		return
 	_set_flag(flag_name, true)
 
 	lines.append(_n("獲得 %s ×%d。" % [display_name, amount]))
@@ -262,6 +269,11 @@ func _handle_fix(fix_id: String) -> void:
 	await _check_qudeng_completion()
 
 
+## 《舊水道・最後一道符》：補符支線真正完成的最後一段。原本的完成流程（三處補封都完成才觸發、只觸發一次、書眠與劉語塵的對話）
+## 都保留，這裡是把雙人領悟整合進同一個完成事件，不是另一條平行的完成事件。
+##   第一至三幕：水聲、書眠的心境、澄心落筆（對話）
+##   第四幕：留白（最後一道符平靜下來），然後才依「實際學會的結果」依序顯示三項領悟提示
+## 劉語塵共鳴澄心落筆屬於這場劇情：只在這裡（透過 grant_qudeng_rewards(true)）習得，不會提早，也不會被其他機制先共鳴。
 func _check_qudeng_completion() -> void:
 	if _get_flag(F_QD_DONE, false):
 		return
@@ -272,47 +284,86 @@ func _check_qudeng_completion() -> void:
 		return
 
 	_set_flag(F_QD_DONE, true)
-	_set_flag(F_SKILL_CHENGXIN, true)
-	_set_flag(F_SKILL_QINGQU, true)
+	# 任務紀錄（SideQuestManager）一併標為完成；入隊狀態與啟程狀態互相獨立，這裡不動它們
+	YuhengPrologueState.on_qudeng_completed()
 
-	_unlock_shumian_skill("chengxin_luobi")
-	_unlock_shumian_skill("qingqu_gongyin")
+	await _show_dialog(_build_last_talisman_lines())
 
+	# 真正習得：書眠的武術與內功、劉語塵的共鳴（都是角色個人的永久武學資料，已學會的不重複）。旗標只是相容保留。
+	var reward := YuhengPrologueState.grant_qudeng_rewards(true)
+
+	# 第四幕：留白。先讓畫面安靜一會兒，不立刻跳出提示。
+	await get_tree().create_timer(LAST_TALISMAN_PAUSE_SECONDS).timeout
 	await _show_dialog([
 		_n("牆符、渠燈、水口皆已重新穩住。"),
-		_n("清水沿著石渠流過，聲音比方才更輕，也更遠。"),
-		_l("氣息變了。", liuyu_speaker_id, liuyu_portrait_path),
-		_l("嗯。", shumian_speaker_id, shumian_portrait_path),
-		_l("不是被壓下去。", shumian_speaker_id, shumian_portrait_path),
-		_l("是有路可以走了。", shumian_speaker_id, shumian_portrait_path),
-		_n("她望著水面許久，忽然提筆，在掌心輕輕落下一點。"),
-		_l("原來……不是每一筆都要壓住。", shumian_speaker_id, shumian_portrait_path),
-		_l("有些筆，是要替心開路。", shumian_speaker_id, shumian_portrait_path),
-		_n("書眠悟得「澄心落筆」。"),
-		_n("書眠悟得「清渠共印」。"),
-		_l("這樣，足夠等我們回來？", liuyu_speaker_id, liuyu_portrait_path),
-		_l("足夠讓我相信，我不是逃走。", shumian_speaker_id, shumian_portrait_path),
-		_l("我是去把風帶回來。", shumian_speaker_id, shumian_portrait_path),
+		_n("最後一道符的墨跡在石壁上安靜地沉了下去，不再顫動。"),
+		_n("清水沿著石渠流過，聲音比方才更輕，也更遠。你與書眠並肩望著那道符，誰都沒有出聲。"),
+	])
+	await get_tree().create_timer(LAST_TALISMAN_PAUSE_SECONDS).timeout
+
+	# 三項領悟提示，分別對應三筆永久學習結果。
+	var learned_lines: Array = []
+	learned_lines.append(_n("白書眠領悟武術——《澄心落筆》。") if bool(reward["skill_known"]) else _n("（白書眠沒有成功習得《澄心落筆》，請回報。）"))
+	learned_lines.append(_n("劉語塵共鳴武術——《澄心落筆》。") if bool(reward["liuyu_known"]) else _n("（劉語塵沒有成功共鳴《澄心落筆》，請回報。）"))
+	learned_lines.append(_n("白書眠領悟內功——《清渠共印》。") if bool(reward["inner_force_known"]) else _n("（白書眠沒有成功習得《清渠共印》，請回報。）"))
+	await _show_dialog(learned_lines)
+
+	await _show_dialog([
+		_ls("劉語塵", "氣息變了。", liuyu_speaker_id, liuyu_portrait_path),
+		_ls("書眠", "嗯。", shumian_speaker_id, shumian_portrait_path),
+		_ls("書眠", "不是被壓下去。", shumian_speaker_id, shumian_portrait_path),
+		_ls("書眠", "是有路可以走了。", shumian_speaker_id, shumian_portrait_path),
+		_ls("劉語塵", "這樣，足夠等我們回來？", liuyu_speaker_id, liuyu_portrait_path),
+		_ls("書眠", "足夠讓我相信，我不是逃走。", shumian_speaker_id, shumian_portrait_path),
+		_ls("書眠", "我是去把風帶回來。", shumian_speaker_id, shumian_portrait_path),
 	])
 
 
-func _unlock_shumian_skill(skill_id: String) -> void:
-	var skill_manager := _get_first_node([
-		"/root/SkillManager",
-		"/root/GameRoot/SkillManager",
-		"/root/PartyManager",
-		"/root/GameRoot/PartyManager",
-	])
+## 第一至三幕。對話格式沿用主遊戲：「角色：「台詞」」，名字與冒號在對話框裡；旁白用第二人稱「你」。
+func _build_last_talisman_lines() -> Array:
+	var su := func(text: String) -> Dictionary: return _ls("白書眠", text, shumian_speaker_id, shumian_portrait_path)
+	var liu := func(text: String) -> Dictionary: return _ls("劉語塵", text, liuyu_speaker_id, liuyu_portrait_path)
+	return [
+		# 第一幕｜水聲
+		_n("補封已近尾聲。最後一道符，只差收尾的一筆。"),
+		_n("石室中原本紛亂的回響，漸漸弱了下去。"),
+		_n("你聽見一道細微的流水聲。那聲音一直都在，只是先前混在那些嘈雜的殘響裡，幾乎無從分辨。"),
+		su.call("……原來，這裡的水聲是這樣的。"),
+		liu.call("書眠姑娘？"),
+		su.call("我以前來這裡，只顧著聽那些不肯散去的聲音。"),
+		su.call("總想著，再多補一道符，再多封住一處……"),
+		su.call("鎮上的人，便能少受一點苦。"),
+		su.call("可現在想想……有些事情，本來就不是封住了，就能當作沒有發生。"),
+		# 第二幕｜白書眠的心境
+		su.call("我以前一直怕自己做得不夠。"),
+		su.call("怕有哪一道符沒補好，又害得誰在夜裡不得安寧。"),
+		liu.call("……"),
+		liu.call("原來如此。"),
+		liu.call("妳一直想守住的，不只是這幾道符。"),
+		su.call("嗯？"),
+		liu.call("是那些妳未曾見過，卻仍盼望他們能安穩度日的人。"),
+		_n("白書眠微微一怔，握著筆的手緩緩鬆了些。"),
+		su.call("……劉少俠。"),
+		su.call("謝謝你。"),
+		# 第三幕｜澄心落筆
+		_n("她再次望向石壁上的符紋。這一次，筆尖不再因猶疑而停頓。"),
+		su.call("我想……我終於明白，這最後一筆該怎麼落了。"),
+		_n("筆鋒輕輕掠過符紙，墨跡順勢舒展，沒有先前那般急促，也不再刻意收緊。"),
+		_n("你望著那道筆勢，忽然想起一路上見過的鎮民，以及他們那些未曾說盡的話。"),
+		_n("你不曾經歷書眠獨自守符的每一個夜晚，卻在這一刻，彷彿也能體會她落下這一筆時，心中終於卸去的重量。"),
+		liu.call("……這一筆。"),
+		su.call("怎麼了？"),
+		liu.call("不是為了把什麼再壓下去。"),
+		liu.call("而是讓原本紛亂的東西，能夠慢慢靜下來。"),
+		_n("白書眠微微一笑。"),
+		su.call("嗯。"),
+		su.call("這便是……澄心落筆。"),
+	]
 
-	if skill_manager:
-		if skill_manager.has_method("unlock_skill"):
-			skill_manager.unlock_skill("shumian", skill_id)
-			return
-		if skill_manager.has_method("learn_skill"):
-			skill_manager.learn_skill("shumian", skill_id)
-			return
 
-	_set_flag("skill_unlocked_shumian_%s" % skill_id, true)
+## 一句「角色：「台詞」」。
+func _ls(speaker_name: String, text: String, speaker_id: int, portrait: String) -> Dictionary:
+	return _l("%s：「%s」" % [speaker_name, text], speaker_id, portrait)
 
 
 func _n_or_speaker(text: String) -> Dictionary:
@@ -399,23 +450,8 @@ func _fade_out() -> void:
 	await tween.finished
 
 
-func _add_item(item_id: String, amount: int) -> void:
-	var inventory := _get_first_node([
-		"/root/InventoryManager",
-		"/root/GameRoot/InventoryManager",
-		"/root/InventorySync",
-		"/root/GameRoot/InventorySync",
-	])
-
-	if inventory:
-		if inventory.has_method("add_item"):
-			inventory.add_item(item_id, amount)
-			return
-		if inventory.has_method("add"):
-			inventory.add(item_id, amount)
-			return
-
-	_set_flag("received_item_%s" % item_id, true)
+func _add_item(item_id: String, amount: int) -> bool:
+	return YuhengPrologueState.grant_item(item_id, amount)
 
 
 func _is_interact_pressed() -> bool:

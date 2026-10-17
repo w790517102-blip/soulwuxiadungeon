@@ -14,8 +14,11 @@ const MAIN_QUEST_ID := "main_001"
 const MET_SU_MIEN_FLAG := "met_Su_Mien"
 const LIUYU_PORTRAIT_PATH := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 const LIUYU_SPEAKER_ID := 2
+const SHUMIAN_SPEAKER_ID := 4
+const SHUMIAN_PORTRAIT_PATH := "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot.png"
 
 var _manor_route_gate_busy := false
+var _baijianju_closed_busy := false
 var _manor_route_requires_exit := false
 var _manor_route_menu_was_locked := false
 
@@ -84,6 +87,10 @@ func _on_pharmacy_body_entered(body: Node2D) -> void:
 
 func _on_to_bai_jian_jue_body_entered(body: Node2D) -> void:
 	if body.name == "LiuYu":
+		# 序章收尾（夜談之後、啟程烈風寨之前）：書眠不在店裡，白箋居暫停營業
+		if YuhengPrologueState.is_prologue_ending_phase():
+			await _play_baijianju_closed_dialog(body)
+			return
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -91,6 +98,62 @@ func _on_to_bai_jian_jue_body_entered(body: Node2D) -> void:
 		await tween.finished
 		get_node("/root/GameRoot").spawn_point_name = "from_yuheng_market_west"
 		get_node("/root/GameRoot").change_map_to(Bai_Jian_Jue)
+
+
+## 白箋居暫停營業：不進店。書眠還沒入隊 → 劉語塵自言自語；書眠已入隊 → 兩人在門前說幾句。
+## 只在序章收尾階段生效（見 YuhengPrologueState.is_prologue_ending_phase），不影響白箋居前期的詩稿、富商與銀屏語事件。
+func _play_baijianju_closed_dialog(body: Node2D) -> void:
+	if _baijianju_closed_busy:
+		return
+	var dialog_manager := get_node_or_null("/root/GameRoot/DialogManager")
+	if dialog_manager == null or bool(dialog_manager.get("dialog_active")):
+		return
+	_baijianju_closed_busy = true
+	var menu_was_locked := bool(GlobalState.get_meta("menu_locked", false))
+	body.set("can_move", false)
+	_clear_player_motion(body)
+
+	if YuhengPrologueState.is_shumian_joined():
+		dialog_manager.show_dialog_sequence(_build_baijianju_closed_with_shumian_lines(), self)
+	else:
+		dialog_manager.show_dialog_sequence(_build_baijianju_closed_alone_lines(), self)
+	await dialog_manager.dialog_sequence_finished
+
+	_clear_player_motion(body)
+	body.set("can_move", true)
+	GlobalState.set_meta("menu_locked", menu_was_locked)
+	_baijianju_closed_busy = false
+
+
+func _build_baijianju_closed_alone_lines() -> Array:
+	return [
+		_l("書眠姑娘不在這裡。"),
+		_l("她還在飲月山莊等我……還是先去辦正經事吧。"),
+	]
+
+
+func _build_baijianju_closed_with_shumian_lines() -> Array:
+	return [
+		_shumian_line("……沒想到，這次要離開這麼久。"),
+		_l("捨不得這裡？"),
+		_shumian_line("有一點。"),
+		_shumian_line("平日總嫌紙墨收拾不完，客人來了又去……"),
+		_shumian_line("如今真要關上門，倒又覺得有些冷清。"),
+		_l("等事情辦完，再回來開門就是。"),
+		_shumian_line("嗯。"),
+		_shumian_line("反正那些還沒寫完的詩，也不會自己長腳跑了。"),
+		{"text": "白書眠望著門前的招牌，微微一笑。", "speaker": 0, "portrait": "res://assets/sprites/empty.png"},
+		_shumian_line("走吧，劉少俠。"),
+		_shumian_line("鎮上還有比這幾張紙更要緊的事呢。"),
+	]
+
+
+func _shumian_line(text: String) -> Dictionary:
+	return {
+		"text": text,
+		"speaker": SHUMIAN_SPEAKER_ID,
+		"portrait": SHUMIAN_PORTRAIT_PATH,
+	}
 
 
 func _on_to_bamboo_grove_suburb_body_entered(body: Node2D) -> void:

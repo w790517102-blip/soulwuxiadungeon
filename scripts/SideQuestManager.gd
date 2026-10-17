@@ -40,6 +40,25 @@ func complete_quest(id: String) -> void:
 func get_quest(id: String) -> Dictionary:
 	return side_quests.get(id, {})
 
+# 錯過：任務沒有完成就永遠關閉（序章限定的支線在離開玉衡鎮時使用）。這不是任務失敗，只是終止狀態。
+# 沒接取過的任務也可以直接標記為錯過（此時用 data 建立紀錄，不跳出「已新增支線任務」提示）。
+func mark_quest_missed(id: String, data: Dictionary = {}) -> void:
+	if not side_quests.has(id):
+		if data.is_empty():
+			return
+		side_quests[id] = data.duplicate(true)
+		side_quests[id]["stage"] = 0
+		side_quests[id]["is_finished"] = false
+	if bool(side_quests[id].get("is_finished", false)):
+		return
+	if not data.is_empty():
+		side_quests[id]["current_objective"] = data.get("current_objective", side_quests[id].get("current_objective", ""))
+	side_quests[id]["is_missed"] = true
+	print("[支線] 任務 %s 已錯過" % id)
+
+func is_quest_missed(id: String) -> bool:
+	return side_quests.has(id) and bool(side_quests[id].get("is_missed", false))
+
 # 檢查是否完成
 func is_quest_finished(id: String) -> bool:
 	return side_quests.has(id) and side_quests[id]["is_finished"]

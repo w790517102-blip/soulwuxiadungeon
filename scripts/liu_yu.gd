@@ -6,6 +6,8 @@ const RUN_SPEED = 400
 var last_direction := Vector2(1, 1).normalized()
 var direction := Vector2.ZERO
 var can_move := true
+## 滑鼠按住移動的方向（八方向量化的單位向量，零向量 = 沒有滑鼠移動）。由 InteractionResolver 每個物理影格設定；鍵盤方向優先。
+var mouse_move_direction := Vector2.ZERO
 
 @onready var animated_sprite := $AnimatedSprite2D
 # 若角色腳底位置與 Sprite 原點不同，可調整這個偏移
@@ -107,6 +109,9 @@ func _physics_process(delta):
 		int(Input.is_action_pressed("move_right")) - int(Input.is_action_pressed("move_left")),
 		int(Input.is_action_pressed("move_down")) - int(Input.is_action_pressed("move_up"))
 	).normalized()
+	# 沒按 WASD 時，才吃滑鼠按住移動的方向（不讓兩種輸入相加）。可否移動仍由上面的 can_move 決定。
+	if direction == Vector2.ZERO and mouse_move_direction != Vector2.ZERO:
+		direction = mouse_move_direction
 
 	var is_running = Input.is_action_pressed("run")
 	var speed = RUN_SPEED if is_running else WALK_SPEED

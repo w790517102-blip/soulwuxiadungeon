@@ -74,6 +74,9 @@ func _ready() -> void:
 		return
 
 	dialog_lines = _build_yinpingyu_event_lines()
+	# 事件開始前，書眠在白箋居裡面向右下待著（事件演出中才會依動畫轉向）
+	if animated_sprite and animated_sprite.sprite_frames and animated_sprite.sprite_frames.has_animation("idle_right_down"):
+		animated_sprite.play("idle_right_down")
 
 
 func _process(_delta: float) -> void:
