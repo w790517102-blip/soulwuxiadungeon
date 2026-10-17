@@ -580,6 +580,10 @@ func _play_stream_on_se_player(stream: AudioStream) -> void:
 		p2.play()
 
 func _resolve_weapon_se_key(actor: Dictionary, skill_data: Dictionary) -> String:
+	# 招式自己指定音效系列（例如持鞘的「鞘擊」不是劍，是棍系的 SE_stick_*）
+	var forced_key := String(skill_data.get("se_weapon_key", "")).strip_edges()
+	if forced_key != "":
+		return forced_key
 	var wt := String(skill_data.get("weapon_type", "")).strip_edges()
 	if wt == "":
 		wt = String(actor.get("weapon_1", "拳")).strip_edges()
@@ -5031,6 +5035,12 @@ func _execute_end_stance(actor: Dictionary, skill_data: Dictionary) -> void:
 ## 鞘劍連擊: 劉語塵's own cut (1.0x), then the 持鞘 card leaves its place for a 0.5x strike on the same
 ## target and is sent to the far left; only then does 劉語塵's turn end (he too is sent to the far left).
 ## The two placements are separate, in that order.
+## 鞘擊的音效（SE_stick_* 系列）：持鞘卡先蓄勢、向前一步才打到，所以等它碰到目標的那一刻才響。
+func _play_sheath_strike_se_when_it_lands(actor: Dictionary, target: Dictionary, strike_data: Dictionary, result: Dictionary) -> void:
+	await get_tree().create_timer(SHEATH_STRIKE_SE_DELAY_SECONDS).timeout
+	_play_attack_se_from_result(actor, target, strike_data, result)
+
+
 func _execute_sheath_combo(actor: Dictionary, skill_data: Dictionary, target: Dictionary) -> void:
 	var sheath: Object = find_stance_entity(actor)
 	var actual_target: Dictionary = target if not target.is_empty() else (enemy_party[0] if not enemy_party.is_empty() else {})
@@ -5062,9 +5072,11 @@ func _execute_sheath_combo(actor: Dictionary, skill_data: Dictionary, target: Di
 		strike_data["weapon_type"] = "通用"
 		strike_data["power"] = float(skill_data.get("sheath_power", 0.5))
 		strike_data["effects"] = [{"type": "damage", "power": float(skill_data.get("sheath_power", 0.5))}]
+		strike_data["se_weapon_key"] = "stick"
 		strike_data["_suppress_attack_opener"] = true
 		_log_narration("持鞘離開了陣列中的位置，鞘尾直點向 %s。" % String(actual_target.get("name", "???")))
 		var sheath_result: Dictionary = skill_executor.execute(actor, actual_target, strike_data, {})
+		_play_sheath_strike_se_when_it_lands(actor, actual_target, strike_data, sheath_result)
 		if battle_ui and battle_ui.has_method("play_sheath_strike"):
 			await battle_ui.play_sheath_strike(sheath, actual_target, sheath_result)
 		for line in sheath_result.get("log", []):
