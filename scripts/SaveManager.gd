@@ -256,6 +256,11 @@ func load_from_slot(slot_index: int) -> bool:
 	if not bool(check_slot_loadable(slot_index).get("ok", false)):
 		return false
 
+	# 沒有 GameRoot（例如在編輯器按 F6 單獨測試某張地圖）：先建立 GameRoot 再走完整的還原流程，
+	# 不然會落到下面的備用路徑，只載入一個空的 GameRoot（沒有背景的場地），要讀第二次才會正確。
+	if get_node_or_null("/root/GameRoot") == null:
+		return await load_from_title(slot_index)
+
 	var version = int(data.get("version", 0))
 	if version > SAVE_VERSION:
 		push_warning("Save version (%d) is newer than game version (%d)." % [version, SAVE_VERSION])
