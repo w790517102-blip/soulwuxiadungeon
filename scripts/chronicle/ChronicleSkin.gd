@@ -22,6 +22,9 @@ const DEFAULT_MARGINS := {
 }
 
 ## 預設文字顏色（暫用深色底版本；若美術做成淺色羊皮紙底，請在 skin.json 改成深色字）
+## 文字上提（邏輯 px）：貼圖底部有陰影，框體可見部分偏上
+const TEXT_LIFT := 3
+
 const DEFAULT_COLORS := {
 	"title": Color(0.86, 0.72, 0.38),
 	"gold": Color(0.86, 0.72, 0.38),
@@ -103,6 +106,14 @@ static func color(key: String) -> Color:
 		return Color.html(String(colors[key]))
 	return DEFAULT_COLORS.get(key, Color.WHITE)
 
+## 左右邊寬（九宮格）：skin.json 的 "margins_h"；沒設定就同 margin()。按鈕用它蓋住整個左右端飾。
+static func margin_h(skin_name: String) -> int:
+	_load_config()
+	var mh = _config.get("margins_h", {})
+	if typeof(mh) == TYPE_DICTIONARY and mh.has(skin_name):
+		return int(mh[skin_name])
+	return margin(skin_name)
+
 static func margin(skin_name: String) -> int:
 	_load_config()
 	var margins = _config.get("margins", {})
@@ -119,10 +130,13 @@ static func make_nine(skin_name: String, logical_size: Vector2) -> NinePatchRect
 	n.name = "Skin_" + skin_name
 	n.texture = tex
 	var m := margin(skin_name)
-	n.patch_margin_left = m
-	n.patch_margin_right = m
+	var mh2 := margin_h(skin_name)
+	n.patch_margin_left = mh2
+	n.patch_margin_right = mh2
 	n.patch_margin_top = m
 	n.patch_margin_bottom = m
+	n.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_TILE_FIT
+	n.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_TILE_FIT
 	n.size = logical_size * ART_SCALE
 	n.scale = Vector2.ONE / ART_SCALE
 	n.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -159,7 +173,10 @@ static func skin_button(btn: Button, prefix: String, keep_aspect := false) -> bo
 	bg.show_behind_parent = true
 	btn.add_child(bg)
 	for state in ["normal", "hover", "pressed", "disabled"]:
-		btn.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		var empty := StyleBoxEmpty.new()
+		empty.content_margin_top = 0.0
+		empty.content_margin_bottom = TEXT_LIFT * 2.0   # 按鈕貼圖底部有陰影，文字上提才看起來在框中央
+		btn.add_theme_stylebox_override(state, empty)
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	var update := func() -> void:
 		var state := "normal"
@@ -173,8 +190,9 @@ static func skin_button(btn: Button, prefix: String, keep_aspect := false) -> bo
 		if bg.texture != tex:
 			bg.texture = tex
 			var m := margin("%s_%s" % [prefix, state]) if has("%s_%s" % [prefix, state]) else margin(prefix + "_normal")
-			bg.patch_margin_left = m
-			bg.patch_margin_right = m
+			var mh3 := margin_h("%s_%s" % [prefix, state]) if has("%s_%s" % [prefix, state]) else margin_h(prefix + "_normal")
+			bg.patch_margin_left = mh3
+			bg.patch_margin_right = mh3
 			bg.patch_margin_top = m
 			bg.patch_margin_bottom = m
 	btn.draw.connect(update)

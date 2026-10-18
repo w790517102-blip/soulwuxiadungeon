@@ -18,6 +18,10 @@
     "slot_empty_text": "#3A2A14",
     "slot_empty_dim": "#5A4A30"
   },
+  "margins_h": {
+    "btn_normal": 52, "btn_hover": 52, "btn_pressed": 52, "btn_disabled": 52,
+    "btn_primary_normal": 52, "btn_primary_hover": 52, "btn_primary_pressed": 52, "btn_primary_disabled": 52
+  },
   "margins": {
     "chronicle_frame": 300,
     "confirm_panel": 130,
