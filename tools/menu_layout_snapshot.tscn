@@ -1,0 +1,4 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://tools/menu_layout_snapshot.gd" id="1"]
+[node name="R" type="Node"]
+script = ExtResource("1")

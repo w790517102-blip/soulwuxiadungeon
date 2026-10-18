@@ -49,6 +49,8 @@ const LoreDB = preload("res://scripts/db/LoreDB.gd")
 @onready var skill_target_popup: PopupMenu = get_node_or_null("SkillTargetPopup")
 @onready var equipment_tab: VBoxContainer = get_node_or_null("VBoxContainer/裝備")
 var _item_entries: Array = []
+var _item_category: String = ItemCategory.CONSUMABLE
+var _item_category_buttons: Dictionary = {}
 var _active_equip_slot = ""
 var _selected_skill: Dictionary = {}
 var _selected_inner_force: Dictionary = {}
@@ -132,6 +134,9 @@ const WEAPON_RULES = {
 
 func _ready():
 	_align_to_viewport()
+	# 根節點是 Panel，預設主題會畫一層深色半透明底，把後面的羊皮紙底圖壓黑；底圖是美術本來要的樣子，所以把這層去掉。
+	# Panel 不是容器，換掉它的樣式不會影響任何子節點的位置（用版面快照工具驗證過）。
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var viewport := get_viewport()
 	if viewport and not viewport.size_changed.is_connected(_on_viewport_size_changed):
 		viewport.size_changed.connect(_on_viewport_size_changed)
@@ -149,6 +154,11 @@ func _ready():
 	set_process_unhandled_input(true)
 	_set_menu_item_use_locked(false)
 	_apply_menu_font_style(self)
+	# 統一外觀（墨色字、羊皮紙上的清單、深褐按鈕、金邊分頁），所有樣式沿用原本內距，不改版面
+	_wrap_gold_plate(status_gold_label)
+	MenuSkin.apply(self)
+	# 角色下拉等控制項是之後才由程式建立的，等這一輪建完再套一次
+	MenuSkin.apply.call_deferred(self)
 	if skill_detail:
 		skill_detail.bbcode_enabled = true
 	if inner_force_detail:
@@ -228,6 +238,7 @@ func _ready():
 	_setup_status_member_slots()
 	_ensure_status_hover_popup()
 	_setup_item_status_preview_layout()
+	_setup_item_category_layout()
 	_setup_equipment_status_preview_layout()
 	_setup_item_character_select()
 	_setup_equipment_character_select()
@@ -280,6 +291,7 @@ func _unhandled_input(event):
 		get_viewport().set_input_as_handled()
 
 func _on_tab_changed(tab_index: int) -> void:
+	MenuSkin.apply.call_deferred(self)
 	if tabs == null:
 		return
 	_sync_custom_tab_visuals(tab_index)
@@ -880,6 +892,8 @@ func _refresh_item_tab() -> void:
 	item_list.clear()
 	_item_entries = InventorySync.get_items()
 	for item in _item_entries:
+		if ItemCategory.category_of(item) != _item_category:
+			continue
 		var count = int(item.get("quantity", item.get("count", 0)))
 		var item_id = str(item.get("id", ""))
 		var label = "%s x%d" % [_as_plain_text(item.get("name", item_id if item_id != "" else "???")), count]
@@ -890,8 +904,9 @@ func _refresh_item_tab() -> void:
 		item_list.set_item_metadata(item_index, item_id)
 		if selected_id != "" and item_id == selected_id:
 			item_list.select(item_index)
-	if _item_entries.is_empty():
-		item_desc.text = "背包裡空空如也。"
+	if item_list.item_count == 0:
+		# 這個分類沒有道具：整個背包是空的、或只是這一類沒有
+		item_desc.text = "背包裡空空如也。" if _item_entries.is_empty() else ItemCategory.empty_text(_item_category)
 		_update_use_button("")
 	elif selected_id != "":
 		var selected_items = item_list.get_selected_items()
@@ -950,11 +965,11 @@ func _on_gold_changed(_new_gold: int) -> void:
 func _refresh_gold() -> void:
 	var gold = InventorySync.get_gold()
 	if gold_label:
-		gold_label.text = "💰 盤纏：%d文" % gold
+		gold_label.text = "盤纏：%d文" % gold
 	if status_gold_label:
-		status_gold_label.text = "💰 盤纏：%d文" % gold
+		status_gold_label.text = "盤纏：%d文" % gold
 	if _equipment_gold_label:
-		_equipment_gold_label.text = "💰 盤纏：%d文" % gold
+		_equipment_gold_label.text = "盤纏：%d文" % gold
 
 func _refresh_item_status_preview() -> void:
 	if _item_status_preview_slots.is_empty():
@@ -1927,6 +1942,138 @@ func _get_active_actor():
 			return party[0]
 	return null
 
+## 道具頁：上方四個分類標籤（消耗品／書籍／裝備／其他）；清單在左、說明（有自己的外框）在右、使用鈕在底下。
+## 原本是清單在上、說明在下。只重新排列既有節點（ItemList、RichTextLabel、UseButton），不改它們的名稱與信號。
+## 盤纏：金屬牌底＋錢袋圖示＋金色大字，比純文字顯眼。把原本的 Label 原地包進去（Label 本身與變數不變，文字照舊由 _refresh_gold 更新）。
+const GOLD_ICON_PATH := "res://assets/UI/menu_icons/gold_pouch.png"
+func _wrap_gold_plate(label: Label) -> void:
+	if label == null or label.get_parent() == null or label.get_parent().name == "GoldPlate_Box":
+		return
+	var parent := label.get_parent()
+	var index := label.get_index()
+	var plate := PanelContainer.new()
+	plate.name = "GoldPlate"
+	plate.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	plate.custom_minimum_size.x = 348.0   # 和角色狀態卡同寬（卡片寬 348）
+	plate.custom_minimum_size.y = 34.0   # 字要完整包在紋路裡面、上下各留幾 px
+	var src := plate.get_theme_stylebox("panel")
+	var box := MenuSkin.texture_box("btn_normal", 15, src, 0.0, MenuSkin.BUTTON_CAP_H)
+	if box == null:
+		var flat := StyleBoxFlat.new()
+		flat.bg_color = MenuSkin.PLATE
+		flat.border_color = MenuSkin.GOLD_DIM
+		flat.set_border_width_all(2)
+		flat.set_corner_radius_all(3)
+		box = null
+		plate.add_theme_stylebox_override("panel", flat)
+	else:
+		box.content_margin_left = 22.0
+		box.content_margin_right = 26.0
+		box.content_margin_top = 0.0
+		box.content_margin_bottom = MenuSkin.TEXT_LIFT * 2.0
+		plate.add_theme_stylebox_override("panel", box)
+	var row := HBoxContainer.new()
+	row.name = "GoldPlate_Box"
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	plate.add_child(row)
+	if ResourceLoader.exists(GOLD_ICON_PATH):
+		var icon := TextureRect.new()
+		icon.name = "GoldIcon"
+		icon.texture = load(GOLD_ICON_PATH)
+		icon.custom_minimum_size = Vector2(28, 28)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(icon)
+	parent.remove_child(label)
+	row.add_child(label)
+	if parent is BoxContainer:
+		(parent as BoxContainer).add_theme_constant_override("separation", 0)   # 讓出被加高的盤纏框佔掉的高度
+	parent.add_child(plate)
+	parent.move_child(plate, index)
+	label.add_theme_color_override("font_color", Color("#FFFFFF"))   # 盤纏字改白色
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.0))
+	label.add_theme_constant_override("outline_size", 0)
+	label.add_theme_font_size_override("font_size", 18)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+func _setup_item_category_layout() -> void:
+	if item_tab == null or item_list == null or item_desc == null or use_button == null:
+		return
+	var content := item_tab.get_node_or_null("ItemStatusLayout/RightPane/ItemContentPane") as VBoxContainer
+	if content == null or content.get_node_or_null("ItemCategoryBar") != null:
+		return
+	var bar := HBoxContainer.new()
+	bar.name = "ItemCategoryBar"
+	bar.add_theme_constant_override("separation", 6)
+	content.add_child(bar)
+	content.move_child(bar, 0)
+	var group := ButtonGroup.new()
+	for tab_def in ItemCategory.TABS:
+		var b := Button.new()
+		b.name = "Cat_" + String(tab_def["id"])
+		b.text = String(tab_def["label"])
+		b.toggle_mode = true
+		b.button_group = group
+		b.custom_minimum_size = Vector2(96, 34)
+		b.focus_mode = Control.FOCUS_NONE
+		b.button_pressed = String(tab_def["id"]) == _item_category
+		b.set_meta("menu_skin", "cat")
+		b.pressed.connect(_on_item_category_pressed.bind(String(tab_def["id"])))
+		bar.add_child(b)
+		_item_category_buttons[String(tab_def["id"])] = b
+	var split := HBoxContainer.new()
+	split.name = "ItemSplit"
+	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	split.add_theme_constant_override("separation", 12)
+	content.add_child(split)
+	content.move_child(split, 1)
+	item_list.get_parent().remove_child(item_list)
+	split.add_child(item_list)
+	item_list.custom_minimum_size = Vector2(300, 0)
+	item_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	item_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	item_list.size_flags_stretch_ratio = 1.0
+	var frame := PanelContainer.new()
+	frame.name = "ItemDescFrame"
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	frame.size_flags_stretch_ratio = 1.15
+	var fb := StyleBoxFlat.new()
+	fb.bg_color = Color(0.96, 0.92, 0.80, 0.55)
+	fb.border_color = Color(0.54, 0.42, 0.18, 0.95)
+	fb.set_border_width_all(2)
+	fb.set_corner_radius_all(3)
+	fb.content_margin_left = 18
+	fb.content_margin_right = 18
+	fb.content_margin_top = 14
+	fb.content_margin_bottom = 14
+	# 有《江湖行跡錄》的畫框貼圖就用它（四角雲紋），沒有才用上面的色塊
+	var frame_box := MenuSkin.texture_box("preview_frame", 22, null, 44.0)
+	frame.add_theme_stylebox_override("panel", frame_box if frame_box != null else fb)
+	split.add_child(frame)
+	item_desc.get_parent().remove_child(item_desc)
+	frame.add_child(item_desc)
+	item_desc.custom_minimum_size = Vector2(0, 0)
+	item_desc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	item_desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	item_desc.fit_content = false
+	use_button.get_parent().remove_child(use_button)
+	content.add_child(use_button)
+	use_button.custom_minimum_size = Vector2(0, 32)
+	use_button.set_meta("menu_skin", "primary")
+
+func _on_item_category_pressed(category_id: String) -> void:
+	if category_id == _item_category:
+		return
+	_item_category = category_id
+	for id in _item_category_buttons.keys():
+		(_item_category_buttons[id] as Button).set_pressed_no_signal(id == category_id)
+	_refresh_item_tab()
+
 func _setup_item_status_preview_layout() -> void:
 	_item_status_preview_slots = _setup_tab_status_preview_layout(item_tab, "ItemStatusLayout", "ItemCharacterRow", "ItemCharacterSelect", "ItemContentPane")
 
@@ -1954,12 +2101,14 @@ func _setup_tab_status_preview_layout(tab: VBoxContainer, layout_name: String, r
 		left_pane.custom_minimum_size = Vector2(360, 0)
 		layout.add_child(left_pane)
 
-	var status_gold := left_pane.get_node_or_null("StatusGoldLabel") as Label
+	# 盤纏標籤被包進 GoldPlate 之後就不是 left_pane 的直接子節點，要用 find_child 找，否則每次重建都會多生一份（框重疊）
+	var status_gold := left_pane.find_child("StatusGoldLabel", true, false) as Label
 	if status_gold == null:
 		status_gold = Label.new()
 		status_gold.name = "StatusGoldLabel"
-		status_gold.text = "💰 盤纏：0文"
+		status_gold.text = "盤纏：0文"
 		left_pane.add_child(status_gold)
+		_wrap_gold_plate(status_gold)
 	if tab == item_tab:
 		var old_item_gold := tab.get_node_or_null("GoldLabel") as Label
 		if old_item_gold and old_item_gold != status_gold:
@@ -2459,7 +2608,7 @@ func _apply_status_card_label_size(label: Label, is_name: bool) -> void:
 	if label == null:
 		return
 	if is_name:
-		label.add_theme_font_size_override("font_size", 20)
+		label.add_theme_font_size_override("font_size", 18)
 	else:
 		label.add_theme_font_size_override("font_size", 12)
 
