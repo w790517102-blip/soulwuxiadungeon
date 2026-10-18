@@ -29,6 +29,7 @@ TeamData="*res://scripts/battlescripts/TeamDataManager.gd"
 InventorySync="*res://scripts/battlescripts/InventorySync.gd"
 MessageToast="*res://scripts/UIMessageToast.gd"
 InteractionResolver="*res://scripts/interaction/InteractionResolver.gd"
+GameCursor="*res://scripts/ui/GameCursor.gd"
 
 [display]
 

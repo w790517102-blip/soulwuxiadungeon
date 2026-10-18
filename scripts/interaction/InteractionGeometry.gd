@@ -138,3 +138,11 @@ static func feet(node: Node2D) -> Vector2:
 	if rect.size == Vector2.ZERO:
 		return node.global_position
 	return Vector2(rect.position.x + rect.size.x * 0.5, rect.end.y)
+
+
+## 角色「身體中心」（肚子）：目前這一格可見像素範圍的正中心。滑鼠追隨與游標角度都用它，不用腳底。
+static func body_center(node: Node2D) -> Vector2:
+	var rect: Rect2 = visible_rect(node)
+	if rect.size == Vector2.ZERO:
+		return node.global_position
+	return rect.get_center()

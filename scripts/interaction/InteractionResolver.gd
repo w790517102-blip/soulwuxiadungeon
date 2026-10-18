@@ -200,6 +200,25 @@ func _input(event: InputEvent) -> void:
 			_on_right_released()
 
 
+## 劉語塵此刻是不是真的在「追滑鼠」：探索輸入允許、正按著左/右鍵的移動意圖仍有效，而且身體中心離滑鼠還在死區之外。
+## 追上滑鼠（死區內）、對話/選單鎖定、已經觸發互動後都回傳 false。游標用它決定要不要顯示移動/奔跑樣式。
+## 進入追逐用「死區 + 4」、離開用死區本身，避免在邊界來回閃。
+## 這次按住有沒有「移動意圖」：探索輸入允許、有劉語塵、而且這次按下是探索操作（不是點在介面上）。
+## 追上滑鼠後仍然是 true（他只是停下，意圖還在）；對話/選單鎖定、已觸發互動、在選單上按下則是 false。
+func has_mouse_move_intent() -> bool:
+	return _player() != null and _mouse_move_active and exploration_input_allowed()
+
+var _chasing := false
+func is_chasing_mouse() -> bool:
+	var player := _player()
+	if player == null or not _mouse_move_active or not exploration_input_allowed():
+		_chasing = false
+		return false
+	var dist: float = (_mouse_world(player) - InteractionGeometry.body_center(player)).length()
+	_chasing = dist > (MOUSE_DEAD_ZONE if _chasing else MOUSE_DEAD_ZONE + 4.0)
+	return _chasing
+
+
 ## 目前的輸入意圖（邏輯狀態，給除錯與測試用）：
 ##   IDLE               沒有探索輸入。
 ##   MOVE               按住普通地面，只有移動意圖。
@@ -328,8 +347,9 @@ func _physics_process(_delta: float) -> void:
 		_locked_target = null
 		_run_interaction(target)
 		return
-	var feet: Vector2 = InteractionGeometry.feet(player)
-	var to_mouse: Vector2 = _mouse_world(player) - feet
+	# 追隨滑鼠用「身體中心（肚子）」，和游標的角度參考點一致；互動距離仍然用腳底。
+	var body: Vector2 = InteractionGeometry.body_center(player)
+	var to_mouse: Vector2 = _mouse_world(player) - body
 	if to_mouse.length() <= MOUSE_DEAD_ZONE:
 		player.set("mouse_move_direction", Vector2.ZERO)
 	else:
@@ -374,6 +394,11 @@ func _show_cursor(kind: String) -> void:
 	if kind == _cursor_kind_shown:
 		return
 	_cursor_kind_shown = kind
+	# 全遊戲統一用軟體游標（GameCursor）；它有素材時由它負責畫，這裡只告訴它目前滑鼠下的目標種類。沒有素材才退回下面的系統游標。
+	var game_cursor := get_node_or_null("/root/GameCursor")
+	if game_cursor != null and game_cursor.has_method("is_active") and game_cursor.is_active():
+		game_cursor.set_hover_kind(kind)
+		return
 	if kind == "" or not CURSOR_KINDS.has(kind):
 		Input.set_custom_mouse_cursor(null, Input.CURSOR_ARROW)
 		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
