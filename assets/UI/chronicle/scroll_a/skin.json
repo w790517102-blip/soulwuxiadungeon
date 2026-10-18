@@ -1,0 +1,30 @@
+{
+  "colors": {
+    "title": "#2A1A0A",
+    "gold": "#5A2A10",
+    "text": "#2A1A0A",
+    "dim": "#3A2A14",
+    "corrupt": "#A63326",
+    "button_text": "#E6C46A",
+    "button_text_hover": "#FFF1C2",
+    "button_text_disabled": "#8A7F6A",
+    "toast": "#FFF0C0",
+    "page": "#E6C46A",
+    "slot_gold": "#5A2A10",
+    "slot_text": "#2A1A0A",
+    "slot_dim": "#3A2A14",
+    "slot_corrupt": "#A63326",
+    "slot_empty_gold": "#5A2A10",
+    "slot_empty_text": "#2A1A0A",
+    "slot_empty_dim": "#3A2A14"
+  },
+  "margins": {
+    "chronicle_frame": 260,
+    "confirm_panel": 130,
+    "slot_bg_normal": 40, "slot_bg_hover": 40, "slot_bg_selected": 40, "slot_bg_empty": 40, "slot_bg_corrupt": 40,
+    "thumb_frame_small": 34,
+    "preview_frame": 44,
+    "btn_normal": 28, "btn_hover": 28, "btn_pressed": 28, "btn_disabled": 28,
+    "btn_primary_normal": 28, "btn_primary_hover": 28, "btn_primary_pressed": 28, "btn_primary_disabled": 28
+  }
+}
