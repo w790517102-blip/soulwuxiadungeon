@@ -437,6 +437,15 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 	# 章節：新存檔直接記錄；舊存檔沒有這欄 → 用主線 id 查正式定義還原；查不到就是 0（章節未記錄）
 	# 主角（劉語塵）的等級：來自存檔內的隊伍資料；舊存檔一樣有，缺少就是 0（未記錄）
 	var leader_level := int(_as_dict(_as_dict(_as_dict(data.get("team_data", {})).get("all_characters", {})).get("liuyu", {})).get("level", 0))
+	# 隊伍陣容：[{id, level}]，順序依存檔的 current_team_ids（主角在前）；名字不存檔，顯示時由 actor_display_name 查
+	var party: Array = []
+	var team_data: Dictionary = _as_dict(data.get("team_data", {}))
+	var all_chars: Dictionary = _as_dict(team_data.get("all_characters", {}))
+	var ids = team_data.get("current_team_ids", [])
+	if typeof(ids) == TYPE_ARRAY:
+		for id_any in ids:
+			var id := String(id_any)
+			party.append({"id": id, "level": int(_as_dict(all_chars.get(id, {})).get("level", 0))})
 	var chapter_number := int(data.get("chapter_number", 0))
 	if chapter_number <= 0:
 		chapter_number = QuestManager.chapter_number_for_quest(String(main_quest.get("id", "")))
@@ -459,6 +468,7 @@ func get_slot_summary(slot_index: int) -> Dictionary:
 		"chapter_number": chapter_number,
 		"chapter_text": chapter_text(chapter_number),
 		"leader_level": leader_level,
+		"party": party,
 	}
 
 
@@ -498,6 +508,17 @@ func load_from_title(slot_index: int) -> bool:
 	if player != null:
 		player.set("can_move", true)
 	return true
+
+## 角色顯示名稱（存檔不記名字）：優先用隊伍資料庫，查不到用內建對照，再不行就用 id
+func actor_display_name(actor_id: String) -> String:
+	var tm := get_node_or_null("/root/TeamData")
+	if tm != null:
+		var chars = tm.get("all_characters")
+		if typeof(chars) == TYPE_DICTIONARY and (chars as Dictionary).has(actor_id):
+			var n := String(_as_dict((chars as Dictionary)[actor_id]).get("name", ""))
+			if n != "":
+				return n
+	return {"liuyu": "劉語塵", "shumian": "書眠", "lieshao": "列霄"}.get(actor_id, actor_id)
 
 ## 縮圖檔路徑（給 UI 用；跟隨 save_folder，不再使用存檔裡記的字串路徑）
 func thumb_path_for_slot(slot_index: int) -> String:

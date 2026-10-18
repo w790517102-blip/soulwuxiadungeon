@@ -29,6 +29,16 @@ const PREVIEW_RECT := Rect2(716, 88, 384, 216)
 const INFO_Y := 318.0
 const ACTION_BTN_SIZE := Vector2(184, 36)
 ## 確認視窗：邏輯 600×344，置中。外框木邊與雲紋約佔四周 45px，內容一律放在距邊 56px 以內（文字與按鈕都不碰到邊飾）。
+## 隊伍陣容列
+const PARTY_ROW_H := 118.0
+## 小人縮放：以「遊戲畫面上的實際大小」等比縮放到選單（劉語塵 122.7px 高 → 72px，其他角色用同一個比例），腳底對齊同一條基準線。
+const PARTY_LIUYU_MENU_H := 72.0
+const PARTY_LIUYU_WORLD_H := 108.9
+const PARTY_BASELINE := 76.0   # 腳底基準線（相對陣容列上緣）
+const PARTY_CHIBI_H := PARTY_BASELINE
+const PARTY_MAX := 3   # 遊戲中隊伍最多三人
+const PARTY_DIR := "res://assets/UI/chronicle_party/"
+
 const CONFIRM_RECT := Rect2(276, 148, 600, 344)
 const CONFIRM_SAFE := 56.0
 
@@ -55,6 +65,8 @@ var _preview_tex: TextureRect
 var _preview_empty_label: Label
 var _preview_ph: TextureRect = null
 var _level_label: Label
+var _party_row: Control
+var _party_scales: Dictionary = {}
 var _no_label: Label
 var _date_label: Label
 var _map_label: Label
@@ -239,10 +251,23 @@ func _build_ui() -> void:
 	var info_x := RIGHT_X - FRAME_RECT.position.x
 	var info_y := INFO_Y - FRAME_RECT.position.y
 	_no_label = _label("SlotNumberLabel", _frame, Vector2(info_x, info_y), Vector2(RIGHT_W, 34), 26, ChronicleSkin.color("gold"))
-	_date_label = _label("DateLabel", _frame, Vector2(info_x, info_y + 42), Vector2(RIGHT_W, 24), 17, ChronicleSkin.color("text"))
-	_map_label = _label("MapLabel", _frame, Vector2(info_x, info_y + 74), Vector2(RIGHT_W, 24), 17, ChronicleSkin.color("text"))
-	_chapter_label = _label("ChapterLabel", _frame, Vector2(info_x, info_y + 106), Vector2(RIGHT_W, 24), 17, ChronicleSkin.color("text"))
+	_date_label = _label("DateLabel", _frame, Vector2(info_x, info_y + 36), Vector2(RIGHT_W, 24), 17, ChronicleSkin.color("text"))
+	_map_label = _label("MapLabel", _frame, Vector2(info_x, info_y + 64), Vector2(RIGHT_W, 24), 17, ChronicleSkin.color("text"))
+	_chapter_label = _label("ChapterLabel", _frame, Vector2(info_x, info_y + 92), Vector2(RIGHT_W, 24), 17, ChronicleSkin.color("text"))
 	_level_label = _label("LevelLabel", _frame, Vector2(info_x, info_y + 138), Vector2(RIGHT_W, 24), 17, ChronicleSkin.color("text"))
+	_level_label.text = ""
+	# 隊伍陣容：一排小人（chibi 左下 idle），底下名字與等級；最多 PARTY_MAX 位，多了就縮小間距
+	var sj := PARTY_DIR + "scales.json"
+	if FileAccess.file_exists(sj):
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(sj))
+		if typeof(parsed) == TYPE_DICTIONARY:
+			_party_scales = parsed
+	_party_row = Control.new()
+	_party_row.name = "PartyRow"
+	_party_row.position = Vector2(info_x - 8.0, info_y + 124)
+	_party_row.size = Vector2(RIGHT_W, PARTY_ROW_H)
+	_party_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_frame.add_child(_party_row)
 	_status_label = _label("StatusLabel", _frame, Vector2(info_x, info_y + 178), Vector2(RIGHT_W, 48), 15, ChronicleSkin.color("dim"))
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
@@ -358,6 +383,7 @@ func _refresh_detail() -> void:
 	_preview_empty_label.text = ""
 	_preview_tex.texture = null
 	_level_label.text = ""
+	_clear_party()
 	if _preview_ph != null:
 		_preview_ph.visible = false
 	match status:
@@ -368,8 +394,7 @@ func _refresh_detail() -> void:
 			_date_label.text = "時間：%s" % _date_text(summary)
 			_map_label.text = "所在場景：%s" % _map_text(summary)
 			_chapter_label.text = "主線進度：%s" % String(summary.get("chapter_text", "章節未記錄"))
-			var lv := int(summary.get("leader_level", 0))
-			_level_label.text = "角色等級：Lv.%d" % lv if lv > 0 else "角色等級：未記錄"
+			_show_party(summary.get("party", []), int(summary.get("leader_level", 0)))
 		"invalid":
 			_preview_empty_label.text = "存檔異常"
 			_date_label.text = ""
@@ -385,6 +410,49 @@ func _refresh_detail() -> void:
 	if _preview_ph != null:
 		_preview_ph.visible = _preview_tex.texture == null
 	_update_action_button(status)
+
+func _clear_party() -> void:
+	for c in _party_row.get_children():
+		c.queue_free()
+		_party_row.remove_child(c)
+
+## 隊伍陣容：[{id, level}]。舊存檔沒有隊伍資料時退回只顯示主角等級一行。
+func _show_party(party: Array, leader_level: int) -> void:
+	_clear_party()
+	if party.is_empty():
+		_level_label.text = "角色等級：Lv.%d" % leader_level if leader_level > 0 else "角色等級：未記錄"
+		return
+	_level_label.text = ""   # 不另放「隊伍」標題，陣容直接接在主線進度下面
+	var members: Array = party.slice(0, PARTY_MAX)
+	var cell_w := 88.0   # 三人一排，每格固定寬度，靠左擠（右邊留給背景的竹葉）
+	for i in members.size():
+		var m: Dictionary = members[i]
+		var cell := Control.new()
+		cell.position = Vector2(i * cell_w, 0)
+		cell.size = Vector2(cell_w, PARTY_ROW_H)
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_party_row.add_child(cell)
+		var tex_path := "%s%s.png" % [PARTY_DIR, String(m.get("id", ""))]
+		if ResourceLoader.exists(tex_path):
+			var tr := TextureRect.new()
+			var tex := load(tex_path) as Texture2D
+			tr.texture = tex
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_SCALE
+			# 實際縮放 = 該角色在遊戲裡的縮放（scales.json）× 統一的選單比例；沒有記錄的角色用劉語塵的縮放
+			var world_scale := float(_party_scales.get(String(m.get("id", "")), _party_scales.get("liuyu", 0.3)))
+			var k := PARTY_LIUYU_MENU_H / PARTY_LIUYU_WORLD_H
+			var sz := tex.get_size() * world_scale * k
+			tr.size = sz
+			tr.position = Vector2((cell_w - sz.x) * 0.5, PARTY_BASELINE - sz.y)   # 腳底（圖片底邊）對齊基準線
+			tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cell.add_child(tr)
+		var name_l := _label("Name", cell, Vector2(0, PARTY_CHIBI_H + 2), Vector2(cell_w, 20), 14, ChronicleSkin.color("text"), HORIZONTAL_ALIGNMENT_CENTER)
+		name_l.text = SaveManager.actor_display_name(String(m.get("id", "")))
+		var lv_l := _label("Level", cell, Vector2(0, PARTY_CHIBI_H + 20), Vector2(cell_w, 20), 14, ChronicleSkin.color("gold"), HORIZONTAL_ALIGNMENT_CENTER)
+		var lv := int(m.get("level", 0))
+		lv_l.text = "Lv.%d" % lv if lv > 0 else "Lv.?"
 
 func _update_action_button(status: String) -> void:
 	if mode == Mode.SAVE:

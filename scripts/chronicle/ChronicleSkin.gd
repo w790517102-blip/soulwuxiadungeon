@@ -144,10 +144,17 @@ static func make_image(skin_name: String, logical_size: Vector2) -> TextureRect:
 
 ## 把 Button 換成貼圖皮膚（prefix：btn 或 btn_primary；需要 <prefix>_normal，其餘狀態缺的用 normal）。
 ## 回傳 true = 已套用貼圖。貼圖畫在按鈕文字「後面」（show_behind_parent）。
-static func skin_button(btn: Button, prefix: String) -> bool:
+## keep_aspect = true：按鈕圖不變形。以「按鈕高度 ÷ 貼圖原始高度」為統一縮放比，邊角裝飾跟著等比放大，只拉長中間；
+## 按鈕的長寬比最好接近貼圖（368×72 ≈ 5.1:1）。false 則維持邏輯尺寸 × 2 的原本做法（邊角固定大小）。
+static func skin_button(btn: Button, prefix: String, keep_aspect := false) -> bool:
 	if not has(prefix + "_normal"):
 		return false
 	var bg := make_nine(prefix + "_normal", btn.size)
+	if keep_aspect:
+		var tex_h := float(texture(prefix + "_normal").get_height())
+		var k := btn.size.y / (tex_h / ART_SCALE)
+		bg.scale = Vector2.ONE * (k / ART_SCALE)
+		bg.size = btn.size / bg.scale
 	bg.name = "SkinBg"
 	bg.show_behind_parent = true
 	btn.add_child(bg)

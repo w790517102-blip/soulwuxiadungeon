@@ -7,8 +7,8 @@ const FONT := preload("res://assets/fonts/DotGothic16-Regular.ttf")
 func _ready() -> void:
 	var col := VBoxContainer.new()
 	col.name = "EntryColumn"
-	col.position = Vector2(386, 150)
-	col.size = Vector2(280, 170)
+	col.position = Vector2(376, 150)
+	col.size = Vector2(300, 140)
 	col.add_theme_constant_override("separation", 24)
 	add_child(col)
 	var save_btn := _make_entry_button("SaveEntryButton", "儲存進度")
@@ -22,15 +22,21 @@ func _make_entry_button(button_name: String, label: String) -> Button:
 	var b := Button.new()
 	b.name = button_name
 	b.text = label
-	b.custom_minimum_size = Vector2(280, 72)
+	b.custom_minimum_size = Vector2(300, 58)   # 長寬比貼近按鈕貼圖（368×72），圖才不會變形
 	b.add_theme_font_override("font", FONT)
 	b.add_theme_font_size_override("font_size", 26)
-	b.add_theme_color_override("font_color", Color(0.86, 0.72, 0.38))
-	b.add_theme_color_override("font_hover_color", Color(1, 0.92, 0.7))
-	b.add_theme_stylebox_override("normal", _box(Color(0.11, 0.09, 0.07, 0.95), Color(0.5, 0.4, 0.2)))
-	b.add_theme_stylebox_override("hover", _box(Color(0.22, 0.06, 0.05, 0.98), Color(0.85, 0.68, 0.28)))
-	b.add_theme_stylebox_override("pressed", _box(Color(0.16, 0.04, 0.04, 1.0), Color(0.85, 0.68, 0.28)))
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.size = b.custom_minimum_size
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.add_theme_color_override("font_color", ChronicleSkin.color("button_text"))
+	b.add_theme_color_override("font_hover_color", ChronicleSkin.color("button_text_hover"))
+	b.add_theme_color_override("font_pressed_color", ChronicleSkin.color("button_text_hover"))
+	# 和《江湖行跡錄》共用同一套按鈕美術（目前的皮膚）；沒有貼圖時才用下面的暫用色塊
+	if not ChronicleSkin.skin_button(b, "btn", true):
+		b.add_theme_stylebox_override("normal", _box(Color(0.11, 0.09, 0.07, 0.95), Color(0.5, 0.4, 0.2)))
+		b.add_theme_stylebox_override("hover", _box(Color(0.22, 0.06, 0.05, 0.98), Color(0.85, 0.68, 0.28)))
+		b.add_theme_stylebox_override("pressed", _box(Color(0.16, 0.04, 0.04, 1.0), Color(0.85, 0.68, 0.28)))
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	return b
 
 func _box(bg: Color, border: Color) -> StyleBoxFlat:
