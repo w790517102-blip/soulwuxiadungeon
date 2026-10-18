@@ -34,6 +34,8 @@ var _custom_cursor_cache: Dictionary = {}
 
 # 左鍵按住的狀態
 var _mouse_down: bool = false
+var _left_held := false
+var _right_held := false
 var _mouse_move_active: bool = false
 var _locked_target: InteractionTarget = null
 var _interaction_running: bool = false
@@ -191,6 +193,11 @@ func _input(event: InputEvent) -> void:
 			_on_left_pressed()
 		else:
 			_on_left_released()
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			_on_right_pressed()
+		else:
+			_on_right_released()
 
 
 ## 目前的輸入意圖（邏輯狀態，給除錯與測試用）：
@@ -227,6 +234,7 @@ func _on_space_pressed() -> void:
 ##     要互動必須放開之後重新點擊目標的蛋黃區。
 ## 蛋白區本身從來不觸發任何事：它只是「已經提出互動命令之後，能不能執行」的距離資格。
 func _on_left_pressed() -> void:
+	_left_held = true
 	_mouse_down = true
 	_locked_target = null
 	_mouse_move_active = false
@@ -240,11 +248,42 @@ func _on_left_pressed() -> void:
 
 
 func _on_left_released() -> void:
+	_left_held = false
 	_mouse_down = false
 	_cancel_mouse_intent()
 	var player := _player()
 	if player != null:
 		player.set("mouse_move_direction", Vector2.ZERO)
+	# 右鍵還壓著：繼續往滑鼠方向跑（只移動，不鎖定互動目標）
+	if _right_held:
+		_start_plain_mouse_move()
+
+
+## 右鍵按住 = 往滑鼠方向「跑步」（奔跑速度由 liu_yu 判斷右鍵）。只負責移動：不點選、不鎖定互動目標；左鍵已經按著時維持左鍵原本的意圖。
+func _on_right_pressed() -> void:
+	_right_held = true
+	if _left_held:
+		return
+	_start_plain_mouse_move()
+
+
+func _on_right_released() -> void:
+	_right_held = false
+	if _left_held:
+		return
+	_mouse_down = false
+	_cancel_mouse_intent()
+	var player := _player()
+	if player != null:
+		player.set("mouse_move_direction", Vector2.ZERO)
+
+
+func _start_plain_mouse_move() -> void:
+	if not exploration_input_allowed() or _gui_has_mouse():
+		return
+	_mouse_down = true
+	_locked_target = null
+	_mouse_move_active = true
 
 
 ## 目標被移除（queue_free）之後，手上留著的參考讀起來是 null，但把它當引數傳給有型別的函式還是會出錯（引數仍是失效的物件）；所以用之前一律明確地設成 null。
@@ -294,7 +333,9 @@ func _physics_process(_delta: float) -> void:
 	if to_mouse.length() <= MOUSE_DEAD_ZONE:
 		player.set("mouse_move_direction", Vector2.ZERO)
 	else:
+		# 實際移動方向永遠精準跟著滑鼠；動畫朝向的防閃爍緩衝在 liu_yu.gd（用 mouse_aim_direction）
 		player.set("mouse_move_direction", InteractionGeometry.quantize_8(to_mouse))
+		player.set("mouse_aim_direction", to_mouse.normalized())
 
 
 func _process(_delta: float) -> void:

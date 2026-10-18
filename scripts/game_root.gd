@@ -1,7 +1,7 @@
 extends Node2D
 
-# 遊戲初始是否要直接導向 intro_room（僅限新遊戲）
-var go_to_intro_on_start = true
+# 開場 intro_room 只在新遊戲時由 Game.gd 設為 true；預設 false（讀檔、中途測試都不進開場）
+var go_to_intro_on_start = false
 var spawn_point_name = "default" # 每次切換地圖時記住要傳送到哪個點
 var current_map_path = ""
 

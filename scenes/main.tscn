@@ -1,25 +1,39 @@
-[gd_scene load_steps=9 format=3 uid="uid://ce8y38csg456l"]
+[gd_scene load_steps=16 format=3 uid="uid://ce8y38csg456l"]
 
-[ext_resource type="Texture2D" uid="uid://bef5j8l86mpsu" path="res://assets/background/Main_menu.png" id="1_o5qli"]
+[ext_resource type="Texture2D" path="res://assets/background/main_menu_title.webp" id="1_bg"]
 [ext_resource type="Script" uid="uid://bt43nfb0qr7ed" path="res://scripts/main.gd" id="1_o6xl0"]
 [ext_resource type="AudioStream" uid="uid://c6j4b8xms2lhq" path="res://assets/BGM/mainmenu_audio.ogg" id="2_0wfyh"]
-[ext_resource type="Texture2D" uid="uid://co5ac0lw84ycw" path="res://assets/UI/start_button.png" id="3_tefeu"]
-[ext_resource type="Texture2D" uid="uid://uvpocestrdtl" path="res://assets/UI/Load_button.png" id="4_o6xl0"]
-[ext_resource type="Texture2D" uid="uid://dijv027moxxk4" path="res://assets/UI/Option_button.png" id="5_tipki"]
-[ext_resource type="Texture2D" uid="uid://ciwyucsqfv06n" path="res://assets/UI/Exit_button.png" id="6_85g3d"]
 [ext_resource type="AudioStream" uid="uid://dcaqbbxmsq1tq" path="res://assets/sound/SE_hit_Sword_01.ogg" id="8_tipki"]
+[ext_resource type="Script" path="res://scripts/menu_art_button.gd" id="9_btn"]
+[ext_resource type="FontFile" uid="uid://dpnhv7778sg1k" path="res://assets/fonts/DotGothic16-Regular.ttf" id="10_font"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_1.png" id="11_b1"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_2.png" id="12_b2"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_3.png" id="13_b3"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_4.png" id="14_b4"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_5.png" id="15_b5"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_glow_1.png" id="21_g1"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_glow_2.png" id="22_g2"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_glow_3.png" id="23_g3"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_glow_4.png" id="24_g4"]
+[ext_resource type="Texture2D" path="res://assets/UI/main_menu/btn_glow_5.png" id="25_g5"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_o6xl0")
 
-[node name="TextureRect" type="TextureRect" parent="."]
-z_index = 1
-offset_left = 83.0
-offset_top = -17.0
-offset_right = 1619.0
-offset_bottom = 1007.0
-scale = Vector2(0.65, 0.65)
-texture = ExtResource("1_o5qli")
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+mouse_filter = 2
+texture = ExtResource("1_bg")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="BGM" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("2_0wfyh")
@@ -27,49 +41,76 @@ autoplay = true
 attenuation = 0.933033
 parameters/looping = true
 
-[node name="Start_Button" type="Button" parent="."]
-z_index = 1
-offset_left = 854.0
-offset_top = 303.0
-offset_right = 1062.0
-offset_bottom = 381.0
-icon = ExtResource("3_tefeu")
+[node name="ButtonRow" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 478.0
+offset_top = 408.0
+offset_right = 674.0
+offset_bottom = 643.0
+theme_override_constants/separation = 0
 
-[node name="Load_Button" type="Button" parent="."]
-z_index = 1
-offset_left = 855.0
-offset_top = 384.0
-offset_right = 1063.0
-offset_bottom = 462.0
-icon = ExtResource("4_o6xl0")
+[node name="StartButton" type="TextureButton" parent="ButtonRow"]
+custom_minimum_size = Vector2(196, 47)
+layout_mode = 2
+texture_normal = ExtResource("11_b1")
+script = ExtResource("9_btn")
+glow_texture = ExtResource("21_g1")
 
-[node name="Option_Button" type="Button" parent="."]
-z_index = 1
-offset_left = 854.0
-offset_top = 463.0
-offset_right = 1062.0
-offset_bottom = 541.0
-icon = ExtResource("5_tipki")
+[node name="LoadButton" type="TextureButton" parent="ButtonRow"]
+custom_minimum_size = Vector2(196, 47)
+layout_mode = 2
+texture_normal = ExtResource("12_b2")
+script = ExtResource("9_btn")
+glow_texture = ExtResource("22_g2")
+placeholder = true
 
-[node name="Exit_Button" type="Button" parent="."]
-z_index = 1
-offset_left = 855.0
-offset_top = 544.0
-offset_right = 1063.0
-offset_bottom = 622.0
-icon = ExtResource("6_85g3d")
+[node name="TutorialButton" type="TextureButton" parent="ButtonRow"]
+custom_minimum_size = Vector2(196, 47)
+layout_mode = 2
+texture_normal = ExtResource("13_b3")
+script = ExtResource("9_btn")
+glow_texture = ExtResource("23_g3")
+placeholder = true
+
+[node name="OptionButton" type="TextureButton" parent="ButtonRow"]
+custom_minimum_size = Vector2(196, 47)
+layout_mode = 2
+texture_normal = ExtResource("14_b4")
+script = ExtResource("9_btn")
+glow_texture = ExtResource("24_g4")
+placeholder = true
+
+[node name="ExitButton" type="TextureButton" parent="ButtonRow"]
+custom_minimum_size = Vector2(196, 47)
+layout_mode = 2
+texture_normal = ExtResource("15_b5")
+script = ExtResource("9_btn")
+glow_texture = ExtResource("25_g5")
+placeholder = true
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Notice" type="Label" parent="CanvasLayer"]
+offset_left = 376.0
+offset_top = 392.0
+offset_right = 776.0
+offset_bottom = 414.0
+theme_override_colors/font_color = Color(0.45, 0.1, 0.08, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
 
 [node name="WhiteFlash" type="ColorRect" parent="CanvasLayer"]
 modulate = Color(1, 1, 1, 0)
 z_as_relative = false
+mouse_filter = 2
 offset_left = 2.0
 offset_top = -28.0
 offset_right = 1162.0
 offset_bottom = 646.0
 
 [node name="BlackOverlay" type="ColorRect" parent="CanvasLayer"]
+mouse_filter = 2
 offset_left = -8.0
 offset_top = -15.0
 offset_right = 1155.0
@@ -78,5 +119,3 @@ color = Color(0, 0, 0, 1)
 
 [node name="SwordSound" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("8_tipki")
-
-[connection signal="pressed" from="Start_Button" to="." method="_on_start_button_pressed"]

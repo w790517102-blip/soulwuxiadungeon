@@ -8,6 +8,13 @@ var direction := Vector2.ZERO
 var can_move := true
 ## 滑鼠按住移動的方向（八方向量化的單位向量，零向量 = 沒有滑鼠移動）。由 InteractionResolver 每個物理影格設定；鍵盤方向優先。
 var mouse_move_direction := Vector2.ZERO
+# 滑鼠未量化的指向（單位向量）：只拿來決定「動畫朝向」的防閃爍，不影響實際移動方向
+var mouse_aim_direction := Vector2.ZERO
+# 動畫朝向的緩衝：偏離目前朝向超過 22.5° + 這個角度、且距離上次換朝向超過這個秒數，才換動畫
+const ANIM_FACING_HYSTERESIS_DEG := 14.0
+const ANIM_FACING_MIN_HOLD_SEC := 0.25
+var _anim_facing := Vector2.ZERO
+var _anim_facing_hold := 0.0
 
 @onready var animated_sprite := $AnimatedSprite2D
 # 若角色腳底位置與 Sprite 原點不同，可調整這個偏移
@@ -113,22 +120,46 @@ func _physics_process(delta):
 	if direction == Vector2.ZERO and mouse_move_direction != Vector2.ZERO:
 		direction = mouse_move_direction
 
-	var is_running = Input.is_action_pressed("run")
+	# 奔跑：原本的 run 按鍵，或按住滑鼠右鍵（可和左鍵按住移動、WASD 搭配）
+	var is_running = Input.is_action_pressed("run") or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 	var speed = RUN_SPEED if is_running else WALK_SPEED
 	var prefix = "run" if is_running else "walk"
 
+	_anim_facing_hold += delta
 	if direction != Vector2.ZERO:
 		velocity = direction * speed
 		last_direction = direction
-		animated_sprite.play(get_anim_name(last_direction, prefix))
+		var facing := _animation_facing(direction)
+		animated_sprite.play(get_anim_name(facing, prefix))
 	else:
 		velocity = Vector2.ZERO
+		_anim_facing = Vector2.ZERO
 		if not override_idle_animation:
 			animated_sprite.play(get_idle_anim_name(last_direction))
 
 	var position_before_move := global_position
 	move_and_slide()
 	_update_random_encounter(global_position.distance_to(position_before_move))
+# 動畫朝向（只影響畫面，不影響移動）：滑鼠移動時，滑鼠指向落在兩個方向交界會來回閃，
+# 所以相鄰方向要偏離目前朝向夠遠（緩衝角）而且距上次換朝向夠久才換；轉彎 ≥ 90°、鍵盤輸入與其他情況立刻照實際方向。
+func _animation_facing(move_dir: Vector2) -> Vector2:
+	var mouse_driven := mouse_move_direction != Vector2.ZERO and move_dir == mouse_move_direction
+	if not mouse_driven or _anim_facing == Vector2.ZERO:
+		_anim_facing = move_dir
+		_anim_facing_hold = 0.0
+		return _anim_facing
+	# 90° 直角轉彎或 180° 迴轉：不套緩衝，直接換，否則會變成螃蟹走路或月球漫步（緩衝只處理相鄰 45° 的交界抖動）
+	if absf(move_dir.angle_to(_anim_facing)) > deg_to_rad(60.0):
+		_anim_facing = move_dir
+		_anim_facing_hold = 0.0
+		return _anim_facing
+	var aim := mouse_aim_direction if mouse_aim_direction != Vector2.ZERO else move_dir
+	var target := InteractionGeometry.quantize_8_sticky(aim, _anim_facing, ANIM_FACING_HYSTERESIS_DEG)
+	if target != _anim_facing and _anim_facing_hold >= ANIM_FACING_MIN_HOLD_SEC:
+		_anim_facing = target
+		_anim_facing_hold = 0.0
+	return _anim_facing
+
 func get_anim_name(dir: Vector2, prefix: String) -> String:
 	return _get_anim_by_vector(dir, prefix)
 

@@ -69,15 +69,11 @@ func fade_in():
 	tween.tween_property(black_overlay, "modulate:a", 1.0, 1.0)
 	await tween.finished
 
-# ✅ 新增的函式：改為載入 GameRoot 並把 intro_room 放進去
+# 新遊戲專屬：只有從主選單「開始遊戲」走到這裡，才會要求 GameRoot 進入 intro_room 開場。
+# 讀檔、或直接從場景中途測試時 GameRoot 預設不會進 intro_room。
 func load_game_root_with_intro_room():
 	var game_root = load("res://scenes/game_root.tscn").instantiate()
-	var intro_room = load("res://scenes/intro_room.tscn").instantiate()
-
-	# 把房間塞進 GameRoot 的 CurrentScene 之下
-	game_root.get_node("CurrentScene").add_child(intro_room)
-
-	# 最後切換整個 GameRoot 畫面
+	game_root.go_to_intro_on_start = true
 	get_tree().root.add_child(game_root)
 	get_tree().current_scene.queue_free()
 	get_tree().current_scene = game_root

@@ -62,6 +62,16 @@ static func quantize_8(direction: Vector2) -> Vector2:
 	return Vector2.from_angle(float(sector) * PI / 4.0)
 
 
+## 八方向量化加上緩衝：已經在往 current 走時，滑鼠方向要偏離 current 超過「半格 22.5° + margin_deg」才允許換方向。
+## 方向正好落在兩格交界時不會每個影格來回切換（角色走動時滑鼠相對方向會連續微幅變化）。
+static func quantize_8_sticky(direction: Vector2, current: Vector2, margin_deg: float = 14.0) -> Vector2:
+	if current == Vector2.ZERO or direction.length_squared() < 0.000001:
+		return quantize_8(direction)
+	if absf(direction.angle_to(current)) <= deg_to_rad(22.5 + margin_deg):
+		return current
+	return quantize_8(direction)
+
+
 # ------------------------------------------------------------
 # 角色畫面上的可見範圍（用目前這一格圖的不透明像素算出，AnimatedSprite2D 的縮放與位移都算進去）
 # ------------------------------------------------------------
