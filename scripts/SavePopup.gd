@@ -1,62 +1,50 @@
 extends Panel
+# 系統選單「系統」分頁：只剩兩個入口，儲存進度／讀取進度。
+# 實際的 99 格介面是共用的《江湖行跡錄》（scripts/chronicle/ChronicleScreen.gd），返回後就回到這個分頁。
 
-@onready var save_button = $SaveButton
-@onready var load_button = $LoadButton
-@onready var slots = [
-	$VBoxContainer/SaveSlot1,
-	$VBoxContainer/SaveSlot2,
-	$VBoxContainer/SaveSlot3
-]
-
-var selected_slot_index: int = -1
-var quest_party_serializer = null
+const FONT := preload("res://assets/fonts/DotGothic16-Regular.ttf")
 
 func _ready() -> void:
-	quest_party_serializer = get_node_or_null("/root/QuestPartySerializer")
+	var col := VBoxContainer.new()
+	col.name = "EntryColumn"
+	col.position = Vector2(386, 150)
+	col.size = Vector2(280, 170)
+	col.add_theme_constant_override("separation", 24)
+	add_child(col)
+	var save_btn := _make_entry_button("SaveEntryButton", "儲存進度")
+	var load_btn := _make_entry_button("LoadEntryButton", "讀取進度")
+	col.add_child(save_btn)
+	col.add_child(load_btn)
+	save_btn.pressed.connect(_open_chronicle.bind(ChronicleScreen.Mode.SAVE))
+	load_btn.pressed.connect(_open_chronicle.bind(ChronicleScreen.Mode.LOAD))
 
-	for i in range(slots.size()):
-		var slot = slots[i]
-		slot.set_slot_index(i + 1)
+func _make_entry_button(button_name: String, label: String) -> Button:
+	var b := Button.new()
+	b.name = button_name
+	b.text = label
+	b.custom_minimum_size = Vector2(280, 72)
+	b.add_theme_font_override("font", FONT)
+	b.add_theme_font_size_override("font_size", 26)
+	b.add_theme_color_override("font_color", Color(0.86, 0.72, 0.38))
+	b.add_theme_color_override("font_hover_color", Color(1, 0.92, 0.7))
+	b.add_theme_stylebox_override("normal", _box(Color(0.11, 0.09, 0.07, 0.95), Color(0.5, 0.4, 0.2)))
+	b.add_theme_stylebox_override("hover", _box(Color(0.22, 0.06, 0.05, 0.98), Color(0.85, 0.68, 0.28)))
+	b.add_theme_stylebox_override("pressed", _box(Color(0.16, 0.04, 0.04, 1.0), Color(0.85, 0.68, 0.28)))
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	return b
 
-		var cb := Callable(self, "_on_slot_selected")
-		if not slot.is_connected("slot_selected", cb):
-			slot.connect("slot_selected", cb)
+func _box(bg: Color, border: Color) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.set_border_width_all(2)
+	s.set_corner_radius_all(3)
+	return s
 
-	save_button.pressed.connect(_on_save_button_pressed)
-	load_button.pressed.connect(_on_load_button_pressed)
-	load_button.disabled = true
-
-
-func _on_slot_selected(index: int) -> void:
-	selected_slot_index = index
-	print("Selected slot:", index)
-
-	var slot = slots[selected_slot_index - 1]
-	load_button.disabled = slot.is_empty()
-
-
-func _on_save_button_pressed() -> void:
-	if selected_slot_index == -1:
-		push_warning("尚未選擇存檔槽！")
-		return
-
-	SaveManager.save_to_slot(selected_slot_index)
-
-	for slot in slots:
-		slot._refresh_label()
-
-	var active_slot = slots[selected_slot_index - 1]
-	load_button.disabled = active_slot.is_empty()
-
-
-func _on_load_button_pressed() -> void:
-	if selected_slot_index == -1:
-		push_warning("尚未選擇讀取槽！")
-		return
-
-	var active_slot = slots[selected_slot_index - 1]
-	if active_slot.is_empty():
-		push_warning("該存檔槽沒有可讀取資料。")
-		return
-
-	SaveManager.load_from_slot(selected_slot_index)
+func _open_chronicle(open_mode: int) -> void:
+	# 掛在系統選單的上一層（UIRoot）：系統選單被關閉時（讀檔成功）由《江湖行跡錄》自己收掉
+	var menu_root: Node = self
+	while menu_root.get_parent() != null and menu_root.name != "SystemMenu" and menu_root.get_parent() != get_tree().root:
+		menu_root = menu_root.get_parent()
+	var parent: Node = menu_root.get_parent() if menu_root.get_parent() != null else get_tree().root
+	ChronicleScreen.open(parent, open_mode)

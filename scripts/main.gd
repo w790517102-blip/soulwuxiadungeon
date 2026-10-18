@@ -1,6 +1,6 @@
 extends Control
 # 主選單：開始遊戲 → Game.tscn（序章文字 → 新遊戲專屬的 intro_room 開場）。
-# 讀取遊戲、教學模式、選項、離開遊戲目前只做美術，按下去只提示尚未開放。
+# 讀取遊戲 → 共用的《江湖行跡錄》（TITLE_LOAD）。教學模式、選項、離開遊戲尚未開放，按下去只提示。
 
 @onready var _notice: Label = $CanvasLayer/Notice
 
@@ -9,8 +9,13 @@ func _ready():
 	$CanvasLayer/BlackOverlay.visible = false
 	_notice.modulate.a = 0.0
 	$ButtonRow/StartButton.pressed.connect(_on_start_button_pressed)
-	for node_name in ["LoadButton", "TutorialButton", "OptionButton", "ExitButton"]:
+	$ButtonRow/LoadButton.pressed.connect(_on_load_button_pressed)
+	for node_name in ["TutorialButton", "OptionButton", "ExitButton"]:
 		($ButtonRow.get_node(node_name) as BaseButton).pressed.connect(_on_placeholder_pressed.bind(node_name))
+
+## 讀取遊戲：開啟共用的《江湖行跡錄》（TITLE_LOAD：只能讀，返回回到這個畫面）
+func _on_load_button_pressed() -> void:
+	ChronicleScreen.open(self, ChronicleScreen.Mode.TITLE_LOAD)
 
 func _on_placeholder_pressed(_button_name: String) -> void:
 	_notice.text = "尚未開放"

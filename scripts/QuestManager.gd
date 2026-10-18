@@ -24,6 +24,8 @@ const F_YH_SEWER_ALCHEMY_RECIPE_READ := "sewer_alchemy_recipe_read"
 
 const MAIN_QUEST_DEFS := {
 	"main_001": {
+		# 章節編號的正式來源（存檔摘要「主線進度：第X章」用）。一份主線定義 = 一章；不得用 stage 或所在場景推算。
+		"chapter_number": 1,
 		"chapter_title": "靜默的琴聲",
 		"description": "尋找飲月山莊的左飲",
 		"objectives_by_stage": {
@@ -88,6 +90,11 @@ var main_quest := {
 	"current_objective": "在玉衡鎮打聽左飲的消息",
 	"notes": [],
 }
+
+## 主線 id 對應的正式章節編號；沒有定義（或舊資料沒有 id）回傳 0 = 章節未記錄。
+static func chapter_number_for_quest(quest_id: String) -> int:
+	var def: Dictionary = MAIN_QUEST_DEFS.get(quest_id, {})
+	return int(def.get("chapter_number", 0))
 
 func get_main_quest_state() -> Dictionary:
 	return main_quest
