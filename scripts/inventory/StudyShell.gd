@@ -16,13 +16,13 @@ static var bg_name := "bg_study"
 ## layer：back＝畫在介面下面（背景之上）；front＝畫在介面上面（離鏡頭最近，會遮住卷軸框與分類欄）。
 ## rot：順時針度數（以物件中心旋轉）。位置用「錨點角」貼，數字可超出畫面（物件被畫面邊緣切掉）。
 ## 前景＝概念圖的原像素摳圖（沒有重畫）。照概念圖的位置貼在畫面邊角。
-## scale：每個素材像素佔幾個邏輯像素（摳圖來自概念圖的局部截圖，0.53 可還原成概念圖大小；目前放大 20% = 0.636）。
+## scale：每個素材像素佔幾個邏輯像素（摳圖來自概念圖的局部截圖，概念圖寬 1672 px 對應邏輯 1152，所以 1152/1672 = 0.689 就是「概念圖佔多少就佔多少」（量過：摳圖的像素大小約等於概念圖像素））。
 ## layer：back＝介面下面；front＝介面上面（最靠近鏡頭）。
 const FOREGROUND := {
-	"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.636},    # 左下：布＋劍
-	"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.636}, # 右下：茶壺（只露邊角）
-	"fg_candle_corner": {"pos": Vector2(1152, 30), "anchor": "tr", "layer": "front", "scale": 0.636},   # 右上：燭台
-	"fg_tassel_right": {"pos": Vector2(1138, 396), "anchor": "tl", "layer": "front", "scale": 0.636},   # 卷軸右側垂下的流蘇
+	"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.689},    # 左下：布＋劍
+	"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689}, # 右下：茶壺（只露邊角）
+	"fg_candle_corner": {"pos": Vector2(1152, 28), "anchor": "tr", "layer": "front", "scale": 0.689},   # 右上：燭台
+	"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},   # 卷軸右側垂下的流蘇
 }
 
 var _fg_root: Control
