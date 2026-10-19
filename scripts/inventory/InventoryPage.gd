@@ -196,6 +196,7 @@ func _build_nav() -> void:
 	var x := 142.0
 	for t in NAV_TABS:
 		var selected: bool = t["name"] == "TabItem"
+		# 導航選中沿用 V1 的朱紅底（V2 的半透明疊層版太淡、選中看不出來，暫不採用）
 		var b := _tex_button(Vector2(110, 48), Vector2(x, 28), "nav_tab_selected" if selected else "nav_tab_normal", "nav_tab_selected" if selected else "nav_tab_hover", "nav_tab_selected", "nav_tab_normal", 0, 0)
 		b.text = t["label"]
 		b.add_theme_font_size_override("font_size", 22)
@@ -212,8 +213,11 @@ func _build_categories() -> void:
 		b.toggle_mode = true
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.add_theme_constant_override("h_separation", 6)
+		var glow := _image("cat_item_selected", Vector2.ZERO, Vector2(131, 58), b)
+		glow.name = "SelectedGlow"
+		glow.visible = false
 		var icon := _image("cat_icon_" + String(CAT_ICON.get(id, "other")), Vector2(14, 11), Vector2(36, 36), b)
-		icon.modulate = Color(1, 1, 1, 0.9)
+		icon.name = "Icon"
 		var lab := _label(String(tab_def["label"]), Vector2(56, 0), Vector2(70, 58), 22, CREAM, HORIZONTAL_ALIGNMENT_LEFT, b)
 		lab.name = "Label"
 		b.pressed.connect(_on_category_pressed.bind(id))
@@ -226,10 +230,11 @@ func _sync_category_buttons() -> void:
 		var b: Button = _cat_buttons[id]
 		var on: bool = id == category
 		b.set_pressed_no_signal(on)
-		# 選中的那顆用「選中」貼圖當一般樣式
-		var bx := _box("cat_item_selected" if on else "cat_item_normal", 20, 14)
-		b.add_theme_stylebox_override("normal", bx)
-		b.add_theme_stylebox_override("hover", bx if on else _box("cat_item_hover", 20, 14))
+		# V2：底永遠是一般底；選中時疊半透明發光層，圖示換成另外畫的金色版
+		b.get_node("SelectedGlow").visible = on
+		(b.get_node("Icon") as TextureRect).texture = _tex("cat_icon_%s%s" % [String(CAT_ICON.get(id, "other")), "_on" if on else ""])
+		var lab := b.get_node("Label") as Label
+		lab.add_theme_color_override("font_color", Color("#FFF3D0") if on else CREAM)
 
 func _build_gold() -> void:
 	_panel("gold_plate", 28, 12, Vector2(210, 95), Vector2(320, 32))
@@ -442,12 +447,15 @@ func _rebuild_rows() -> void:
 		b.add_theme_stylebox_override("normal", normal)
 		b.add_theme_stylebox_override("hover", normal)
 		b.add_theme_stylebox_override("pressed", normal)
+		# 疊在一般底上的兩層：程式畫的柔和金色光暈（夠亮）＋ V2 素材（乾筆紋理、細金線、菱形；本身偏淡，疊上去增加質感）
 		var glow := _row_glow(Vector2(LIST_SIZE.x - 10, ROW_H))
+		var tex_glow := _image("row_selected" if sel else "row_hover", Vector2.ZERO, Vector2(LIST_SIZE.x - 10, ROW_H), glow)
+		tex_glow.name = "TexGlow"
 		glow.modulate.a = 1.0 if sel else 0.0
 		glow.get_node("Diamond").visible = sel
 		b.add_child(glow)
 		if not sel:
-			b.mouse_entered.connect(func(): glow.modulate.a = 0.42)
+			b.mouse_entered.connect(func(): glow.modulate.a = 0.5)
 			b.mouse_exited.connect(func(): glow.modulate.a = 0.0)
 		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		var def := e as Dictionary
