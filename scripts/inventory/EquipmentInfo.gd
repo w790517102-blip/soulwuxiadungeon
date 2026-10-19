@@ -90,3 +90,23 @@ static func special_effect_text(item_def: Dictionary) -> String:
 static func _percent_change(multiplier: float) -> String:
 	var pct := int(round((multiplier - 1.0) * 100.0))
 	return "降低 %d%%" % -pct if pct < 0 else "提高 %d%%" % pct
+
+## 這件裝備自己的數值加成（只列有的）：[{label, text, sign}]，順序固定。sign：1 增加、-1 減少。
+const ITEM_STAT_ROWS := [
+	["atk", "攻擊"], ["accuracy", "命中"], ["def", "防禦"], ["speed", "速度"], ["crit_rate_bonus", "暴擊"], ["evasion", "閃避"],
+	["max_hp", "氣血上限"], ["max_mp", "內力上限"],
+]
+
+static func item_stat_rows(item_def: Dictionary) -> Array:
+	var stats: Dictionary = item_def.get("stats", {}) if typeof(item_def.get("stats", null)) == TYPE_DICTIONARY else {}
+	var rows: Array = []
+	for entry: Array in ITEM_STAT_ROWS:
+		var key: String = entry[0]
+		if not stats.has(key):
+			continue
+		var value: float = float(stats[key])
+		if absf(value) < 0.0001:
+			continue
+		var text := "%+.1f%%" % (value * 100.0) if key == "crit_rate_bonus" else "%+d" % int(round(value))
+		rows.append({"label": entry[1], "text": text, "sign": 1 if value > 0.0 else -1})
+	return rows

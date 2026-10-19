@@ -16,7 +16,6 @@ const DETAIL_X := 612.0
 const DETAIL_W := 506.0
 const STAT_Y := 268.0
 const STAT_ROW_H := 28.0
-const SCROLL_Y := 390.0
 
 const GOOD := Color("#2F6B3A")
 const BAD := Color("#9A2A2A")
@@ -24,7 +23,6 @@ const BAD := Color("#9A2A2A")
 var menu: Node
 var actor_id := ""
 var slot := "weapon_1"
-var _last_change: Dictionary = {}        # {actor, slot, rows}：剛換裝／卸下後顯示「前 → 後（變化量）」，換角色或換欄位就清掉
 
 var _roster_box: VBoxContainer
 var _roster_buttons: Dictionary = {}
@@ -140,6 +138,7 @@ func _build_detail() -> void:
 	_art_bg = _image("detail_art_bg", Vector2(DETAIL_X + 2, 102), Vector2(100, 128))
 	_art = _image_from("", Vector2(DETAIL_X + 8, 108), Vector2(88, 116), self)
 	_name_label = _label("", Vector2(DETAIL_X + 118, 104), Vector2(250, 40), 26, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	_outlined(_name_label)
 	_rarity_holder = Control.new()
 	_rarity_holder.position = Vector2(DETAIL_X + 118, 150)
 	_rarity_holder.size = Vector2(60, 18)
@@ -150,7 +149,7 @@ func _build_detail() -> void:
 		var y := 176.0 + 24.0 * i
 		_image("label_ink_s", Vector2(DETAIL_X + 118, y), Vector2(76, 22))
 		_label(titles[i], Vector2(DETAIL_X + 124, y), Vector2(70, 22), 13, Color.WHITE)
-		_info_vals.append(_label("", Vector2(DETAIL_X + 202, y), Vector2(190, 22), 15, INK))
+		_info_vals.append(_outlined(_label("", Vector2(DETAIL_X + 202, y), Vector2(190, 22), 15, INK)))
 	# 裝備效果：2 欄 × 3 列（攻擊 命中 防禦 ／ 速度 暴擊 閃避），裝備有改到氣血／內力上限才多一列
 	_image("label_ink_m", Vector2(DETAIL_X, 238), Vector2(100, 26))
 	_label("裝備效果", Vector2(DETAIL_X + 8, 238), Vector2(92, 26), 14, Color.WHITE)
@@ -160,19 +159,9 @@ func _build_detail() -> void:
 	_stat_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stat_holder)
 	# 說明與特殊效果：可捲動；內容超過高度時才出現細捲軸（貼圖版），也可用滑鼠滾輪
-	# 說明區底下墊一層半透明紙色：背景的山水畫會干擾長文字的閱讀
-	var backing := Panel.new()
-	backing.position = Vector2(DETAIL_X - 6, SCROLL_Y - 4)
-	backing.size = Vector2(DETAIL_W + 2, 180)
-	backing.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bsb := StyleBoxFlat.new()
-	bsb.bg_color = Color(0.93, 0.88, 0.74, 0.78)
-	bsb.set_corner_radius_all(8)
-	backing.add_theme_stylebox_override("panel", bsb)
-	add_child(backing)
 	_scroll = ScrollContainer.new()
-	_scroll.position = Vector2(DETAIL_X, SCROLL_Y)
-	_scroll.size = Vector2(DETAIL_W, 172)
+	_scroll.position = Vector2(DETAIL_X, STAT_Y + STAT_ROW_H + 8.0)
+	_scroll.size = Vector2(DETAIL_W, 200)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	add_child(_scroll)
@@ -190,6 +179,15 @@ func _build_detail() -> void:
 	_desc_text = _section("說明")
 	_effect_text = _section("特殊效果")
 
+## 右側文字：白字加黑色外框，不會被背景的山水畫吃掉
+func _outlined(l: Label) -> Label:
+	var current := l.get_theme_color("font_color")
+	if current == INK or current == INK_DIM:
+		l.add_theme_color_override("font_color", Color.WHITE)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 4)
+	return l
+
 func _section(title: String) -> RichTextLabel:
 	var head := Control.new()
 	head.custom_minimum_size = Vector2(100, 26)
@@ -204,7 +202,9 @@ func _section(title: String) -> RichTextLabel:
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.add_theme_font_override("normal_font", FONT)
 	t.add_theme_font_size_override("normal_font_size", 15)
-	t.add_theme_color_override("default_color", INK)
+	t.add_theme_color_override("default_color", Color.WHITE)
+	t.add_theme_color_override("font_outline_color", Color.BLACK)
+	t.add_theme_constant_override("outline_size", 4)
 	_scroll_box.add_child(t)
 	return t
 
@@ -324,66 +324,34 @@ func _refresh_detail() -> void:
 	_info_vals[0].text = EquipmentInfoScript.category_label(def) if has_item else "—"
 	_info_vals[1].text = EquipmentInfoScript.slot_label(slot)
 	_info_vals[2].text = String(a.get("name", actor_id)) if has_item else "—"
-	# 數值：剛換裝／卸下過就顯示「前 → 後（變化量）」，否則只顯示目前總值
-	var rows: Array = []
-	var comparing: bool = not _last_change.is_empty() and _last_change.get("actor") == actor_id and _last_change.get("slot") == slot
-	if comparing:
-		rows = _last_change["rows"]
-	else:
-		var stats: Dictionary = menu.compute_overview_stats(a, InventorySync.get_equipment_stat_bonus(actor_id)) if menu != null else {}
-		for entry: Array in EquipmentInfoScript.STAT_ROWS:
-			rows.append({"key": entry[0], "label": entry[1], "before": stats.get(entry[0], 0), "after": stats.get(entry[0], 0), "delta": 0.0})
-	_fill_stats(rows, comparing)
+	# 數值：只顯示這件裝備自己的加成（換裝後的變化量只在「更換裝備」的視窗裡出現）
+	_fill_item_stats(def if has_item else {})
 	# 說明與特殊效果
 	_desc_text.text = String(def.get("desc", def.get("description", ""))) if has_item else ("這個欄位目前被固定，不能更換。" if _is_locked(slot) else "這個欄位目前沒有裝備。按「更換裝備」挑選。")
 	_effect_text.text = EquipmentInfoScript.special_effect_text(def) if has_item else "—"
 	_scroll.scroll_vertical = 0
 
-## 把數值列畫成 2 欄（先填左欄再填右欄）：標籤｜前 → 後｜變化量
-func _fill_stats(rows: Array, comparing: bool) -> void:
+## 這件裝備自己的數值加成：只列有的，一行 3 格；說明區依數值佔的高度往下讓出空間
+func _fill_item_stats(def: Dictionary) -> void:
 	for c in _stat_holder.get_children():
 		_stat_holder.remove_child(c)
 		c.queue_free()
-	var per_col := 3
-	var col_w := 238.0
-	var main_rows: Array = []
-	var extra_rows: Array = []
-	for row: Dictionary in rows:
-		if EquipmentInfoScript.STAT_ROWS.any(func(e): return e[0] == row["key"]):
-			main_rows.append(row)
-		else:
-			extra_rows.append(row)
-	# 版面：左欄 3 列（攻擊 命中 防禦）、右欄 3 列（速度 暴擊 閃避）；額外列（氣血/內力上限）放第 4 列
-	var cells: Array = []
-	for i in main_rows.size():
-		cells.append([main_rows[i], i / per_col, i % per_col])
-	for j in extra_rows.size():
-		cells.append([extra_rows[j], j % 2, 3])
-	for entry: Array in cells:
-		var row: Dictionary = entry[0]
-		var col: int = entry[1]
-		var line: int = entry[2]
-		var x := col * col_w
-		var y := line * STAT_ROW_H
-		var key: String = row["key"]
-		_label(String(row["label"]), Vector2(x + 4, y), Vector2(50, STAT_ROW_H), 15, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder)
-		var before := _label(EquipmentInfoScript.format_value(key, row["before"]), Vector2(x + 52, y), Vector2(44, STAT_ROW_H), 17, INK, HORIZONTAL_ALIGNMENT_RIGHT, _stat_holder)
-		if comparing:
-			_label("→", Vector2(x + 98, y), Vector2(18, STAT_ROW_H), 15, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _stat_holder)
-			var after := _label(EquipmentInfoScript.format_value(key, row["after"]), Vector2(x + 118, y), Vector2(44, STAT_ROW_H), 17, INK, HORIZONTAL_ALIGNMENT_RIGHT, _stat_holder)
-			var delta: float = row["delta"]
-			var color := GOOD if delta > 0.0001 else (BAD if delta < -0.0001 else INK_DIM)
-			var d := _label(EquipmentInfoScript.format_delta(key, delta), Vector2(x + 172, y), Vector2(76, STAT_ROW_H), 16, color, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder)
-			after.add_theme_color_override("font_color", color if absf(delta) > 0.0001 else INK)
-			if absf(delta) > 0.0001:
-				# 變化量閃一下，讓玩家注意到
-				d.modulate.a = 0.0
-				after.modulate.a = 0.0
-				var tw := create_tween()
-				tw.tween_property(after, "modulate:a", 1.0, 0.25)
-				tw.parallel().tween_property(d, "modulate:a", 1.0, 0.25)
-		else:
-			before.add_theme_font_size_override("font_size", 18)
+	var rows: Array = EquipmentInfoScript.item_stat_rows(def)
+	var lines := 1
+	if rows.is_empty():
+		_outlined(_label("無數值加成", Vector2(4, 0), Vector2(200, STAT_ROW_H), 16, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
+	else:
+		lines = (rows.size() + 2) / 3
+		for i in rows.size():
+			var row: Dictionary = rows[i]
+			var x := (i % 3) * 168.0
+			var y := (i / 3) * STAT_ROW_H
+			_outlined(_label(String(row["label"]), Vector2(x + 4, y), Vector2(70, STAT_ROW_H), 16, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
+			var tint := Color("#A8F0A8") if int(row["sign"]) > 0 else Color("#FFA0A0")
+			_outlined(_label(String(row["text"]), Vector2(x + 76, y), Vector2(86, STAT_ROW_H), 17, tint, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
+	var top := STAT_Y + lines * STAT_ROW_H + 8.0
+	_scroll.position.y = top
+	_scroll.size.y = 562.0 - top
 
 func _refresh_buttons() -> void:
 	var item_id := _equipped_item_id()
@@ -399,7 +367,6 @@ func _on_actor_pressed(id: String) -> void:
 		_refresh()
 		return
 	actor_id = id
-	_last_change = {}
 	if menu != null:
 		menu._remember_tab_actor("equipment", id)
 	if _is_locked(slot):
@@ -408,8 +375,7 @@ func _on_actor_pressed(id: String) -> void:
 
 func _on_slot_pressed(slot_id: String) -> void:
 	if slot_id != slot:
-		_last_change = {}
-	slot = slot_id
+		slot = slot_id
 	_refresh()
 
 func _on_unequip_pressed() -> void:
@@ -420,8 +386,6 @@ func _on_unequip_pressed() -> void:
 
 ## 換上 new_item_id（空字串＝卸下），並記下「前 → 後」讓詳情顯示變化量
 func _apply_equip(new_item_id: String) -> void:
-	var a := _actor(actor_id)
-	var rows: Array = EquipmentInfoScript.compare(menu, a, actor_id, slot, new_item_id)
 	var old_name := ""
 	if _equipped_item_id() != "":
 		old_name = String(ItemDB.get_def(_equipped_item_id()).get("name", ""))
@@ -431,7 +395,6 @@ func _apply_equip(new_item_id: String) -> void:
 	else:
 		InventorySync.equip_item_to_slot(new_item_id, slot, actor_id)
 		show_toast("已裝上「%s」" % String(ItemDB.get_def(new_item_id).get("name", new_item_id)))
-	_last_change = {"actor": actor_id, "slot": slot, "rows": rows}
 	_refresh()
 
 ## 這個欄位可以換上的道具（背包裡的，符合欄位與角色的武器限制）

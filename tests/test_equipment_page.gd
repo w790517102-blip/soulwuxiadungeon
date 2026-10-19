@@ -42,22 +42,32 @@ func _run() -> void:
 	var candidates: Array = page._candidates()
 	_check(candidates.has("iron_sword") and not candidates.has("yaoqin") and not candidates.has("wep_short_blade"), "weapon candidates follow the actor's weapon rules")
 
-	# 換裝：鐵劍攻擊 -1、速度 -1，顯示前 → 後與變化量，換回來再還原
+	# 詳情只顯示這件裝備自己的加成（青銅劍：攻擊 +4、速度 +1），不顯示換裝前後的總值
+	var shown_texts: Array = []
+	for c in page._stat_holder.get_children():
+		if c is Label:
+			shown_texts.append((c as Label).text)
+	_check(shown_texts.has("攻擊") and shown_texts.has("+4") and shown_texts.has("速度") and shown_texts.has("+1"), "detail lists the item's own bonuses (+4 attack, +1 speed)")
+	_check(not shown_texts.has("→"), "no before-after arrows on the main detail")
+
+	# 更換裝備的視窗才顯示變化：鐵劍 攻擊 30 → 29（-1）、速度 14 → 13（-1）
+	page._on_change_pressed()
+	var popup_texts: Array = []
+	for c in page._pick_compare.get_children():
+		if c is Label:
+			popup_texts.append((c as Label).text)
+	_check(page._overlay.visible and popup_texts.has("29") and popup_texts.has("-1") and popup_texts.has("→"), "the swap window shows 30 → 29 (-1)")
+	page._close_overlay()
+	var rows: Array = page._candidates()
+	_check(rows.has("iron_sword"), "iron sword is a candidate")
 	page._apply_equip("iron_sword")
 	_check(inv.get_equipped("liuyu").get("weapon_1") == "iron_sword", "iron sword is now equipped")
 	_check(inv.has_item("bronze_sword"), "the bronze sword went back to the bag")
-	var atk_row := {}
-	for row: Dictionary in page._last_change.get("rows", []):
-		if row["key"] == "atk":
-			atk_row = row
-	_check(not atk_row.is_empty() and int(atk_row["before"]) == 30 and int(atk_row["after"]) == 29 and int(atk_row["delta"]) == -1, "change rows record 30 → 29 (-1)")
-	var shown := false
+	var shown_after: Array = []
 	for c in page._stat_holder.get_children():
-		if c is Label and (c as Label).text == "-1":
-			shown = true
-	_check(shown, "the change amount is shown on the page")
-	page._on_slot_pressed("armor_body")
-	_check(page._last_change.is_empty(), "choosing another slot clears the change display")
+		if c is Label:
+			shown_after.append((c as Label).text)
+	_check(shown_after.has("+3") and not shown_after.has("→"), "after the swap the detail shows the new item's own +3 only")
 	page._on_slot_pressed("weapon_1")
 	page._apply_equip("bronze_sword")
 	_check(inv.get_equipped("liuyu").get("weapon_1") == "bronze_sword", "swapped back")
