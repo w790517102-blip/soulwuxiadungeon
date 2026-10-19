@@ -11,6 +11,10 @@ const SLOT_SIZE := Vector2(100, 96)
 const SLOT_X := [331.0, 654.0]          # 左欄、右欄
 const SLOT_Y0 := 132.0
 const SLOT_GAP := 10.0
+## 格內版面（邏輯 px）：上＝部位名稱、其餘全是大圖示（裝備名稱不寫在格子上，玩家在右頁就能看到完整資訊）；留白越少越好
+const SLOT_ICON_BOX := Rect2(16, 21, 68, 69)
+const SLOT_LABEL_CHAR_PX := 13.0          # 部位名稱每個字的大小（八格統一）
+const SLOT_LABEL_CHARS := {"main_weapon": 3, "off_weapon": 3, "head": 2, "body": 2, "hands": 2, "feet": 2, "accessory": 2, "mechanism": 2}
 const FIGURE_RECT := Rect2(421, 92, 254, 486)
 ## 三個角色卡槽（V2 placement.json 的 runtime 座標 ÷ 2）
 const ROSTER_SLOTS := [Rect2(55, 142, 246.5, 123), Rect2(55, 273, 246.5, 123.5), Rect2(55, 402.5, 246.5, 122)]
@@ -114,14 +118,23 @@ func _build_slots() -> void:
 		for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 			b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
 		add_child(b)
-		# 共邊國 V3：每格一張「框＋部位名稱」常駐底圖；空格疊灰色剪影；有裝備時隱藏剪影、疊物品小圖；選中疊一圈金光
-		_image(E + "slots/slot_labeled_" + part, Vector2.ZERO, SLOT_SIZE, b).name = "Frame"
-		var empty_icon := _image(E + "slots/slot_empty_" + part, Vector2.ZERO, SLOT_SIZE, b)
+		# 版面原則：留白越少越好，玩家一眼看出這格是什麼。
+		# 上：部位名稱（共邊國的字，統一縮放成同樣的字大小）；其餘：大圖示（空格是灰剪影、有裝備是物品圖）。格子上不寫裝備名稱。
+		_image(E + "slots/slot_frame_" + part, Vector2.ZERO, SLOT_SIZE, b).name = "Frame"
+		var label_tex := _tex(E + "slots/label_" + part)
+		if label_tex != null:
+			var per_char := label_tex.get_size().x / float(SLOT_LABEL_CHARS.get(part, 2))
+			var disp := label_tex.get_size() * (SLOT_LABEL_CHAR_PX / per_char)
+			var pl := _image(E + "slots/label_" + part, Vector2((SLOT_SIZE.x - disp.x) * 0.5, 5.0 + (SLOT_LABEL_CHAR_PX - disp.y) * 0.5), disp, b)
+			pl.name = "PartLabel"
+		var ghost_tex := _tex(E + "slots/ghost_" + part)
+		var empty_icon := _image(E + "slots/ghost_" + part, SLOT_ICON_BOX.position, SLOT_ICON_BOX.size, b)
 		empty_icon.name = "EmptyIcon"
-		var icon := _image_from("", Vector2(10, 26), Vector2(44, 44), b)
+		empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		if ghost_tex != null:
+			empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var icon := _image_from("", SLOT_ICON_BOX.position, SLOT_ICON_BOX.size, b)
 		icon.name = "Icon"
-		var item_name := _label("", Vector2(0, 72), Vector2(SLOT_SIZE.x, 20), 12, INK, HORIZONTAL_ALIGNMENT_CENTER, b)
-		item_name.name = "ItemName"
 		# 金光比格子大一圈（240×232 的圖，疊在格子的 (-20,-20) 像素＝邏輯 (-10,-10)），不能縮進框內也不能裁切
 		var glow := _image(E + "slots/slot_selected_gold_overlay", Vector2(-10, -10), Vector2(120, 116), b)
 		glow.name = "SelectedGlow"
@@ -348,7 +361,6 @@ func _refresh_slots() -> void:
 		var item_id := String(equipped.get(slot_id, ""))
 		var icon := b.get_node("Icon") as TextureRect
 		var empty_icon := b.get_node("EmptyIcon") as TextureRect
-		var name_label := b.get_node("ItemName") as Label
 		var locked := _is_locked(slot_id)
 		b.disabled = locked
 		b.modulate = Color(0.55, 0.52, 0.48) if locked else Color.WHITE      # 停用（固定欄位）：整格壓暗
@@ -357,13 +369,9 @@ func _refresh_slots() -> void:
 			var icon_path := ItemIconMap.icon_path(item_id, def)
 			icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
 			empty_icon.visible = false
-			name_label.text = String(def.get("name", item_id))
-			name_label.add_theme_color_override("font_color", INK)
 		else:
 			icon.texture = null
 			empty_icon.visible = true
-			name_label.text = "固定" if locked else ("空手" if slot_id.begins_with("weapon") else "")
-			name_label.add_theme_color_override("font_color", INK_DIM)
 
 func _refresh_figure() -> void:
 	var a := _actor(actor_id)

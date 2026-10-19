@@ -30,11 +30,18 @@ func _run() -> void:
 
 	_check(page.actor_id == "liuyu", "starts on 劉語塵")
 	_check(page._slot_buttons.size() == 8, "eight slot buttons")
-	var weapon_name := (page._slot_buttons["weapon_1"].get_node("ItemName") as Label).text
-	_check(weapon_name == "青銅劍", "main weapon slot shows the bronze sword (got %s)" % weapon_name)
-	_check((page._slot_buttons["armor_head"].get_node("ItemName") as Label).text == "布帽", "head slot shows the cloth cap")
-	_check((page._slot_buttons["mechanism"].get_node("ItemName") as Label).text == "" and page._slot_buttons["mechanism"].get_node("EmptyIcon").visible, "empty mechanism slot shows the ghost icon and no name (the part name is baked into the frame)")
-	_check((page._slot_buttons["weapon_2"].get_node("ItemName") as Label).text == "空手", "empty sub weapon shows 空手")
+	_check(page._slot_buttons["weapon_1"].get_node("Icon").texture != null and not page._slot_buttons["weapon_1"].get_node("EmptyIcon").visible, "main weapon slot shows the equipped item icon and hides the ghost")
+	_check(page._slot_buttons["armor_head"].get_node("Icon").texture != null and not page._slot_buttons["armor_head"].get_node("EmptyIcon").visible, "head slot shows the cloth cap icon")
+	_check(page._slot_buttons["mechanism"].get_node("Icon").texture == null and page._slot_buttons["mechanism"].get_node("EmptyIcon").visible, "empty mechanism slot shows the gray ghost only")
+	_check(not page._slot_buttons["mechanism"].has_node("ItemName"), "slots do not print the item name (the right page shows it)")
+	_check(page._slot_buttons["weapon_2"].get_node("EmptyIcon").visible, "empty sub weapon shows the gray ghost")
+	# 八格的部位名稱統一字大小：每個字（邏輯 px）都相同
+	var char_sizes: Array = []
+	for slot_id in page._slot_buttons.keys():
+		var pl: TextureRect = page._slot_buttons[slot_id].get_node("PartLabel")
+		var chars: int = page.SLOT_LABEL_CHARS[page._empty_icon_name(slot_id)]
+		char_sizes.append(snappedf(pl.size.x / chars, 0.1))
+	_check(char_sizes.min() == char_sizes.max(), "all eight part names have the same character size (got %s)" % str(char_sizes))
 	_check(page._info_vals[0].text == "劍類兵器" and page._info_vals[1].text == "主武器" and page._info_vals[2].text == "劉語塵", "detail shows category, slot, wearer")
 
 	# 候選清單：主武器欄只列得到劉語塵能用的劍（鐵劍），不含琴、短刀
