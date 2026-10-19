@@ -94,6 +94,17 @@ func _run() -> void:
 	page.use_aged_equipment_paper = false
 	_check(plain_tex != null and aged_tex != null and plain_tex.resource_path != aged_tex.resource_path, "the aged paper is a separate backup version of the scroll")
 	_check(plain_tex.resource_path.contains("/equipment/") and aged_tex.resource_path.contains("equipment_aged"), "default is the original, the backup lives in equipment_aged")
+	# 紙娃娃：身體護具依稀有度換圖，沒有該階的圖退回凡品；武器退回預設；機關沒裝備就不顯示
+	_check(page._doll._base.texture != null, "the master figure is shown for 劉語塵")
+	_check(page.doll_info.get("body_rarity") == 1, "cloth clothes are common (rarity 1)")
+	page._on_slot_pressed("armor_body")
+	page._apply_equip("arm_rare_clothes")
+	_check(inv.get_equipped("liuyu").get("armor_body") == "arm_rare_clothes", "the rare clothes are worn")
+	_check(page.doll_info.get("body_rarity") == 3, "the doll sees the rare clothes as rarity 3")
+	_check(page._doll._base.modulate != Color.WHITE, "(placeholder) the figure tint changes while the rarity-3 art is missing")
+	_check(page.doll_info.get("mech_art") == "", "no mechanism equipped → no mechanism layer")
+	page._apply_equip("arm_cloth")
+	_check(page.doll_info.get("body_rarity") == 1 and page._doll._base.modulate == Color.WHITE, "back to cloth clothes: rarity 1 and the tint is gone")
 	# 鎖定欄、特殊效果區可捲動
 	_check(menu.is_slot_locked_for("shumian", "weapon_2") and not menu.is_slot_locked_for("liuyu", "weapon_2"), "only 書眠's sub weapon is locked")
 	_check(page._scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "the description / special effect area scrolls (bar only when needed)")

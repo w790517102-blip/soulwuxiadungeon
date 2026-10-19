@@ -4,6 +4,7 @@ extends "res://scripts/inventory/StudyPageBase.gd"
 # （與狀態頁同一套公式）。座標一律是邏輯 px（1152×648）。版面說明：docs/system_menu/裝備頁_盤點與規格草案.md。
 
 const EquipmentInfoScript = preload("res://scripts/inventory/EquipmentInfo.gd")
+const EquipmentDollScript = preload("res://scripts/inventory/EquipmentDoll.gd")
 
 # ---- 版面（邏輯 px；共邊國骨架包的位置：assets/UI/equipment/ 的 asset_manifest）----
 const BUTTON_Y := 586
@@ -57,7 +58,8 @@ var _roster_box: Control
 var _roster_buttons: Dictionary = {}
 var _slot_buttons: Dictionary = {}
 var _figure: TextureRect
-var _figure_name: Label
+var _doll: Control
+var doll_info: Dictionary = {}
 var _art_bg: TextureRect
 var _art: TextureRect
 var _name_label: Label
@@ -201,24 +203,23 @@ func _empty_icon_name(slot_id: String) -> String:
 		"armor_feet": return "feet"
 		"accessory_1": return "accessory"
 	return "mechanism"
+
 func _build_figure() -> void:
-	# 人物立繪（紙娃娃預留）：目前只放角色頭像當底圖；之後在這個節點下加各部位圖層（後髮／身體／披風／機關…），不用改版面
-	var doll := Control.new()
-	doll.name = "PaperDoll"
-	doll.position = FIGURE_RECT.position
-	doll.size = FIGURE_RECT.size
-	doll.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(doll)
+	# 人物（紙娃娃）：EquipmentDoll 把母圖與各部位圖層疊在同一張畫布上；沒有母圖的角色退回頭像
+	_doll = EquipmentDollScript.new()
+	_doll.name = "PaperDoll"
+	_doll.position = FIGURE_RECT.position
+	_doll.size = FIGURE_RECT.size
+	add_child(_doll)
 	_figure = TextureRect.new()
-	_figure.name = "Base"
+	_figure.name = "PortraitFallback"
 	_figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_figure.position = FIGURE_RECT.position + Vector2(0, 60)
 	_figure.size = Vector2(FIGURE_RECT.size.x, 250)
-	_figure.position = Vector2(0, 60)
 	_figure.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_figure.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	doll.add_child(_figure)
-	_figure_name = _label("", Vector2(0, 320), Vector2(FIGURE_RECT.size.x, 30), 20, INK, HORIZONTAL_ALIGNMENT_CENTER, doll)
+	add_child(_figure)
 
 func _build_detail() -> void:
 	# 版面：右頁左右平分——左半是大圖（概念圖的裝備圖案很大），右半是名稱與資訊
@@ -465,10 +466,13 @@ func _refresh_slots() -> void:
 			empty_icon.visible = true
 
 func _refresh_figure() -> void:
-	var a := _actor(actor_id)
-	var path := String(a.get("portrait_path", ""))
-	_figure.texture = load(path) as Texture2D if path != "" and ResourceLoader.exists(path) else null
-	_figure_name.text = String(a.get("name", actor_id))
+	var info: Dictionary = _doll.show_actor(actor_id)
+	var has_master := _doll._base.texture != null
+	_figure.visible = not has_master
+	if not has_master:
+		var path := String(_actor(actor_id).get("portrait_path", ""))
+		_figure.texture = load(path) as Texture2D if path != "" and ResourceLoader.exists(path) else null
+	doll_info = info
 
 func _refresh_detail() -> void:
 	var a := _actor(actor_id)
