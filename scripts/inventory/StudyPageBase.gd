@@ -20,6 +20,9 @@ const NAV_TABS := [
 ]
 const BUTTON_Z := 12   # 比前景前排（z 10）高：按鈕永遠不會被前景遮住
 
+## 裝備頁紙面用哪一版：false＝共邊國原檔（預設）；true＝泛黃＋污漬＋燒焦的後製版（備案，tools/age_paper.gd 做的；缺點是紋理會被模糊掉）
+static var use_aged_equipment_paper := false
+
 var _half_cache: Dictionary = {}
 var _shell: Node
 var _toast: Control
@@ -31,7 +34,14 @@ var _overlay: Control               # 彈出視窗（選擇、確認）的遮罩
 # ------------------------------------------------------------------
 func _tex(name: String) -> Texture2D:
 	# "equipment/xxx" 讀 assets/UI/equipment/；其他讀 assets/UI/inventory/
-	var p := "res://assets/UI/%s.png" % name if name.begins_with("equipment/") else "%s%s.png" % [DIR, name]
+	var p := "%s%s.png" % [DIR, name]
+	if name.begins_with("equipment/"):
+		p = "res://assets/UI/%s.png" % name
+		# 備案：泛黃後製版放在 assets/UI/equipment_aged/（沒有的檔案退回原檔）
+		if use_aged_equipment_paper:
+			var aged := "res://assets/UI/equipment_aged/%s.png" % name.trim_prefix("equipment/")
+			if ResourceLoader.exists(aged):
+				p = aged
 	return load(p) as Texture2D if ResourceLoader.exists(p) else null
 
 

@@ -80,6 +80,13 @@ func _run() -> void:
 	_check(page._btn_unequip.disabled, "nothing to take off now → 卸下 is disabled")
 	page._apply_equip("arm_cloth_cap")
 
+	# 紙面兩版：預設是共邊國原檔；備案是泛黃後製版（開關 use_aged_equipment_paper）
+	var plain_tex: Texture2D = page._tex("equipment/equip_scroll_complete")
+	page.use_aged_equipment_paper = true
+	var aged_tex: Texture2D = page._tex("equipment/equip_scroll_complete")
+	page.use_aged_equipment_paper = false
+	_check(plain_tex != null and aged_tex != null and plain_tex.resource_path != aged_tex.resource_path, "the aged paper is a separate backup version of the scroll")
+	_check(plain_tex.resource_path.contains("/equipment/") and aged_tex.resource_path.contains("equipment_aged"), "default is the original, the backup lives in equipment_aged")
 	# 鎖定欄、特殊效果區可捲動
 	_check(menu.is_slot_locked_for("shumian", "weapon_2") and not menu.is_slot_locked_for("liuyu", "weapon_2"), "only 書眠's sub weapon is locked")
 	_check(page._scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "the description / special effect area scrolls (bar only when needed)")
