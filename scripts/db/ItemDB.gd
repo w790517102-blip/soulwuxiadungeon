@@ -19,7 +19,7 @@ const ITEM_DEFS := {
 
 	"food_walnut": {"name": "胡桃", "desc": "自西域傳入的堅果，香而不膩，補神益氣。只是殼硬得惱人，沒點手勁還真奈何不了它。", "type": "consumable", "use_scope": "any", "use_action": "consume", "effect": "walnut", "target_scope": "ally_single", "require_stat": "str", "require_min": 20, "hp_restore": 30, "mp_restore": 10},
 	"misc_walnut_cracker": {"name": "胡桃鉗", "desc": "專為硬殼果實打造的小巧工具，握在手裡不起眼，真用上時倒比拳頭可靠。", "type": "tool", "use_scope": "none", "use_action": "none"},
-	"tool_zhuge_crossbow": {"name": "諸葛連弩", "desc": "機括連發的巧造弩器，扣弦如雨，最適合在對手尚未近身前先聲奪人。弩身可反覆使用，唯箭矢消耗極快。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "zhuge_crossbow", "target_scope": "enemy_single", "power": 18, "ammo_item_id": "ammo_arrow", "no_consume": true},
+	"tool_zhuge_crossbow": {"name": "諸葛連弩", "desc": "機括連發的巧造弩器，扣弦如雨，最適合在對手尚未近身前先聲奪人。掛在身上，戰鬥中以「機關」發動，唯箭矢消耗極快。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "mechanism", "trigger": {"label": "連射", "effect": "zhuge_crossbow", "target_scope": "enemy_single", "power": 18, "ammo_item_id": "ammo_arrow"}},
 	"ammo_arrow": {"name": "箭矢", "desc": "連弩與弓器所需的消耗品，數量不多時，再精巧的機關也只是擺設。", "type": "material", "use_scope": "none", "use_action": "none"},
 	"misc_smoke_pellet": {"name": "煙霧丸", "desc": "落地即散，轉眼煙起。江湖中人未必拿它取勝，卻常拿它保命。", "type": "consumable", "use_scope": "battle", "use_action": "consume", "effect": "escape_battle", "target_scope": "self"},
 	"book_poem_a_int": {"name": "《燈後微聲》", "desc": "書眠收錄於深夜燈下的短詩。句句都輕，卻不空，像有人在你最安靜的時候，替你說出一直沒能說出口的那一小段心事。", "type": "consumable", "category": "book", "use_scope": "world", "use_action": "consume", "effect": "perm_stat", "stat_key": "int", "amount": 5, "target_scope": "ally_single", "special_use_event": "book_reading_lamp_whisper", "can_sell": false, "stock_once": true, "restock_rule": "never"},
@@ -395,6 +395,8 @@ static func _stat_key_display_name(stat_key: String) -> String:
 static func get_effect_display_text(item_def: Dictionary) -> String:
 	if item_def.is_empty():
 		return "（無）"
+	if typeof(item_def.get("trigger", null)) == TYPE_DICTIONARY:
+		return _trigger_effect_text(item_def["trigger"])
 	var item_id := String(item_def.get("id", ""))
 	if item_id == "med_heartguard_small":
 		return "暫未實裝"
@@ -530,3 +532,10 @@ static func make_item(id: String) -> Dictionary:
 	var item := data.duplicate(true)
 	item["id"] = id
 	return item
+
+## 機關的觸發效果說明（戰鬥中按「機關」發動）
+static func _trigger_effect_text(trigger: Dictionary) -> String:
+	match String(trigger.get("effect", "")):
+		"zhuge_crossbow":
+			return "戰鬥中以「機關」發動：消耗箭矢，對單一敵人連射，每發 %d 點傷害（發數依敏捷計算，上限 5 發）" % int(trigger.get("power", 0))
+	return String(trigger.get("label", "機關"))

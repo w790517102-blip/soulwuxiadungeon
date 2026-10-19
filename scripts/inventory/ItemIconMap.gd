@@ -55,7 +55,8 @@ static func group_of(item_id: String, item_def: Dictionary = {}) -> int:
 		"armor_head", "armor_body": return 8
 		"armor_feet": return 9
 		"armor_hands": return 10
-		"accessory_1", "accessory_2": return 11
+		"accessory_1": return 11
+		"mechanism": return 16
 	match String(item_def.get("type", "")):
 		"book": return 12
 		"consumable": return 2

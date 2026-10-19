@@ -40,7 +40,7 @@ const EQUIP_SLOTS := [
 	"armor_hands",
 	"armor_feet",
 	"accessory_1",
-	"accessory_2",
+	"mechanism",
 ]
 
 func _ready() -> void:
@@ -306,6 +306,14 @@ func _migrate_equipped_entry(entry: Dictionary) -> void:
 	if legacy_accessory != "" and str(entry.get("accessory_1", "")) == "":
 		entry["accessory_1"] = legacy_accessory
 
+	# 舊存檔的「飾品二」(accessory_2) 已改為機關欄：搬到空的飾品欄，飾品欄已滿就退回背包，不丟物品
+	var legacy_accessory_2 := str(entry.get("accessory_2", ""))
+	if legacy_accessory_2 != "":
+		if str(entry.get("accessory_1", "")) == "":
+			entry["accessory_1"] = legacy_accessory_2
+		else:
+			_add_item_stack_internal(legacy_accessory_2, 1)
+	entry.erase("accessory_2")
 	entry.erase("armor")
 	entry.erase("accessory")
 

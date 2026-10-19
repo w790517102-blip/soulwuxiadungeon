@@ -290,7 +290,7 @@ func _start_oldfighter_sparring_battle() -> void:
 	var equip := InventorySync.get_equipped("liuyu")
 	var has_weapon := String(equip.get("weapon_1", "")) != "" or String(equip.get("weapon_2", "")) != ""
 	var has_armor_or_acc := false
-	for slot in ["armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2"]:
+	for slot in ["armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "mechanism"]:
 		if String(equip.get(slot, "")) != "":
 			has_armor_or_acc = true
 			break

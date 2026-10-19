@@ -2,6 +2,7 @@ extends "res://scripts/battlescripts/BattleUI.gd"
 ## Inherits the production command/result workflow. Only its presentation changes.
 
 const StageScene = preload("res://scenes/presentation/combat_stage_25d.tscn")
+const MechanismTrigger = preload("res://scripts/battlescripts/MechanismTrigger.gd")
 var stage: Node3D
 var stage_enabled: bool = true
 var _stage_hud: Control
@@ -347,6 +348,7 @@ func dispatch_stage_command(command: String) -> void:
 		"skill": _on_btn_skill_pressed()
 		"inner_force": _on_btn_inner_force_pressed()
 		"item": _on_btn_item_pressed()
+		"mechanism": _on_btn_mechanism_pressed()
 		"defend": _on_btn_defend_pressed()
 	_sync_input_state()
 
@@ -701,3 +703,47 @@ static func resolve_stage_background(context: Dictionary) -> String:
 			if haystack.contains(token):
 				return String(rule.path)
 	return "res://assets/background/battleUI/defult/Background_defult.jpg"
+
+
+# --- 機關 ----------------------------------------------------------------------------
+## 「機關」按鈕＝啟動出手角色身上機關的 TRIGGER。流程同選目標：點機關 → 選目標 → 發動。
+func _on_btn_mechanism_pressed() -> void:
+	hide_all_popups()
+	var trigger: Dictionary = MechanismTrigger.get_trigger(current_actor)
+	if trigger.is_empty():
+		return
+	var reason: String = MechanismTrigger.block_reason(trigger)
+	if reason != "":
+		_log_system(reason)
+		return
+	var targets: Array = combat_controller.get_valid_targets_for_item(trigger, current_actor)
+	if targets.is_empty():
+		_log_system("目前沒有可選擇的目標。")
+		return
+	on_action_selection = false
+	pending_item = trigger
+	pending_item_user = current_actor
+	_log_system("你發動了「%s」。" % String(trigger.get("name", "")))
+	if targets.size() == 1:
+		_apply_item_and_finish_turn(pending_item_user, pending_item, targets[0])
+		pending_item = {}
+		pending_item_user = {}
+	else:
+		target_select_popup.show_targets(targets)
+
+
+## 機關不走 use_item（那會套用「禁止使用道具」規則，且機關不是道具）。
+func _apply_item_and_finish_turn(user: Dictionary, item: Dictionary, target: Dictionary) -> void:
+	if not bool(item.get("is_mechanism", false)):
+		super._apply_item_and_finish_turn(user, item, target)
+		return
+	action_panel.hide()
+	on_action_selection = false
+	var ok := MechanismTrigger.fire(combat_controller, user, item, target)
+	if not ok:
+		# 沒有發動（例如箭矢耗盡）：這次行動沒有用掉，回到指令
+		on_action_selection = true
+		action_panel.show()
+		return
+	if user.get("id", "") == current_turn_id:
+		emit_signal("player_action_complete", user)

@@ -314,7 +314,7 @@ func _is_actor_fully_unequipped(actor: Dictionary) -> bool:
 	var actor_id := String(actor.get("id", ""))
 	if actor_id == "":
 		return false
-	var equip_slots := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2"]
+	var equip_slots := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "mechanism"]
 	if typeof(InventorySync) == TYPE_NIL or not InventorySync.has_method("get_equipped"):
 		return false
 	var equipped: Dictionary = InventorySync.get_equipped(actor_id)

@@ -449,12 +449,12 @@ func _check_stage(fixture: Node) -> void:
 	_expect(ui._command_buttons.keys().size() == 6 and ui._command_buttons["skill"].tooltip_text == "出招" and ui._command_buttons["mechanism"].tooltip_text == "機關" and ui._command_buttons["skill"].texture_hover != ui._command_buttons["skill"].texture_normal, "each button has art with a separate glow state")
 	var menu_rect := Rect2(ui.command_menu.global_position, ui.command_menu.size)
 	_expect(viewport_rect.encloses(menu_rect) and menu_rect.position.x >= stage.card_screen_rect(allies[0]).end.x, "the pop-up sits beside the active card, inside the screen")
-	# 逃跑 / 機關 are placeholders: they must do nothing at all.
+	# 逃跑 is a placeholder: it must do nothing at all. 機關 only shows for a character who carries a mechanism with a trigger.
+	_expect(not ui._command_buttons["mechanism"].visible, "no mechanism equipped → no 機關 button")
 	var before_flee: Dictionary = {"menu": ui._menu, "on_action": ui.on_action_selection, "log": ui.log_panel.get_parsed_text()}
 	ui._command_buttons["flee"].pressed.emit()
-	ui._command_buttons["mechanism"].pressed.emit()
 	await process_frame
-	_expect(ui.command_menu.visible and ui._menu == before_flee.menu and ui.on_action_selection == before_flee.on_action and ui.log_panel.get_parsed_text() == before_flee.log, "逃跑 and 機關 do nothing when pressed")
+	_expect(ui.command_menu.visible and ui._menu == before_flee.menu and ui.on_action_selection == before_flee.on_action and ui.log_panel.get_parsed_text() == before_flee.log, "逃跑 does nothing when pressed")
 	var log_plate: Control = ui._stage_hud.get_node("RecentLogPlate")
 	_expect(log_plate.get_node("LogBarArt").texture != null and viewport_rect.encloses(Rect2(log_plate.position, log_plate.size)), "the supplied long bar frames the recent log, inside the screen")
 	var archive_rect := Rect2(ui._stage_hud.get_node("Archive").position, ui._stage_hud.get_node("Archive").size)

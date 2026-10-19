@@ -235,7 +235,7 @@ func _ready():
 	if accessory1_button:
 		accessory1_button.pressed.connect(func(): _open_equip_popup("accessory_1"))
 	if accessory2_button:
-		accessory2_button.pressed.connect(func(): _open_equip_popup("accessory_2"))
+		accessory2_button.pressed.connect(func(): _open_equip_popup("mechanism"))
 	if equip_popup:
 		equip_popup.index_pressed.connect(_on_equip_popup_selected)
 	if skill_target_popup:
@@ -1783,7 +1783,7 @@ func _refresh_equipment_tab() -> void:
 	_set_equipment_button(armor_hands_button, "手部", str(equipped.get("armor_hands", "")), "armor_hands")
 	_set_equipment_button(armor_feet_button, "腳部", str(equipped.get("armor_feet", "")), "armor_feet")
 	_set_equipment_button(accessory1_button, "飾品一", str(equipped.get("accessory_1", "")), "accessory_1")
-	_set_equipment_button(accessory2_button, "飾品二", str(equipped.get("accessory_2", "")), "accessory_2")
+	_set_equipment_button(accessory2_button, "機關", str(equipped.get("mechanism", "")), "mechanism")
 
 func _set_equipment_button(button: Button, prefix: String, item_id: String, slot: String) -> void:
 	if button == null:

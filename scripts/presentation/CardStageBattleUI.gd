@@ -7,8 +7,8 @@ extends "res://scripts/presentation/StageBattleUI.gd"
 const CardStageScene = preload("res://scenes/presentation/card_stage_3d.tscn")
 const BattleEvent = preload("res://scripts/presentation/BattleEvent.gd")
 const BattleEventPresenter = preload("res://scripts/presentation/BattleEventPresenter.gd")
-## [id, label, art name, implemented]. 逃跑 and 機關 are placeholders: they do nothing yet.
-const MAIN_COMMANDS: Array = [["skill", "出招", "btn_skill", true], ["inner_force", "內功", "btn_inner_force", true], ["item", "道具", "btn_item", true], ["defend", "防禦", "btn_defend", true], ["flee", "逃跑", "btn_flee", false], ["mechanism", "機關", "btn_mechanism", false]]
+## [id, label, art name, implemented]. 逃跑 is a placeholder (does nothing yet). 機關 is shown only when the acting character has a mechanism with a trigger.
+const MAIN_COMMANDS: Array = [["skill", "出招", "btn_skill", true], ["inner_force", "內功", "btn_inner_force", true], ["item", "道具", "btn_item", true], ["defend", "防禦", "btn_defend", true], ["flee", "逃跑", "btn_flee", false], ["mechanism", "機關", "btn_mechanism", true]]
 const BUTTON_DIR := "res://assets/UI/card_stage/"
 const BUTTON_SIZE := Vector2(150, 108)
 const LOG_BAR_TEXTURE := "res://assets/UI/card_stage/log_bar.webp"
@@ -62,7 +62,7 @@ func _build_command_menu() -> void:
 		if bool(entry[3]):
 			button.pressed.connect(_on_card_command.bind(String(entry[0])))
 		else:
-			# Not implemented yet (逃跑 / 機關): clickable, but nothing happens.
+			# Not implemented yet (逃跑): clickable, but nothing happens.
 			button.pressed.connect(_on_unimplemented_command.bind(String(entry[0])))
 		grid.add_child(button)
 		_command_buttons[String(entry[0])] = button
@@ -153,6 +153,8 @@ func _on_active_card_clicked(actor: Dictionary) -> void:
 
 
 func _show_command_menu() -> void:
+	# 機關按鈕：身上機關有 TRIGGER 才出現（沒裝備、或被動機關都不顯示）
+	_command_buttons["mechanism"].visible = not MechanismTrigger.get_trigger(current_actor).is_empty()
 	if combat_controller:
 		_command_buttons["item"].disabled = not combat_controller.can_use_items()
 		_command_buttons["item"].modulate = Color.WHITE if combat_controller.can_use_items() else Color(0.45, 0.45, 0.45)
@@ -323,7 +325,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	super._unhandled_input(event)
 
 
-## 逃跑 / 機關: placeholders for features that are not implemented yet.
+## 逃跑: placeholder for features that are not implemented yet.
 func _on_unimplemented_command(_command: String) -> void:
 	pass
 
