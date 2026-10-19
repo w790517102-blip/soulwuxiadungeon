@@ -33,7 +33,7 @@ func _run() -> void:
 	var weapon_name := (page._slot_buttons["weapon_1"].get_node("ItemName") as Label).text
 	_check(weapon_name == "青銅劍", "main weapon slot shows the bronze sword (got %s)" % weapon_name)
 	_check((page._slot_buttons["armor_head"].get_node("ItemName") as Label).text == "布帽", "head slot shows the cloth cap")
-	_check((page._slot_buttons["mechanism"].get_node("ItemName") as Label).text == "無", "empty mechanism slot shows 無")
+	_check((page._slot_buttons["mechanism"].get_node("ItemName") as Label).text == "" and page._slot_buttons["mechanism"].get_node("EmptyIcon").visible, "empty mechanism slot shows the ghost icon and no name (the part name is baked into the frame)")
 	_check((page._slot_buttons["weapon_2"].get_node("ItemName") as Label).text == "空手", "empty sub weapon shows 空手")
 	_check(page._info_vals[0].text == "劍類兵器" and page._info_vals[1].text == "主武器" and page._info_vals[2].text == "劉語塵", "detail shows category, slot, wearer")
 

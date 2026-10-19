@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://x0cfh1fj3fri"
-path="res://.godot/imported/equip_empty_main_weapon.png-629de91beb4ffa421591fa57b4c341b6.ctex"
+uid="uid://bus3c6a1maaqk"
+path="res://.godot/imported/slot_labeled_accessory.png-008f2b6917c1c5ae2b86a60e8cd815a8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment/equip_empty_main_weapon.png"
-dest_files=["res://.godot/imported/equip_empty_main_weapon.png-629de91beb4ffa421591fa57b4c341b6.ctex"]
+source_file="res://assets/UI/equipment/slots/slot_labeled_accessory.png"
+dest_files=["res://.godot/imported/slot_labeled_accessory.png-008f2b6917c1c5ae2b86a60e8cd815a8.ctex"]
 
 [params]
 

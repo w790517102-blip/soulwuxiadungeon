@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b3pokbupv4rxc"
-path="res://.godot/imported/equip_slot_hover.png-a98a6681a9dfba99984d325ab4e98b6f.ctex"
+uid="uid://c1wqingl0tjqf"
+path="res://.godot/imported/slot_empty_body.png-74c28a5880ae38f6120e72c2506ef25c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment_aged/equip_slot_hover.png"
-dest_files=["res://.godot/imported/equip_slot_hover.png-a98a6681a9dfba99984d325ab4e98b6f.ctex"]
+source_file="res://assets/UI/equipment/slots/slot_empty_body.png"
+dest_files=["res://.godot/imported/slot_empty_body.png-74c28a5880ae38f6120e72c2506ef25c.ctex"]
 
 [params]
 

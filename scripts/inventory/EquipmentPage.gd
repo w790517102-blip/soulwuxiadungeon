@@ -103,6 +103,7 @@ func _build_slots() -> void:
 		all_slots.append([EquipmentInfoScript.RIGHT_SLOTS[i], SLOT_X[1], SLOT_Y0 + i * (SLOT_SIZE.y + SLOT_GAP)])
 	for entry: Array in all_slots:
 		var slot_id: String = entry[0]
+		var part := _empty_icon_name(slot_id)
 		var b := Button.new()
 		b.name = "Slot_" + slot_id
 		b.position = Vector2(entry[1], entry[2])
@@ -110,23 +111,32 @@ func _build_slots() -> void:
 		b.focus_mode = Control.FOCUS_NONE
 		b.toggle_mode = true
 		b.z_index = 1
-		# 共邊國的四態：一般／移入／選中／停用（固定欄位）
-		for pair in [["normal", "normal"], ["hover", "hover"], ["pressed", "selected"], ["hover_pressed", "selected"], ["disabled", "disabled"]]:
-			var sb := _box(E + "equip_slot_" + pair[1], 14, 14)
-			b.add_theme_stylebox_override(pair[0], sb if sb != null else StyleBoxEmpty.new())
-		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+			b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
 		add_child(b)
-		var empty_icon := _image(E + "equip_empty_" + _empty_icon_name(slot_id), Vector2(22, 20), Vector2(56, 56), b)
+		# 共邊國 V3：每格一張「框＋部位名稱」常駐底圖；空格疊灰色剪影；有裝備時隱藏剪影、疊物品小圖；選中疊一圈金光
+		_image(E + "slots/slot_labeled_" + part, Vector2.ZERO, SLOT_SIZE, b).name = "Frame"
+		var empty_icon := _image(E + "slots/slot_empty_" + part, Vector2.ZERO, SLOT_SIZE, b)
 		empty_icon.name = "EmptyIcon"
-		var icon := _image_from("", Vector2(30, 26), Vector2(40, 40), b)
+		var icon := _image_from("", Vector2(10, 26), Vector2(44, 44), b)
 		icon.name = "Icon"
-		_label(EquipmentInfoScript.slot_label(slot_id), Vector2(10, 4), Vector2(60, 16), 11, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, b).name = "SlotName"
-		var item_name := _label("", Vector2(0, 72), Vector2(SLOT_SIZE.x, 20), 13, INK, HORIZONTAL_ALIGNMENT_CENTER, b)
+		var item_name := _label("", Vector2(0, 72), Vector2(SLOT_SIZE.x, 20), 12, INK, HORIZONTAL_ALIGNMENT_CENTER, b)
 		item_name.name = "ItemName"
+		# 金光比格子大一圈（240×232 的圖，疊在格子的 (-20,-20) 像素＝邏輯 (-10,-10)），不能縮進框內也不能裁切
+		var glow := _image(E + "slots/slot_selected_gold_overlay", Vector2(-10, -10), Vector2(120, 116), b)
+		glow.name = "SelectedGlow"
+		glow.visible = false
+		# 閃爍／呼吸由程式調透明度（素材是靜態金光）
+		var breath := glow.create_tween().set_loops()
+		breath.tween_property(glow, "modulate:a", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
+		breath.tween_property(glow, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE)
+		# 沒有移入圖，用提亮代替
+		b.mouse_entered.connect(func(): if not b.disabled: b.modulate = Color(1.1, 1.08, 1.02))
+		b.mouse_exited.connect(func(): b.modulate = Color(0.55, 0.52, 0.48) if b.disabled else Color.WHITE)
 		b.pressed.connect(_on_slot_pressed.bind(slot_id))
 		_slot_buttons[slot_id] = b
 
-## 空格剪影的檔名（骨架包：equip_empty_<名稱>.png）
+## 空格剪影的檔名（V3：slots/slot_empty_<名稱>.png）
 func _empty_icon_name(slot_id: String) -> String:
 	match slot_id:
 		"weapon_1": return "main_weapon"
@@ -137,7 +147,6 @@ func _empty_icon_name(slot_id: String) -> String:
 		"armor_feet": return "feet"
 		"accessory_1": return "accessory"
 	return "mechanism"
-
 func _build_figure() -> void:
 	# 人物立繪（紙娃娃預留）：目前只放角色頭像當底圖；之後在這個節點下加各部位圖層（後髮／身體／披風／機關…），不用改版面
 	var doll := Control.new()
@@ -335,12 +344,14 @@ func _refresh_slots() -> void:
 	for slot_id in _slot_buttons.keys():
 		var b: Button = _slot_buttons[slot_id]
 		b.set_pressed_no_signal(slot_id == slot)
+		(b.get_node("SelectedGlow") as Control).visible = slot_id == slot and not _is_locked(slot_id)
 		var item_id := String(equipped.get(slot_id, ""))
 		var icon := b.get_node("Icon") as TextureRect
 		var empty_icon := b.get_node("EmptyIcon") as TextureRect
 		var name_label := b.get_node("ItemName") as Label
 		var locked := _is_locked(slot_id)
 		b.disabled = locked
+		b.modulate = Color(0.55, 0.52, 0.48) if locked else Color.WHITE      # 停用（固定欄位）：整格壓暗
 		if item_id != "":
 			var def := ItemDB.get_def(item_id)
 			var icon_path := ItemIconMap.icon_path(item_id, def)
@@ -351,7 +362,7 @@ func _refresh_slots() -> void:
 		else:
 			icon.texture = null
 			empty_icon.visible = true
-			name_label.text = "固定" if locked else ("空手" if slot_id.begins_with("weapon") else "無")
+			name_label.text = "固定" if locked else ("空手" if slot_id.begins_with("weapon") else "")
 			name_label.add_theme_color_override("font_color", INK_DIM)
 
 func _refresh_figure() -> void:

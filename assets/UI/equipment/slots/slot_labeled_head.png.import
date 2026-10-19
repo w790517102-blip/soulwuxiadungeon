@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://biiu27qnrhhks"
-path="res://.godot/imported/equip_slot_disabled.png-bbdcc52359b430bd495730782d057008.ctex"
+uid="uid://dpcholpg22h2s"
+path="res://.godot/imported/slot_labeled_head.png-b7686bace3006356fa695ec6b95b9fab.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment_aged/equip_slot_disabled.png"
-dest_files=["res://.godot/imported/equip_slot_disabled.png-bbdcc52359b430bd495730782d057008.ctex"]
+source_file="res://assets/UI/equipment/slots/slot_labeled_head.png"
+dest_files=["res://.godot/imported/slot_labeled_head.png-b7686bace3006356fa695ec6b95b9fab.ctex"]
 
 [params]
 

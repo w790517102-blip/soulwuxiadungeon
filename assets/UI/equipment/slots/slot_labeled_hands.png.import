@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1dvlhbj2374s"
-path="res://.godot/imported/equip_empty_head.png-204c763f6f6234b94674fdfda8834543.ctex"
+uid="uid://dydm6yt0d1tb7"
+path="res://.godot/imported/slot_labeled_hands.png-86b7d4ba70563585763e8ab83c18bccc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment/equip_empty_head.png"
-dest_files=["res://.godot/imported/equip_empty_head.png-204c763f6f6234b94674fdfda8834543.ctex"]
+source_file="res://assets/UI/equipment/slots/slot_labeled_hands.png"
+dest_files=["res://.godot/imported/slot_labeled_hands.png-86b7d4ba70563585763e8ab83c18bccc.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bsukaar100htq"
-path="res://.godot/imported/equip_empty_body.png-1dfd708dcdda646806fbf386533a9685.ctex"
+uid="uid://bpromgg674jbj"
+path="res://.godot/imported/slot_empty_off_weapon.png-97e733fb842bf4948efb53f447fb331b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment/equip_empty_body.png"
-dest_files=["res://.godot/imported/equip_empty_body.png-1dfd708dcdda646806fbf386533a9685.ctex"]
+source_file="res://assets/UI/equipment/slots/slot_empty_off_weapon.png"
+dest_files=["res://.godot/imported/slot_empty_off_weapon.png-97e733fb842bf4948efb53f447fb331b.ctex"]
 
 [params]
 
