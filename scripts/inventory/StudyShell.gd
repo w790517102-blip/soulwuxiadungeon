@@ -8,6 +8,9 @@ class_name StudyShell
 
 const DIR := "res://assets/UI/inventory/"
 
+## 背景檔名（不含副檔名）。預設 bg_study；試別的背景時改這個（例如候選圖）。
+static var bg_name := "bg_study"
+
 ## 前景物件：名稱 → 邏輯座標位置（物件圖的左上角）與錨點。位置對應修改請求第五節的三個安全區。
 ## anchor：用物件圖的哪個角貼到 pos（"bl" 左下、"br" 右下、"tr" 右上）
 const FOREGROUND := {
@@ -26,7 +29,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 後層：2432×1424 縮半 → 1216×712，左上角 (-32, -32)（四邊各出血 32 邏輯 px）
 	_bg = TextureRect.new()
-	_bg.texture = load(DIR + "bg_study.png") as Texture2D
+	_bg.texture = load("%s%s.png" % [DIR, bg_name]) as Texture2D
 	_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_bg.position = Vector2(-32, -32)
 	_bg.size = Vector2(1216, 712)
