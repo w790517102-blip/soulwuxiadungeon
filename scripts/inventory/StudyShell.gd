@@ -19,11 +19,12 @@ static var bg_name := "bg_study"
 ## scale：每個素材像素佔幾個邏輯像素（摳圖來自概念圖的局部截圖，概念圖寬 1672 px 對應邏輯 1152，所以 1152/1672 = 0.689 就是「概念圖佔多少就佔多少」（量過：摳圖的像素大小約等於概念圖像素））。
 ## layer：back＝介面下面；front＝介面上面（最靠近鏡頭）。
 ## 前景方案（可切換）：
-##   "concept"（預設）＝概念圖原像素摳圖，照概念圖的大小與位置（0.689）。
+##   "random"（預設）＝每次開頁面隨機用備案 1（demo）或備案 2（cloth_big）。
+##   "concept"＝概念圖原像素摳圖，照概念圖的大小與位置（0.689）。
 ##   "demo"（備案 1）＝照使用者自己做的 DEMO 版面：左下書、劍橫在按鈕列後面、右下大茶壺、右緣燈籠。
 ##   "cloth_big"（備案 2）＝概念圖摳圖，但左下的劍與青布放大（0.99），青布上緣蓋住分類欄下緣的框約 8px。
 ## 切換：StudyShell.preset = "demo"（要在開頁面之前設）。
-static var preset := "concept"
+static var preset := "random"
 
 const PRESETS := {
 	"concept": {
@@ -32,6 +33,7 @@ const PRESETS := {
 		"fg_candle_corner": {"pos": Vector2(1152, 28), "anchor": "tr", "layer": "front", "scale": 0.689},   # 右上：燭台
 		"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},   # 卷軸右側垂下的流蘇
 	},
+	"none": {},   # 無前景（比對用）
 	"cloth_big": {
 		"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.99},    # 青布上緣蓋住分類欄下緣的框約 8px
 		"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689},
@@ -39,10 +41,13 @@ const PRESETS := {
 		"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},
 	},
 	"demo": {
-		"fg_demo_book": {"pos": Vector2(-30, 662), "anchor": "bl", "layer": "front", "scale": 0.5},        # 左下：翻開的書（遮住左下框）
-		"fg_demo_sword": {"pos": Vector2(250, 668), "anchor": "bl", "layer": "back", "scale": 0.5},        # 劍橫在按鈕列後面（介面之下）
-		"fg_demo_teapot": {"pos": Vector2(1250, 676), "anchor": "br", "layer": "front", "scale": 0.5},     # 右下：大茶壺，只露一半
-		"fg_demo_lantern": {"pos": Vector2(1152, 0), "anchor": "tr", "layer": "front", "scale": 0.5},       # 右緣：燈籠
+		# 備案 1：使用者 DEMO 截圖減掉「同狀態無前景」的實機截圖，取出前景像素 → 整張透明疊圖（位置 100% 相同）。
+		# 疊圖是 1916×1078，縮成邏輯 1152×648。層級：疊圖在前景層，按鈕（z 12）比它高，所以劍被按鈕擋住的部分自然就在按鈕後面。
+		"fg_ours_v3/fg_book": {"pos": Vector2(-81.8, 515.9), "anchor": "tl", "layer": "front", "scale": 0.529},          # 書：蓋住 FRAME
+		"fg_ours_v3/fg_sword@left": {"pos": Vector2(34.9, 546.0), "anchor": "tl", "layer": "front", "scale": 0.7035, "region": Rect2(0, 0, 331, 196)},    # 劍左半：蓋住書
+		"fg_ours_v3/fg_sword@right": {"pos": Vector2(267.8, 546.0), "anchor": "tl", "layer": "back", "scale": 0.7035, "region": Rect2(331, 0, 769, 196)}, # 劍右半：在 FRAME 與按鈕後面
+		"fg_lantern": {"pos": Vector2(522, 13), "anchor": "tl", "layer": "front", "scale": 0.55},    # 燈籠（原圖）：縮小到兩個角狀飾露出，本體在右緣外
+		"fg_ours_v3/fg_teapot": {"pos": Vector2(1000.6, 526.7), "anchor": "tl", "layer": "front", "scale": 0.6314},    # 茶壺
 	},
 }
 
@@ -79,14 +84,23 @@ func _ready() -> void:
 	_build_foreground()
 
 func _build_foreground() -> void:
-	var foreground: Dictionary = PRESETS.get(preset, PRESETS["concept"])
+	var chosen := preset
+	if chosen == "random":     # 每次開頁面隨機：備案 1（demo）或備案 2（cloth_big），增加變化
+		chosen = ["demo", "cloth_big"][randi() % 2]
+	var foreground: Dictionary = PRESETS.get(chosen, PRESETS["concept"])
 	for fg_name in foreground.keys():
-		var path := "%s%s.png" % [DIR, fg_name]
+		var base_name: String = fg_name.split("@")[0]
+		var path := "%s%s.png" % [DIR, base_name]
 		if not ResourceLoader.exists(path):
 			continue
-		var tex := load(path) as Texture2D
+		var tex: Texture2D = load(path) as Texture2D
 		var def: Dictionary = foreground[fg_name]
-		var size := tex.get_size() * float(def.get("scale", 0.5))     # 預設素材是 2 倍
+		if def.has("region"):
+			var at := AtlasTexture.new()
+			at.atlas = tex
+			at.region = def["region"]
+			tex = at
+		var size: Vector2 = def["size"] if def.has("size") else tex.get_size() * float(def.get("scale", 0.5))     # 預設素材是 2 倍
 		var pos: Vector2 = def["pos"]
 		match String(def["anchor"]):
 			"bl": pos -= Vector2(0, size.y)

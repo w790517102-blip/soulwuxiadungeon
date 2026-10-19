@@ -28,6 +28,7 @@ const ROW_H := 48
 const LIST_POS := Vector2(200, 176)
 const LIST_SIZE := Vector2(393, 384)
 const BUTTON_Y := 586
+const BUTTON_Z := 12   # 比前景前排（z 10）高：按鈕永遠不會被前景遮住
 
 var menu: Node                      # 系統選單（提供 use_item_by_id 等）
 var category := ItemCategory.ALL
@@ -157,6 +158,9 @@ func _tex_button(size: Vector2, pos: Vector2, normal: String, hover: String, pre
 	b.add_theme_color_override("font_hover_color", Color("#FFF3D0"))
 	b.add_theme_color_override("font_pressed_color", Color("#FFF3D0"))
 	b.add_theme_color_override("font_disabled_color", Color(0.62, 0.57, 0.48))
+	# 層級（由近到遠）：按鈕 > 前景 > 框（卷軸、分類欄底板、導航底板）> 後景。直接放在頁面上的按鈕要比前景（z 10）高。
+	if parent == self:
+		b.z_index = BUTTON_Z
 	parent.add_child(b)
 	return b
 
