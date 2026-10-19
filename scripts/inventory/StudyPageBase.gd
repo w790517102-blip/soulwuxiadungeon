@@ -30,7 +30,8 @@ var _overlay: Control               # 彈出視窗（選擇、確認）的遮罩
 # 素材輔助
 # ------------------------------------------------------------------
 func _tex(name: String) -> Texture2D:
-	var p := "%s%s.png" % [DIR, name]
+	# "equipment/xxx" 讀 assets/UI/equipment/；其他讀 assets/UI/inventory/
+	var p := "res://assets/UI/%s.png" % name if name.begins_with("equipment/") else "%s%s.png" % [DIR, name]
 	return load(p) as Texture2D if ResourceLoader.exists(p) else null
 
 
@@ -135,13 +136,14 @@ func _tex_button(size: Vector2, pos: Vector2, normal: String, hover: String, pre
 func _foreground_preset() -> String:
 	return ""
 
-func _build_background() -> void:
+func _build_background(with_scroll_body := true) -> void:
 	# 外殼：書房桌面背景＋桌上的前景物件（所有新版系統頁共用）
 	_shell = StudyShell.new()
 	_shell.preset_name = _foreground_preset()
 	add_child(_shell)
 	# 中層：卷軸（含景物，固定尺寸，不可平鋪）
-	_image("scroll_body", Vector2(158, 69), Vector2(972, 506))
+	if with_scroll_body:
+		_image("scroll_body", Vector2(158, 69), Vector2(972, 506))
 
 
 func _build_nav(selected_tab: String) -> void:

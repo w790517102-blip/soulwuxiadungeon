@@ -5,17 +5,20 @@ extends "res://scripts/inventory/StudyPageBase.gd"
 
 const EquipmentInfoScript = preload("res://scripts/inventory/EquipmentInfo.gd")
 
-# ---- 版面（邏輯 px）----
+# ---- 版面（邏輯 px；共邊國骨架包的位置：assets/UI/equipment/ 的 asset_manifest）----
 const BUTTON_Y := 586
-const SLOT_SIZE := Vector2(124, 96)
-const SLOT_X := [190.0, 468.0]          # 左欄、右欄
-const SLOT_Y0 := 108.0
-const SLOT_GAP := 14.0
-const FIGURE_RECT := Rect2(320, 118, 144, 420)
-const DETAIL_X := 612.0
-const DETAIL_W := 506.0
-const STAT_Y := 268.0
+const SLOT_SIZE := Vector2(100, 96)
+const SLOT_X := [331.0, 654.0]          # 左欄、右欄
+const SLOT_Y0 := 132.0
+const SLOT_GAP := 10.0
+const FIGURE_RECT := Rect2(421, 92, 254, 486)
+const ROSTER_RECT := Rect2(54, 86, 249, 496)
+const CARD_SIZE := Vector2(233, 124)
+const DETAIL_X := 780.0                  # 右頁（770 起）內容的左緣
+const DETAIL_W := 312.0
+const STAT_Y := 282.0
 const STAT_ROW_H := 28.0
+const E := "equipment/"                  # 素材資料夾前綴（assets/UI/equipment/）
 
 const GOOD := Color("#2F6B3A")
 const BAD := Color("#9A2A2A")
@@ -59,7 +62,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 5
-	_build_background()
+	_build_background(false)
+	_build_pages()
 	_build_nav("TabEquip")
 	_build_roster()
 	_build_slots()
@@ -73,47 +77,76 @@ func _ready() -> void:
 		InventorySync.equipment_changed.connect(_refresh)
 	_refresh()
 
+## 卷軸的左右兩頁、書脊、外框（共邊國骨架包）。外框檔案若不存在或是空檔就先不畫（骨架包的 equip_scroll_frame.png 是 0 位元組，退回補件中）
+func _build_pages() -> void:
+	_image(E + "equip_page_left", Vector2(318, 86), Vector2(447, 496))
+	_image(E + "equip_page_right", Vector2(770, 86), Vector2(329, 496))
+	_image(E + "equip_spine", Vector2(765, 86), Vector2(5, 496))
+	var frame_path := "res://assets/UI/equipment/equip_scroll_frame.png"
+	if ResourceLoader.exists(frame_path):
+		_image(E + "equip_scroll_frame", Vector2(306, 74), Vector2(805, 520))
+
 func _build_roster() -> void:
-	_panel("cat_panel", 20, 28, Vector2(24, 76), Vector2(131, 440))
+	_panel(E + "equip_roster_panel", 28, 28, ROSTER_RECT.position, ROSTER_RECT.size)
+	_panel(E + "equip_roster_title", 30, 12, Vector2(62, 98), Vector2(233, 36))
+	_label("同行俠客", Vector2(62, 98), Vector2(233, 36), 18, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_panel(E + "equip_roster_quote", 22, 22, Vector2(62, 538), Vector2(233, 44))
+	_label("江湖如逆旅，幸有同路人。", Vector2(70, 538), Vector2(190, 44), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT)
+	_image(E + "equip_quote_seal", Vector2(261, 546), Vector2(28, 28))
+	# 俠客卡片：最多 3 張可見，更多就捲動（細捲軸只在需要時出現）
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(26, 82)
-	scroll.size = Vector2(127, 428)
+	scroll.position = Vector2(62, 141)
+	scroll.size = Vector2(233, 392)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.z_index = 1
 	add_child(scroll)
 	_roster_box = VBoxContainer.new()
-	_roster_box.add_theme_constant_override("separation", 4)
-	_roster_box.custom_minimum_size = Vector2(125, 0)
+	_roster_box.add_theme_constant_override("separation", 10)
+	_roster_box.custom_minimum_size = Vector2(CARD_SIZE.x, 0)
 	scroll.add_child(_roster_box)
 
 func _build_slots() -> void:
-	_divider(Vector2(599, 100), Vector2(4, 440))
 	var all_slots: Array = []
 	for i in 4:
 		all_slots.append([EquipmentInfoScript.LEFT_SLOTS[i], SLOT_X[0], SLOT_Y0 + i * (SLOT_SIZE.y + SLOT_GAP)])
 		all_slots.append([EquipmentInfoScript.RIGHT_SLOTS[i], SLOT_X[1], SLOT_Y0 + i * (SLOT_SIZE.y + SLOT_GAP)])
 	for entry: Array in all_slots:
 		var slot_id: String = entry[0]
-		var b := _tex_button(SLOT_SIZE, Vector2(entry[1], entry[2]), "cat_item_normal", "cat_item_normal", "cat_item_normal", "cat_item_normal", 20, 14, self)
+		var b := Button.new()
 		b.name = "Slot_" + slot_id
+		b.position = Vector2(entry[1], entry[2])
+		b.size = SLOT_SIZE
+		b.focus_mode = Control.FOCUS_NONE
 		b.toggle_mode = true
 		b.z_index = 1
-		var glow := _panel("cat_item_selected", 20, 14, Vector2.ZERO, SLOT_SIZE, b)
-		glow.name = "SelectedGlow"
-		glow.visible = false
-		var icon := _image_from("", Vector2(42, 20), Vector2(40, 40), b)
+		# 共邊國的四態：一般／移入／選中／停用（固定欄位）
+		for pair in [["normal", "normal"], ["hover", "hover"], ["pressed", "selected"], ["hover_pressed", "selected"], ["disabled", "disabled"]]:
+			var sb := _box(E + "equip_slot_" + pair[1], 14, 14)
+			b.add_theme_stylebox_override(pair[0], sb if sb != null else StyleBoxEmpty.new())
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		add_child(b)
+		var empty_icon := _image(E + "equip_empty_" + _empty_icon_name(slot_id), Vector2(22, 20), Vector2(56, 56), b)
+		empty_icon.name = "EmptyIcon"
+		var icon := _image_from("", Vector2(30, 26), Vector2(40, 40), b)
 		icon.name = "Icon"
-		_label(EquipmentInfoScript.slot_label(slot_id), Vector2(8, 4), Vector2(60, 18), 12, Color("#BFAF8A"), HORIZONTAL_ALIGNMENT_LEFT, b).name = "SlotName"
-		var item_name := _label("", Vector2(0, 62), Vector2(SLOT_SIZE.x, 28), 14, CREAM, HORIZONTAL_ALIGNMENT_CENTER, b)
+		_label(EquipmentInfoScript.slot_label(slot_id), Vector2(10, 4), Vector2(60, 16), 11, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, b).name = "SlotName"
+		var item_name := _label("", Vector2(0, 72), Vector2(SLOT_SIZE.x, 20), 13, INK, HORIZONTAL_ALIGNMENT_CENTER, b)
 		item_name.name = "ItemName"
-		b.mouse_entered.connect(func(): if not b.button_pressed: glow.visible = true; glow.modulate.a = 0.5)
-		b.mouse_exited.connect(func(): if not b.button_pressed: glow.visible = false)
 		b.pressed.connect(_on_slot_pressed.bind(slot_id))
 		_slot_buttons[slot_id] = b
 
-func _divider(pos: Vector2, size: Vector2) -> void:
-	_panel("divider_v", 2, 4, pos, size)
+## 空格剪影的檔名（骨架包：equip_empty_<名稱>.png）
+func _empty_icon_name(slot_id: String) -> String:
+	match slot_id:
+		"weapon_1": return "main_weapon"
+		"weapon_2": return "off_weapon"
+		"armor_head": return "head"
+		"armor_body": return "body"
+		"armor_hands": return "hands"
+		"armor_feet": return "feet"
+		"accessory_1": return "accessory"
+	return "mechanism"
 
 func _build_figure() -> void:
 	# 人物立繪（紙娃娃預留）：目前只放角色頭像當底圖；之後在這個節點下加各部位圖層（後髮／身體／披風／機關…），不用改版面
@@ -135,24 +168,24 @@ func _build_figure() -> void:
 	_figure_name = _label("", Vector2(0, 320), Vector2(FIGURE_RECT.size.x, 30), 20, INK, HORIZONTAL_ALIGNMENT_CENTER, doll)
 
 func _build_detail() -> void:
-	_art_bg = _image("detail_art_bg", Vector2(DETAIL_X + 2, 102), Vector2(100, 128))
-	_art = _image_from("", Vector2(DETAIL_X + 8, 108), Vector2(88, 116), self)
-	_name_label = _label("", Vector2(DETAIL_X + 118, 104), Vector2(250, 40), 26, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	_art_bg = _image("detail_art_bg", Vector2(DETAIL_X, 100), Vector2(100, 140))
+	_art = _image_from("", Vector2(DETAIL_X + 6, 106), Vector2(88, 128), self)
+	_name_label = _label("", Vector2(DETAIL_X + 110, 100), Vector2(200, 40), 24, INK, HORIZONTAL_ALIGNMENT_LEFT)
 	_outlined(_name_label)
 	_rarity_holder = Control.new()
-	_rarity_holder.position = Vector2(DETAIL_X + 118, 150)
+	_rarity_holder.position = Vector2(DETAIL_X + 110, 144)
 	_rarity_holder.size = Vector2(60, 18)
 	_rarity_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_rarity_holder)
 	var titles := ["品類", "欄位", "裝備者"]
 	for i in 3:
-		var y := 176.0 + 24.0 * i
-		_image("label_ink_s", Vector2(DETAIL_X + 118, y), Vector2(76, 22))
-		_label(titles[i], Vector2(DETAIL_X + 124, y), Vector2(70, 22), 13, Color.WHITE)
-		_info_vals.append(_outlined(_label("", Vector2(DETAIL_X + 202, y), Vector2(190, 22), 15, INK)))
-	# 裝備效果：2 欄 × 3 列（攻擊 命中 防禦 ／ 速度 暴擊 閃避），裝備有改到氣血／內力上限才多一列
-	_image("label_ink_m", Vector2(DETAIL_X, 238), Vector2(100, 26))
-	_label("裝備效果", Vector2(DETAIL_X + 8, 238), Vector2(92, 26), 14, Color.WHITE)
+		var y := 172.0 + 24.0 * i
+		_image("label_ink_s", Vector2(DETAIL_X + 110, y), Vector2(70, 22))
+		_label(titles[i], Vector2(DETAIL_X + 116, y), Vector2(64, 22), 13, Color.WHITE)
+		_info_vals.append(_outlined(_label("", Vector2(DETAIL_X + 186, y), Vector2(126, 22), 14, INK)))
+	# 裝備效果：這件裝備自己的加成，一行 2 格
+	_image("label_ink_m", Vector2(DETAIL_X - 6, 250), Vector2(100, 26))
+	_label("裝備效果", Vector2(DETAIL_X + 2, 250), Vector2(92, 26), 14, Color.WHITE)
 	_stat_holder = Control.new()
 	_stat_holder.position = Vector2(DETAIL_X, STAT_Y)
 	_stat_holder.size = Vector2(DETAIL_W, STAT_ROW_H * 4)
@@ -167,7 +200,7 @@ func _build_detail() -> void:
 	add_child(_scroll)
 	_scroll_box = VBoxContainer.new()
 	_scroll_box.add_theme_constant_override("separation", 4)
-	_scroll_box.custom_minimum_size = Vector2(DETAIL_W - 16, 0)
+	_scroll_box.custom_minimum_size = Vector2(DETAIL_W - 12, 0)
 	_scroll.add_child(_scroll_box)
 	var bar := _scroll.get_v_scroll_bar()
 	bar.custom_minimum_size.x = 8
@@ -260,19 +293,29 @@ func _rebuild_roster(ids: Array) -> void:
 	for id in ids:
 		var a := _actor(String(id))
 		var on: bool = String(id) == actor_id
-		var card := _tex_button(Vector2(125, 136), Vector2.ZERO, "pick_card_normal", "pick_card_hover", "pick_card_selected", "pick_card_disabled", 24, 24, _roster_box)
-		card.custom_minimum_size = Vector2(125, 136)
+		var card := Button.new()
+		card.custom_minimum_size = CARD_SIZE
+		card.focus_mode = Control.FOCUS_NONE
 		card.toggle_mode = true
 		card.set_pressed_no_signal(on)
+		# 共邊國的三態卡：一般／移入／選中（選中在牌緣有金光）
+		for pair in [["normal", "normal"], ["hover", "hover"], ["pressed", "selected"], ["hover_pressed", "selected"]]:
+			var sb := _box(E + "equip_actor_card_" + pair[1], 22, 22)
+			card.add_theme_stylebox_override(pair[0], sb if sb != null else StyleBoxEmpty.new())
+		card.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		_roster_box.add_child(card)
 		var portrait_path := String(a.get("portrait_path", ""))
 		if portrait_path != "":
-			var pr := _image_from(portrait_path, Vector2(16, 10), Vector2(93, 70), card)
+			var pr := _image_from(portrait_path, Vector2(8, 10), Vector2(96, 104), card)
 			pr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		_label(String(a.get("name", id)), Vector2(0, 80), Vector2(125, 20), 15, CREAM, HORIZONTAL_ALIGNMENT_CENTER, card)
-		_label("Lv.%d" % int(a.get("level", 1)), Vector2(0, 98), Vector2(125, 16), 12, GOLD, HORIZONTAL_ALIGNMENT_CENTER, card)
-		_bar(card, Vector2(8, 118), "hp", float(a.get("hp", 0)), float(maxi(1, int(a.get("max_hp", 1)))))
+		_panel(E + "equip_portrait_frame", 12, 12, Vector2(6, 8), Vector2(100, 108), card)
 		if TeamData and TeamData.current_team_ids.has(String(id)):
-			_label("上陣", Vector2(4, 4), Vector2(34, 16), 11, Color("#FFF3D0"), HORIZONTAL_ALIGNMENT_CENTER, card)
+			_panel(E + "equip_deployed_tag", 6, 8, Vector2(4, 12), Vector2(22, 40), card)
+			_label("上陣", Vector2(4, 12), Vector2(22, 40), 11, Color("#FFF3D0"), HORIZONTAL_ALIGNMENT_CENTER, card).autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+		_label(String(a.get("name", id)), Vector2(116, 12), Vector2(110, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_label("Lv.%d" % int(a.get("level", 1)), Vector2(116, 38), Vector2(110, 20), 14, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_bar(card, Vector2(116, 70), "hp", float(a.get("hp", 0)), float(maxi(1, int(a.get("max_hp", 1)))))
+		_bar(card, Vector2(116, 90), "mp", float(a.get("mp", 0)), float(maxi(1, int(a.get("max_mp", 1)))))
 		card.pressed.connect(_on_actor_pressed.bind(String(id)))
 		_roster_buttons[String(id)] = card
 
@@ -280,25 +323,25 @@ func _refresh_slots() -> void:
 	var equipped: Dictionary = InventorySync.get_equipped(actor_id)
 	for slot_id in _slot_buttons.keys():
 		var b: Button = _slot_buttons[slot_id]
-		var on: bool = slot_id == slot
-		b.set_pressed_no_signal(on)
-		var sg := b.get_node("SelectedGlow") as Control
-		sg.visible = on
-		sg.modulate.a = 1.0
+		b.set_pressed_no_signal(slot_id == slot)
 		var item_id := String(equipped.get(slot_id, ""))
 		var icon := b.get_node("Icon") as TextureRect
+		var empty_icon := b.get_node("EmptyIcon") as TextureRect
 		var name_label := b.get_node("ItemName") as Label
 		var locked := _is_locked(slot_id)
 		b.disabled = locked
 		if item_id != "":
 			var def := ItemDB.get_def(item_id)
-			icon.texture = load(ItemIconMap.icon_path(item_id, def)) as Texture2D if ResourceLoader.exists(ItemIconMap.icon_path(item_id, def)) else null
+			var icon_path := ItemIconMap.icon_path(item_id, def)
+			icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+			empty_icon.visible = false
 			name_label.text = String(def.get("name", item_id))
-			name_label.add_theme_color_override("font_color", Color("#FFF3D0") if on else CREAM)
+			name_label.add_theme_color_override("font_color", INK)
 		else:
 			icon.texture = null
+			empty_icon.visible = true
 			name_label.text = "固定" if locked else ("空手" if slot_id.begins_with("weapon") else "無")
-			name_label.add_theme_color_override("font_color", Color("#8F8268"))
+			name_label.add_theme_color_override("font_color", INK_DIM)
 
 func _refresh_figure() -> void:
 	var a := _actor(actor_id)
@@ -341,14 +384,14 @@ func _fill_item_stats(def: Dictionary) -> void:
 	if rows.is_empty():
 		_outlined(_label("無數值加成", Vector2(4, 0), Vector2(200, STAT_ROW_H), 16, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
 	else:
-		lines = (rows.size() + 2) / 3
+		lines = (rows.size() + 1) / 2
 		for i in rows.size():
 			var row: Dictionary = rows[i]
-			var x := (i % 3) * 168.0
-			var y := (i / 3) * STAT_ROW_H
-			_outlined(_label(String(row["label"]), Vector2(x + 4, y), Vector2(70, STAT_ROW_H), 16, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
+			var x := (i % 2) * 156.0
+			var y := (i / 2) * STAT_ROW_H
+			_outlined(_label(String(row["label"]), Vector2(x + 4, y), Vector2(74, STAT_ROW_H), 15, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
 			var tint := Color("#A8F0A8") if int(row["sign"]) > 0 else Color("#FFA0A0")
-			_outlined(_label(String(row["text"]), Vector2(x + 76, y), Vector2(86, STAT_ROW_H), 17, tint, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
+			_outlined(_label(String(row["text"]), Vector2(x + 80, y), Vector2(72, STAT_ROW_H), 16, tint, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
 	var top := STAT_Y + lines * STAT_ROW_H + 8.0
 	_scroll.position.y = top
 	_scroll.size.y = 562.0 - top

@@ -30,7 +30,7 @@ const EXPLICIT := {
 	"herb": 1, "elixir_qi": 2, "light_step_powder": 2,
 	"haste_talisman": 13, "item_fire_talisman": 13, "quest_letter": 13,
 	"chicken_spike": 16, "item_pili_single": 16, "item_pili_aoe": 16,
-	"ammo_arrow": 16, "tool_zhuge_crossbow": 16, "throw_stone_pack": 16, "misc_smoke_pellet": 16,
+	"ammo_arrow": 16, "tool_zhuge_crossbow": 18, "throw_stone_pack": 16, "misc_smoke_pellet": 16,
 	"item_clean_charcoal": 16, "misc_hemp_twine": 16, "misc_small_rope": 16, "misc_empty_bottle": 16,
 	"ink_brush": 16, "yaoqin": 16,
 }
@@ -52,11 +52,12 @@ static func group_of(item_id: String, item_def: Dictionary = {}) -> int:
 			"槍", "棍": return 7
 		return 5
 	match slot:
-		"armor_head", "armor_body": return 8
+		"armor_head": return 17
+		"armor_body": return 8
 		"armor_feet": return 9
 		"armor_hands": return 10
 		"accessory_1": return 11
-		"mechanism": return 16
+		"mechanism": return 18
 	match String(item_def.get("type", "")):
 		"book": return 12
 		"consumable": return 2
