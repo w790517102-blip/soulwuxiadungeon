@@ -2,7 +2,7 @@ extends Control
 class_name StudyShell
 # 選單共用的「外殼」：書房桌面背景（後層）＋桌上的前景物件（前層）。
 # 所有新版系統頁共用，頁面自己的內容（卷軸、導航、清單…）放在中間。
-# 用法：把 StudyShell 加到頁面裡就好。背景用 z_index -1 畫在內容下面，前景在背景之上、內容之下（z_index 0，靠 StudyShell 先加入），兩者都不吃滑鼠，不用管加入順序。
+# 用法：把 StudyShell 加到頁面裡就好。背景 z_index -1；後排前景（書）z 0，在背景之上、內容之下；前排前景（劍、茶壺、燈籠）z 10，蓋在介面上。都不吃滑鼠.
 # 素材：assets/UI/inventory/bg_study.png（2432×1424，含四邊 64px 出血）、fg_<名稱>.png（各自獨立的透明圖）。
 # 前景只放在安全位置（不遮介面）；檔案沒有就略過，所以素材沒到之前畫面也完整。
 
@@ -13,16 +13,17 @@ static var bg_name := "bg_study"
 
 ## 前景物件：名稱 → 邏輯座標位置（物件圖的左上角）與錨點。位置對應修改請求第五節的三個安全區。
 ## anchor：用物件圖的哪個角貼到 pos（"bl" 左下、"br" 右下、"tr" 右上）
+## layer：back＝畫在介面下面（背景之上）；front＝畫在介面上面（離鏡頭最近，會遮住卷軸框與分類欄）。
+## rot：順時針度數（以物件中心旋轉）。位置用「錨點角」貼，數字可超出畫面（物件被畫面邊緣切掉）。
 const FOREGROUND := {
-	# 畫的順序 = 字典順序（後面的蓋在前面）：書在後、劍在前。前景畫在介面「下面」（背景之上、卷軸與按鈕之下），
-	# 所以可以大一點，被卷軸、按鈕、分類欄擋住一部分也沒關係；位置用「錨點角」貼，數字可超出畫面（物件被畫面邊緣切掉）。
-	"fg_book": {"pos": Vector2(-40, 650), "anchor": "bl"},      # 左下：書
-	"fg_sword": {"pos": Vector2(-30, 640), "anchor": "bl"},    # 左下：劍（前）
-	"fg_teapot": {"pos": Vector2(1180, 656), "anchor": "br"},  # 右下：茶壺
-	"fg_candle": {"pos": Vector2(1152, 70), "anchor": "tr"},   # 右緣：燈籠窄邊
+	"fg_book": {"pos": Vector2(-40, 650), "anchor": "bl", "layer": "back"},
+	"fg_sword": {"pos": Vector2(-235, 772), "anchor": "bl", "layer": "front", "rot": -35.0},
+	"fg_teapot": {"pos": Vector2(1320, 684), "anchor": "br", "layer": "front"},
+	"fg_candle": {"pos": Vector2(1152, 0), "anchor": "tr", "layer": "front"},
 }
 
 var _fg_root: Control
+var _fg_front: Control
 var _bg: TextureRect
 
 func _ready() -> void:
@@ -45,6 +46,12 @@ func _ready() -> void:
 	_fg_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fg_root.z_index = 0      # 背景（-1）之上、頁面內容之下：被卷軸、按鈕、分類欄擋住也沒關係
 	add_child(_fg_root)
+	_fg_front = Control.new()
+	_fg_front.name = "ForegroundFront"
+	_fg_front.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_fg_front.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fg_front.z_index = 10      # 頁面內容（z 0）之上：最靠近鏡頭的物件，會蓋住卷軸框、分類欄
+	add_child(_fg_front)
 	_build_foreground()
 
 func _build_foreground() -> void:
@@ -68,5 +75,8 @@ func _build_foreground() -> void:
 		r.size = size
 		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		r.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		_fg_root.add_child(r)
+		if def.has("rot"):
+			r.pivot_offset = size * 0.5
+			r.rotation_degrees = float(def["rot"])
+		(_fg_front if String(def.get("layer", "back")) == "front" else _fg_root).add_child(r)
 
