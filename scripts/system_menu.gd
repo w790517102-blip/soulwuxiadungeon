@@ -2680,9 +2680,6 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var base_max_hp := int(_get_actor_value(actor, "max_hp", base_hp))
 	var base_mp := int(_get_actor_value(actor, "mp", 0))
 	var base_max_mp := int(_get_actor_value(actor, "max_mp", base_mp))
-	var base_atk := int(_get_actor_value(actor, "atk", 0))
-	var base_def := int(_get_actor_value(actor, "def", 0))
-	var base_speed := int(_get_actor_value(actor, "speed", 0))
 	var actor_level := int(_get_actor_value(actor, "level", 1))
 	var actor_exp := int(_get_actor_value(actor, "exp", 0))
 	var next_exp := 0
@@ -2690,15 +2687,10 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 		next_exp = int(TeamData.exp_required(actor_level))
 	var equip_bonus: Dictionary = InventorySync.get_equipment_stat_bonus(actor_id)
 	var inner_bonus := _get_inner_force_bonus(actor)
-	var bonus_atk := int(equip_bonus.get("atk", 0)) + int(inner_bonus.get("atk", 0))
-	var bonus_def := int(equip_bonus.get("def", 0)) + int(inner_bonus.get("def", 0))
-	var bonus_max_hp := int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0))
-	var bonus_max_mp := int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0))
-	var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
-	var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
-	var total_max_hp := int(round(float(base_max_hp) * hp_mult)) + bonus_max_hp
-	var total_max_mp := int(round(float(base_max_mp) * mp_mult)) + bonus_max_mp
-	var bonus_speed := int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0))
+	# 數值只在 compute_overview_stats 算一次（裝備頁也用它），狀態頁不再自己算一份
+	var overview := compute_overview_stats(actor, equip_bonus)
+	var total_max_hp := int(overview["max_hp"])
+	var total_max_mp := int(overview["max_mp"])
 	var base_str := int(_get_actor_value(actor, "str", 5))
 	var base_agi := int(_get_actor_value(actor, "agi", 5))
 	var base_int := int(_get_actor_value(actor, "int", 5))
@@ -2709,17 +2701,9 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var bonus_int := int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0))
 	var bonus_con := int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0))
 	var bonus_luck := int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
-	var base_accuracy := int(_get_actor_value(actor, "accuracy", 100))
-	var base_evasion := int(_get_actor_value(actor, "evasion", 0))
-	var bonus_accuracy := int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
-	var bonus_evasion := int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))
-	var total_accuracy := base_accuracy + bonus_accuracy
-	var total_evasion := base_evasion + bonus_evasion
-	var agi_stat := float(base_agi + bonus_agi)
-	var luck_stat := float(base_luck + bonus_luck)
-	var hit_power := int(round((float(total_accuracy) - 100.0) + agi_stat * 0.7 + luck_stat * 0.3))
-	var evade_power := int(round(agi_stat * 0.7 + luck_stat * 0.3 + float(total_evasion)))
-	var crit_rate_pct := _calc_actor_overview_crit_rate_pct(actor, equip_bonus, inner_bonus)
+	var hit_power := int(overview["hit"])
+	var evade_power := int(overview["evade"])
+	var crit_rate_pct: float = float(overview["crit"])
 
 	var name_label := slot_data.get("name") as Label
 	if name_label:
@@ -2751,23 +2735,23 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var hp_label := slot_data.get("hp") as Label
 	if hp_label:
 		hp_label.set_meta("actor_id", actor_id)
-		hp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_hp, max(total_max_hp, 1)]
+		hp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, _displayed_resource(base_hp, base_max_hp, total_max_hp), max(total_max_hp, 1)]
 	var mp_label := slot_data.get("mp") as Label
 	if mp_label:
 		mp_label.set_meta("actor_id", actor_id)
-		mp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, base_mp, max(total_max_mp, 0)]
+		mp_label.text = "%s%d/%d" % [STATUS_VALUE_OFFSET_PREFIX, _displayed_resource(base_mp, base_max_mp, total_max_mp), max(total_max_mp, 0)]
 	var atk_label := slot_data.get("atk") as Label
 	if atk_label:
 		atk_label.set_meta("actor_id", actor_id)
-		atk_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_atk + bonus_atk)]
+		atk_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["atk"])]
 	var def_label := slot_data.get("def") as Label
 	if def_label:
 		def_label.set_meta("actor_id", actor_id)
-		def_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_def + bonus_def)]
+		def_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["def"])]
 	var agi_move_label := slot_data.get("agi_move") as Label
 	if agi_move_label:
 		agi_move_label.set_meta("actor_id", actor_id)
-		agi_move_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_speed + bonus_speed)]
+		agi_move_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["speed"])]
 	var hit_label := slot_data.get("hit") as Label
 	if hit_label:
 		hit_label.set_meta("actor_id", actor_id)
@@ -2823,6 +2807,10 @@ func compute_overview_stats(actor, equip_bonus: Dictionary) -> Dictionary:
 		"evade": int(round(agi_stat * 0.7 + luck_stat * 0.3 + float(total_evasion))),
 		"crit": _calc_actor_overview_crit_rate_pct(actor, equip_bonus, inner_bonus),
 	}
+
+## 目前氣血/內力的顯示值：存檔裡的目前值不含裝備加成，所以「本來是滿的」要顯示成滿（與戰鬥開場同一個規則），受過傷的維持原值。
+func _displayed_resource(current: int, canonical_max: int, total_max: int) -> int:
+	return total_max if current >= canonical_max else mini(current, total_max)
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
 	var luck_stat = int(_get_actor_value(actor, "luck", 0))

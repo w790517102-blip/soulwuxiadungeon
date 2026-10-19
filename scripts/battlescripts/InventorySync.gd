@@ -24,6 +24,7 @@ var party_inventory: Array = [
 	{"id": "yaoqin", "count": 1},
 	{"id": "wep_short_blade", "count": 1},
 	{"id": "arm_cloth", "count": 1},
+	{"id": "arm_cloth_cap", "count": 1},
 	{"id": "jade_pendant", "count": 1},
 	{"id": "quest_letter", "count": 1},
 ]
@@ -31,6 +32,11 @@ const NEW_GAME_START_GOLD: int = 1000
 var party_gold: int = NEW_GAME_START_GOLD
 var equipped_by_actor: Dictionary = {}
 var ever_owned_item_ids: Dictionary = {}
+## 新遊戲一開始就穿在身上的裝備（照角色、欄位）。存檔讀進來時不會套用（存檔裡的裝備才是準的）。
+const INITIAL_EQUIPMENT := {
+	"liuyu": {"weapon_1": "bronze_sword", "armor_head": "arm_cloth_cap", "armor_body": "arm_cloth", "accessory_1": "jade_pendant"},
+	"shumian": {"weapon_1": "ink_brush"},
+}
 const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "accuracy", "evasion", "crit_rate_bonus"]
 const EQUIP_SLOTS := [
 	"weapon_1",
@@ -51,9 +57,13 @@ func ensure_canonical_initial_equipment_once() -> void:
 	if bool(get_meta("canonical_initial_equipment_applied", false)):
 		return
 	set_meta("canonical_initial_equipment_applied", true)
-	var equipped := _get_equipped_ref("shumian")
-	if String(equipped.get("weapon_1", "")) == "" and has_item("ink_brush"):
-		equip_item_to_slot("ink_brush", "weapon_1", "shumian")
+	for actor_id in INITIAL_EQUIPMENT.keys():
+		var equipped := _get_equipped_ref(actor_id)
+		var wanted: Dictionary = INITIAL_EQUIPMENT[actor_id]
+		for slot in wanted.keys():
+			var item_id := String(wanted[slot])
+			if String(equipped.get(slot, "")) == "" and has_item(item_id):
+				equip_item_to_slot(item_id, slot, actor_id)
 
 func export_inventory_state() -> Dictionary:
 	return {

@@ -1184,6 +1184,9 @@ func _reset_actor_to_base_stats(actor: Dictionary) -> void:
 
 
 func _apply_inner_force_runtime_stats(actor: Dictionary, force: Dictionary) -> void:
+	# 氣血、內力原本是滿的，套用五維後最大值變大時要一起補滿（否則開局是 150/157）；受過傷的維持原值
+	var was_full_hp := int(actor.get("hp", 0)) >= int(actor.get("max_hp", actor.get("hp", 0)))
+	var was_full_mp := int(actor.get("mp", 0)) >= int(actor.get("max_mp", actor.get("mp", 0)))
 	_reset_actor_to_base_stats(actor)
 	var actor_snapshot := {}
 	for stat_key in MAIN_STAT_KEYS:
@@ -1207,8 +1210,8 @@ func _apply_inner_force_runtime_stats(actor: Dictionary, force: Dictionary) -> v
 	actor["evasion"] = max(0, int(actor.get("base_evasion", actor.get("evasion", 0))) + int(round(float(effective_agi) * 0.7 + float(effective_luck) * 0.3)) + int(runtime_effects.get("evasion", 0)))
 	actor["crit_rate"] = clampf((0.05 + floor(float(effective_luck) / 5.0) * 0.01 + float(runtime_effects.get("crit_rate_bonus", 0.0))), 0.0, 0.95)
 	actor["derived_stats_applied"] = true
-	actor["hp"] = min(int(actor.get("hp", 0)), int(actor.get("max_hp", 1)))
-	actor["mp"] = min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
+	actor["hp"] = int(actor.get("max_hp", 1)) if was_full_hp else min(int(actor.get("hp", 0)), int(actor.get("max_hp", 1)))
+	actor["mp"] = int(actor.get("max_mp", 0)) if was_full_mp else min(int(actor.get("mp", 0)), int(actor.get("max_mp", 0)))
 
 
 func _apply_inner_force_to_actor(actor: Dictionary) -> void:
