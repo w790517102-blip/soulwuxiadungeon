@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1dhir65q5k1b"
-path="res://.godot/imported/sword_flexible_icon.png-e88bf8e27b9373a68f8414dc11777eef.ctex"
+uid="uid://cgoot1qfxeycx"
+path="res://.godot/imported/rarity_1.png-73f124319e72089cb4079d29bef9f89d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/system_menu/inventory_ui_v2_stage1/samples/sword_flexible_icon.png"
-dest_files=["res://.godot/imported/sword_flexible_icon.png-e88bf8e27b9373a68f8414dc11777eef.ctex"]
+source_file="res://assets/UI/inventory/rarity_1.png"
+dest_files=["res://.godot/imported/rarity_1.png-73f124319e72089cb4079d29bef9f89d.ctex"]
 
 [params]
 

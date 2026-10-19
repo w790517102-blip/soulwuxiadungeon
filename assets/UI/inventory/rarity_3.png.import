@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dvvj2o25r7q3d"
-path="res://.godot/imported/sword_ancient_art.png-d0375c7244f28744a0e4070900f0face.ctex"
+uid="uid://cr6m4bn7toywi"
+path="res://.godot/imported/rarity_3.png-2288d82d2992aae96c5f4bf0e2a18cb8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/system_menu/inventory_ui_v2_stage1/samples/sword_ancient_art.png"
-dest_files=["res://.godot/imported/sword_ancient_art.png-d0375c7244f28744a0e4070900f0face.ctex"]
+source_file="res://assets/UI/inventory/rarity_3.png"
+dest_files=["res://.godot/imported/rarity_3.png-2288d82d2992aae96c5f4bf0e2a18cb8.ctex"]
 
 [params]
 

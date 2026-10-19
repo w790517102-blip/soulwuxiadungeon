@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dchpoi0i8i6tm"
-path="res://.godot/imported/sword_heavy_icon.png-b6575254fbe4b03de383400088adb7fb.ctex"
+uid="uid://c8ik7wnbokwvf"
+path="res://.godot/imported/scroll_shadow.png-db607076edfc9b1b32df2c83933ba8bf.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/system_menu/inventory_ui_v2_stage1/samples/sword_heavy_icon.png"
-dest_files=["res://.godot/imported/sword_heavy_icon.png-b6575254fbe4b03de383400088adb7fb.ctex"]
+source_file="res://assets/UI/inventory/scroll_shadow.png"
+dest_files=["res://.godot/imported/scroll_shadow.png-db607076edfc9b1b32df2c83933ba8bf.ctex"]
 
 [params]
 

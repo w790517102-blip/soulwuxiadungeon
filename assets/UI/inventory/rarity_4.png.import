@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b8d2gk8uanjrs"
-path="res://.godot/imported/bg_bg_study_b_70.png-344d6ea79c63dff71d63cbb8bda5af1d.ctex"
+uid="uid://bnoboppcy8q68"
+path="res://.godot/imported/rarity_4.png-17c7e02652f0274c428976c2ab28eefd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/system_menu/screens/bg_bg_study_b_70.png"
-dest_files=["res://.godot/imported/bg_bg_study_b_70.png-344d6ea79c63dff71d63cbb8bda5af1d.ctex"]
+source_file="res://assets/UI/inventory/rarity_4.png"
+dest_files=["res://.godot/imported/rarity_4.png-17c7e02652f0274c428976c2ab28eefd.ctex"]
 
 [params]
 

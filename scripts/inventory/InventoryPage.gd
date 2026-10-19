@@ -466,10 +466,10 @@ func _rebuild_rows() -> void:
 		var badge_tex := _tex("badge_" + cat_id)
 		if badge_tex != null:
 			var br := _image("badge_" + cat_id, Vector2(316, 13), Vector2(62, 22), b)
-			_label(ItemCategory.label_of(cat_id), Vector2(316, 13), Vector2(62, 22), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, b)
+			_label(ItemCategory.label_of(cat_id), Vector2(316, 13), Vector2(62, 22), 12, Color("#F6EEDC"), HORIZONTAL_ALIGNMENT_CENTER, b)
 		var rar := ItemRarity.rarity_of(def)
 		if rar >= 2:
-			_rarity_chip(rar, Vector2(206, 14), Vector2(44, 22), b)
+			_rarity_chip(rar, Vector2(206, 14), Vector2(56, 20), b)
 		if _equipped_by(id) != "":
 			_image("badge_equipped", Vector2(108, 14), Vector2(44, 22), b)
 			_label("裝備中", Vector2(108, 14), Vector2(44, 22), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, b)
@@ -551,7 +551,7 @@ func _set_detail_rarity(level: int) -> void:
 	for c in _rarity_holder.get_children():
 		_rarity_holder.remove_child(c)
 		c.queue_free()
-	_rarity_chip(level, Vector2.ZERO, Vector2(56, 18), _rarity_holder)
+	_rarity_chip(level, Vector2.ZERO, Vector2(56, 20), _rarity_holder)
 
 func _image_from(path: String, pos: Vector2, size: Vector2, parent: Node) -> TextureRect:
 	var r := TextureRect.new()
