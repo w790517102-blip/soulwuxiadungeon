@@ -27,6 +27,9 @@
   </g>
   <text x="138" y="22" class="ok">導航列（沿用）889×48，「裝備」為選中</text>
 
+  <!-- base scroll under all three blocks -->
+  <rect x="20" y="74" width="1120" height="518" rx="10" fill="#a89870" fill-opacity="0.35" stroke="#e6c46a" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="26" y="70" class="dim">底層大卷軸（新）約 x20–1140、y74–592，三個區塊都疊在上面，左右兩端各一根軸頭</text>
   <!-- left roster panel -->
   <rect class="leather" x="54" y="86" width="249" height="496" rx="4"/>
   <rect class="chip" x="62" y="98" width="233" height="36"/><text x="178" y="121" class="w" text-anchor="middle">同行俠客（標題底牌 233×36，空白版）</text>
