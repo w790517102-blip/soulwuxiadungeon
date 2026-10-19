@@ -18,11 +18,32 @@ static var bg_name := "bg_study"
 ## 前景＝概念圖的原像素摳圖（沒有重畫）。照概念圖的位置貼在畫面邊角。
 ## scale：每個素材像素佔幾個邏輯像素（摳圖來自概念圖的局部截圖，概念圖寬 1672 px 對應邏輯 1152，所以 1152/1672 = 0.689 就是「概念圖佔多少就佔多少」（量過：摳圖的像素大小約等於概念圖像素））。
 ## layer：back＝介面下面；front＝介面上面（最靠近鏡頭）。
-const FOREGROUND := {
-	"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.689},    # 左下：布＋劍
-	"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689}, # 右下：茶壺（只露邊角）
-	"fg_candle_corner": {"pos": Vector2(1152, 28), "anchor": "tr", "layer": "front", "scale": 0.689},   # 右上：燭台
-	"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},   # 卷軸右側垂下的流蘇
+## 前景方案（可切換）：
+##   "concept"（預設）＝概念圖原像素摳圖，照概念圖的大小與位置（0.689）。
+##   "demo"（備案 1）＝照使用者自己做的 DEMO 版面：左下書、劍橫在按鈕列後面、右下大茶壺、右緣燈籠。
+##   "cloth_big"（備案 2）＝概念圖摳圖，但左下的劍與青布放大（0.99），青布上緣蓋住分類欄下緣的框約 8px。
+## 切換：StudyShell.preset = "demo"（要在開頁面之前設）。
+static var preset := "concept"
+
+const PRESETS := {
+	"concept": {
+		"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.689},    # 左下：布＋劍
+		"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689}, # 右下：茶壺（只露邊角）
+		"fg_candle_corner": {"pos": Vector2(1152, 28), "anchor": "tr", "layer": "front", "scale": 0.689},   # 右上：燭台
+		"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},   # 卷軸右側垂下的流蘇
+	},
+	"cloth_big": {
+		"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.99},    # 青布上緣蓋住分類欄下緣的框約 8px
+		"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689},
+		"fg_candle_corner": {"pos": Vector2(1152, 28), "anchor": "tr", "layer": "front", "scale": 0.689},
+		"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},
+	},
+	"demo": {
+		"fg_demo_book": {"pos": Vector2(-30, 662), "anchor": "bl", "layer": "front", "scale": 0.5},        # 左下：翻開的書（遮住左下框）
+		"fg_demo_sword": {"pos": Vector2(250, 668), "anchor": "bl", "layer": "back", "scale": 0.5},        # 劍橫在按鈕列後面（介面之下）
+		"fg_demo_teapot": {"pos": Vector2(1250, 676), "anchor": "br", "layer": "front", "scale": 0.5},     # 右下：大茶壺，只露一半
+		"fg_demo_lantern": {"pos": Vector2(1152, 0), "anchor": "tr", "layer": "front", "scale": 0.5},       # 右緣：燈籠
+	},
 }
 
 var _fg_root: Control
@@ -58,12 +79,13 @@ func _ready() -> void:
 	_build_foreground()
 
 func _build_foreground() -> void:
-	for fg_name in FOREGROUND.keys():
+	var foreground: Dictionary = PRESETS.get(preset, PRESETS["concept"])
+	for fg_name in foreground.keys():
 		var path := "%s%s.png" % [DIR, fg_name]
 		if not ResourceLoader.exists(path):
 			continue
 		var tex := load(path) as Texture2D
-		var def: Dictionary = FOREGROUND[fg_name]
+		var def: Dictionary = foreground[fg_name]
 		var size := tex.get_size() * float(def.get("scale", 0.5))     # 預設素材是 2 倍
 		var pos: Vector2 = def["pos"]
 		match String(def["anchor"]):
