@@ -83,8 +83,9 @@ func _build_pages() -> void:
 
 func _build_roster() -> void:
 	# 大卷軸左側深色底上：標題牌、三個角色卡槽（位置照 V2 的 placement.json，runtime ÷ 2）、底部引言
+	# 標題牌：老闆從概念圖截下來的「同行俠客」整條（字在圖上，不是程式輸出；451×79，等比放大到寬 246.5）
 	_image(E + "equip_roster_title", Vector2(55, 96), Vector2(246.5, 37))
-	_label("同行俠客", Vector2(55, 96), Vector2(246.5, 37), 18, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_image(E + "equip_roster_title_cut", Vector2(55, 93), Vector2(246.5, 43.2))
 	_panel(E + "equip_roster_quote", 22, 22, Vector2(62, 530), Vector2(233, 38))
 	_label("江湖如逆旅，幸有同路人。", Vector2(70, 530), Vector2(190, 38), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT)
 	_image(E + "equip_quote_seal", Vector2(261, 535), Vector2(28, 28))
