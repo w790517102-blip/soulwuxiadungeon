@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1152 700" width="1152" height="700" font-family="sans-serif" font-size="12">
+  <title>道具頁 美術尺寸配置圖（邏輯畫面 1152×648，單位 px；素材請交 2 倍像素）</title>
+  <style>
+    .bg{fill:#2d2a26}.safe{fill:none;stroke:#e0a040;stroke-width:1.2;stroke-dasharray:6 4}
+    .box{fill:#3b3630;stroke:#9a8860;stroke-width:1.5}.scroll{fill:#cdbd96;stroke:#8a7440;stroke-width:2}
+    .nav{fill:#1a1512;stroke:#b08a3a;stroke-width:1.5}.sel{fill:#7a1a1a;stroke:#d9ad47;stroke-width:1.5}
+    .row{fill:#e6d9b6;stroke:#a08c5a}.rowsel{fill:#e2b85a;stroke:#d9ad47;stroke-width:1.5}
+    .btn{fill:#1c1712;stroke:#b08a3a;stroke-width:1.5}.dim{fill:#79a9ff;font-size:11px}
+    .t{fill:#222;font-size:12px}.w{fill:#eee;font-size:12px}.note{fill:#bbb;font-size:12px}
+    .badge{fill:#4a7a58;stroke:none}
+  </style>
+  <rect class="bg" width="1152" height="648"/>
+  <rect class="safe" x="24" y="24" width="1104" height="600"/>
+  <text x="30" y="40" class="note">黃色虛線＝安全區（內縮 24）。前層裝飾只能在線外。</text>
+
+  <!-- nav -->
+  <rect class="nav" x="138" y="28" width="889" height="48" rx="4"/>
+  <g class="w" text-anchor="middle">
+    <rect class="nav" x="138" y="28" width="110" height="48"/><text x="193" y="57">狀態</text>
+    <rect class="sel" x="248" y="28" width="110" height="48"/><text x="303" y="57">道具</text>
+    <text x="413" y="57">裝備</text><text x="523" y="57">武術</text><text x="633" y="57">隊伍</text><text x="743" y="57">見聞</text><text x="853" y="57">任務</text><text x="963" y="57">系統</text>
+  </g>
+  <text x="138" y="22" class="dim">導航列 889×48（2×：1778×96），每個頁籤 110×48</text>
+
+  <!-- category -->
+  <rect class="nav" x="17" y="76" width="131" height="440" rx="4"/>
+  <rect class="rowsel" x="17" y="80" width="131" height="58"/>
+  <g class="w"><text x="62" y="114" class="t">全部</text></g>
+  <g class="w"><text x="62" y="172">藥物</text><text x="62" y="230">書籍</text><text x="62" y="288">裝備</text><text x="62" y="346">材料</text><text x="62" y="404">任務</text><text x="62" y="462">其他</text></g>
+  <text x="17" y="530" class="dim">分類欄 131×440；每項 131×58；圖示 36×36</text>
+
+  <!-- scroll -->
+  <rect class="scroll" x="158" y="69" width="972" height="506" rx="6"/>
+  <text x="165" y="86" class="dim">卷軸 972×506（2×：1944×1012）</text>
+
+  <!-- gold -->
+  <rect class="nav" x="210" y="95" width="320" height="32" rx="3"/>
+  <text x="250" y="116" class="w">盤纏：1000文</text><circle cx="228" cy="111" r="9" fill="#d9ad47"/>
+  <text x="210" y="92" class="dim">盤纏框 320×32</text>
+
+  <!-- list -->
+  <rect class="box" x="200" y="148" width="393" height="28" fill="#8e7a4a"/>
+  <text x="270" y="167" class="w">名稱</text><text x="485" y="167" class="w">數量</text><text x="535" y="167" class="w">類別</text>
+  <text x="200" y="143" class="dim">清單 393×424；表頭高 28；每列高 48，可見 8 列</text>
+  <g>
+    <rect class="row" x="200" y="176" width="393" height="48"/><rect class="rowsel" x="200" y="224" width="393" height="48"/>
+    <rect class="row" x="200" y="272" width="393" height="48"/><rect class="row" x="200" y="320" width="393" height="48"/>
+    <rect class="row" x="200" y="368" width="393" height="48"/><rect class="row" x="200" y="416" width="393" height="48"/>
+    <rect class="row" x="200" y="464" width="393" height="48"/><rect class="row" x="200" y="512" width="393" height="48"/>
+  </g>
+  <rect fill="#999" x="208" y="184" width="40" height="32"/><text x="256" y="205" class="t">名稱</text><rect class="badge" x="523" y="188" width="62" height="22" rx="8"/>
+  <text x="208" y="181" class="dim" transform="translate(0,0)"> </text>
+  <text x="208" y="222" class="dim">圖示 40×40</text><text x="520" y="222" class="dim">類別章 62×22</text>
+  <rect fill="#888" x="585" y="176" width="8" height="384"/><text x="560" y="575" class="dim">捲動條 8 寬</text>
+
+  <!-- divider -->
+  <rect fill="#6b5a3a" x="599" y="148" width="4" height="424"/>
+
+  <!-- detail -->
+  <rect class="box" x="610" y="148" width="520" height="424" fill="#d9cba5" stroke="#8a7440"/>
+  <rect x="613" y="162" width="214" height="300" fill="#a89a7a" stroke="#6a5a3a"/>
+  <text x="620" y="300" class="t">大圖底（墨暈）</text><text x="620" y="318" class="t">214×300（2×：428×600）</text>
+  <text x="844" y="180" class="t" font-size="22">物品名稱</text><rect x="1000" y="162" width="30" height="56" fill="#9a2a2a"/><text x="1034" y="180" class="dim">類別印章 30×56</text>
+  <rect fill="#665a40" x="844" y="208" width="80" height="26"/><text x="850" y="226" class="w">類別</text>
+  <rect fill="#665a40" x="844" y="238" width="80" height="26"/><text x="850" y="256" class="w">持有數量</text>
+  <rect fill="#665a40" x="844" y="268" width="80" height="26"/><text x="850" y="286" class="w">使用類型</text><rect fill="#3f7a50" x="930" y="270" width="56" height="22" rx="6"/>
+  <text x="994" y="226" class="dim">資訊列 3 行，每行 270×26</text>
+  <rect fill="#665a40" x="844" y="304" width="100" height="26"/><text x="850" y="322" class="w">效果</text>
+  <rect fill="#665a40" x="844" y="358" width="100" height="26"/><text x="850" y="376" class="w">使用條件</text>
+  <rect fill="#665a40" x="844" y="412" width="100" height="26"/><text x="850" y="430" class="w">物品敘述</text>
+  <text x="844" y="456" class="t">（敘述內容 最少預留 5 行，寬 270）</text>
+  <rect x="844" y="515" width="270" height="56" fill="#cdbd96" stroke="#8a7440"/><text x="850" y="545" class="t">引用句框 270×56（選配）</text>
+  <text x="620" y="587" class="dim">詳情區 520×424（2×：1040×848）</text>
+
+  <!-- buttons -->
+  <g class="btn"><rect x="300" y="592" width="165" height="38" rx="3"/><rect x="486" y="592" width="165" height="38" rx="3"/><rect x="661" y="592" width="165" height="38" rx="3"/><rect x="847" y="592" width="165" height="38" rx="3"/></g>
+  <g class="w" text-anchor="middle"><text x="382" y="616">使用</text><text x="568" y="616">整理</text><text x="743" y="616">丟棄</text><text x="929" y="616">返回</text></g>
+  <text x="300" y="646" class="dim">底部按鈕 4 顆，各 165×38（2×：330×76），y=592</text>
+
+  <!-- popups -->
+  <g transform="translate(0,660)"><text x="10" y="14" class="note">彈出視窗：選擇隊友 480×260；確認視窗 600×344（沿用存讀檔面板）；提示小牌 320×36（皆置中，2× 請×2）</text></g>
+</svg>

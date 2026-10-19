@@ -8,17 +8,20 @@ func _expect(c: bool, m: String) -> void:
 func _init() -> void:
 	var C = load("res://scripts/items/ItemCategory.gd")
 	_expect(C.category_of({"type": "consumable"}) == "consumable", "consumable")
-	_expect(C.category_of({"type": "food"}) == "consumable", "food counts as consumable")
+	_expect(C.category_of({"type": "food"}) == "consumable", "food counts as consumable (藥物)")
 	_expect(C.category_of({"type": "equipment"}) == "equipment", "equipment")
 	_expect(C.category_of({"type": "book"}) == "book", "book type")
+	_expect(C.category_of({"type": "material"}) == "material", "material")
+	_expect(C.category_of({"type": "quest"}) == "quest", "quest")
 	_expect(C.category_of({"type": "consumable", "category": "book"}) == "book", "explicit category wins")
-	for t in ["material", "quest", "tool", "misc", "", "weird"]:
+	for t in ["tool", "misc", "", "weird"]:
 		_expect(C.category_of({"type": t}) == "other", "type %s -> other" % t)
 	_expect(C.category_of({}) == "other", "empty dict -> other")
-	_expect(C.category_of({"type": "consumable", "category": "nonsense"}) == "consumable", "invalid explicit category ignored")
-	# 真實道具資料：每個道具都有且只有一個分類；統計各類數量
+	_expect(C.category_of({"type": "consumable", "category": "all"}) == "consumable", "'all' is not an item category")
+	_expect(C.matches({"type": "quest"}, "all") and C.matches({"type": "quest"}, "quest") and not C.matches({"type": "quest"}, "book"), "matches()")
+	_expect(C.TABS.size() == 7 and C.TABS[0]["id"] == "all" and C.TABS[6]["id"] == "other", "tab order")
 	var db = load("res://scripts/db/ItemDB.gd")
-	var counts := {"consumable": 0, "book": 0, "equipment": 0, "other": 0}
+	var counts := {"consumable": 0, "book": 0, "equipment": 0, "material": 0, "quest": 0, "other": 0}
 	for id in db.ITEM_DEFS.keys():
 		var cat: String = C.category_of(db.ITEM_DEFS[id])
 		_expect(counts.has(cat), "item %s has a valid category" % id)

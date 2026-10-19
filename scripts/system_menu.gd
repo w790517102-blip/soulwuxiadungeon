@@ -48,8 +48,13 @@ const LoreDB = preload("res://scripts/db/LoreDB.gd")
 @onready var equip_popup: PopupMenu = get_node_or_null("EquipPopup")
 @onready var skill_target_popup: PopupMenu = get_node_or_null("SkillTargetPopup")
 @onready var equipment_tab: VBoxContainer = get_node_or_null("VBoxContainer/裝備")
+## 新道具頁（江湖行囊）開關：true = 道具分頁改用 scripts/inventory/InventoryPage.gd；false = 回到舊的道具頁（舊頁原封不動保留）。
+const USE_NEW_INVENTORY_UI := true
+var _inventory_page: Control = null
+## 新道具頁用：要選隊友時呼叫它（entries: [{id,name}]，done: Callable(actor_id)）。無效時用舊的 PopupMenu。
+var external_target_picker: Callable = Callable()
 var _item_entries: Array = []
-var _item_category: String = ItemCategory.CONSUMABLE
+var _item_category: String = ItemCategory.ALL
 var _item_category_buttons: Dictionary = {}
 var _active_equip_slot = ""
 var _selected_skill: Dictionary = {}
@@ -302,6 +307,7 @@ func _on_tab_changed(tab_index: int) -> void:
 	var party_tab_index = $VBoxContainer/隊伍.get_index()
 	var lore_tab_index = $VBoxContainer/見聞.get_index()
 	var quest_tab_index = $VBoxContainer/任務.get_index()
+	_update_inventory_page(tab_index == item_tab_index)
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == equipment_tab_index:
@@ -314,6 +320,28 @@ func _on_tab_changed(tab_index: int) -> void:
 		_refresh_lore_tab()
 	elif tab_index == quest_tab_index:
 		_refresh_quest_tab()
+
+## 新道具頁（江湖行囊）：停在道具分頁時顯示，離開時隱藏。舊的道具頁節點仍然存在並照常更新（開關 USE_NEW_INVENTORY_UI = false 即可回到舊頁）。
+func _update_inventory_page(show_it: bool) -> void:
+	if not USE_NEW_INVENTORY_UI:
+		return
+	if show_it and _inventory_page == null:
+		_inventory_page = InventoryPage.new()
+		_inventory_page.menu = self
+		_inventory_page.close_requested.connect(func(): SystemMenu._close_system_menu())
+		_inventory_page.tab_requested.connect(_on_inventory_nav_requested)
+		add_child(_inventory_page)
+		external_target_picker = Callable(_inventory_page, "pick_target")
+	if _inventory_page != null:
+		_inventory_page.visible = show_it
+		external_target_picker = Callable(_inventory_page, "pick_target") if show_it else Callable()
+		if show_it:
+			_inventory_page._refresh()
+
+func _on_inventory_nav_requested(tab_name: String) -> void:
+	var btn := get_node_or_null("CustomTabBar/" + tab_name) as BaseButton
+	if btn != null:
+		btn.pressed.emit()
 
 func _setup_custom_tab_bar() -> void:
 	_custom_tab_entries.clear()
@@ -892,7 +920,7 @@ func _refresh_item_tab() -> void:
 	item_list.clear()
 	_item_entries = InventorySync.get_items()
 	for item in _item_entries:
-		if ItemCategory.category_of(item) != _item_category:
+		if not ItemCategory.matches(item, _item_category):
 			continue
 		var count = int(item.get("quantity", item.get("count", 0)))
 		var item_id = str(item.get("id", ""))
@@ -1233,6 +1261,10 @@ func _on_skill_target_selected(index: int) -> void:
 	if index < 0 or index >= skill_target_popup.item_count:
 		return
 	var actor_id = str(skill_target_popup.get_item_metadata(index))
+	_apply_target_by_actor_id(actor_id)
+
+## 選定對象之後的動作（裝備、使用道具、施展武學）。PopupMenu 與新道具頁的選隊友視窗共用。
+func _apply_target_by_actor_id(actor_id: String) -> void:
 	if actor_id == "":
 		print("[MartialUse] target not found")
 		return
@@ -2018,7 +2050,7 @@ func _setup_item_category_layout() -> void:
 		b.text = String(tab_def["label"])
 		b.toggle_mode = true
 		b.button_group = group
-		b.custom_minimum_size = Vector2(96, 34)
+		b.custom_minimum_size = Vector2(84, 34)
 		b.focus_mode = Control.FOCUS_NONE
 		b.button_pressed = String(tab_def["id"]) == _item_category
 		b.set_meta("menu_skin", "cat")
@@ -3090,7 +3122,20 @@ func _party_can_use_walnut() -> bool:
 				return true
 	return false
 
+func _party_target_entries() -> Array:
+	var out: Array = []
+	for actor in TeamData.get_active_party():
+		var aid = _get_actor_id_from_entry(actor)
+		if aid != "":
+			out.append({"id": aid, "name": _get_actor_name_from_entry(actor, aid)})
+	return out
+
 func _open_party_target_popup() -> void:
+	if external_target_picker.is_valid():
+		_pending_equip_item_id = ""
+		_pending_equip_slot = ""
+		external_target_picker.call(_party_target_entries(), Callable(self, "_apply_target_by_actor_id"))
+		return
 	if skill_target_popup == null:
 		return
 	_pending_equip_item_id = ""
@@ -3105,6 +3150,20 @@ func _open_party_target_popup() -> void:
 	skill_target_popup.popup()
 
 func _open_equip_target_popup(item_id: String, item_def: Dictionary) -> void:
+	if external_target_picker.is_valid():
+		var ext_slot := str(item_def.get("equip_slot", ""))
+		if ext_slot == "":
+			return
+		var entries: Array = []
+		for ext_actor_id in _get_all_character_ids():
+			if _can_actor_equip_item(ext_actor_id, item_def, ext_slot):
+				entries.append({"id": ext_actor_id, "name": _get_actor_name_from_entry(_get_actor_by_id(ext_actor_id), ext_actor_id)})
+		if entries.is_empty():
+			return
+		_pending_equip_item_id = item_id
+		_pending_equip_slot = ext_slot
+		external_target_picker.call(entries, Callable(self, "_apply_target_by_actor_id"))
+		return
 	if skill_target_popup == null:
 		return
 	var slot := str(item_def.get("equip_slot", ""))
@@ -3423,6 +3482,12 @@ func _on_use_pressed() -> void:
 	if selected_items.is_empty():
 		return
 	var item_id = str(item_list.get_item_metadata(selected_items[0]))
+	await use_item_by_id(item_id)
+
+## 使用（或裝備）指定道具。舊道具頁與新道具頁共用，流程完全相同。
+func use_item_by_id(item_id: String) -> void:
+	if _item_use_locked:
+		return
 	if item_id == "":
 		return
 	var item_def = InventorySync.get_item_by_id(item_id)

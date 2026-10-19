@@ -1,0 +1,1569 @@
+{
+  "mandatory_fixed_size_assets": 97,
+  "optional_corners": 4,
+  "png_count": 101,
+  "errors": [],
+  "passed": true,
+  "checks": [
+    {
+      "file": "bg_study.png",
+      "expected_size": [
+        2432,
+        1424
+      ],
+      "actual_size": [
+        2432,
+        1424
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "c977e32dcdf633011401b9ef99b7fd16545f477d0adc149c08546596bf597f7f"
+    },
+    {
+      "file": "scroll_body.png",
+      "expected_size": [
+        1944,
+        1012
+      ],
+      "actual_size": [
+        1944,
+        1012
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "e97d2d576f8dcd24dbd266b96841054212905f865d0f14af66ea72e921979b1a"
+    },
+    {
+      "file": "nav_bar.png",
+      "expected_size": [
+        1778,
+        96
+      ],
+      "actual_size": [
+        1778,
+        96
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "597f3a82986ed4e5517028589a15da9776100b4188fc4de71ff9aa8a272e99cc"
+    },
+    {
+      "file": "nav_tab_normal.png",
+      "expected_size": [
+        220,
+        96
+      ],
+      "actual_size": [
+        220,
+        96
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "ecdb717c52c956f295cafc2b3d6882dbdbebe51924239eefd381f18362ec6894"
+    },
+    {
+      "file": "nav_tab_hover.png",
+      "expected_size": [
+        220,
+        96
+      ],
+      "actual_size": [
+        220,
+        96
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "b667f9414f08afd2e1a6ee40b48e9d6fe90902e45a6ea438a029da7117e2707c"
+    },
+    {
+      "file": "nav_tab_selected.png",
+      "expected_size": [
+        220,
+        96
+      ],
+      "actual_size": [
+        220,
+        96
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "d9019de642fcf6e673480754fdefb14d926b5fa446bb94808187120ffbba568c"
+    },
+    {
+      "file": "cat_panel.png",
+      "expected_size": [
+        262,
+        880
+      ],
+      "actual_size": [
+        262,
+        880
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "9ade054c3dccc678b21e64f869d7f26181dd3b70150116cddc7cc7cb53a450c1"
+    },
+    {
+      "file": "cat_item_normal.png",
+      "expected_size": [
+        262,
+        116
+      ],
+      "actual_size": [
+        262,
+        116
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "6dc824d6e30260f8f9da97694021ad1d29aa4f44db1ede3485117a8a60971a68"
+    },
+    {
+      "file": "cat_item_hover.png",
+      "expected_size": [
+        262,
+        116
+      ],
+      "actual_size": [
+        262,
+        116
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "1a1e5900db835a7d28b67b9d49d9d13b59697be2c62d2dbb5f46b8a1093c5a9e"
+    },
+    {
+      "file": "cat_item_selected.png",
+      "expected_size": [
+        262,
+        116
+      ],
+      "actual_size": [
+        262,
+        116
+      ],
+      "alpha_range": [
+        220,
+        255
+      ],
+      "sha256": "0b7d7c71cce05bf8c661c149504a027681a4ec47dcbf189206f94df91abe356f"
+    },
+    {
+      "file": "cat_icon_all.png",
+      "expected_size": [
+        72,
+        72
+      ],
+      "actual_size": [
+        72,
+        72
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "5af301e232656808fccaa6ea84e17c1576d75a2e7b58990f4d2967729d6ebfcb"
+    },
+    {
+      "file": "cat_icon_consumable.png",
+      "expected_size": [
+        72,
+        72
+      ],
+      "actual_size": [
+        72,
+        72
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "54e49cff59d6b1ce3d9fc2df570ba8082ef97cd4482d2c9b90642e2871375846"
+    },
+    {
+      "file": "cat_icon_book.png",
+      "expected_size": [
+        72,
+        72
+      ],
+      "actual_size": [
+        72,
+        72
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "60b1d0300ff19d9ee2574a74aab91b38737bececd5d2adc89991751c7cdd6d4d"
+    },
+    {
+      "file": "cat_icon_equipment.png",
+      "expected_size": [
+        72,
+        72
+      ],
+      "actual_size": [
+        72,
+        72
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "af0049ba0dce7a9064698bb4c69b8bfd25bf810f6b8f794f88d102d5df983bde"
+    },
+    {
+      "file": "cat_icon_material.png",
+      "expected_size": [
+        72,
+        72
+      ],
+      "actual_size": [
+        72,
+        72
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "54e49cff59d6b1ce3d9fc2df570ba8082ef97cd4482d2c9b90642e2871375846"
+    },
+    {
+      "file": "cat_icon_quest.png",
+      "expected_size": [
+        72,
+        72
+      ],
+      "actual_size": [
+        72,
+        72
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "48cf971022df5be18c87fc6a60dab24e16b2799ed725d00187e9a4f469e24d7a"
+    },
+    {
+      "file": "cat_icon_other.png",
+      "expected_size": [
+        72,
+        72
+      ],
+      "actual_size": [
+        72,
+        72
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "97106d8880b5399ce2e8512086c0a3774bb4798e229c269c16caf055d4fc3fbf"
+    },
+    {
+      "file": "gold_plate.png",
+      "expected_size": [
+        640,
+        64
+      ],
+      "actual_size": [
+        640,
+        64
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "a783895f21b2955e69c21e689fe1063ceaf67f47cb31fe4c3af100d3db6d50f5"
+    },
+    {
+      "file": "icon_gold.png",
+      "expected_size": [
+        56,
+        56
+      ],
+      "actual_size": [
+        56,
+        56
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "78d31bf3a8574cdd87b718e47084ef7fcdc45e6a5d895d78e6b9a8c0bfd2733b"
+    },
+    {
+      "file": "list_header.png",
+      "expected_size": [
+        786,
+        56
+      ],
+      "actual_size": [
+        786,
+        56
+      ],
+      "alpha_range": [
+        172,
+        255
+      ],
+      "sha256": "9eccea218be01d7f69263fe148f4192bb765b00a11ca44138d2e21b5f1b96588"
+    },
+    {
+      "file": "row_normal.png",
+      "expected_size": [
+        786,
+        96
+      ],
+      "actual_size": [
+        786,
+        96
+      ],
+      "alpha_range": [
+        110,
+        253
+      ],
+      "sha256": "aa907091fb47a79c1ad95670d2716243bf143ac9223d26ad7c20ed775c9faea8"
+    },
+    {
+      "file": "row_hover.png",
+      "expected_size": [
+        786,
+        96
+      ],
+      "actual_size": [
+        786,
+        96
+      ],
+      "alpha_range": [
+        110,
+        253
+      ],
+      "sha256": "3f31fefff3d3e123e24026ffc21705d2f966220ccfc2a4b3f563452121f6c5e8"
+    },
+    {
+      "file": "row_selected.png",
+      "expected_size": [
+        786,
+        96
+      ],
+      "actual_size": [
+        786,
+        96
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "0665fddada7e8f3135b3f46f6323137ed15b6d08c8bc78ee198f491f97949902"
+    },
+    {
+      "file": "row_disabled.png",
+      "expected_size": [
+        786,
+        96
+      ],
+      "actual_size": [
+        786,
+        96
+      ],
+      "alpha_range": [
+        110,
+        253
+      ],
+      "sha256": "0f3c965bc84aac5a5340ffe91c8cc600b5bc08e71ab445724e0f566a0679a598"
+    },
+    {
+      "file": "badge_consumable.png",
+      "expected_size": [
+        124,
+        44
+      ],
+      "actual_size": [
+        124,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "5a871e3eb6cdedf6cca6525650c1f396c0c6bdf4c89396bbaa4a099ef19bc0de"
+    },
+    {
+      "file": "badge_book.png",
+      "expected_size": [
+        124,
+        44
+      ],
+      "actual_size": [
+        124,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "e2a183e09786b0c0be9e17e44e05cc2b00987cc348a0e53495e22a0f810ec7ec"
+    },
+    {
+      "file": "badge_equipment.png",
+      "expected_size": [
+        124,
+        44
+      ],
+      "actual_size": [
+        124,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "4f68d753ceea043523dea3a8c098c39ed57cfae9b2adc85e3eeff87274be651c"
+    },
+    {
+      "file": "badge_material.png",
+      "expected_size": [
+        124,
+        44
+      ],
+      "actual_size": [
+        124,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "08ab5b2ebdf0f048fd0b547e09ff558606be14102860306d64fac38693444cc8"
+    },
+    {
+      "file": "badge_quest.png",
+      "expected_size": [
+        124,
+        44
+      ],
+      "actual_size": [
+        124,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "3b695be2a88e3b0450a821f459dff7617a5ef56a1d66f393e773f543a903d306"
+    },
+    {
+      "file": "badge_other.png",
+      "expected_size": [
+        124,
+        44
+      ],
+      "actual_size": [
+        124,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "078cf36d0662d3f763c921ba63625aee1e2dadb6950d5bc86d2478fcee2909a9"
+    },
+    {
+      "file": "badge_equipped.png",
+      "expected_size": [
+        88,
+        44
+      ],
+      "actual_size": [
+        88,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "17e2dccd1ad11dabb15e8ff02a94ad0807af220a787a635657b299d77f423cec"
+    },
+    {
+      "file": "scroll_track.png",
+      "expected_size": [
+        16,
+        784
+      ],
+      "actual_size": [
+        16,
+        784
+      ],
+      "alpha_range": [
+        80,
+        100
+      ],
+      "sha256": "7fdde6535e0d8b5ce689c8147306d9a8355e1ed85bfc6137887427f3d7dd3800"
+    },
+    {
+      "file": "scroll_thumb_normal.png",
+      "expected_size": [
+        16,
+        96
+      ],
+      "actual_size": [
+        16,
+        96
+      ],
+      "alpha_range": [
+        100,
+        220
+      ],
+      "sha256": "cfe13bdd2e8efceec9362bda714258bf8aca6f67fab4eb1f6072d5df86d45c20"
+    },
+    {
+      "file": "scroll_thumb_hover.png",
+      "expected_size": [
+        16,
+        96
+      ],
+      "actual_size": [
+        16,
+        96
+      ],
+      "alpha_range": [
+        100,
+        240
+      ],
+      "sha256": "5119635edeebe77c5dd8ba920c55d20526eb777ebfd9a7578974bbc1675c3241"
+    },
+    {
+      "file": "scroll_thumb_drag.png",
+      "expected_size": [
+        16,
+        96
+      ],
+      "actual_size": [
+        16,
+        96
+      ],
+      "alpha_range": [
+        100,
+        255
+      ],
+      "sha256": "586cb190880c5d2db5b23f4653bac06d9554d0e32eacac95f604e77f79c339be"
+    },
+    {
+      "file": "divider_v.png",
+      "expected_size": [
+        8,
+        848
+      ],
+      "actual_size": [
+        8,
+        848
+      ],
+      "alpha_range": [
+        100,
+        125
+      ],
+      "sha256": "d5cd195361537b424b30b2ba5f5b2778a8c6576082dc52786ad6aa3c0a09a901"
+    },
+    {
+      "file": "detail_art_bg.png",
+      "expected_size": [
+        428,
+        600
+      ],
+      "actual_size": [
+        428,
+        600
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "a101b952ed369380c117fb29eed6f9a4363d421ff3cbed19da492d75cd6a80f4"
+    },
+    {
+      "file": "detail_art_bg_empty.png",
+      "expected_size": [
+        428,
+        600
+      ],
+      "actual_size": [
+        428,
+        600
+      ],
+      "alpha_range": [
+        0,
+        123
+      ],
+      "sha256": "a3aca238b95f2368e437632a8391e204a73687ce1df034ced4ff1f6b5681026e"
+    },
+    {
+      "file": "seal_type.png",
+      "expected_size": [
+        60,
+        112
+      ],
+      "actual_size": [
+        60,
+        112
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "1e9d0931c1d187aec4684bd190e6db98fd41fb9ae137d9d206113f3a8c23e5ac"
+    },
+    {
+      "file": "label_ink_s.png",
+      "expected_size": [
+        160,
+        52
+      ],
+      "actual_size": [
+        160,
+        52
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "439096d77960a5e26999b7aa20aab606d745f78c825ba46b89aa4867028074e6"
+    },
+    {
+      "file": "label_ink_m.png",
+      "expected_size": [
+        200,
+        52
+      ],
+      "actual_size": [
+        200,
+        52
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "b607c692611ce52817153798f7f6e81f0c069d73a84aebcf4e7e368eedc1bbd7"
+    },
+    {
+      "file": "status_usable.png",
+      "expected_size": [
+        112,
+        44
+      ],
+      "actual_size": [
+        112,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "5dbde17efdc4bbfff63f37c57ef3b93af0babbb0f33763165e4d5ad0065fad09"
+    },
+    {
+      "file": "status_battle.png",
+      "expected_size": [
+        112,
+        44
+      ],
+      "actual_size": [
+        112,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "2ab055245588c63cc2f517b92426f38a42ad0809f7573874d05049803f21f46d"
+    },
+    {
+      "file": "status_disabled.png",
+      "expected_size": [
+        112,
+        44
+      ],
+      "actual_size": [
+        112,
+        44
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "4ad0b84151448e4cdfd99df45149010b6ae842f1f039db8fbc7043c009b5839e"
+    },
+    {
+      "file": "quote_box.png",
+      "expected_size": [
+        540,
+        112
+      ],
+      "actual_size": [
+        540,
+        112
+      ],
+      "alpha_range": [
+        90,
+        253
+      ],
+      "sha256": "d4ed210c64b5345ce409e7a8fc36c44094e4b126157787478c4aa7f690c6d96d"
+    },
+    {
+      "file": "divider_h.png",
+      "expected_size": [
+        540,
+        4
+      ],
+      "actual_size": [
+        540,
+        4
+      ],
+      "alpha_range": [
+        100,
+        110
+      ],
+      "sha256": "0cd09d8db038777d33704c80d1dca825c45c0e490a838486c4c447fc4ff23c7b"
+    },
+    {
+      "file": "btn_normal.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "0d780bb75d059a03f7929d0fea814f3e8e4d1ff469815ca4f0839f21c9261d23"
+    },
+    {
+      "file": "btn_hover.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "9c31cc3589a8e56c5e47ee908822290c4b163343518c7919ce5ca13f3f9327c8"
+    },
+    {
+      "file": "btn_pressed.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "063f31d67c4e9e05998fdbe6c5c6ce7f863a3eb81eeed7e863360cf676182584"
+    },
+    {
+      "file": "btn_disabled.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "3d08dc99691bbc4a28d7b802681ae04dd9f2ba0778e47bce87115bf29c136180"
+    },
+    {
+      "file": "btn_primary_normal.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "7bcfcf954376828c670732f7cc910709d09d0f65b8441d577d9ebee500567743"
+    },
+    {
+      "file": "btn_primary_hover.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "63106c6f97d4d3dcfaa9e190f229bb45dbfe87766c06e1cd8edc9fab6d7ecd9b"
+    },
+    {
+      "file": "btn_primary_pressed.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "9d070551aa7d0a5136b561e2a21bd8381d0cad736e21dddf1abaa8af8fcddcbf"
+    },
+    {
+      "file": "btn_primary_disabled.png",
+      "expected_size": [
+        330,
+        76
+      ],
+      "actual_size": [
+        330,
+        76
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "b2ee286a2c0a603029d589d56e6df64712e67cf99c51312259e0b898173c4fd3"
+    },
+    {
+      "file": "pick_panel.png",
+      "expected_size": [
+        960,
+        520
+      ],
+      "actual_size": [
+        960,
+        520
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "47d5b77b0af1cc1c051f915231ac6055d2c73866d146f2ddffba251be5b174ba"
+    },
+    {
+      "file": "pick_card_normal.png",
+      "expected_size": [
+        280,
+        320
+      ],
+      "actual_size": [
+        280,
+        320
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "b4548d6ac297fb1049790f300e22231bf2e70f0c438fd1d5fdfe78c8efa9f9b7"
+    },
+    {
+      "file": "pick_card_hover.png",
+      "expected_size": [
+        280,
+        320
+      ],
+      "actual_size": [
+        280,
+        320
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "3e24fbfb703a52121155ba53cf72f035708733910e7d4ddc31fc5ddd7468d53e"
+    },
+    {
+      "file": "pick_card_selected.png",
+      "expected_size": [
+        280,
+        320
+      ],
+      "actual_size": [
+        280,
+        320
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "86a889e3dc275a383c7d2231bfef523b24c8f7f0cbb1e6bcc94fc74f0f7e3ed6"
+    },
+    {
+      "file": "pick_card_disabled.png",
+      "expected_size": [
+        280,
+        320
+      ],
+      "actual_size": [
+        280,
+        320
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "0ef056f44b985a03b3571a870b80d5f0adb6ca63fcaa9a8435db1ebe2c04f5ed"
+    },
+    {
+      "file": "bar_hp_frame.png",
+      "expected_size": [
+        216,
+        20
+      ],
+      "actual_size": [
+        216,
+        20
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "865af333d8896888ba44abb746f02d209d45a34a81732005d9585a9b70aedeae"
+    },
+    {
+      "file": "bar_hp_fill.png",
+      "expected_size": [
+        216,
+        20
+      ],
+      "actual_size": [
+        216,
+        20
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "11be1f570068c19f1c8238d936af8319163bb0a3ca51c39715dc2fcf488b9411"
+    },
+    {
+      "file": "bar_mp_frame.png",
+      "expected_size": [
+        216,
+        20
+      ],
+      "actual_size": [
+        216,
+        20
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "865af333d8896888ba44abb746f02d209d45a34a81732005d9585a9b70aedeae"
+    },
+    {
+      "file": "bar_mp_fill.png",
+      "expected_size": [
+        216,
+        20
+      ],
+      "actual_size": [
+        216,
+        20
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "426bd779920292aba1413d2d808d6caeb5787cff3be347530d98e54ff1133b08"
+    },
+    {
+      "file": "confirm_panel.png",
+      "expected_size": [
+        1200,
+        688
+      ],
+      "actual_size": [
+        1200,
+        688
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "5bac03231db79c79d25778b96bab03e016f2b21cb4103eb72a03b01f139f8b77"
+    },
+    {
+      "file": "toast_plate.png",
+      "expected_size": [
+        640,
+        72
+      ],
+      "actual_size": [
+        640,
+        72
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "099443105e91b5bfe10c6acd096ffdbaa102e06481a6b655a1b100f4e3c9f460"
+    },
+    {
+      "file": "item_icon_01.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "f8cf38a2fe0f8a5557ff028f16f4d7b09c253be4bcfd0adeabeab27a67ebdfe4"
+    },
+    {
+      "file": "item_art_01.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "45ae8dbf75c22559c9590c9a63fb1da23b837160b17f2d6c7047a07fee7d485e"
+    },
+    {
+      "file": "item_icon_02.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "e663ff953a24aa04d87cdff623bcc4cbe665dbeb3e7befb36e51abb684793897"
+    },
+    {
+      "file": "item_art_02.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "4008e84f2e209285845d5fd76c3ddfe4e60e17daf376efc04c5b26648f0c75b2"
+    },
+    {
+      "file": "item_icon_03.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "b41f87d79c258bb3c893edcba71e5696d640ee55c1d25348d05f62caf37a91fc"
+    },
+    {
+      "file": "item_art_03.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "2ae0616e9e7c8a98e3c47609e6b44f7e0accaf71388ff893c0b654eb7728ca2d"
+    },
+    {
+      "file": "item_icon_04.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "615abeab963c3c976da6d4acf93e117e4c9797594d01622106e3a6527ab6c5ed"
+    },
+    {
+      "file": "item_art_04.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "6e0b6975f7d5f4f5a4215b9831e3492a6f514e9e2400dc4b339d9b77db1e97c1"
+    },
+    {
+      "file": "item_icon_05.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "652c53b473249058cfd08638b62bcb3aafe783813cf8c1d353604186db9659ad"
+    },
+    {
+      "file": "item_art_05.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "a2b4a8e2400eb9fbb2f9851a5a207e0098a054717e5ccf45dd1c29914fa2f135"
+    },
+    {
+      "file": "item_icon_06.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "50e1157988e0a3bbf9dd39a66966ff87c182da1f89ae059f47bc587c5718444c"
+    },
+    {
+      "file": "item_art_06.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "766bb8ef7a3331ecf182aa6aefb7a8a0d7d2290f7ab534c111ced1ee3e7f5544"
+    },
+    {
+      "file": "item_icon_07.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "3c641dcfbed7756dae0a8f0e4b934dc486f301a5574319cd13a86f33d286b834"
+    },
+    {
+      "file": "item_art_07.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "a618ac513bb144d9f925c4a277a956ac9f1616b2b82b71bbb9aad1d4df5c75d2"
+    },
+    {
+      "file": "item_icon_08.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "1aa5f0c03c4817d2b3e2d3f3cd015497f37bee89d533507188a2b33e53ad3551"
+    },
+    {
+      "file": "item_art_08.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "4ee95b52d5d9937acfc3d41964d1a31e3fe2233d6f9b832e3f2db6038808e820"
+    },
+    {
+      "file": "item_icon_09.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "1c64b71c1a51a09c1c3d03cdd25acc7ccb3d8a0ecf08e247a1e866520dac903e"
+    },
+    {
+      "file": "item_art_09.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "f69b6b970fcc707e67f831b19637ba740cd8dc46c4fecb9a1952c1abac864161"
+    },
+    {
+      "file": "item_icon_10.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "50a24c6608f622eb45a2bf4ffabd9f6b6ebce9f7cd0b2f07622fd967095c630c"
+    },
+    {
+      "file": "item_art_10.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "d6c8a2b64ff057ad4399a89793f196404131e43fa15508cb14e7d88592610b60"
+    },
+    {
+      "file": "item_icon_11.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "6ddd5dc77abe97bba449a554ec682c18fba3dfb7aef71e2822ae64ea11b95c91"
+    },
+    {
+      "file": "item_art_11.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "cff09246ff45bdaa1ad2b72b34afa38da1d4cbf0ec4e1de8e3698c974505040b"
+    },
+    {
+      "file": "item_icon_12.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "b073c7c9793cec53579ad527b26da557f2d27f9d4bba34f1cccb332d32a9f3e2"
+    },
+    {
+      "file": "item_art_12.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "b0b7361c14b8422c58c822c7c04bba75b7dac17962cc9d88736f1dbc8ad2b5e0"
+    },
+    {
+      "file": "item_icon_13.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "8c9ce23f95d99015b519db258adf1f5be88c31a6e9f6902aaa857d63deee6610"
+    },
+    {
+      "file": "item_art_13.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "79927dea87e7fb55f020b49e2b73afac82012755fad09faca6a0eef4c2e95500"
+    },
+    {
+      "file": "item_icon_14.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "4dccc267f82a30e523f906f549782308dd7ee05b320a2380fcb3730622112c00"
+    },
+    {
+      "file": "item_art_14.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "cb851096ad024c9db359cd1c919a00acb0d343bb87b0939ea68552a14deb8437"
+    },
+    {
+      "file": "item_icon_15.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "a13c04a64a21145b9abb6dc589f22642edf11a0de01b29f0b3c8d3e603455272"
+    },
+    {
+      "file": "item_art_15.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "b51315510862473659886c897e8deb97d12b20b251747bfcc76e25613032fd7e"
+    },
+    {
+      "file": "item_icon_16.png",
+      "expected_size": [
+        80,
+        80
+      ],
+      "actual_size": [
+        80,
+        80
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "17ac4b0e14ced46ff14f91786fba0cb43234b8259db91222b388c6f1e8b97de2"
+    },
+    {
+      "file": "item_art_16.png",
+      "expected_size": [
+        380,
+        560
+      ],
+      "actual_size": [
+        380,
+        560
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "sha256": "7ac51a176d107c5a2b5345832cebfccc393b406f90fa3a86c20c1b48eb585604"
+    }
+  ],
+  "not_validated": [
+    "Subjective visual acceptance against approved concept",
+    "Runtime UI text and interactions",
+    "Original save/load confirm panel reuse"
+  ],
+  "optional_not_produced": [
+    "fg_candle_flame_1..4.png"
+  ]
+}

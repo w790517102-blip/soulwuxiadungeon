@@ -1,0 +1,1389 @@
+[
+  {
+    "file": "bg_study.png",
+    "width": 2432,
+    "height": 1424,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Opaque reconstructed background; original hidden regions unavailable.",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "scroll_body.png",
+    "width": 1944,
+    "height": 1012,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Scenic paper not horizontally tileable: preserve aspect or split decorative edge into overlay. Do not stretch ink landscape.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "nav_tab_normal.png",
+    "width": 220,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "nav_tab_hover.png",
+    "width": 220,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "nav_tab_selected.png",
+    "width": 220,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "nav_bar.png",
+    "width": 1778,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      16,
+      14,
+      16,
+      14
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "cat_panel.png",
+    "width": 262,
+    "height": 880,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      20,
+      28,
+      20,
+      28
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "cat_item_normal.png",
+    "width": 262,
+    "height": 116,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      20,
+      14,
+      20,
+      14
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "cat_item_hover.png",
+    "width": 262,
+    "height": 116,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      20,
+      14,
+      20,
+      14
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "cat_item_selected.png",
+    "width": 262,
+    "height": 116,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      20,
+      14,
+      20,
+      14
+    ],
+    "note": "",
+    "alpha_range": [
+      220,
+      255
+    ]
+  },
+  {
+    "file": "gold_plate.png",
+    "width": 640,
+    "height": 64,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      28,
+      12,
+      28,
+      12
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "icon_gold.png",
+    "width": 56,
+    "height": 56,
+    "origin": "source-cutout",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "row_normal.png",
+    "width": 786,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      16,
+      4,
+      16,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      110,
+      253
+    ]
+  },
+  {
+    "file": "row_hover.png",
+    "width": 786,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      16,
+      4,
+      16,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      110,
+      253
+    ]
+  },
+  {
+    "file": "row_selected.png",
+    "width": 786,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      24,
+      6,
+      24,
+      6
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "row_disabled.png",
+    "width": 786,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      16,
+      4,
+      16,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      110,
+      253
+    ]
+  },
+  {
+    "file": "list_header.png",
+    "width": 786,
+    "height": 56,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      16,
+      4,
+      16,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      172,
+      255
+    ]
+  },
+  {
+    "file": "badge_consumable.png",
+    "width": 124,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "Blank category text rendered by game.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "badge_book.png",
+    "width": 124,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "Blank category text rendered by game.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "badge_equipment.png",
+    "width": 124,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "Blank category text rendered by game.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "badge_material.png",
+    "width": 124,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "Blank category text rendered by game.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "badge_quest.png",
+    "width": 124,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "Blank category text rendered by game.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "badge_other.png",
+    "width": 124,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "Blank category text rendered by game.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "badge_equipped.png",
+    "width": 88,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "scroll_track.png",
+    "width": 16,
+    "height": 784,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      2,
+      4,
+      2,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      80,
+      100
+    ]
+  },
+  {
+    "file": "scroll_thumb_normal.png",
+    "width": 16,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      2,
+      4,
+      2,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      100,
+      220
+    ]
+  },
+  {
+    "file": "scroll_thumb_hover.png",
+    "width": 16,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      2,
+      4,
+      2,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      100,
+      240
+    ]
+  },
+  {
+    "file": "scroll_thumb_drag.png",
+    "width": 16,
+    "height": 96,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      2,
+      4,
+      2,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      100,
+      255
+    ]
+  },
+  {
+    "file": "divider_v.png",
+    "width": 8,
+    "height": 848,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      2,
+      4,
+      2,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      100,
+      125
+    ]
+  },
+  {
+    "file": "divider_h.png",
+    "width": 540,
+    "height": 4,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      2,
+      4,
+      2,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      100,
+      110
+    ]
+  },
+  {
+    "file": "detail_art_bg.png",
+    "width": 428,
+    "height": 600,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "detail_art_bg_empty.png",
+    "width": 428,
+    "height": 600,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Reduced-opacity empty ink state.",
+    "alpha_range": [
+      0,
+      123
+    ]
+  },
+  {
+    "file": "seal_type.png",
+    "width": 60,
+    "height": 112,
+    "origin": "style-extension",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "label_ink_s.png",
+    "width": 160,
+    "height": 52,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "label_ink_m.png",
+    "width": 200,
+    "height": 52,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "status_usable.png",
+    "width": 112,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "status_battle.png",
+    "width": 112,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "status_disabled.png",
+    "width": 112,
+    "height": 44,
+    "origin": "source-derived",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "quote_box.png",
+    "width": 540,
+    "height": 112,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      20,
+      12,
+      36,
+      12
+    ],
+    "note": "",
+    "alpha_range": [
+      90,
+      253
+    ]
+  },
+  {
+    "file": "btn_normal.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "btn_hover.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "btn_pressed.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "btn_disabled.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "btn_primary_normal.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "btn_primary_hover.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "btn_primary_pressed.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "btn_primary_disabled.png",
+    "width": 330,
+    "height": 76,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      48,
+      16,
+      48,
+      16
+    ],
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "pick_panel.png",
+    "width": 960,
+    "height": 520,
+    "origin": "source-derived-extension",
+    "nine_patch_pixels": [
+      28,
+      24,
+      28,
+      24
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "confirm_panel.png",
+    "width": 1200,
+    "height": 688,
+    "origin": "provisional-source-derived-extension",
+    "nine_patch_pixels": [
+      28,
+      24,
+      28,
+      24
+    ],
+    "note": "Original save/load panel not attached. Provisional matching style, NOT claimed to be original panel reuse.",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "toast_plate.png",
+    "width": 640,
+    "height": 72,
+    "origin": "source-derived",
+    "nine_patch_pixels": [
+      28,
+      12,
+      28,
+      12
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "pick_card_normal.png",
+    "width": 280,
+    "height": 320,
+    "origin": "source-derived-extension",
+    "nine_patch_pixels": [
+      24,
+      24,
+      24,
+      24
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "pick_card_hover.png",
+    "width": 280,
+    "height": 320,
+    "origin": "source-derived-extension",
+    "nine_patch_pixels": [
+      24,
+      24,
+      24,
+      24
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "pick_card_selected.png",
+    "width": 280,
+    "height": 320,
+    "origin": "source-derived-extension",
+    "nine_patch_pixels": [
+      24,
+      24,
+      24,
+      24
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "pick_card_disabled.png",
+    "width": 280,
+    "height": 320,
+    "origin": "source-derived-extension",
+    "nine_patch_pixels": [
+      24,
+      24,
+      24,
+      24
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "bar_hp_frame.png",
+    "width": 216,
+    "height": 20,
+    "origin": "style-extension",
+    "nine_patch_pixels": [
+      4,
+      4,
+      4,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "bar_hp_fill.png",
+    "width": 216,
+    "height": 20,
+    "origin": "style-extension",
+    "nine_patch_pixels": null,
+    "note": "Tinted full fill texture; game clips width inside frame.",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "bar_mp_frame.png",
+    "width": 216,
+    "height": 20,
+    "origin": "style-extension",
+    "nine_patch_pixels": [
+      4,
+      4,
+      4,
+      4
+    ],
+    "note": "",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "bar_mp_fill.png",
+    "width": 216,
+    "height": 20,
+    "origin": "style-extension",
+    "nine_patch_pixels": null,
+    "note": "Tinted full fill texture; game clips width inside frame.",
+    "alpha_range": [
+      255,
+      255
+    ]
+  },
+  {
+    "file": "item_art_01.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: herb",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_01.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: herb",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_02.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: medicine",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_02.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: medicine",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_03.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: wine",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_03.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: wine",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_04.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: bandage",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_04.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: bandage",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_05.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: sword",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_05.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: sword",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_06.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: saber",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_06.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: saber",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_07.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: spear",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_07.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: spear",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_08.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: armor",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_08.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: armor",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_09.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: shoes",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_09.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: shoes",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_10.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: gloves",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_10.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: gloves",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_11.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: accessory",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_11.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: accessory",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_12.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: book",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_12.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: book",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_13.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: letter",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_13.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: letter",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_14.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: tea",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_14.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: tea",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_15.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: food",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_15.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: food",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_art_16.png",
+    "width": 380,
+    "height": 560,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: tools",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "item_icon_16.png",
+    "width": 80,
+    "height": 80,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "Generic group: tools",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "cat_icon_all.png",
+    "width": 72,
+    "height": 72,
+    "origin": "source-cutout",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "cat_icon_consumable.png",
+    "width": 72,
+    "height": 72,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "cat_icon_book.png",
+    "width": 72,
+    "height": 72,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "cat_icon_equipment.png",
+    "width": 72,
+    "height": 72,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "cat_icon_material.png",
+    "width": 72,
+    "height": 72,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "cat_icon_quest.png",
+    "width": 72,
+    "height": 72,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "cat_icon_other.png",
+    "width": 72,
+    "height": 72,
+    "origin": "reference-repaint",
+    "nine_patch_pixels": null,
+    "note": "",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "fg_corner_tl.png",
+    "width": 27,
+    "height": 44,
+    "origin": "source-cutout-resized",
+    "nine_patch_pixels": null,
+    "note": "Optional peripheral cutout scaled to <=44px height; place y=0 or y=1252, entirely outside 48px 2x safe inset.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "fg_corner_tr.png",
+    "width": 31,
+    "height": 28,
+    "origin": "source-cutout-resized",
+    "nine_patch_pixels": null,
+    "note": "Optional peripheral cutout scaled to <=44px height; place y=0 or y=1252, entirely outside 48px 2x safe inset.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "fg_corner_bl.png",
+    "width": 62,
+    "height": 44,
+    "origin": "source-cutout-resized",
+    "nine_patch_pixels": null,
+    "note": "Optional peripheral cutout scaled to <=44px height; place y=0 or y=1252, entirely outside 48px 2x safe inset.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  },
+  {
+    "file": "fg_corner_br.png",
+    "width": 54,
+    "height": 44,
+    "origin": "source-cutout-resized",
+    "nine_patch_pixels": null,
+    "note": "Optional peripheral cutout scaled to <=44px height; place y=0 or y=1252, entirely outside 48px 2x safe inset.",
+    "alpha_range": [
+      0,
+      255
+    ]
+  }
+]

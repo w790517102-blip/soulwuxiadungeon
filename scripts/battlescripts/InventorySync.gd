@@ -547,3 +547,9 @@ func _notify_gold_delta(delta: int) -> void:
 		toast.push_message("獲得：%d 文" % amount)
 	else:
 		toast.push_message("失去：%d 文" % amount)
+
+
+## 整理背包：依道具 id 排序（穩定、每次結果相同）。預設的排列是「取得順序」，只有玩家按「整理」才會改。
+func sort_inventory_by_id() -> void:
+	party_inventory.sort_custom(func(a, b): return str(a.get("id", "")) < str(b.get("id", "")))
+	inventory_changed.emit()

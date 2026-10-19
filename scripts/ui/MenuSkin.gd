@@ -38,6 +38,9 @@ static func apply(root: Node) -> void:
 	_walk(root)
 
 static func _walk(node: Node) -> void:
+	# 有自己整套美術的頁面（新道具頁）不要被統一外觀重畫
+	if node.has_meta("skip_menu_skin"):
+		return
 	if node is PopupMenu:
 		_skin_popup(node as PopupMenu)
 	elif node is Control:

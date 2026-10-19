@@ -1,0 +1,63 @@
+{
+  "logical_canvas": [
+    1152,
+    648
+  ],
+  "export_canvas": [
+    2304,
+    1296
+  ],
+  "safe_rect_2x": [
+    48,
+    48,
+    2208,
+    1200
+  ],
+  "placements_2x": {
+    "scroll_body": [
+      316,
+      138
+    ],
+    "nav_bar": [
+      276,
+      56
+    ],
+    "cat_panel": [
+      48,
+      152
+    ],
+    "gold_plate": [
+      420,
+      190
+    ],
+    "list_header": [
+      400,
+      296
+    ],
+    "rows_start": [
+      400,
+      352
+    ],
+    "row_step_y": 96,
+    "divider_v": [
+      1198,
+      296
+    ],
+    "detail_art_bg": [
+      1226,
+      324
+    ],
+    "button_y": 1172
+  },
+  "foreground": {
+    "fg_corner_tl": [
+      0,
+      0
+    ],
+    "fg_corner_tr": "right edge, y=0",
+    "fg_corner_bl": "x=0, bottom aligned",
+    "fg_corner_br": "right and bottom aligned"
+  },
+  "preview_has_dynamic_text": false,
+  "preview_is_game_screenshot": false
+}
