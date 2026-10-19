@@ -1,0 +1,144 @@
+{
+  "canvas": [
+    508,
+    972
+  ],
+  "layer_order_proposal": [
+    "doll_back",
+    "doll_weapon_back",
+    "doll_mech_back",
+    "doll_body",
+    "doll_cloak_front",
+    "doll_weapon_front",
+    "doll_mech",
+    "doll_strap",
+    "doll_front"
+  ],
+  "anchors_2x": {
+    "left_shoulder": [
+      132,
+      302
+    ],
+    "back_center": [
+      188,
+      425
+    ],
+    "waist": [
+      285,
+      612
+    ]
+  },
+  "sword": {
+    "source": [
+      887,
+      1774
+    ],
+    "resize_height_before_rotation": 850,
+    "rotation_pil_ccw_degrees": 20,
+    "placed_aabb_top_left": [
+      56,
+      101
+    ],
+    "after_rotation_size": [
+      384,
+      834
+    ],
+    "runtime_full_canvas_no_transform_required": true
+  },
+  "mechanism": {
+    "local_file": "assets/zhuge_crossbow_local_360x220.png",
+    "local_canvas": [
+      360,
+      220
+    ],
+    "item_within_local_offset": [
+      0,
+      32
+    ],
+    "placement_before_rotation": [
+      2,
+      277
+    ],
+    "pivot_local": [
+      0,
+      0
+    ],
+    "rotation_degrees": 0,
+    "scale_xy": [
+      0.7777777777777778,
+      0.7772727272727272
+    ],
+    "flip_h_equipment_only": true,
+    "runtime_full_canvas_no_transform_required": true,
+    "local_to_canvas_vertex_matrix": [
+      [
+        -0.7777777777777778,
+        0,
+        282
+      ],
+      [
+        0,
+        0.7772727272727272,
+        277
+      ],
+      [
+        0,
+        0,
+        1
+      ]
+    ],
+    "hidden_tail_mask": "image-right stock tail below collar; visible base split into mech_back and mech"
+  },
+  "checks": {
+    "head_face_and_hair_reused_exactly": true,
+    "no_equipment_reconstruction_exact": true,
+    "nine_layers_same_508x972_canvas": true,
+    "all_four_equipment_toggle_combinations_verified": true
+  },
+  "status": "small visual layering prototype; proposed weapon interface not confirmed by Claude; not engine-tested",
+  "strap": {
+    "source_normalized_canvas": [
+      508,
+      972
+    ],
+    "resize_xy": [
+      0.6003937007874016,
+      0.720164609053498
+    ],
+    "translation": [
+      38,
+      136
+    ],
+    "occlusion": "main belt cut behind mechanism body; retaining loops stay in front",
+    "anchors": {
+      "left_shoulder": [
+        132,
+        302
+      ],
+      "mech_mount_contact": [
+        142,
+        351
+      ],
+      "strap_shoulder_end": [
+        132,
+        317
+      ],
+      "strap_waist_end": [
+        292,
+        615
+      ],
+      "buckle_upper": [
+        116,
+        354
+      ],
+      "buckle_adjuster": [
+        183,
+        480
+      ],
+      "buckle_lower": [
+        286,
+        608
+      ]
+    }
+  }
+}

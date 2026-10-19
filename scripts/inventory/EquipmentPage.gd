@@ -467,7 +467,7 @@ func _refresh_slots() -> void:
 
 func _refresh_figure() -> void:
 	var info: Dictionary = _doll.show_actor(actor_id)
-	var has_master := _doll._base.texture != null
+	var has_master: bool = _doll.has_figure()
 	_figure.visible = not has_master
 	if not has_master:
 		var path := String(_actor(actor_id).get("portrait_path", ""))
