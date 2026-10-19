@@ -6,9 +6,9 @@ const SRC := "res://docs/system_menu/fg_originals/"
 const OUT := "res://assets/UI/inventory/"
 ## 名稱 → [原檔, 輸出寬度（2× 像素）]
 const JOBS := {
-	"fg_sword": ["sword_original.webp", 560],
-	"fg_book": ["book_original.webp", 340],
-	"fg_teapot": ["teapot_original.webp", 244],
+	"fg_sword": ["sword_original.webp", 960],
+	"fg_book": ["book_original.webp", 660],
+	"fg_teapot": ["teapot_original.webp", 440],
 }
 
 func _init() -> void:
