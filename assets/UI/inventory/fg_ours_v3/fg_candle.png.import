@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4jgjnt5ysag3"
-path="res://.godot/imported/fg_teapot.png-4feb3106d6ca07acc9e8ee40ba57c9a3.ctex"
+uid="uid://dekoic2j14fco"
+path="res://.godot/imported/fg_candle.png-a685799c535ad4e69abe6594fcfed2f0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/inventory/fg_teapot.png"
-dest_files=["res://.godot/imported/fg_teapot.png-4feb3106d6ca07acc9e8ee40ba57c9a3.ctex"]
+source_file="res://assets/UI/inventory/fg_ours_v3/fg_candle.png"
+dest_files=["res://.godot/imported/fg_candle.png-a685799c535ad4e69abe6594fcfed2f0.ctex"]
 
 [params]
 

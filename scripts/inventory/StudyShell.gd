@@ -15,11 +15,14 @@ static var bg_name := "bg_study"
 ## anchor：用物件圖的哪個角貼到 pos（"bl" 左下、"br" 右下、"tr" 右上）
 ## layer：back＝畫在介面下面（背景之上）；front＝畫在介面上面（離鏡頭最近，會遮住卷軸框與分類欄）。
 ## rot：順時針度數（以物件中心旋轉）。位置用「錨點角」貼，數字可超出畫面（物件被畫面邊緣切掉）。
+## 前景＝概念圖的原像素摳圖（沒有重畫）。照概念圖的位置貼在畫面邊角。
+## scale：每個素材像素佔幾個邏輯像素（摳圖來自概念圖的局部截圖，約 0.53 邏輯 px/素材 px 可還原成概念圖的大小）。
+## layer：back＝介面下面；front＝介面上面（最靠近鏡頭）。
 const FOREGROUND := {
-	"fg_book": {"pos": Vector2(-40, 650), "anchor": "bl", "layer": "back"},
-	"fg_sword": {"pos": Vector2(-235, 772), "anchor": "bl", "layer": "front", "rot": -35.0},
-	"fg_teapot": {"pos": Vector2(1320, 684), "anchor": "br", "layer": "front"},
-	"fg_candle": {"pos": Vector2(1152, 0), "anchor": "tr", "layer": "front"},
+	"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.53},    # 左下：布＋劍
+	"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.53}, # 右下：茶壺（只露邊角）
+	"fg_candle_corner": {"pos": Vector2(1152, 30), "anchor": "tr", "layer": "front", "scale": 0.53},   # 右上：燭台
+	"fg_tassel_right": {"pos": Vector2(1138, 396), "anchor": "tl", "layer": "front", "scale": 0.53},   # 卷軸右側垂下的流蘇
 }
 
 var _fg_root: Control
@@ -61,7 +64,7 @@ func _build_foreground() -> void:
 			continue
 		var tex := load(path) as Texture2D
 		var def: Dictionary = FOREGROUND[fg_name]
-		var size := tex.get_size() * 0.5     # 素材是 2 倍
+		var size := tex.get_size() * float(def.get("scale", 0.5))     # 預設素材是 2 倍
 		var pos: Vector2 = def["pos"]
 		match String(def["anchor"]):
 			"bl": pos -= Vector2(0, size.y)

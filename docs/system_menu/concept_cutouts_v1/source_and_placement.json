@@ -1,0 +1,54 @@
+{
+  "method": "manual alpha mattes; native RGB exactly copied from supplied screenshots; no object regeneration",
+  "assets": [
+    {
+      "file": "fg_sword.png",
+      "size": [
+        514,
+        142
+      ],
+      "source_screenshot": "螢幕擷取畫面 2026-10-19 210401.png",
+      "source_box": [
+        0,
+        52,
+        514,
+        194
+      ],
+      "source_native_rgb_unchanged": true,
+      "anchor": "bottom-left (0,1296)"
+    },
+    {
+      "file": "fg_teapot.png",
+      "size": [
+        106,
+        116
+      ],
+      "source_screenshot": "螢幕擷取畫面 2026-10-19 210433.png",
+      "source_box": [
+        37,
+        71,
+        184,
+        232
+      ],
+      "source_native_rgb_unchanged": true,
+      "anchor": "bottom-right (2304,1296)"
+    },
+    {
+      "file": "fg_candle.png",
+      "size": [
+        37,
+        74
+      ],
+      "source_screenshot": "螢幕擷取畫面 2026-10-19 210514.png",
+      "source_box": [
+        108,
+        43,
+        145,
+        117
+      ],
+      "source_native_rgb_unchanged": true,
+      "anchor": "top-right (2304,140)"
+    }
+  ],
+  "checks": "native cutout RGB exact; runtime foreground alpha clear of scroll/category/buttons"
+}
