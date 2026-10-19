@@ -35,6 +35,7 @@ const SLOT_LABEL_CHARS := {"main_weapon": 3, "off_weapon": 3, "head": 2, "body":
 const FIGURE_RECT := Rect2(421, 92, 254, 486)
 ## 三個角色卡槽（V2 placement.json 的 runtime 座標 ÷ 2）
 const ROSTER_SLOTS := [Rect2(55, 142, 246.5, 123), Rect2(55, 273, 246.5, 123.5), Rect2(55, 402.5, 246.5, 122)]
+const COMPANION_CARD := Vector2(233, 124)          # 共邊國 V3 角色卡的卡框大小（金光留白另算）
 const DETAIL_X := 790.0                  # 右頁（770 起）內容的左緣：往右縮進，內容在頁面上更置中
 const DETAIL_W := 296.0
 const STAT_Y := 332.0
@@ -339,13 +340,14 @@ func _rebuild_roster(ids: Array) -> void:
 	if ids.size() > ROSTER_SLOTS.size():
 		start = clampi(selected_index - 1, 0, ids.size() - ROSTER_SLOTS.size())
 	for i in ROSTER_SLOTS.size():
-		var rect: Rect2 = ROSTER_SLOTS[i]
+		var slot_rect: Rect2 = ROSTER_SLOTS[i]
+		# 共邊國 V3 角色卡：卡框 233×124；三態都是整合圖（506×288 的畫布，卡框在 (20,20)，外圈是金光留白，不可裁切）
+		var rect := Rect2(slot_rect.position.x + (slot_rect.size.x - COMPANION_CARD.x) * 0.5, slot_rect.position.y, COMPANION_CARD.x, COMPANION_CARD.y)
 		var index := start + i
-		var normal_art := E + ("equip_actor_card_normal_02" if i < 2 else "equip_actor_card_normal_03")
 		if index >= ids.size():
-			# 空位：還沒有同行的人（名冊沒解鎖更多角色），畫暗一點的空白卡槽
-			var empty := _panel(normal_art, 22, 22, rect.position, rect.size, _roster_box)
-			empty.modulate = Color(0.8, 0.76, 0.7, 0.85)
+			# 空位：還沒有同行的人（名冊沒解鎖更多角色），畫暗一點的一般卡
+			var empty := _image(E + "companion/actor_card_normal", rect.position - Vector2(10, 10), Vector2(253, 144), _roster_box)
+			empty.modulate = Color(0.72, 0.68, 0.62, 0.85)
 			_label("尚未同行", rect.position, rect.size, 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _roster_box)
 			continue
 		var id := String(ids[index])
@@ -357,29 +359,43 @@ func _rebuild_roster(ids: Array) -> void:
 		card.focus_mode = Control.FOCUS_NONE
 		card.toggle_mode = true
 		card.set_pressed_no_signal(on)
-		var sb := _box(normal_art, 22, 22)
-		for st in ["normal", "hover", "pressed", "hover_pressed"]:
-			card.add_theme_stylebox_override(st, sb if sb != null else StyleBoxEmpty.new())
-		card.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		card.mouse_entered.connect(func(): card.modulate = Color(1.08, 1.06, 1.0))
-		card.mouse_exited.connect(func(): card.modulate = Color.WHITE)
+		for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+			card.add_theme_stylebox_override(st, StyleBoxEmpty.new())
 		_roster_box.add_child(card)
-		if on:
-			# 選中：共邊國的金光卡（比一般卡高約 6px，金光在牌緣外一圈）
-			var glow := _image(E + "equip_actor_card_selected", Vector2(0, -3), Vector2(rect.size.x, rect.size.y + 6), card)
-			glow.name = "SelectedArt"
+		var art := _image(E + "companion/actor_card_" + ("selected" if on else "normal"), Vector2(-10, -10), Vector2(253, 144), card)
+		art.name = "StateArt"
+		if not on:
+			card.mouse_entered.connect(func(): art.texture = _tex(E + "companion/actor_card_hover"))
+			card.mouse_exited.connect(func(): art.texture = _tex(E + "companion/actor_card_normal"))
+		# 頭像：直接融進卡面（V3 沒有額外頭像框），放在左側 100×108，裁在範圍內
+		var clip := Control.new()
+		clip.position = Vector2(7, 8)
+		clip.size = Vector2(100, 108)
+		clip.clip_contents = true
+		clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(clip)
 		var portrait_path := String(a.get("portrait_path", ""))
 		if portrait_path != "":
-			var pr := _image_from(portrait_path, Vector2(8, 10), Vector2(96, rect.size.y - 20), card)
+			var pr := _image_from(portrait_path, Vector2.ZERO, clip.size, clip)
 			pr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		_panel(E + "equip_portrait_frame", 12, 12, Vector2(6, 8), Vector2(100, rect.size.y - 16), card)
 		if TeamData and TeamData.current_team_ids.has(id):
-			_panel(E + "equip_deployed_tag", 6, 8, Vector2(4, 12), Vector2(22, 40), card)
-			_label("上陣", Vector2(4, 12), Vector2(22, 40), 11, Color("#FFF3D0"), HORIZONTAL_ALIGNMENT_CENTER, card).autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-		_label(String(a.get("name", id)), Vector2(118, 12), Vector2(120, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
-		_label("Lv.%d" % int(a.get("level", 1)), Vector2(118, 38), Vector2(120, 20), 14, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
-		_bar(card, Vector2(118, 68), "hp", float(a.get("hp", 0)), float(maxi(1, int(a.get("max_hp", 1)))))
-		_bar(card, Vector2(118, 88), "mp", float(a.get("mp", 0)), float(maxi(1, int(a.get("max_mp", 1)))))
+			_image(E + "companion/deployed_tag", Vector2(1, 8), Vector2(22, 40), card)      # 原圖的「上陣」字版
+		var job := String(a.get("job", ""))
+		var subclass := String(a.get("subclass", ""))
+		var job_text := "%s·%s" % [subclass, job] if subclass != "" and job != "" else (job + subclass)
+		_label(String(a.get("name", id)), Vector2(118, 12), Vector2(110, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_label(job_text, Vector2(118, 36), Vector2(110, 18), 12, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_label("Lv.%d" % int(a.get("level", 1)), Vector2(118, 54), Vector2(110, 18), 13, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
+		# 氣血、內力：與狀態頁同一套顯示（含裝備加成的最大值；本來是滿的就顯示滿）
+		var stats: Dictionary = menu.compute_overview_stats(a, InventorySync.get_equipment_stat_bonus(id)) if menu != null else {}
+		var hp_max := int(stats.get("max_hp", a.get("max_hp", 1)))
+		var mp_max := int(stats.get("max_mp", a.get("max_mp", 1)))
+		var hp_now: int = menu._displayed_resource(int(a.get("hp", 0)), int(a.get("max_hp", 1)), hp_max) if menu != null else int(a.get("hp", 0))
+		var mp_now: int = menu._displayed_resource(int(a.get("mp", 0)), int(a.get("max_mp", 1)), mp_max) if menu != null else int(a.get("mp", 0))
+		_bar(card, Vector2(118, 80), "hp", float(hp_now), float(maxi(1, hp_max)), 64.0)
+		_label("%d/%d" % [hp_now, hp_max], Vector2(186, 76), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_bar(card, Vector2(118, 99), "mp", float(mp_now), float(maxi(1, mp_max)), 64.0)
+		_label("%d/%d" % [mp_now, mp_max], Vector2(186, 95), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
 		card.pressed.connect(_on_actor_pressed.bind(id))
 		_roster_buttons[id] = card
 

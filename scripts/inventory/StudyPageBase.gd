@@ -253,13 +253,13 @@ func _image_from(path: String, pos: Vector2, size: Vector2, parent: Node) -> Tex
 	return r
 
 
-func _bar(parent: Node, pos: Vector2, kind: String, value: float, max_value: float) -> void:
-	var frame := _image("bar_%s_frame" % kind, pos, Vector2(108, 10), parent)
-	var fill := _image("bar_%s_fill" % kind, pos, Vector2(108, 10), parent)
+func _bar(parent: Node, pos: Vector2, kind: String, value: float, max_value: float, width := 108.0) -> void:
+	var frame := _image("bar_%s_frame" % kind, pos, Vector2(width, 10), parent)
+	var fill := _image("bar_%s_fill" % kind, pos, Vector2(width, 10), parent)
 	fill.stretch_mode = TextureRect.STRETCH_SCALE
 	var ratio := clampf(value / max_value, 0.0, 1.0)
 	fill.clip_contents = true
-	fill.size.x = 108.0 * ratio
+	fill.size.x = width * ratio
 	fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 
 
