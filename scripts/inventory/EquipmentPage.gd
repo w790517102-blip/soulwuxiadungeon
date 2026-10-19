@@ -224,11 +224,11 @@ func _build_detail() -> void:
 	for i in 3:
 		var y := 170.0 + 28.0 * i
 		_image("label_ink_s", Vector2(DETAIL_X + 150, y), Vector2(66, 24))
-		_label(titles[i], Vector2(DETAIL_X + 156, y), Vector2(60, 24), 13, Color.WHITE)
+		_label(titles[i], Vector2(DETAIL_X + 158, y), Vector2(52, 24), 13, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		_info_vals.append(_outlined(_label("", Vector2(DETAIL_X + 222, y), Vector2(74, 24), 14, INK)))
 	# 裝備效果：這件裝備自己的加成，一行 2 格
 	_image("label_ink_m", Vector2(DETAIL_X, 298), Vector2(100, 26))
-	_label("裝備效果", Vector2(DETAIL_X + 8, 298), Vector2(92, 26), 14, Color.WHITE)
+	_label("裝備效果", Vector2(DETAIL_X + 10, 298), Vector2(80, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_stat_holder = Control.new()
 	_stat_holder.position = Vector2(DETAIL_X, STAT_Y)
 	_stat_holder.size = Vector2(DETAIL_W, STAT_ROW_H * 4)
@@ -269,7 +269,7 @@ func _section(title: String) -> RichTextLabel:
 	head.custom_minimum_size = Vector2(100, 26)
 	_scroll_box.add_child(head)
 	_image("label_ink_m", Vector2.ZERO, Vector2(100, 26), head)
-	_label(title, Vector2(8, 0), Vector2(92, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, head)
+	_label(title, Vector2(10, 0), Vector2(80, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, head)
 	var t := RichTextLabel.new()
 	t.fit_content = true
 	t.bbcode_enabled = true
