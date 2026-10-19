@@ -29,6 +29,8 @@ void fragment() {
 }
 "
 var _slot_frame_material: ShaderMaterial
+## 候選底框（老闆提供的新框：金邊、黑墨暈邊、紙面墨圈）。true＝八格都用它，不加外暈與對比度處理；false＝共邊國 V3 框
+static var use_candidate_slot_frame := false
 var _trim_cache: Dictionary = {}
 const SLOT_LABEL_CHAR_PX := 13.0          # 部位名稱每個字的大小（八格統一）
 const SLOT_LABEL_CHARS := {"main_weapon": 3, "off_weapon": 3, "head": 2, "body": 2, "hands": 2, "feet": 2, "accessory": 2, "mechanism": 2}
@@ -139,10 +141,14 @@ func _build_slots() -> void:
 		# 版面原則：留白越少越好，玩家一眼看出這格是什麼。
 		# 上：部位名稱（共邊國的字，統一縮放成同樣的字大小）；其餘：大圖示（空格是灰剪影、有裝備是物品圖）。格子上不寫裝備名稱。
 		# 外輪廓的墨暈：黑框往外渲染一圈（只在框外；tools/slot_ink_bleed.gd 產生，四邊各多 8 邏輯 px）
-		_image(E + "slots/slot_bleed_" + part, Vector2(-8, -8), Vector2(116, 112), b).name = "Bleed"
-		var frame := _image(E + "slots/slot_frame_" + part, Vector2.ZERO, SLOT_SIZE, b)
+		var frame: TextureRect
+		if use_candidate_slot_frame:
+			frame = _image(E + "slots/slot_frame_candidate", Vector2.ZERO, SLOT_SIZE, b)
+		else:
+			_image(E + "slots/slot_bleed_" + part, Vector2(-8, -8), Vector2(116, 112), b).name = "Bleed"
+			frame = _image(E + "slots/slot_frame_" + part, Vector2.ZERO, SLOT_SIZE, b)
+			frame.material = _frame_material()
 		frame.name = "Frame"
-		frame.material = _frame_material()
 		var label_tex := _tex(E + "slots/label_" + part)
 		if label_tex != null:
 			var per_char := label_tex.get_size().x / float(SLOT_LABEL_CHARS.get(part, 2))
