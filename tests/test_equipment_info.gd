@@ -55,8 +55,13 @@ func _run() -> void:
 		keys.append(row["key"])
 	_check(_delta_of(rows, "atk") == 4, "bronze sword: attack +4")
 	_check(_delta_of(rows, "speed") == 1 and keys.has("speed"), "bronze sword: speed +1 is listed")
-	_check(keys.has("def") and keys.has("hit"), "def and hit rows are always listed")
-	_check(not keys.has("max_hp"), "unchanged rows beyond the three are left out")
+	_check(keys.slice(0, 6) == ["atk", "hit", "def", "speed", "crit", "evade"], "the six rows are always listed in the agreed order")
+	_check(not keys.has("max_hp"), "max HP row appears only when it changes")
+	inv.party_inventory.append({"id": "jade_pendant", "count": 1})
+	var jade_keys: Array = []
+	for row: Dictionary in info.compare(menu, actor, "liuyu", "accessory_1", "jade_pendant"):
+		jade_keys.append(row["key"])
+	_check(jade_keys.has("max_mp"), "the pendant adds a max MP row")
 	_check(info.format_delta("atk", 4.0) == "+4" and info.format_delta("def", 0.0) == "－" and info.format_delta("def", -2.0) == "-2", "delta formatting")
 	_check(_delta_of(info.compare(menu, actor, "liuyu", "armor_head", "arm_cloth_cap"), "def") == 1, "cap: defence +1")
 	inv.equip_item_to_slot("bronze_sword", "weapon_1", "liuyu")

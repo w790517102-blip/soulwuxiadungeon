@@ -50,6 +50,10 @@ const LoreDB = preload("res://scripts/db/LoreDB.gd")
 @onready var equipment_tab: VBoxContainer = get_node_or_null("VBoxContainer/裝備")
 ## 新道具頁（江湖行囊）開關：true = 道具分頁改用 scripts/inventory/InventoryPage.gd；false = 回到舊的道具頁（舊頁原封不動保留）。
 const USE_NEW_INVENTORY_UI := true
+## 新裝備頁開關：true = 裝備分頁改用 scripts/inventory/EquipmentPage.gd；false = 回到舊的裝備頁（舊頁原封不動保留）。
+const USE_NEW_EQUIPMENT_UI := true
+const EquipmentPageScript = preload("res://scripts/inventory/EquipmentPage.gd")
+var _equipment_page: Control = null
 var _inventory_page: Control = null
 ## 新道具頁用：要選隊友時呼叫它（entries: [{id,name}]，done: Callable(actor_id)）。無效時用舊的 PopupMenu。
 var external_target_picker: Callable = Callable()
@@ -308,6 +312,7 @@ func _on_tab_changed(tab_index: int) -> void:
 	var lore_tab_index = $VBoxContainer/見聞.get_index()
 	var quest_tab_index = $VBoxContainer/任務.get_index()
 	_update_inventory_page(tab_index == item_tab_index)
+	_update_equipment_page(tab_index == equipment_tab_index)
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == equipment_tab_index:
@@ -336,7 +341,26 @@ func _update_inventory_page(show_it: bool) -> void:
 		_inventory_page.visible = show_it
 		external_target_picker = Callable(_inventory_page, "pick_target") if show_it else Callable()
 		if show_it:
+			if _inventory_page._shell != null and _inventory_page.visible == false:
+				_inventory_page._shell.reroll()
 			_inventory_page._refresh()
+
+## 新裝備頁：停在裝備分頁時顯示，離開時隱藏（舊頁節點照常存在，開關關掉就回到舊頁）。
+func _update_equipment_page(show_it: bool) -> void:
+	if not USE_NEW_EQUIPMENT_UI:
+		return
+	if show_it and _equipment_page == null:
+		_equipment_page = EquipmentPageScript.new()
+		_equipment_page.menu = self
+		_equipment_page.close_requested.connect(func(): SystemMenu._close_system_menu())
+		_equipment_page.tab_requested.connect(_on_inventory_nav_requested)
+		add_child(_equipment_page)
+	elif show_it and _equipment_page._shell != null:
+		_equipment_page._shell.reroll()
+	if _equipment_page != null:
+		_equipment_page.visible = show_it
+		if show_it:
+			_equipment_page._refresh()
 
 func _on_inventory_nav_requested(tab_name: String) -> void:
 	var btn := get_node_or_null("CustomTabBar/" + tab_name) as BaseButton
@@ -1803,9 +1827,11 @@ func _set_equipment_button(button: Button, prefix: String, item_id: String, slot
 	button.text = "%s：%s" % [prefix, display_name]
 
 func _is_slot_locked(slot: String) -> bool:
-	if _get_active_character_id() == "shumian" and slot == "weapon_2":
-		return true
-	return false
+	return is_slot_locked_for(_get_active_character_id(), slot)
+
+## 指定角色的欄位是否鎖定（書眠的副武器固定）。裝備頁用。
+func is_slot_locked_for(actor_id: String, slot: String) -> bool:
+	return actor_id == "shumian" and slot == "weapon_2"
 
 func _open_equip_popup(slot: String) -> void:
 	if equip_popup == null:

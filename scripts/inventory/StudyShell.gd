@@ -83,6 +83,14 @@ func _ready() -> void:
 	add_child(_fg_front)
 	_build_foreground()
 
+## 重新抽一次前景方案（頁面每次打開時呼叫，preset 是 random 才會換）
+func reroll() -> void:
+	for layer in [_fg_root, _fg_front]:
+		for c in layer.get_children():
+			layer.remove_child(c)
+			c.queue_free()
+	_build_foreground()
+
 func _build_foreground() -> void:
 	var chosen := preset
 	if chosen == "random":     # 每次開頁面隨機：備案 1（demo）或備案 2（cloth_big），增加變化

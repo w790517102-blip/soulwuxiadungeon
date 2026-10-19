@@ -14,13 +14,12 @@ const SLOT_LABELS := {
 	"accessory_1": "飾品", "mechanism": "機關",
 }
 
-## 裝備效果的數值列：[key, 名稱]。命中、閃避是「力」（與狀態頁一致）。
+## 裝備效果的數值列（老闆定案的六項，順序固定）：[key, 名稱]。命中、閃避是「力」（與狀態頁一致）。
 const STAT_ROWS := [
-	["atk", "攻擊力"], ["def", "防禦力"], ["hit", "命中力"],
-	["max_hp", "氣血上限"], ["max_mp", "內力上限"], ["speed", "速度"], ["evade", "閃避力"], ["crit", "暴擊率"],
+	["atk", "攻擊"], ["hit", "命中"], ["def", "防禦"], ["speed", "速度"], ["crit", "暴擊"], ["evade", "閃避"],
 ]
-## 沒有變動也一定列出的列（概念圖的三行）
-const ALWAYS_ROWS := ["atk", "def", "hit"]
+## 六項之外，裝備有改到才多列出來（否則玉佩的內力 +15 這類加成在畫面上就看不到）
+const EXTRA_ROWS := [["max_hp", "氣血上限"], ["max_mp", "內力上限"]]
 
 static func slot_label(slot: String) -> String:
 	return String(SLOT_LABELS.get(slot, slot))
@@ -45,19 +44,19 @@ static func equipped_after(actor_id: String, slot: String, new_item_id: String) 
 	equipped[slot] = new_item_id
 	return equipped
 
-## 裝備前後數值比較。回傳 [{key, label, before, after, delta}]，只含「有變動」或 ALWAYS_ROWS 的列。
+## 裝備前後數值比較。回傳 [{key, label, before, after, delta}]：六項固定都列，氣血/內力上限有變動才多列。
 ## menu 是 system_menu（提供 compute_overview_stats）；actor 是角色資料。
 static func compare(menu, actor, actor_id: String, slot: String, new_item_id: String) -> Array:
 	var before: Dictionary = menu.compute_overview_stats(actor, InventorySync.get_equipment_stat_bonus(actor_id))
 	var after_bonus: Dictionary = InventorySync.get_stat_bonus_for_equipped(equipped_after(actor_id, slot, new_item_id))
 	var after: Dictionary = menu.compute_overview_stats(actor, after_bonus)
 	var rows: Array = []
-	for entry: Array in STAT_ROWS:
+	for entry: Array in STAT_ROWS + EXTRA_ROWS:
 		var key: String = entry[0]
 		var b = before.get(key, 0)
 		var a = after.get(key, 0)
 		var changed: bool = absf(float(a) - float(b)) > 0.0001
-		if not changed and not ALWAYS_ROWS.has(key):
+		if not changed and not STAT_ROWS.has(entry):
 			continue
 		rows.append({"key": key, "label": entry[1], "before": b, "after": a, "delta": float(a) - float(b)})
 	return rows
