@@ -12,7 +12,22 @@ const SLOT_X := [331.0, 654.0]          # 左欄、右欄
 const SLOT_Y0 := 132.0
 const SLOT_GAP := 10.0
 ## 格內版面（邏輯 px）：上＝部位名稱、其餘全是大圖示（裝備名稱不寫在格子上，玩家在右頁就能看到完整資訊）；留白越少越好
-const SLOT_ICON_BOX := Rect2(16, 21, 68, 69)
+const SLOT_ICON_BOX := Rect2(11, 15, 78, 78)         # 圖示盡量填滿整格（部位名稱疊在上面）
+## 八格底框：先把對比度調高一點點，再把 alpha 調低（讓格子融進卷軸、圖示更突出）
+const SLOT_FRAME_CONTRAST := 1.12
+const SLOT_FRAME_ALPHA := 0.86
+const SLOT_FRAME_SHADER := "shader_type canvas_item;
+uniform float contrast = 1.12;
+uniform float alpha = 0.86;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	c.rgb = clamp((c.rgb - 0.5) * contrast + 0.5, 0.0, 1.0);
+	c.a *= alpha;
+	COLOR = c;
+}
+"
+var _slot_frame_material: ShaderMaterial
+var _trim_cache: Dictionary = {}
 const SLOT_LABEL_CHAR_PX := 13.0          # 部位名稱每個字的大小（八格統一）
 const SLOT_LABEL_CHARS := {"main_weapon": 3, "off_weapon": 3, "head": 2, "body": 2, "hands": 2, "feet": 2, "accessory": 2, "mechanism": 2}
 const FIGURE_RECT := Rect2(421, 92, 254, 486)
@@ -120,7 +135,9 @@ func _build_slots() -> void:
 		add_child(b)
 		# 版面原則：留白越少越好，玩家一眼看出這格是什麼。
 		# 上：部位名稱（共邊國的字，統一縮放成同樣的字大小）；其餘：大圖示（空格是灰剪影、有裝備是物品圖）。格子上不寫裝備名稱。
-		_image(E + "slots/slot_frame_" + part, Vector2.ZERO, SLOT_SIZE, b).name = "Frame"
+		var frame := _image(E + "slots/slot_frame_" + part, Vector2.ZERO, SLOT_SIZE, b)
+		frame.name = "Frame"
+		frame.material = _frame_material()
 		var label_tex := _tex(E + "slots/label_" + part)
 		if label_tex != null:
 			var per_char := label_tex.get_size().x / float(SLOT_LABEL_CHARS.get(part, 2))
@@ -135,13 +152,23 @@ func _build_slots() -> void:
 			empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		var icon := _image_from("", SLOT_ICON_BOX.position, SLOT_ICON_BOX.size, b)
 		icon.name = "Icon"
-		# 金光比格子大一圈（240×232 的圖，疊在格子的 (-20,-20) 像素＝邏輯 (-10,-10)），不能縮進框內也不能裁切
-		var glow := _image(E + "slots/slot_selected_gold_overlay", Vector2(-10, -10), Vector2(120, 116), b)
+		if b.has_node("PartLabel"):
+			b.move_child(b.get_node("PartLabel"), b.get_child_count() - 1)       # 部位名稱蓋在圖示上面，不被劍尖之類擋住
+		# 金光：加亮加粗。兩層疊加（加色混合）：內層是共邊國的光暈（240×232，疊在格子 (-10,-10)），外層放大一圈做出更粗的光邊；
+		# 不能縮進框內也不能裁切。素材是靜態的，呼吸由程式調透明度。
+		var glow := Control.new()
 		glow.name = "SelectedGlow"
+		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		glow.visible = false
-		# 閃爍／呼吸由程式調透明度（素材是靜態金光）
+		b.add_child(glow)
+		var additive := CanvasItemMaterial.new()
+		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		for layer in [[Vector2(-20, -20), Vector2(140, 136), 0.5], [Vector2(-10, -10), Vector2(120, 116), 0.8], [Vector2(-10, -10), Vector2(120, 116), 0.55]]:
+			var g := _image(E + "slots/slot_selected_gold_overlay", layer[0], layer[1], glow)
+			g.material = additive
+			g.modulate = Color(1.0, 0.80, 0.32, layer[2])      # 偏金色，不要加成純白
 		var breath := glow.create_tween().set_loops()
-		breath.tween_property(glow, "modulate:a", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
+		breath.tween_property(glow, "modulate:a", 0.8, 1.1).set_trans(Tween.TRANS_SINE)
 		breath.tween_property(glow, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE)
 		# 沒有移入圖，用提亮代替
 		b.mouse_entered.connect(func(): if not b.disabled: b.modulate = Color(1.1, 1.08, 1.02))
@@ -352,12 +379,42 @@ func _rebuild_roster(ids: Array) -> void:
 		card.pressed.connect(_on_actor_pressed.bind(id))
 		_roster_buttons[id] = card
 
+## 底框用的材質（對比度與 alpha 的參數在上面的常數）
+func _frame_material() -> ShaderMaterial:
+	if _slot_frame_material == null:
+		var sh := Shader.new()
+		sh.code = SLOT_FRAME_SHADER
+		_slot_frame_material = ShaderMaterial.new()
+		_slot_frame_material.shader = sh
+		_slot_frame_material.set_shader_parameter("contrast", SLOT_FRAME_CONTRAST)
+		_slot_frame_material.set_shader_parameter("alpha", SLOT_FRAME_ALPHA)
+	return _slot_frame_material
+
+## 格子用的圖示：用大圖（380×560）裁到不透明範圍再縮小，比放大 80×80 小圖清楚，而且圖形填得滿
+func _slot_icon_texture(item_id: String, def: Dictionary) -> Texture2D:
+	var art_path := ItemIconMap.art_path(item_id, def)
+	if ResourceLoader.exists(art_path):
+		if _trim_cache.has(art_path):
+			return _trim_cache[art_path]
+		var tex := load(art_path) as Texture2D
+		if tex != null:
+			var used := tex.get_image().get_used_rect()
+			if used.size.x > 0 and used.size.y > 0:
+				var atlas := AtlasTexture.new()
+				atlas.atlas = tex
+				atlas.region = used
+				_trim_cache[art_path] = atlas
+				return atlas
+	var icon_path := ItemIconMap.icon_path(item_id, def)
+	return load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+
 func _refresh_slots() -> void:
 	var equipped: Dictionary = InventorySync.get_equipped(actor_id)
 	for slot_id in _slot_buttons.keys():
 		var b: Button = _slot_buttons[slot_id]
 		b.set_pressed_no_signal(slot_id == slot)
 		(b.get_node("SelectedGlow") as Control).visible = slot_id == slot and not _is_locked(slot_id)
+		b.z_index = 3 if slot_id == slot else 1        # 選中的格子蓋在鄰格上面，金光才不會被切到
 		var item_id := String(equipped.get(slot_id, ""))
 		var icon := b.get_node("Icon") as TextureRect
 		var empty_icon := b.get_node("EmptyIcon") as TextureRect
@@ -366,8 +423,7 @@ func _refresh_slots() -> void:
 		b.modulate = Color(0.55, 0.52, 0.48) if locked else Color.WHITE      # 停用（固定欄位）：整格壓暗
 		if item_id != "":
 			var def := ItemDB.get_def(item_id)
-			var icon_path := ItemIconMap.icon_path(item_id, def)
-			icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+			icon.texture = _slot_icon_texture(item_id, def)
 			empty_icon.visible = false
 		else:
 			icon.texture = null
