@@ -12,8 +12,8 @@ const SLOT_X := [331.0, 654.0]          # 左欄、右欄
 const SLOT_Y0 := 132.0
 const SLOT_GAP := 10.0
 const FIGURE_RECT := Rect2(421, 92, 254, 486)
-const ROSTER_RECT := Rect2(54, 86, 249, 496)
-const CARD_SIZE := Vector2(233, 124)
+## 三個角色卡槽（V2 placement.json 的 runtime 座標 ÷ 2）
+const ROSTER_SLOTS := [Rect2(55, 142, 246.5, 123), Rect2(55, 273, 246.5, 123.5), Rect2(55, 402.5, 246.5, 122)]
 const DETAIL_X := 780.0                  # 右頁（770 起）內容的左緣
 const DETAIL_W := 312.0
 const STAT_Y := 282.0
@@ -27,7 +27,7 @@ var menu: Node
 var actor_id := ""
 var slot := "weapon_1"
 
-var _roster_box: VBoxContainer
+var _roster_box: Control
 var _roster_buttons: Dictionary = {}
 var _slot_buttons: Dictionary = {}
 var _figure: TextureRect
@@ -77,34 +77,23 @@ func _ready() -> void:
 		InventorySync.equipment_changed.connect(_refresh)
 	_refresh()
 
-## 卷軸的左右兩頁、書脊、外框（共邊國骨架包）。外框檔案若不存在或是空檔就先不畫（骨架包的 equip_scroll_frame.png 是 0 位元組，退回補件中）
+## 共邊國 V2：一整張攤開的大卷軸（左：深色底，中、右：兩頁宣紙，兩端軸頭），整頁只畫這一張，三個區塊都放在它上面
 func _build_pages() -> void:
-	_image(E + "equip_page_left", Vector2(318, 86), Vector2(447, 496))
-	_image(E + "equip_page_right", Vector2(770, 86), Vector2(329, 496))
-	_image(E + "equip_spine", Vector2(765, 86), Vector2(5, 496))
-	var frame_path := "res://assets/UI/equipment/equip_scroll_frame.png"
-	if ResourceLoader.exists(frame_path):
-		_image(E + "equip_scroll_frame", Vector2(306, 74), Vector2(805, 520))
+	_image(E + "equip_scroll_complete", Vector2(0, 0), Vector2(1152, 648.5))
 
 func _build_roster() -> void:
-	_panel(E + "equip_roster_panel", 28, 28, ROSTER_RECT.position, ROSTER_RECT.size)
-	_panel(E + "equip_roster_title", 30, 12, Vector2(62, 98), Vector2(233, 36))
-	_label("同行俠客", Vector2(62, 98), Vector2(233, 36), 18, INK, HORIZONTAL_ALIGNMENT_CENTER)
-	_panel(E + "equip_roster_quote", 22, 22, Vector2(62, 538), Vector2(233, 44))
-	_label("江湖如逆旅，幸有同路人。", Vector2(70, 538), Vector2(190, 44), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT)
-	_image(E + "equip_quote_seal", Vector2(261, 546), Vector2(28, 28))
-	# 俠客卡片：最多 3 張可見，更多就捲動（細捲軸只在需要時出現）
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(62, 141)
-	scroll.size = Vector2(233, 392)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.z_index = 1
-	add_child(scroll)
-	_roster_box = VBoxContainer.new()
-	_roster_box.add_theme_constant_override("separation", 10)
-	_roster_box.custom_minimum_size = Vector2(CARD_SIZE.x, 0)
-	scroll.add_child(_roster_box)
+	# 大卷軸左側深色底上：標題牌、三個角色卡槽（位置照 V2 的 placement.json，runtime ÷ 2）、底部引言
+	_image(E + "equip_roster_title", Vector2(55, 96), Vector2(246.5, 37))
+	_label("同行俠客", Vector2(55, 96), Vector2(246.5, 37), 18, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_panel(E + "equip_roster_quote", 22, 22, Vector2(62, 530), Vector2(233, 38))
+	_label("江湖如逆旅，幸有同路人。", Vector2(70, 530), Vector2(190, 38), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT)
+	_image(E + "equip_quote_seal", Vector2(261, 535), Vector2(28, 28))
+	_roster_box = Control.new()
+	_roster_box.position = Vector2.ZERO
+	_roster_box.size = Vector2(1152, 648)
+	_roster_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_roster_box.z_index = 1
+	add_child(_roster_box)
 
 func _build_slots() -> void:
 	var all_slots: Array = []
@@ -290,34 +279,55 @@ func _rebuild_roster(ids: Array) -> void:
 		_roster_box.remove_child(c)
 		c.queue_free()
 	_roster_buttons.clear()
-	for id in ids:
-		var a := _actor(String(id))
-		var on: bool = String(id) == actor_id
+	# 永遠三個卡槽；名冊多於三位時，顯示包含目前角色的那三位
+	var start := 0
+	var selected_index := ids.find(actor_id)
+	if ids.size() > ROSTER_SLOTS.size():
+		start = clampi(selected_index - 1, 0, ids.size() - ROSTER_SLOTS.size())
+	for i in ROSTER_SLOTS.size():
+		var rect: Rect2 = ROSTER_SLOTS[i]
+		var index := start + i
+		var normal_art := E + ("equip_actor_card_normal_02" if i < 2 else "equip_actor_card_normal_03")
+		if index >= ids.size():
+			# 空位：還沒有同行的人（名冊沒解鎖更多角色），畫暗一點的空白卡槽
+			var empty := _panel(normal_art, 22, 22, rect.position, rect.size, _roster_box)
+			empty.modulate = Color(0.8, 0.76, 0.7, 0.85)
+			_label("尚未同行", rect.position, rect.size, 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _roster_box)
+			continue
+		var id := String(ids[index])
+		var a := _actor(id)
+		var on: bool = id == actor_id
 		var card := Button.new()
-		card.custom_minimum_size = CARD_SIZE
+		card.position = rect.position
+		card.size = rect.size
 		card.focus_mode = Control.FOCUS_NONE
 		card.toggle_mode = true
 		card.set_pressed_no_signal(on)
-		# 共邊國的三態卡：一般／移入／選中（選中在牌緣有金光）
-		for pair in [["normal", "normal"], ["hover", "hover"], ["pressed", "selected"], ["hover_pressed", "selected"]]:
-			var sb := _box(E + "equip_actor_card_" + pair[1], 22, 22)
-			card.add_theme_stylebox_override(pair[0], sb if sb != null else StyleBoxEmpty.new())
+		var sb := _box(normal_art, 22, 22)
+		for st in ["normal", "hover", "pressed", "hover_pressed"]:
+			card.add_theme_stylebox_override(st, sb if sb != null else StyleBoxEmpty.new())
 		card.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		card.mouse_entered.connect(func(): card.modulate = Color(1.08, 1.06, 1.0))
+		card.mouse_exited.connect(func(): card.modulate = Color.WHITE)
 		_roster_box.add_child(card)
+		if on:
+			# 選中：共邊國的金光卡（比一般卡高約 6px，金光在牌緣外一圈）
+			var glow := _image(E + "equip_actor_card_selected", Vector2(0, -3), Vector2(rect.size.x, rect.size.y + 6), card)
+			glow.name = "SelectedArt"
 		var portrait_path := String(a.get("portrait_path", ""))
 		if portrait_path != "":
-			var pr := _image_from(portrait_path, Vector2(8, 10), Vector2(96, 104), card)
+			var pr := _image_from(portrait_path, Vector2(8, 10), Vector2(96, rect.size.y - 20), card)
 			pr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		_panel(E + "equip_portrait_frame", 12, 12, Vector2(6, 8), Vector2(100, 108), card)
-		if TeamData and TeamData.current_team_ids.has(String(id)):
+		_panel(E + "equip_portrait_frame", 12, 12, Vector2(6, 8), Vector2(100, rect.size.y - 16), card)
+		if TeamData and TeamData.current_team_ids.has(id):
 			_panel(E + "equip_deployed_tag", 6, 8, Vector2(4, 12), Vector2(22, 40), card)
 			_label("上陣", Vector2(4, 12), Vector2(22, 40), 11, Color("#FFF3D0"), HORIZONTAL_ALIGNMENT_CENTER, card).autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-		_label(String(a.get("name", id)), Vector2(116, 12), Vector2(110, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
-		_label("Lv.%d" % int(a.get("level", 1)), Vector2(116, 38), Vector2(110, 20), 14, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
-		_bar(card, Vector2(116, 70), "hp", float(a.get("hp", 0)), float(maxi(1, int(a.get("max_hp", 1)))))
-		_bar(card, Vector2(116, 90), "mp", float(a.get("mp", 0)), float(maxi(1, int(a.get("max_mp", 1)))))
-		card.pressed.connect(_on_actor_pressed.bind(String(id)))
-		_roster_buttons[String(id)] = card
+		_label(String(a.get("name", id)), Vector2(118, 12), Vector2(120, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_label("Lv.%d" % int(a.get("level", 1)), Vector2(118, 38), Vector2(120, 20), 14, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_bar(card, Vector2(118, 68), "hp", float(a.get("hp", 0)), float(maxi(1, int(a.get("max_hp", 1)))))
+		_bar(card, Vector2(118, 88), "mp", float(a.get("mp", 0)), float(maxi(1, int(a.get("max_mp", 1)))))
+		card.pressed.connect(_on_actor_pressed.bind(id))
+		_roster_buttons[id] = card
 
 func _refresh_slots() -> void:
 	var equipped: Dictionary = InventorySync.get_equipped(actor_id)

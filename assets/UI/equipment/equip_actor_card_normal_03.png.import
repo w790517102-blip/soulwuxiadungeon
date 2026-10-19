@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b71lofed82hg"
-path="res://.godot/imported/equip_spine.png-5729b022fd5c734f95a1a5a19bc799cd.ctex"
+uid="uid://bksp27t63cr5r"
+path="res://.godot/imported/equip_actor_card_normal_03.png-e295ee7dc7deeaf61a741cbc1970ffb8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment/equip_spine.png"
-dest_files=["res://.godot/imported/equip_spine.png-5729b022fd5c734f95a1a5a19bc799cd.ctex"]
+source_file="res://assets/UI/equipment/equip_actor_card_normal_03.png"
+dest_files=["res://.godot/imported/equip_actor_card_normal_03.png-e295ee7dc7deeaf61a741cbc1970ffb8.ctex"]
 
 [params]
 
