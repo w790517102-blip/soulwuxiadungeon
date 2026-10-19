@@ -46,6 +46,7 @@ var _name_label: Label
 var _seal_label: Label
 var _info_vals: Array[Label] = []
 var _status_stamp: TextureRect
+var _rarity_holder: Control
 var _status_label: Label
 var _detail_box: VBoxContainer
 var _detail_scroll: ScrollContainer
@@ -185,8 +186,8 @@ func _ready() -> void:
 	_refresh()
 
 func _build_background() -> void:
-	# 後層：2432×1424（含四邊 64 px 出血）縮半 → 1216×712，左上角 (-32, -32)
-	_image("bg_study", Vector2(-32, -32), Vector2(1216, 712))
+	# 外殼：書房桌面背景＋桌上的前景物件（所有新版系統頁共用）
+	add_child(StudyShell.new())
 	# 中層：卷軸（含景物，固定尺寸，不可平鋪）
 	_image("scroll_body", Vector2(158, 69), Vector2(972, 506))
 
@@ -275,6 +276,11 @@ func _build_detail() -> void:
 		_label(info_titles[i], Vector2(850, 208 + 30 * i), Vector2(74, 26), 14, Color.WHITE)
 		var v := _label("", Vector2(932, 208 + 30 * i), Vector2(190, 26), 16, INK)
 		_info_vals.append(v)
+	_rarity_holder = Control.new()
+	_rarity_holder.position = Vector2(844, 190)
+	_rarity_holder.size = Vector2(60, 18)
+	_rarity_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_rarity_holder)
 	_status_stamp = _image("status_usable", Vector2(932, 270), Vector2(56, 22))
 	_status_label = _label("", Vector2(932, 270), Vector2(56, 22), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_info_vals[2].visible = false
@@ -431,10 +437,18 @@ func _rebuild_rows() -> void:
 		b.focus_mode = Control.FOCUS_NONE
 		b.flat = false
 		b.set_meta("item_id", id)
-		var normal := _box("row_selected" if sel else "row_normal", 24 if sel else 16, 6 if sel else 4)
+		# 所有狀態都用一般列底（紙面始終在）；選中與移入是「疊在上面的半透明金色光暈」，不會整塊換成不透明底
+		var normal := _box("row_normal", 16, 4)
 		b.add_theme_stylebox_override("normal", normal)
-		b.add_theme_stylebox_override("hover", normal if sel else _box("row_hover", 16, 4))
-		b.add_theme_stylebox_override("pressed", _box("row_selected", 24, 6))
+		b.add_theme_stylebox_override("hover", normal)
+		b.add_theme_stylebox_override("pressed", normal)
+		var glow := _row_glow(Vector2(LIST_SIZE.x - 10, ROW_H))
+		glow.modulate.a = 1.0 if sel else 0.0
+		glow.get_node("Diamond").visible = sel
+		b.add_child(glow)
+		if not sel:
+			b.mouse_entered.connect(func(): glow.modulate.a = 0.42)
+			b.mouse_exited.connect(func(): glow.modulate.a = 0.0)
 		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		var def := e as Dictionary
 		var icon := _image_from(ItemIconMap.icon_path(id, def), Vector2(8, 4), Vector2(40, 40), b)
@@ -445,12 +459,91 @@ func _rebuild_rows() -> void:
 		if badge_tex != null:
 			var br := _image("badge_" + cat_id, Vector2(316, 13), Vector2(62, 22), b)
 			_label(ItemCategory.label_of(cat_id), Vector2(316, 13), Vector2(62, 22), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, b)
+		var rar := ItemRarity.rarity_of(def)
+		if rar >= 2:
+			_rarity_chip(rar, Vector2(206, 14), Vector2(44, 22), b)
 		if _equipped_by(id) != "":
 			_image("badge_equipped", Vector2(108, 14), Vector2(44, 22), b)
 			_label("裝備中", Vector2(108, 14), Vector2(44, 22), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, b)
 		b.pressed.connect(_on_row_pressed.bind(id))
 		_list_box.add_child(b)
 		_row_buttons.append(b)
+
+## 列的金色光暈（程式畫的）：中間淡金、左右漸隱成全透明，上下各一條細金線；選中時左端有一顆菱形標記。
+## 共邊國交付半透明光暈素材（row_selected 改版）之後，換成素材即可。
+var _glow_tex: GradientTexture2D = null
+func _row_glow(size: Vector2) -> Control:
+	if _glow_tex == null:
+		var g := Gradient.new()
+		g.offsets = PackedFloat32Array([0.0, 0.10, 0.5, 0.90, 1.0])
+		g.colors = PackedColorArray([Color(0.93, 0.74, 0.30, 0.0), Color(0.93, 0.74, 0.30, 0.42), Color(0.95, 0.80, 0.40, 0.55), Color(0.93, 0.74, 0.30, 0.42), Color(0.93, 0.74, 0.30, 0.0)])
+		_glow_tex = GradientTexture2D.new()
+		_glow_tex.gradient = g
+		_glow_tex.fill_from = Vector2(0, 0)
+		_glow_tex.fill_to = Vector2(1, 0)
+		_glow_tex.width = 256
+		_glow_tex.height = 4
+	var root := Control.new()
+	root.name = "Glow"
+	root.size = size
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fill := TextureRect.new()
+	fill.texture = _glow_tex
+	fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fill.stretch_mode = TextureRect.STRETCH_SCALE
+	fill.size = size
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(fill)
+	for y in [0.0, size.y - 1.0]:
+		var line := TextureRect.new()
+		line.texture = _glow_tex
+		line.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		line.stretch_mode = TextureRect.STRETCH_SCALE
+		line.position = Vector2(0, y)
+		line.size = Vector2(size.x, 1)
+		line.modulate = Color(1, 0.9, 0.55, 1.4)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(line)
+	var d := Polygon2D.new()
+	d.name = "Diamond"
+	d.position = Vector2(8, size.y * 0.5)
+	d.polygon = PackedVector2Array([Vector2(0, -7), Vector2(7, 0), Vector2(0, 7), Vector2(-7, 0)])
+	d.color = Color(0.93, 0.74, 0.30, 1)
+	root.add_child(d)
+	var ring := Line2D.new()
+	ring.points = PackedVector2Array([Vector2(0, -7), Vector2(7, 0), Vector2(0, 7), Vector2(-7, 0), Vector2(0, -7)])
+	ring.width = 1.5
+	ring.default_color = Color(0.35, 0.22, 0.05, 0.9)
+	d.add_child(ring)
+	return root
+
+## 稀有度章：有 rarity_N.png 就用貼圖，沒有就畫色塊章（文字由程式輸出）
+func _rarity_chip(level: int, pos: Vector2, size: Vector2, parent: Node) -> Control:
+	var holder := Control.new()
+	holder.position = pos
+	holder.size = size
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(holder)
+	var path := ItemRarity.badge_path(level)
+	if ResourceLoader.exists(path):
+		_image_from(path, Vector2.ZERO, size, holder)
+	else:
+		var p := Panel.new()
+		p.size = size
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = ItemRarity.color_of(level)
+		sb.set_corner_radius_all(6)
+		p.add_theme_stylebox_override("panel", sb)
+		holder.add_child(p)
+	_label(ItemRarity.label_of(level), Vector2.ZERO, size, 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, holder)
+	return holder
+
+func _set_detail_rarity(level: int) -> void:
+	for c in _rarity_holder.get_children():
+		_rarity_holder.remove_child(c)
+		c.queue_free()
+	_rarity_chip(level, Vector2.ZERO, Vector2(56, 18), _rarity_holder)
 
 func _image_from(path: String, pos: Vector2, size: Vector2, parent: Node) -> TextureRect:
 	var r := TextureRect.new()
@@ -482,6 +575,9 @@ func _refresh_detail() -> void:
 		_art.texture = null
 		_name_label.text = ""
 		_seal_label.text = ""
+		for c in _rarity_holder.get_children():
+			_rarity_holder.remove_child(c)
+			c.queue_free()
 		for v in _info_vals:
 			v.text = ""
 		_status_stamp.visible = false
@@ -496,6 +592,9 @@ func _refresh_detail() -> void:
 	var art_path := ItemIconMap.art_path(selected_id, def)
 	_art.texture = load(art_path) as Texture2D if ResourceLoader.exists(art_path) else null
 	_name_label.text = String(def.get("name", selected_id))
+	_set_detail_rarity(ItemRarity.rarity_of(def))
+	# 稀有度章貼在名稱右邊（名稱字數不同，位置跟著文字寬度）
+	_rarity_holder.position = Vector2(844.0 + minf(_name_label.get_minimum_size().x, 150.0) + 8.0, 174.0)
 	var cat_id := ItemCategory.category_of(def)
 	var cat_label := ItemCategory.label_of(cat_id)
 	_seal_label.text = "\n".join(Array(cat_label.split()))
