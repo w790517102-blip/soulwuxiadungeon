@@ -15,7 +15,7 @@ static var bg_name := "bg_study"
 ## anchor：用物件圖的哪個角貼到 pos（"bl" 左下、"br" 右下、"tr" 右上）
 const FOREGROUND := {
 	"fg_sword": {"pos": Vector2(0, 648), "anchor": "bl"},       # 左下：劍
-	"fg_book": {"pos": Vector2(150, 648), "anchor": "bl"},      # 左下：書
+	"fg_book": {"pos": Vector2(0, 648), "anchor": "bl"},        # 左下：書（和劍同一個角，劍在書前面）
 	"fg_teapot": {"pos": Vector2(1152, 648), "anchor": "br"},   # 右下：茶壺
 	"fg_candle": {"pos": Vector2(1152, 70), "anchor": "tr"},    # 右緣：燭台
 }

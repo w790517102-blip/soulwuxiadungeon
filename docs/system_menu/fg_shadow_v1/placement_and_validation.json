@@ -1,0 +1,157 @@
+{
+  "canvas_2x": [
+    2304,
+    1296
+  ],
+  "assets": [
+    {
+      "file": "scroll_shadow.png",
+      "width": 2136,
+      "height": 1204,
+      "anchor": "top_left",
+      "anchor_2x": [
+        220,
+        42
+      ],
+      "top_left_2x": [
+        220,
+        42
+      ],
+      "source": "existing scroll_body alpha contour; directional blur and contact-shadow masks",
+      "provenance": "procedural contour-derived UI shadow; no scroll pixels included",
+      "alpha_min": 0,
+      "alpha_max": 171,
+      "sha256": "50ab5833673ce91b9c7ab9d6dde3e4aa87e93231d7559c6c536b72a3b40dff63"
+    },
+    {
+      "file": "fg_sword.png",
+      "width": 560,
+      "height": 101,
+      "anchor": "bottom_left",
+      "anchor_2x": [
+        0,
+        1296
+      ],
+      "top_left_2x": [
+        0,
+        1195
+      ],
+      "source": "exec-9efcde06-392a-4739-8a4c-b03d986c7a81.png",
+      "provenance": "generated then alpha-cropped and proportionally downscaled",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "sha256": "d5fda86ae9bf51b48622129a9908cba30049e69f1b9ce3dc3453e3259f10aa0f"
+    },
+    {
+      "file": "fg_book.png",
+      "width": 302,
+      "height": 148,
+      "anchor": "bottom_left",
+      "anchor_2x": [
+        0,
+        1296
+      ],
+      "top_left_2x": [
+        0,
+        1148
+      ],
+      "source": "exec-2bff87d0-42af-4379-a9c9-f7361d793769.png",
+      "provenance": "generated then alpha-cropped and proportionally downscaled",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "sha256": "57d38987be862585b7053d7e0169c42b12a9715156c03698bf01dafb47c2b408"
+    },
+    {
+      "file": "fg_teapot.png",
+      "width": 244,
+      "height": 99,
+      "anchor": "bottom_right",
+      "anchor_2x": [
+        2304,
+        1296
+      ],
+      "top_left_2x": [
+        2060,
+        1197
+      ],
+      "source": "exec-5c761509-a493-40ce-ab67-5e1bdc82b041.png",
+      "provenance": "generated then alpha-cropped and proportionally downscaled",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "sha256": "6ba37a29263547e2a74fcb97a46485ef48384746809857a4b21db4c00a961db6"
+    },
+    {
+      "file": "fg_candle.png",
+      "width": 44,
+      "height": 423,
+      "anchor": "top_right",
+      "anchor_2x": [
+        2304,
+        140
+      ],
+      "top_left_2x": [
+        2260,
+        140
+      ],
+      "source": "exec-18f74d88-408a-46b6-ad35-a9bc3028365a.png",
+      "provenance": "generated then alpha-cropped and proportionally downscaled",
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "sha256": "340ab474b490e831172affa7e393aa2ae78aa4c7c1e952e5e122ba8a7b376f8e"
+    }
+  ],
+  "safe_zones_2x": {
+    "fg_sword.png": [
+      0,
+      1040,
+      580,
+      1296
+    ],
+    "fg_book.png": [
+      0,
+      1040,
+      580,
+      1296
+    ],
+    "fg_teapot.png": [
+      2060,
+      1180,
+      2304,
+      1296
+    ],
+    "fg_candle.png": [
+      2260,
+      140,
+      2304,
+      1150
+    ]
+  },
+  "protected_ui_2x": {
+    "scroll": [
+      316,
+      138,
+      2260,
+      1150
+    ],
+    "category": [
+      48,
+      152,
+      310,
+      1032
+    ],
+    "buttons": [
+      600,
+      1172,
+      2024,
+      1248
+    ]
+  },
+  "checks": [
+    "fg_sword.png: inside safe zone; zero alpha overlap with scroll/category/buttons",
+    "fg_book.png: inside safe zone; zero alpha overlap with scroll/category/buttons",
+    "fg_teapot.png: inside safe zone; zero alpha overlap with scroll/category/buttons",
+    "fg_candle.png: inside safe zone; zero alpha overlap with scroll/category/buttons"
+  ],
+  "shadow_checks": "2136x1204 RGBA; alpha0..171; outer four edges alpha0",
+  "preview_method": "accepted screenshot with new shadow on UI exterior, plus anchored foreground layers; not an engine capture"
+}

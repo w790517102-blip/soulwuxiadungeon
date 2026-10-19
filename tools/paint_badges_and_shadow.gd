@@ -82,7 +82,9 @@ func _init() -> void:
 		_paint(ssrc, sbase, 500 + j * 19).save_png(OUT + "status_%s.png" % st)
 		print("PAINT status_", st)
 		j += 1
-	_shadow()
+	# 卷軸落影改由美術交付（2026-10-19），預設不再覆蓋；要重新後製請加使用者參數 --shadow
+	if OS.get_cmdline_user_args().has("--shadow"):
+		_shadow()
 	quit()
 
 ## 卷軸落影：卷軸輪廓縮小、模糊、往下位移，疊黑色半透明
