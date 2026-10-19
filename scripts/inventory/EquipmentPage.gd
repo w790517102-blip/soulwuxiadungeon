@@ -138,6 +138,8 @@ func _build_slots() -> void:
 		add_child(b)
 		# 版面原則：留白越少越好，玩家一眼看出這格是什麼。
 		# 上：部位名稱（共邊國的字，統一縮放成同樣的字大小）；其餘：大圖示（空格是灰剪影、有裝備是物品圖）。格子上不寫裝備名稱。
+		# 外輪廓的墨暈：黑框往外渲染一圈（只在框外；tools/slot_ink_bleed.gd 產生，四邊各多 8 邏輯 px）
+		_image(E + "slots/slot_bleed_" + part, Vector2(-8, -8), Vector2(116, 112), b).name = "Bleed"
 		var frame := _image(E + "slots/slot_frame_" + part, Vector2.ZERO, SLOT_SIZE, b)
 		frame.name = "Frame"
 		frame.material = _frame_material()
