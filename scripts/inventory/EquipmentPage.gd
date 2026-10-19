@@ -14,7 +14,7 @@ const SLOT_GAP := 10.0
 ## 格內版面（邏輯 px）：上＝部位名稱、其餘全是大圖示（裝備名稱不寫在格子上，玩家在右頁就能看到完整資訊）；留白越少越好
 const SLOT_ICON_BOX := Rect2(-1, 6, 102, 98)        # 圖示蓋過邊框也沒關係（像棋子壓在棋盤格上），盡量填滿
 ## 個別格子的圖示縮放（往下靠齊，避免頂到上面的部位名稱）
-const SLOT_ICON_SCALE := {"head": 0.80}
+const SLOT_ICON_SCALE := {"head": 0.80, "body": 0.84}
 ## 八格底框：先把對比度調高一點點，再把 alpha 調低（讓格子融進卷軸、圖示更突出）
 const SLOT_FRAME_CONTRAST := 1.12
 const SLOT_FRAME_ALPHA := 0.86
