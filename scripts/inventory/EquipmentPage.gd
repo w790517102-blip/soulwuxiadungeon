@@ -402,10 +402,10 @@ func _rebuild_roster(ids: Array) -> void:
 		var mp_max := int(stats.get("max_mp", a.get("max_mp", 1)))
 		var hp_now: int = menu._displayed_resource(int(a.get("hp", 0)), int(a.get("max_hp", 1)), hp_max) if menu != null else int(a.get("hp", 0))
 		var mp_now: int = menu._displayed_resource(int(a.get("mp", 0)), int(a.get("max_mp", 1)), mp_max) if menu != null else int(a.get("mp", 0))
-		_bar(card, Vector2(118, 80), "hp", float(hp_now), float(maxi(1, hp_max)), 64.0)
-		_label("%d/%d" % [hp_now, hp_max], Vector2(186, 76), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
-		_bar(card, Vector2(118, 99), "mp", float(mp_now), float(maxi(1, mp_max)), 64.0)
-		_label("%d/%d" % [mp_now, mp_max], Vector2(186, 95), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_bar(card, Vector2(120, 82), "hp", float(hp_now), float(maxi(1, hp_max)), 64.0)
+		_label("%d/%d" % [hp_now, hp_max], Vector2(190, 77), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_bar(card, Vector2(120, 101), "mp", float(mp_now), float(maxi(1, mp_max)), 64.0)
+		_label("%d/%d" % [mp_now, mp_max], Vector2(190, 96), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
 		card.pressed.connect(_on_actor_pressed.bind(id))
 		_roster_buttons[id] = card
 

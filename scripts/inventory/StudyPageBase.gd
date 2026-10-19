@@ -254,8 +254,21 @@ func _image_from(path: String, pos: Vector2, size: Vector2, parent: Node) -> Tex
 
 
 func _bar(parent: Node, pos: Vector2, kind: String, value: float, max_value: float, width := 108.0) -> void:
-	var frame := _image("bar_%s_frame" % kind, pos, Vector2(width, 10), parent)
-	var fill := _image("bar_%s_fill" % kind, pos, Vector2(width, 10), parent)
+	# 氣血/內力條：外面有框。墨色底座（帶一圈柔邊，像墨暈）＋金褐色框（比條大一圈）＋條本身縮在框內，不再蓋住框
+	var base := Panel.new()
+	base.position = pos + Vector2(-4, -4)
+	base.size = Vector2(width + 8, 18)
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.09, 0.06, 0.04, 0.92)
+	sb.set_corner_radius_all(4)
+	sb.shadow_color = Color(0.05, 0.03, 0.02, 0.55)
+	sb.shadow_size = 3
+	base.add_theme_stylebox_override("panel", sb)
+	parent.add_child(base)
+	var frame := _image("bar_%s_frame" % kind, pos + Vector2(-3, -3), Vector2(width + 6, 16), parent)
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	var fill := _image("bar_%s_fill" % kind, pos + Vector2(0, 0), Vector2(width, 10), parent)
 	fill.stretch_mode = TextureRect.STRETCH_SCALE
 	var ratio := clampf(value / max_value, 0.0, 1.0)
 	fill.clip_contents = true
