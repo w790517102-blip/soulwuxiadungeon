@@ -16,14 +16,6 @@ const DIR := "res://assets/UI/equipment/doll/"
 const ItemRarityScript = preload("res://scripts/inventory/ItemRarity.gd")
 const ItemDBScript = preload("res://scripts/db/ItemDB.gd")
 
-## 暫代：身體護具的四階圖還沒交之前，用「整張母圖的色調」讓玩家看得出換了衣服（交件後自動不再使用）
-const PLACEHOLDER_TINT := {
-	1: Color(1.0, 1.0, 1.0),
-	2: Color(0.88, 1.0, 0.92),
-	3: Color(0.86, 0.9, 1.12),
-	4: Color(1.12, 1.0, 0.82),
-}
-
 var _base: TextureRect
 var _layers: Dictionary = {}         # 名稱 → TextureRect
 var actor_id := ""
@@ -76,9 +68,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		if tex != null:
 			(_layers["body"] as TextureRect).texture = tex
 			info["body_art"] = "doll_body_%d" % art_rarity
-		else:
-			_base.modulate = PLACEHOLDER_TINT.get(rarity, Color.WHITE)       # 暫代：圖還沒交
-			info["body_art"] = "placeholder_tint_%d" % rarity
+		# 沒有任何身體護具圖（素材趕工中）：保持母圖原樣，不換色
 	# 武器：每把自己的圖，沒有就預設
 	var weapon_id := String(equipped.get("weapon_1", ""))
 	if weapon_id != "":

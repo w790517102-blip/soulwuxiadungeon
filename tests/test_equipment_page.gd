@@ -101,10 +101,10 @@ func _run() -> void:
 	page._apply_equip("arm_rare_clothes")
 	_check(inv.get_equipped("liuyu").get("armor_body") == "arm_rare_clothes", "the rare clothes are worn")
 	_check(page.doll_info.get("body_rarity") == 3, "the doll sees the rare clothes as rarity 3")
-	_check(page._doll._base.modulate != Color.WHITE, "(placeholder) the figure tint changes while the rarity-3 art is missing")
+	_check(page._doll._base.modulate == Color.WHITE, "no recoloring while the body art is missing")
 	_check(page.doll_info.get("mech_art") == "", "no mechanism equipped → no mechanism layer")
 	page._apply_equip("arm_cloth")
-	_check(page.doll_info.get("body_rarity") == 1 and page._doll._base.modulate == Color.WHITE, "back to cloth clothes: rarity 1 and the tint is gone")
+	_check(page.doll_info.get("body_rarity") == 1 and page._doll._base.modulate == Color.WHITE, "back to cloth clothes: rarity 1, the figure is never recolored")
 	# 鎖定欄、特殊效果區可捲動
 	_check(menu.is_slot_locked_for("shumian", "weapon_2") and not menu.is_slot_locked_for("liuyu", "weapon_2"), "only 書眠's sub weapon is locked")
 	_check(page._scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "the description / special effect area scrolls (bar only when needed)")
