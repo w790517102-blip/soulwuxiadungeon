@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1152 716" width="1152" height="716" font-family="sans-serif" font-size="12">
+  <title>裝備頁 美術尺寸配置圖（邏輯畫面 1152×648，單位 px；素材請交 2 倍像素）</title>
+  <style>
+    .bg{fill:#2d2a26}.safe{fill:none;stroke:#e0a040;stroke-width:1.2;stroke-dasharray:6 4}
+    .nav{fill:#1a1512;stroke:#b08a3a;stroke-width:1.5}.sel{fill:#7a1a1a;stroke:#d9ad47;stroke-width:1.5}
+    .leather{fill:#2a231c;stroke:#b08a3a;stroke-width:2}
+    .page{fill:#cdbd96;stroke:#8a7440;stroke-width:2}
+    .card{fill:#e6d9b6;stroke:#d9ad47;stroke-width:1.5}.cardsel{fill:#efd9a0;stroke:#f0c850;stroke-width:2.5}
+    .slot{fill:#e2d3ac;stroke:#b08a3a;stroke-width:1.5}.slotsel{fill:#efd9a0;stroke:#f0c850;stroke-width:2.5}
+    .fig{fill:#8a7a60;fill-opacity:.25;stroke:#2b1b0e;stroke-dasharray:5 3}
+    .art{fill:#b9a97f;stroke:#2b1b0e;stroke-dasharray:4 3}
+    .chip{fill:#2b2520}.scrollzone{fill:#e8dcbc;fill-opacity:.55;stroke:#8a7440;stroke-dasharray:5 3}
+    .btn{fill:#1c1712;stroke:#b08a3a;stroke-width:1.5}.btnp{fill:#3a2d12;stroke:#e6c46a;stroke-width:2}
+    .dim{fill:#79a9ff;font-size:11px}.t{fill:#222;font-size:12px}.w{fill:#eee;font-size:12px}.note{fill:#bbb;font-size:12px}
+    .ok{fill:#7ad08a;font-size:11px}
+  </style>
+  <rect class="bg" width="1152" height="648"/>
+  <rect class="safe" x="24" y="24" width="1104" height="600"/>
+  <text x="30" y="40" class="note">黃色虛線＝安全區（內縮 24）。藍字＝尺寸標註。綠字＝沿用道具頁已驗收的素材。</text>
+
+  <!-- nav -->
+  <rect class="nav" x="138" y="28" width="889" height="48" rx="4"/>
+  <g class="w" text-anchor="middle">
+    <text x="193" y="57">狀態</text><text x="303" y="57">道具</text>
+    <rect class="sel" x="358" y="28" width="110" height="48"/><text x="413" y="57">裝備</text>
+    <text x="523" y="57">武術</text><text x="633" y="57">隊伍</text><text x="743" y="57">見聞</text><text x="853" y="57">任務</text><text x="963" y="57">系統</text>
+  </g>
+  <text x="138" y="22" class="ok">導航列（沿用）889×48，「裝備」為選中</text>
+
+  <!-- left roster panel -->
+  <rect class="leather" x="54" y="86" width="249" height="496" rx="4"/>
+  <rect class="chip" x="62" y="98" width="233" height="36"/><text x="178" y="121" class="w" text-anchor="middle">同行俠客（標題底牌 233×36，空白版）</text>
+  <rect class="cardsel" x="62" y="141" width="233" height="124"/>
+  <rect class="art" x="68" y="149" width="100" height="108"/><text x="118" y="206" class="t" text-anchor="middle">頭像框</text><text x="118" y="219" class="t" text-anchor="middle">100×108</text>
+  <rect x="62" y="150" width="22" height="40" fill="#8a1c1c"/><text x="73" y="174" class="w" text-anchor="middle" font-size="9">上陣</text>
+  <text x="180" y="165" class="t">姓名／職業／Lv.</text><text x="180" y="200" class="t">氣血條 100</text><text x="180" y="226" class="t">內力條 100</text>
+  <rect class="card" x="62" y="275" width="233" height="124"/><text x="178" y="342" class="t" text-anchor="middle">俠客卡片（一般）233×124</text>
+  <rect class="card" x="62" y="409" width="233" height="124"/><text x="178" y="476" class="t" text-anchor="middle">俠客卡片（一般）233×124</text>
+  <rect class="chip" x="62" y="538" width="233" height="38"/><text x="178" y="561" class="w" text-anchor="middle">引言框 233×44（含朱紅印章）</text>
+  <text x="30" y="682" class="dim">左面板 249×496（2×：498×992）；卡片三態：一般/移入/選中；卡片間距 10；右頁數值列：一行 3 格，每格＝圖示 24×24＋名稱＋加成值，列高 28</text>
+
+  <!-- center page -->
+  <rect class="page" x="318" y="86" width="447" height="496" rx="6"/>
+  <text x="326" y="104" class="dim">中頁紙面 447×496（2×：894×992）</text>
+  <!-- figure -->
+  <rect class="fig" x="421" y="92" width="254" height="486"/>
+  <text x="548" y="330" class="t" text-anchor="middle">人物畫布 254×486</text>
+  <text x="548" y="346" class="t" text-anchor="middle">（2×：508×972，可被裝備格壓住）</text>
+  <!-- slots left -->
+  <g class="t" text-anchor="middle">
+    <rect class="slotsel" x="331" y="132" width="100" height="96"/><text x="381" y="176">主武器</text>
+    <rect class="slot" x="331" y="238" width="100" height="96"/><text x="381" y="282">頭部</text>
+    <rect class="slot" x="331" y="344" width="100" height="96"/><text x="381" y="388">手部</text>
+    <rect class="slot" x="331" y="450" width="100" height="96"/><text x="381" y="494">飾品</text>
+    <rect class="slot" x="654" y="132" width="100" height="96"/><text x="704" y="176">副武器</text>
+    <rect class="slot" x="654" y="238" width="100" height="96"/><text x="704" y="282">身體</text>
+    <rect class="slot" x="654" y="344" width="100" height="96"/><text x="704" y="388">足部</text>
+    <rect class="slot" x="654" y="450" width="100" height="96"/><text x="704" y="494">機關</text>
+  </g>
+  <text x="30" y="664" class="dim">裝備格 100×96（2×：200×192）四態；剪影圖示 56×56；左欄 x331、右欄 x654；列 y 132/238/344/450，格間距 10</text>
+
+  <!-- spine -->
+  <rect x="765" y="86" width="5" height="496" fill="#7a6a40"/>
+
+  <!-- right page -->
+  <rect class="page" x="770" y="86" width="329" height="496" rx="6"/>
+  <text x="778" y="104" class="dim">右頁紙面 329×496（2×：658×992）下半山水請偏淡</text>
+  <rect class="art" x="792" y="100" width="140" height="168"/><text x="862" y="180" class="t" text-anchor="middle">大圖墨暈框</text><text x="862" y="195" class="t" text-anchor="middle">140×168</text>
+  <text x="942" y="124" class="t" font-size="18">名稱（26px）</text>
+  <rect x="942" y="134" width="46" height="18" fill="#6a665c"/><text x="998" y="147" class="t">稀有度章（沿用）</text>
+  <g><rect class="chip" x="942" y="176" width="70" height="20"/><rect class="chip" x="942" y="200" width="70" height="20"/><rect class="chip" x="942" y="224" width="70" height="20"/></g>
+  <text x="1020" y="191" class="t">品類</text><text x="1020" y="215" class="t">欄位</text><text x="1020" y="239" class="t">裝備者</text>
+  <rect class="chip" x="782" y="276" width="100" height="26"/><text x="832" y="294" class="w" text-anchor="middle">裝備效果</text>
+  <g class="t">
+    <rect x="790" y="308" width="24" height="24" fill="#8a7a60"/><text x="820" y="326">攻擊 +4</text>
+    <rect x="900" y="308" width="24" height="24" fill="#8a7a60"/><text x="930" y="326">速度 +1</text>
+    <rect x="1000" y="308" width="24" height="24" fill="#8a7a60"/><text x="1030" y="326">…</text>
+  </g>
+  <text x="782" y="348" class="dim">數值列（一行 3 格，列高 28）</text>
+  <rect class="scrollzone" x="782" y="358" width="308" height="214"/>
+  <text x="936" y="440" class="t" text-anchor="middle">「說明」＋「特殊效果」捲動區</text>
+  <text x="936" y="456" class="t" text-anchor="middle">內容超過才出現細捲軸（沿用 8px 軌道）</text>
+  <text x="936" y="472" class="t" text-anchor="middle">右頁文字：白字＋黑色外框（程式輸出）</text>
+  <rect x="1064" y="96" width="28" height="48" fill="#8a1c1c"/><text x="1092" y="164" class="note" text-anchor="end" font-size="10">朱紅印章 28×48</text>
+
+  <!-- buttons -->
+  <rect class="btnp" x="308" y="589" width="165" height="38"/><text x="390" y="613" class="w" text-anchor="middle">更換裝備</text>
+  <rect class="btn" x="494" y="589" width="165" height="38"/><text x="576" y="613" class="w" text-anchor="middle">卸下</text>
+  <rect class="btn" x="680" y="589" width="165" height="38"/><text x="762" y="613" class="w" text-anchor="middle">返回</text>
+  <text x="860" y="613" class="ok">← 底部按鈕（沿用）各 165×38；沒有「整備」</text>
+
+  <!-- swap window -->
+  <g transform="translate(0,682)">
+    <text x="30" y="16" class="dim">更換裝備視窗：800×420（2×：1600×840），置中彈出；左＝可選清單（列 310×48），右＝選中那件的六項前→後與增減量</text>
+  </g>
+</svg>

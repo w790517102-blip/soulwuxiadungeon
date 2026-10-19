@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" width="760" height="560" font-family="sans-serif" font-size="12">
+  <title>裝備頁 紙娃娃圖層示意（人物畫布 508×972 像素＝邏輯 254×486；此圖以邏輯尺寸繪製）</title>
+  <style>
+    .bg{fill:#2d2a26}.canvas{fill:#cdbd96;fill-opacity:.25;stroke:#e0a040;stroke-width:1.2;stroke-dasharray:6 4}
+    .body{fill:#8a7a60;fill-opacity:.55;stroke:#2b1b0e}.hair{fill:#4a4236;fill-opacity:.6;stroke:#2b1b0e}
+    .cloak{fill:#5a5046;fill-opacity:.5;stroke:#2b1b0e;stroke-dasharray:5 3}
+    .mech{fill:#b07a30;fill-opacity:.8;stroke:#ffd27a;stroke-width:1.5}.strap{fill:none;stroke:#e6c46a;stroke-width:3;stroke-dasharray:6 3}
+    .mount{fill:#ff5a5a;stroke:none}.dim{fill:#79a9ff;font-size:11px}.w{fill:#eee;font-size:12px}.note{fill:#bbb;font-size:12px}
+  </style>
+  <rect class="bg" width="760" height="560"/>
+  <text x="20" y="22" class="w" font-size="14">人物畫布 254×486（邏輯）＝ 508×972（2×），左上角對齊，所有圖層同一張畫布</text>
+
+  <!-- canvas -->
+  <rect class="canvas" x="20" y="40" width="254" height="486"/>
+  <!-- back hair / cloak back -->
+  <ellipse class="hair" cx="150" cy="120" rx="58" ry="62"/>
+  <path class="cloak" d="M70 170 L40 470 L220 480 L230 190 Z"/>
+  <!-- body -->
+  <rect class="body" x="105" y="170" width="95" height="210" rx="18"/>
+  <circle class="body" cx="150" cy="130" r="38"/>
+  <!-- mech on left shoulder (character's own left = back-left in picture) -->
+  <g transform="rotate(-24 100 150)"><rect class="mech" x="62" y="122" width="90" height="55" rx="6"/></g>
+  <circle class="mount" cx="62" cy="122" r="5"/>
+  <path class="strap" d="M150 150 C 130 160 110 150 90 160"/>
+  <text x="30" y="118" class="note">掛點（紅點）</text>
+  <!-- front hair/shoulder -->
+  <path class="hair" d="M112 100 Q150 70 188 100 L192 130 Q150 100 108 130 Z"/>
+
+  <!-- legend -->
+  <g class="w">
+    <text x="320" y="60" font-size="14">圖層順序（由後到前）</text>
+    <text x="320" y="86">1  doll_back　　　　後髮、披風後片</text>
+    <text x="320" y="108">2  doll_mech_back　機關被身體／披風擋住的部分（預留）</text>
+    <text x="320" y="130">3  doll_body　　　　身體（不含弩、不含背帶）</text>
+    <text x="320" y="152">4  doll_cloak_front　披風前片</text>
+    <text x="320" y="174">5  doll_mech　　　　諸葛連弩本體（單獨一張，約 180×110 邏輯，2×：360×220）</text>
+    <text x="320" y="196">6  doll_strap　　　　背帶／扣具（單獨一張；卸下時與弩一起消失）</text>
+    <text x="320" y="218">7  doll_front　　　　頭髮前片、肩膀、衣領（必須蓋住機關的部分）</text>
+  </g>
+  <g class="note">
+    <text x="320" y="262">請在交件示意圖上標出（皆以人物畫布左上角為原點，2× 像素）：</text>
+    <text x="320" y="282">1. 掛點：弩圖左上角的座標</text>
+    <text x="320" y="300">2. 旋轉角度與縮放（相對單獨那張弩圖）</text>
+    <text x="320" y="318">3. 弩與頭髮、肩膀、披風的前後遮擋</text>
+    <text x="320" y="336">4. 背帶的起點（肩上扣具）與終點（弩身）</text>
+    <text x="320" y="368">姿勢：概念圖的 3/4 側身，面向畫面右前方，右手握劍柄、劍背在身後。</text>
+    <text x="320" y="386">「左肩」指角色自己的左側；畫面位置會隨人物朝向改變。</text>
+    <text x="320" y="414">先交：裝備前／裝備後並排預覽＋圖層順序圖，方向確認後再擴充其他部位。</text>
+  </g>
+  <text x="20" y="544" class="dim">示意圖只表達位置與前後關係，造型以你們的人物為準</text>
+</svg>
