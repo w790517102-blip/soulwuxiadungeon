@@ -19,6 +19,8 @@ const NAV_TABS := [
 	{"name": "TabQuest", "label": "任務"}, {"name": "TabSystem", "label": "系統"},
 ]
 const BUTTON_Z := 12   # 比前景前排（z 10）高：按鈕永遠不會被前景遮住
+## 氣血/內力條的陰影位移（往左下，邏輯 px）
+const BAR_SHADOW_OFFSET := Vector2(-2, 2)
 
 ## 裝備頁紙面用哪一版：false＝共邊國原檔（預設）；true＝泛黃＋污漬＋燒焦的後製版（備案，tools/age_paper.gd 做的；缺點是紋理會被模糊掉）
 static var use_aged_equipment_paper := false
@@ -254,17 +256,24 @@ func _image_from(path: String, pos: Vector2, size: Vector2, parent: Node) -> Tex
 
 
 func _bar(parent: Node, pos: Vector2, kind: String, value: float, max_value: float, width := 108.0) -> void:
-	# 氣血/內力條：外面有框。墨色底座（帶一圈柔邊，像墨暈）＋金褐色框（比條大一圈）＋條本身縮在框內，不再蓋住框
+	# 氣血/內力條：外面有框。不做柔化毛邊，改成往左下的硬陰影；金褐色框（比條大一圈）＋條本身縮在框內，不再蓋住框
+	var shadow := Panel.new()
+	shadow.position = pos + Vector2(-4, -4) + BAR_SHADOW_OFFSET
+	shadow.size = Vector2(width + 8, 18)
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.03, 0.02, 0.6)
+	sb.set_corner_radius_all(3)
+	shadow.add_theme_stylebox_override("panel", sb)
+	parent.add_child(shadow)
 	var base := Panel.new()
 	base.position = pos + Vector2(-4, -4)
 	base.size = Vector2(width + 8, 18)
 	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.09, 0.06, 0.04, 0.92)
-	sb.set_corner_radius_all(4)
-	sb.shadow_color = Color(0.05, 0.03, 0.02, 0.55)
-	sb.shadow_size = 3
-	base.add_theme_stylebox_override("panel", sb)
+	var sb2 := StyleBoxFlat.new()
+	sb2.bg_color = Color(0.09, 0.06, 0.04, 1.0)
+	sb2.set_corner_radius_all(3)
+	base.add_theme_stylebox_override("panel", sb2)
 	parent.add_child(base)
 	var frame := _image("bar_%s_frame" % kind, pos + Vector2(-3, -3), Vector2(width + 6, 16), parent)
 	frame.stretch_mode = TextureRect.STRETCH_SCALE
