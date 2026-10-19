@@ -1,6 +1,6 @@
 extends SceneTree
 
-const BattleControllerScript = preload("res://scripts/battlescripts/BattleController.gd")
+var BattleControllerScript: GDScript
 
 var _failures: Array[String] = []
 
@@ -14,10 +14,25 @@ class FakeTeamData:
 
 
 func _initialize() -> void:
+	# 全域服務（GlobalState 等）要等場景樹就緒後才存在；太早載入 BattleController 會編譯失敗，而且失敗時舊寫法還會誤印 PASS
+	call_deferred("_run")
+
+
+func _run() -> void:
+	await process_frame
+	var controller_script: GDScript = load("res://scripts/battlescripts/BattleController.gd")
+	_expect(controller_script != null and controller_script.can_instantiate(), "BattleController compiles and can be instantiated")
+	if controller_script == null or not controller_script.can_instantiate():
+		_finish()
+		return
+	BattleControllerScript = controller_script
 	_test_runtime_actor_isolated_from_canonical()
 	_test_phase_resources_apply_after_equipment_baseline()
 	_test_resource_sync_is_whitelisted()
+	_finish()
 
+
+func _finish() -> void:
 	if _failures.is_empty():
 		print("PASS: battle stat authority regression")
 		quit(0)
