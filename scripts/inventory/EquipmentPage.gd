@@ -16,7 +16,7 @@ const SLOT_ICON_BOX := Rect2(-1, 6, 102, 98)        # 圖示蓋過邊框也沒�
 ## 個別格子的圖示縮放（往下靠齊，避免頂到上面的部位名稱）
 const SLOT_ICON_SCALE := {"head": 0.80}
 ## 個別格子的圖示位移（邏輯 px，負＝往上）：圖本身的重心不在中心，用位移校正
-const SLOT_ICON_SHIFT := {"body": Vector2(0, -12)}
+const SLOT_ICON_SHIFT := {"body": Vector2(0, -8)}
 ## 八格底框：先把對比度調高一點點，再把 alpha 調低（讓格子融進卷軸、圖示更突出）
 const SLOT_FRAME_CONTRAST := 1.12
 const SLOT_FRAME_ALPHA := 0.86
