@@ -111,9 +111,9 @@ func _run() -> void:
 	page._on_slot_pressed("mechanism")
 	inv.party_inventory.append({"id": "tool_zhuge_crossbow", "count": 1})
 	page._apply_equip("tool_zhuge_crossbow")
-	_check(page.doll_info.get("mech_art") == "tool_zhuge_crossbow" and page._doll.get_node("mech").texture != null and page._doll.get_node("strap").texture != null and page._doll.get_node("mech_back").texture != null, "the crossbow shows its three mechanism layers")
+	_check(page.doll_info.get("mech_art") == "tool_zhuge_crossbow" and page._doll.get_node("mech_local").texture != null, "the crossbow is shown as one hand-placed layer on the back")
 	page._on_unequip_pressed()
-	_check(page.doll_info.get("mech_art") == "" and page._doll.get_node("mech").texture == null and page._doll.get_node("strap").texture == null, "taking the crossbow off hides all mechanism layers")
+	_check(page.doll_info.get("mech_art") == "" and page._doll.get_node("mech_local").texture == null, "taking the crossbow off hides it")
 	# 鎖定欄、特殊效果區可捲動
 	_check(menu.is_slot_locked_for("shumian", "weapon_2") and not menu.is_slot_locked_for("liuyu", "weapon_2"), "only 書眠's sub weapon is locked")
 	_check(page._scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "the description / special effect area scrolls (bar only when needed)")
