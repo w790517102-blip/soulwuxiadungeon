@@ -287,7 +287,7 @@ func _build_detail() -> void:
 	_rarity_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_rarity_holder)
 	_status_stamp = _image("status_usable", Vector2(932, 270), Vector2(56, 22))
-	_status_label = _label("", Vector2(932, 270), Vector2(56, 22), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	_status_label = _label("", Vector2(929, 268), Vector2(56, 22), 12, Color("#F6EEDC"), HORIZONTAL_ALIGNMENT_CENTER)
 	_info_vals[2].visible = false
 	# 說明區（可捲動）：效果／使用條件／物品敘述／引用句
 	_detail_scroll = ScrollContainer.new()
@@ -544,7 +544,8 @@ func _rarity_chip(level: int, pos: Vector2, size: Vector2, parent: Node) -> Cont
 		sb.set_corner_radius_all(6)
 		p.add_theme_stylebox_override("panel", sb)
 		holder.add_child(p)
-	_label(ItemRarity.label_of(level), Vector2.ZERO, size, 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, holder)
+	# 章的墨形右邊比較不規則、視覺中心偏左上，文字往左上挪一點才看起來置中
+	_label(ItemRarity.label_of(level), Vector2(-3, -2), size, 12, Color("#F6EEDC"), HORIZONTAL_ALIGNMENT_CENTER, holder)
 	return holder
 
 func _set_detail_rarity(level: int) -> void:

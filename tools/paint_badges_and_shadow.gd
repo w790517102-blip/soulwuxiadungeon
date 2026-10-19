@@ -1,7 +1,7 @@
 extends SceneTree
 # 後製工具：① 把美術交的「平塗」類別章畫上油畫感紋理（深淺不均的筆觸、乾筆纖維、邊緣積墨），
 # ② 用類別章的形狀做出 4 級稀有度章（改顏色），③ 用卷軸的輪廓做柔和落影。
-# 來源平塗章保存在 docs/system_menu/inventory_ui_v1/badges_flat/（不會被改寫）。
+# 來源平塗章保存在 docs/system_menu/inventory_ui_v1/badges_flat/ 與 status_flat/（不會被改寫）。
 # 用法：Godot --headless --script tools/paint_badges_and_shadow.gd
 
 const SRC := "res://docs/system_menu/inventory_ui_v1/badges_flat/"
@@ -73,6 +73,15 @@ func _init() -> void:
 	for level in RARITY.keys():
 		_paint(shape, RARITY[level], 300 + int(level) * 23).save_png(OUT + "rarity_%d.png" % level)
 		print("PAINT rarity_", level)
+	# 使用類型章（可用/戰鬥限定/不可用）：一樣畫上油畫感紋理
+	var j := 0
+	for st in ["usable", "battle", "disabled"]:
+		var ssrc := Image.load_from_file("res://docs/system_menu/inventory_ui_v1/status_flat/status_%s.png" % st); ssrc.convert(Image.FORMAT_RGBA8)
+		var sbase := ssrc.get_pixel(ssrc.get_width() / 2, ssrc.get_height() / 2)
+		sbase.a = 1.0
+		_paint(ssrc, sbase, 500 + j * 19).save_png(OUT + "status_%s.png" % st)
+		print("PAINT status_", st)
+		j += 1
 	_shadow()
 	quit()
 
