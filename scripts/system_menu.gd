@@ -1781,7 +1781,7 @@ func _refresh_equipment_tab() -> void:
 	_set_equipment_button(armor_head_button, "頭部", str(equipped.get("armor_head", "")), "armor_head")
 	_set_equipment_button(armor_body_button, "身體", str(equipped.get("armor_body", "")), "armor_body")
 	_set_equipment_button(armor_hands_button, "手部", str(equipped.get("armor_hands", "")), "armor_hands")
-	_set_equipment_button(armor_feet_button, "腳部", str(equipped.get("armor_feet", "")), "armor_feet")
+	_set_equipment_button(armor_feet_button, "足部", str(equipped.get("armor_feet", "")), "armor_feet")
 	_set_equipment_button(accessory1_button, "飾品一", str(equipped.get("accessory_1", "")), "accessory_1")
 	_set_equipment_button(accessory2_button, "機關", str(equipped.get("mechanism", "")), "mechanism")
 
@@ -2800,6 +2800,29 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	if luck_label:
 		luck_label.set_meta("actor_id", actor_id)
 		luck_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_luck + bonus_luck)]
+
+## 裝備頁用：依「指定的裝備加成」算出狀態頁同一套公式的總數值（命中、閃避是「力」，與狀態頁一致）。
+## 傳入換裝後的 equip_bonus 就能算出「換上去之後」的數值，不會動到實際裝備。
+func compute_overview_stats(actor, equip_bonus: Dictionary) -> Dictionary:
+	var inner_bonus := _get_inner_force_bonus(actor)
+	var base_max_hp := int(_get_actor_value(actor, "max_hp", int(_get_actor_value(actor, "hp", 0))))
+	var base_max_mp := int(_get_actor_value(actor, "max_mp", int(_get_actor_value(actor, "mp", 0))))
+	var hp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "hp")
+	var mp_mult := _get_actor_resource_multiplier(actor, equip_bonus, inner_bonus, "mp")
+	var agi_stat := float(int(_get_actor_value(actor, "agi", 5)) + int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0)))
+	var luck_stat := float(int(_get_actor_value(actor, "luck", 5)) + int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0)))
+	var total_accuracy := int(_get_actor_value(actor, "accuracy", 100)) + int(equip_bonus.get("accuracy", 0)) + int(inner_bonus.get("accuracy", 0))
+	var total_evasion := int(_get_actor_value(actor, "evasion", 0)) + int(equip_bonus.get("evasion", 0)) + int(inner_bonus.get("evasion", 0))
+	return {
+		"atk": int(_get_actor_value(actor, "atk", 0)) + int(equip_bonus.get("atk", 0)) + int(inner_bonus.get("atk", 0)),
+		"def": int(_get_actor_value(actor, "def", 0)) + int(equip_bonus.get("def", 0)) + int(inner_bonus.get("def", 0)),
+		"max_hp": int(round(float(base_max_hp) * hp_mult)) + int(equip_bonus.get("max_hp", 0)) + int(inner_bonus.get("max_hp", 0)),
+		"max_mp": int(round(float(base_max_mp) * mp_mult)) + int(equip_bonus.get("max_mp", 0)) + int(inner_bonus.get("max_mp", 0)),
+		"speed": int(_get_actor_value(actor, "speed", 0)) + int(equip_bonus.get("speed", 0)) + int(inner_bonus.get("speed", 0)),
+		"hit": int(round((float(total_accuracy) - 100.0) + agi_stat * 0.7 + luck_stat * 0.3)),
+		"evade": int(round(agi_stat * 0.7 + luck_stat * 0.3 + float(total_evasion))),
+		"crit": _calc_actor_overview_crit_rate_pct(actor, equip_bonus, inner_bonus),
+	}
 
 func _calc_actor_overview_crit_rate_pct(actor, equip_bonus: Dictionary, inner_bonus: Dictionary = {}) -> float:
 	var luck_stat = int(_get_actor_value(actor, "luck", 0))

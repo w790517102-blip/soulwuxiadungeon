@@ -252,10 +252,13 @@ func active_party_has_equipment_region_effect(effect_key: String, region_id: Str
 	return false
 
 func get_equipment_stat_bonus(actor_id: String = "") -> Dictionary:
+	return get_stat_bonus_for_equipped(_get_equipped_ref(actor_id))
+
+## 任意一組裝備（{slot: item_id}）的數值加總。裝備頁用它算「換上去之後」的假設數值，不會動到實際裝備。
+func get_stat_bonus_for_equipped(equipped: Dictionary) -> Dictionary:
 	var bonus := {}
 	for key in STAT_KEYS:
 		bonus[key] = 0.0 if key == "crit_rate_bonus" else 0
-	var equipped = _get_equipped_ref(actor_id)
 	for slot in equipped.keys():
 		var item_id := str(equipped.get(slot, ""))
 		if item_id == "":
