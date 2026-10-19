@@ -13,6 +13,8 @@ const SLOT_Y0 := 132.0
 const SLOT_GAP := 10.0
 ## 格內版面（邏輯 px）：上＝部位名稱、其餘全是大圖示（裝備名稱不寫在格子上，玩家在右頁就能看到完整資訊）；留白越少越好
 const SLOT_ICON_BOX := Rect2(11, 15, 78, 78)         # 圖示盡量填滿整格（部位名稱疊在上面）
+## 個別格子的圖示縮放（往下靠齊，避免頂到上面的部位名稱）
+const SLOT_ICON_SCALE := {"head": 0.80}
 ## 八格底框：先把對比度調高一點點，再把 alpha 調低（讓格子融進卷軸、圖示更突出）
 const SLOT_FRAME_CONTRAST := 1.12
 const SLOT_FRAME_ALPHA := 0.86
@@ -33,9 +35,9 @@ const SLOT_LABEL_CHARS := {"main_weapon": 3, "off_weapon": 3, "head": 2, "body":
 const FIGURE_RECT := Rect2(421, 92, 254, 486)
 ## 三個角色卡槽（V2 placement.json 的 runtime 座標 ÷ 2）
 const ROSTER_SLOTS := [Rect2(55, 142, 246.5, 123), Rect2(55, 273, 246.5, 123.5), Rect2(55, 402.5, 246.5, 122)]
-const DETAIL_X := 780.0                  # 右頁（770 起）內容的左緣
-const DETAIL_W := 312.0
-const STAT_Y := 282.0
+const DETAIL_X := 790.0                  # 右頁（770 起）內容的左緣：往右縮進，內容在頁面上更置中
+const DETAIL_W := 296.0
+const STAT_Y := 332.0
 const STAT_ROW_H := 28.0
 const E := "equipment/"                  # 素材資料夾前綴（assets/UI/equipment/）
 
@@ -145,12 +147,13 @@ func _build_slots() -> void:
 			var pl := _image(E + "slots/label_" + part, Vector2((SLOT_SIZE.x - disp.x) * 0.5, 5.0 + (SLOT_LABEL_CHAR_PX - disp.y) * 0.5), disp, b)
 			pl.name = "PartLabel"
 		var ghost_tex := _tex(E + "slots/ghost_" + part)
-		var empty_icon := _image(E + "slots/ghost_" + part, SLOT_ICON_BOX.position, SLOT_ICON_BOX.size, b)
+		var icon_rect := _slot_icon_rect(part)
+		var empty_icon := _image(E + "slots/ghost_" + part, icon_rect.position, icon_rect.size, b)
 		empty_icon.name = "EmptyIcon"
 		empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		if ghost_tex != null:
 			empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		var icon := _image_from("", SLOT_ICON_BOX.position, SLOT_ICON_BOX.size, b)
+		var icon := _image_from("", icon_rect.position, icon_rect.size, b)
 		icon.name = "Icon"
 		if b.has_node("PartLabel"):
 			b.move_child(b.get_node("PartLabel"), b.get_child_count() - 1)       # 部位名稱蓋在圖示上面，不被劍尖之類擋住
@@ -207,24 +210,25 @@ func _build_figure() -> void:
 	_figure_name = _label("", Vector2(0, 320), Vector2(FIGURE_RECT.size.x, 30), 20, INK, HORIZONTAL_ALIGNMENT_CENTER, doll)
 
 func _build_detail() -> void:
-	_art_bg = _image("detail_art_bg", Vector2(DETAIL_X, 100), Vector2(100, 140))
-	_art = _image_from("", Vector2(DETAIL_X + 6, 106), Vector2(88, 128), self)
-	_name_label = _label("", Vector2(DETAIL_X + 110, 100), Vector2(200, 40), 24, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	# 版面：右頁左右平分——左半是大圖（概念圖的裝備圖案很大），右半是名稱與資訊
+	_art_bg = _image("detail_art_bg", Vector2(DETAIL_X, 96), Vector2(140, 196))
+	_art = _image_from("", Vector2(DETAIL_X + 6, 102), Vector2(128, 184), self)
+	_name_label = _label("", Vector2(DETAIL_X + 150, 96), Vector2(146, 40), 22, INK, HORIZONTAL_ALIGNMENT_LEFT)
 	_outlined(_name_label)
 	_rarity_holder = Control.new()
-	_rarity_holder.position = Vector2(DETAIL_X + 110, 144)
+	_rarity_holder.position = Vector2(DETAIL_X + 150, 138)
 	_rarity_holder.size = Vector2(60, 18)
 	_rarity_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_rarity_holder)
 	var titles := ["品類", "欄位", "裝備者"]
 	for i in 3:
-		var y := 172.0 + 24.0 * i
-		_image("label_ink_s", Vector2(DETAIL_X + 110, y), Vector2(70, 22))
-		_label(titles[i], Vector2(DETAIL_X + 116, y), Vector2(64, 22), 13, Color.WHITE)
-		_info_vals.append(_outlined(_label("", Vector2(DETAIL_X + 186, y), Vector2(126, 22), 14, INK)))
+		var y := 170.0 + 28.0 * i
+		_image("label_ink_s", Vector2(DETAIL_X + 150, y), Vector2(66, 24))
+		_label(titles[i], Vector2(DETAIL_X + 156, y), Vector2(60, 24), 13, Color.WHITE)
+		_info_vals.append(_outlined(_label("", Vector2(DETAIL_X + 222, y), Vector2(74, 24), 14, INK)))
 	# 裝備效果：這件裝備自己的加成，一行 2 格
-	_image("label_ink_m", Vector2(DETAIL_X - 6, 250), Vector2(100, 26))
-	_label("裝備效果", Vector2(DETAIL_X + 2, 250), Vector2(92, 26), 14, Color.WHITE)
+	_image("label_ink_m", Vector2(DETAIL_X, 298), Vector2(100, 26))
+	_label("裝備效果", Vector2(DETAIL_X + 8, 298), Vector2(92, 26), 14, Color.WHITE)
 	_stat_holder = Control.new()
 	_stat_holder.position = Vector2(DETAIL_X, STAT_Y)
 	_stat_holder.size = Vector2(DETAIL_W, STAT_ROW_H * 4)
@@ -379,6 +383,11 @@ func _rebuild_roster(ids: Array) -> void:
 		card.pressed.connect(_on_actor_pressed.bind(id))
 		_roster_buttons[id] = card
 
+func _slot_icon_rect(part: String) -> Rect2:
+	var s: float = float(SLOT_ICON_SCALE.get(part, 1.0))
+	var size := SLOT_ICON_BOX.size * s
+	return Rect2(SLOT_ICON_BOX.position + (SLOT_ICON_BOX.size - size) * Vector2(0.5, 1.0), size)
+
 ## 底框用的材質（對比度與 alpha 的參數在上面的常數）
 func _frame_material() -> ShaderMaterial:
 	if _slot_frame_material == null:
@@ -447,7 +456,7 @@ func _refresh_detail() -> void:
 		c.queue_free()
 	if has_item:
 		_rarity_chip(ItemRarity.rarity_of(def), Vector2.ZERO, Vector2(56, 20), _rarity_holder)
-		_rarity_holder.position = Vector2(DETAIL_X + 118, 150)
+		_rarity_holder.position = Vector2(DETAIL_X + 150, 138)
 	var art_path := ItemIconMap.art_path(item_id, def) if has_item else ""
 	_art.texture = load(art_path) as Texture2D if art_path != "" and ResourceLoader.exists(art_path) else null
 	_info_vals[0].text = EquipmentInfoScript.category_label(def) if has_item else "—"
@@ -473,11 +482,11 @@ func _fill_item_stats(def: Dictionary) -> void:
 		lines = (rows.size() + 1) / 2
 		for i in rows.size():
 			var row: Dictionary = rows[i]
-			var x := (i % 2) * 156.0
+			var x := (i % 2) * 148.0
 			var y := (i / 2) * STAT_ROW_H
-			_outlined(_label(String(row["label"]), Vector2(x + 4, y), Vector2(74, STAT_ROW_H), 15, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
+			_outlined(_label(String(row["label"]), Vector2(x + 2, y), Vector2(66, STAT_ROW_H), 15, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
 			var tint := Color("#A8F0A8") if int(row["sign"]) > 0 else Color("#FFA0A0")
-			_outlined(_label(String(row["text"]), Vector2(x + 80, y), Vector2(72, STAT_ROW_H), 16, tint, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
+			_outlined(_label(String(row["text"]), Vector2(x + 68, y), Vector2(76, STAT_ROW_H), 16, tint, HORIZONTAL_ALIGNMENT_LEFT, _stat_holder))
 	var top := STAT_Y + lines * STAT_ROW_H + 8.0
 	_scroll.position.y = top
 	_scroll.size.y = 562.0 - top
