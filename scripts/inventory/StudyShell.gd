@@ -14,10 +14,11 @@ static var bg_name := "bg_study"
 ## 前景物件：名稱 → 邏輯座標位置（物件圖的左上角）與錨點。位置對應修改請求第五節的三個安全區。
 ## anchor：用物件圖的哪個角貼到 pos（"bl" 左下、"br" 右下、"tr" 右上）
 const FOREGROUND := {
-	"fg_sword": {"pos": Vector2(0, 648), "anchor": "bl"},       # 左下：劍
-	"fg_book": {"pos": Vector2(0, 648), "anchor": "bl"},        # 左下：書（和劍同一個角，劍在書前面）
-	"fg_teapot": {"pos": Vector2(1152, 648), "anchor": "br"},   # 右下：茶壺
-	"fg_candle": {"pos": Vector2(1152, 70), "anchor": "tr"},    # 右緣：燭台
+	# 畫的順序 = 字典順序（後面的蓋在前面）：書在後、劍在前。位置用「錨點角」貼；數字可以超出畫面一點（物件被畫面邊緣切掉，更有近景感）
+	"fg_book": {"pos": Vector2(0, 660), "anchor": "bl"},        # 左下：書
+	"fg_sword": {"pos": Vector2(-30, 672), "anchor": "bl"},     # 左下：劍（前）
+	"fg_teapot": {"pos": Vector2(1152, 650), "anchor": "br"},   # 右下：茶壺
+	"fg_candle": {"pos": Vector2(1152, 70), "anchor": "tr"},    # 右緣：燈籠窄邊
 }
 
 var _fg_root: Control
