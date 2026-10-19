@@ -19,17 +19,18 @@ static var bg_name := "bg_study"
 ## scale：每個素材像素佔幾個邏輯像素（摳圖來自概念圖的局部截圖，概念圖寬 1672 px 對應邏輯 1152，所以 1152/1672 = 0.689 就是「概念圖佔多少就佔多少」（量過：摳圖的像素大小約等於概念圖像素））。
 ## layer：back＝介面下面；front＝介面上面（最靠近鏡頭）。
 ## 前景方案（可切換）：
-##   "random"（預設）＝每次開頁面隨機用備案 1（demo）或備案 2（cloth_big）。
+##   各頁自己指定方案（StudyPageBase._foreground_preset）：道具頁固定 "demo"（備案 1）、裝備頁固定 "cloth_big"（備案 2）。沒指定的頁用下面的 preset。
+##   "random"＝每次建立時隨機用備案 1 或備案 2（目前沒有頁面使用）。
 ##   "concept"＝概念圖原像素摳圖，照概念圖的大小與位置（0.689）。
 ##   "demo"（備案 1）＝照使用者自己做的 DEMO 版面：左下書、劍橫在按鈕列後面、右下大茶壺、右緣燈籠。
 ##   "cloth_big"（備案 2）＝概念圖摳圖，但左下的劍與青布放大（0.99），青布上緣蓋住分類欄下緣的框約 8px。
 ## 切換：StudyShell.preset = "demo"（要在開頁面之前設）。
-static var preset := "random"
+static var preset := "demo"
 
 const PRESETS := {
 	"concept": {
 		"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.689},    # 左下：布＋劍
-		"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689}, # 右下：茶壺（只露邊角）
+		"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689}, # 右下：藥罐與藥丸（只露邊角；概念圖原件，不是茶壺）
 		"fg_candle_corner": {"pos": Vector2(1152, 28), "anchor": "tr", "layer": "front", "scale": 0.689},   # 右上：燭台
 		"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},   # 卷軸右側垂下的流蘇
 	},
@@ -54,6 +55,8 @@ const PRESETS := {
 var _fg_root: Control
 var _fg_front: Control
 var _bg: TextureRect
+## 這個外殼用哪個前景方案（空字串＝用 StudyShell.preset）。道具頁固定 demo（備案 1），裝備頁固定 cloth_big（備案 2）。
+var preset_name := ""
 
 func _ready() -> void:
 	name = "StudyShell"
@@ -83,7 +86,7 @@ func _ready() -> void:
 	add_child(_fg_front)
 	_build_foreground()
 
-## 重新抽一次前景方案（頁面每次打開時呼叫，preset 是 random 才會換）
+## 重新建立前景（preset 是 random 時會重新抽）
 func reroll() -> void:
 	for layer in [_fg_root, _fg_front]:
 		for c in layer.get_children():
@@ -92,7 +95,7 @@ func reroll() -> void:
 	_build_foreground()
 
 func _build_foreground() -> void:
-	var chosen := preset
+	var chosen := preset_name if preset_name != "" else preset
 	if chosen == "random":     # 每次開頁面隨機：備案 1（demo）或備案 2（cloth_big），增加變化
 		chosen = ["demo", "cloth_big"][randi() % 2]
 	var foreground: Dictionary = PRESETS.get(chosen, PRESETS["concept"])

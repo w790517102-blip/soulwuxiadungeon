@@ -570,3 +570,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_overlay()
 		else:
 			close_requested.emit()
+
+## 道具頁固定用前景方案 1（照老闆的 DEMO：書、劍、茶壺、燈籠）
+func _foreground_preset() -> String:
+	return "demo"

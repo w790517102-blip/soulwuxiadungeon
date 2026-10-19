@@ -131,9 +131,14 @@ func _tex_button(size: Vector2, pos: Vector2, normal: String, hover: String, pre
 	return b
 
 
+## 這一頁用的前景方案（StudyShell.PRESETS 的名稱）；子類別覆寫
+func _foreground_preset() -> String:
+	return ""
+
 func _build_background() -> void:
 	# 外殼：書房桌面背景＋桌上的前景物件（所有新版系統頁共用）
 	_shell = StudyShell.new()
+	_shell.preset_name = _foreground_preset()
 	add_child(_shell)
 	# 中層：卷軸（含景物，固定尺寸，不可平鋪）
 	_image("scroll_body", Vector2(158, 69), Vector2(972, 506))

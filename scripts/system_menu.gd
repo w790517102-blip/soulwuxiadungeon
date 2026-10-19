@@ -341,8 +341,6 @@ func _update_inventory_page(show_it: bool) -> void:
 		_inventory_page.visible = show_it
 		external_target_picker = Callable(_inventory_page, "pick_target") if show_it else Callable()
 		if show_it:
-			if _inventory_page._shell != null and _inventory_page.visible == false:
-				_inventory_page._shell.reroll()
 			_inventory_page._refresh()
 
 ## 新裝備頁：停在裝備分頁時顯示，離開時隱藏（舊頁節點照常存在，開關關掉就回到舊頁）。
@@ -355,8 +353,6 @@ func _update_equipment_page(show_it: bool) -> void:
 		_equipment_page.close_requested.connect(func(): SystemMenu._close_system_menu())
 		_equipment_page.tab_requested.connect(_on_inventory_nav_requested)
 		add_child(_equipment_page)
-	elif show_it and _equipment_page._shell != null:
-		_equipment_page._shell.reroll()
 	if _equipment_page != null:
 		_equipment_page.visible = show_it
 		if show_it:

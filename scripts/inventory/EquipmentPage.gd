@@ -515,3 +515,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_overlay()
 		else:
 			close_requested.emit()
+
+## 裝備頁固定用前景方案 2（青布與劍放大、右下角是藥罐與藥丸）
+func _foreground_preset() -> String:
+	return "cloth_big"
