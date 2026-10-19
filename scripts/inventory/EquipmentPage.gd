@@ -12,7 +12,7 @@ const SLOT_X := [331.0, 654.0]          # 左欄、右欄
 const SLOT_Y0 := 132.0
 const SLOT_GAP := 10.0
 ## 格內版面（邏輯 px）：上＝部位名稱、其餘全是大圖示（裝備名稱不寫在格子上，玩家在右頁就能看到完整資訊）；留白越少越好
-const SLOT_ICON_BOX := Rect2(11, 15, 78, 78)         # 圖示盡量填滿整格（部位名稱疊在上面）
+const SLOT_ICON_BOX := Rect2(-1, 6, 102, 98)        # 圖示蓋過邊框也沒關係（像棋子壓在棋盤格上），盡量填滿
 ## 個別格子的圖示縮放（往下靠齊，避免頂到上面的部位名稱）
 const SLOT_ICON_SCALE := {"head": 0.80}
 ## 八格底框：先把對比度調高一點點，再把 alpha 調低（讓格子融進卷軸、圖示更突出）
@@ -30,7 +30,7 @@ void fragment() {
 "
 var _slot_frame_material: ShaderMaterial
 ## 候選底框（老闆提供的新框：金邊、黑墨暈邊、紙面墨圈）。true＝八格都用它，不加外暈與對比度處理；false＝共邊國 V3 框
-static var use_candidate_slot_frame := false
+static var use_candidate_slot_frame := true
 var _trim_cache: Dictionary = {}
 const SLOT_LABEL_CHAR_PX := 13.0          # 部位名稱每個字的大小（八格統一）
 const SLOT_LABEL_CHARS := {"main_weapon": 3, "off_weapon": 3, "head": 2, "body": 2, "hands": 2, "feet": 2, "accessory": 2, "mechanism": 2}
