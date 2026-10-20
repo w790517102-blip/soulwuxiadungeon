@@ -23,7 +23,7 @@ const LAYER_NAMES := ["back", "weapon_back", "master", "body", "cloak_front", "w
 ## 眼睛對齊（老闆定案：第二、三階是獨立畫的整張圖，臉不同也沒關係，但眼睛要在同一個位置，切換衣裝時視線不跳）。
 ## 以母圖與第四階（同一張臉）的兩眼中點為基準（畫布 508×972 像素 (300,170)）；下面是第二、三階整張圖需要平移的量（畫布像素，連同疊在上面的劍、連弩一起移，身體與武器的相對位置不變）。
 ## 量測方式：看兩眼瞳孔中心，取中點，與基準相減（母圖 (299.8,169.5)、二階 (329.5,155.5)、三階 (331,155.8)）。
-const EYE_SHIFT := {2: Vector2(-29.7, 14.0), 3: Vector2(-31.2, 13.7)}
+const EYE_SHIFT := {"liuyu": {2: Vector2(-29.7, 14.0), 3: Vector2(-31.2, 13.7)}}
 ## 各角色整體的水平對齊：畫面左眼瞳孔與劉語塵在同一個 X（量測：劉語塵 278.8、書眠 271.3，畫布像素）；連弩與背帶跟著人物一起移，相對位置不變
 const CHAR_SHIFT := {"shumian": Vector2(7.5, 0.0)}
 
@@ -87,6 +87,29 @@ const HEAD_REGION := Rect2(150, 20, 250, 270)       # 以母圖與第四階的�
 ## 各角色自己的頭像裁切（畫布像素）：臉要在卡片頭像的正中間
 const HEAD_REGIONS := {"shumian": Rect2(160, 0, 290, 313)}
 
+## 這個角色這一階有什麼圖："master"（凡品整張母圖）、"tiered"（分層衣裝）、"whole"（整張衣裝）、""（沒有）
+static func tier_kind(id: String, rarity: int) -> String:
+	if rarity <= 1:
+		return "master" if ResourceLoader.exists(DIR + "doll_%s_master.png" % id) else ""
+	if ResourceLoader.exists(DIR + "doll_%s_r%d_body.png" % [id, rarity]):
+		return "tiered"
+	if ResourceLoader.exists(DIR + "doll_%s_r%d.png" % [id, rarity]):
+		return "whole"
+	return ""
+
+## 穿了這個稀有度的身體護具時實際用哪一階的圖：有那一階就用；沒有就退到最接近的低一階，再沒有就用最接近的高一階（素材還沒交齊時，角色仍然有人物可看）。
+static func resolve_tier(id: String, rarity: int) -> Dictionary:
+	var order: Array = [rarity]
+	for r in range(rarity - 1, 0, -1):
+		order.append(r)
+	for r in range(rarity + 1, 5):
+		order.append(r)
+	for r in order:
+		var kind := tier_kind(id, int(r))
+		if kind != "":
+			return {"kind": kind, "rarity": int(r)}
+	return {}
+
 static func head_portrait(id: String) -> Texture2D:
 	var equipped: Dictionary = InventorySync.get_equipped(id)
 	var rarity := 1
@@ -96,14 +119,18 @@ static func head_portrait(id: String) -> Texture2D:
 	var path := ""
 	var region: Rect2 = HEAD_REGIONS.get(id, HEAD_REGION)
 	var origin := region.position
-	if rarity > 1 and ResourceLoader.exists(DIR + "doll_r%d_front.png" % rarity):
-		# 分層衣裝：頭部那層（front）只有頭髮與領子，單獨裁會缺一塊，所以把 back、body、cloak_front、front 四層疊起來再裁
-		return _tiered_head(rarity, region)
-	elif rarity > 1 and ResourceLoader.exists(DIR + "doll_%s_r%d.png" % [id, rarity]):
-		path = DIR + "doll_%s_r%d.png" % [id, rarity]
-		origin -= Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))        # 整張圖有平移過，頭也跟著在那邊
-	elif ResourceLoader.exists(DIR + "doll_%s_master.png" % id):
-		path = DIR + "doll_%s_master.png" % id
+	var pick := resolve_tier(id, rarity)
+	if pick.is_empty():
+		return null
+	var used := int(pick["rarity"])
+	match String(pick["kind"]):
+		"tiered":
+			# 分層衣裝：頭部那層（front）只有頭髮與領子，單獨裁會缺一塊，所以把 back、body、cloak_front、front 四層疊起來再裁
+			return _tiered_head(id, used, region)
+		"whole":
+			path = DIR + "doll_%s_r%d.png" % [id, used]
+		"master":
+			path = DIR + "doll_%s_master.png" % id
 	if path == "":
 		return null
 	var atlas := AtlasTexture.new()
@@ -113,13 +140,13 @@ static func head_portrait(id: String) -> Texture2D:
 
 static var _tiered_head_cache: Dictionary = {}
 
-static func _tiered_head(rarity: int, region: Rect2 = HEAD_REGION) -> Texture2D:
-	var cache_key := "%d_%s" % [rarity, str(region)]
+static func _tiered_head(id: String, rarity: int, region: Rect2 = HEAD_REGION) -> Texture2D:
+	var cache_key := "%s_%d_%s" % [id, rarity, str(region)]
 	if _tiered_head_cache.has(cache_key):
 		return _tiered_head_cache[cache_key]
 	var canvas: Image = null
 	for part in ["back", "body", "cloak_front", "front"]:
-		var tex := load(DIR + "doll_r%d_%s.png" % [rarity, part]) as Texture2D
+		var tex := load(DIR + "doll_%s_r%d_%s.png" % [id, rarity, part]) as Texture2D
 		if tex == null:
 			continue
 		var img := tex.get_image()
@@ -141,9 +168,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 	var info := {"mode": "none", "body_rarity": 0, "body_art": "", "weapon_art": "", "mech_art": ""}
 	for layer_name in LAYER_NAMES:
 		_set_layer(layer_name, null)
-	var master := _tex("doll_%s_master" % (master_name if master_name != "" else id))
-	if master == null:
-		return info
+	var fig_id := master_name if master_name != "" else id
 	var equipped: Dictionary = InventorySync.get_equipped(id)
 	# 身體護具：依稀有度挑整組衣裝；沒有那一階就退回凡品（整張母圖）
 	var rarity := 1
@@ -154,26 +179,31 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 	var order: Array = ORDER_MASTER.duplicate()
 	var shift := Vector2(CHAR_SHIFT.get(id, Vector2.ZERO))
 	var mech_shift := Vector2.ZERO
-	var tier_body := _tex("doll_r%d_body" % rarity) if rarity > 1 else null
-	var whole := _tex("doll_%s_r%d" % [master_name if master_name != "" else id, rarity]) if rarity > 1 else null
-	if tier_body != null:
-		info["mode"] = "tiered"
-		info["body_art"] = "doll_r%d" % rarity
-		for part in ["back", "body", "cloak_front", "front"]:
-			_set_layer(part, _tex("doll_r%d_%s" % [rarity, part]))
-		order = ORDER_TIERED.duplicate()
-	elif whole != null:
-		# 整張衣裝（第二、三階：沒有分層，劍與機關疊在它上面）
-		info["mode"] = "whole"
-		info["body_art"] = "r%d_whole" % rarity
-		shift += Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))
-		_set_layer("master", whole)
-		order = ORDER_MASTER.duplicate()
-	else:
-		info["mode"] = "master"
-		info["body_art"] = "master"
-		_set_layer("master", master)
-		order = ORDER_MASTER.duplicate()
+	# 這一階有圖就用，沒有就退到最接近的一階（素材還沒交齊時，角色仍有人物可看）
+	var pick := resolve_tier(fig_id, rarity)
+	if pick.is_empty():
+		return info
+	var art_r := int(pick["rarity"])
+	info["art_rarity"] = art_r
+	match String(pick["kind"]):
+		"tiered":
+			info["mode"] = "tiered"
+			info["body_art"] = "doll_%s_r%d" % [fig_id, art_r]
+			for part in ["back", "body", "cloak_front", "front"]:
+				_set_layer(part, _tex("doll_%s_r%d_%s" % [fig_id, art_r, part]))
+			order = ORDER_TIERED.duplicate()
+		"whole":
+			# 整張衣裝（沒有分層，劍與機關疊在它上面）
+			info["mode"] = "whole"
+			info["body_art"] = "r%d_whole" % art_r
+			shift += Vector2(Dictionary(EYE_SHIFT.get(fig_id, {})).get(art_r, Vector2.ZERO))
+			_set_layer("master", _tex("doll_%s_r%d" % [fig_id, art_r]))
+			order = ORDER_MASTER.duplicate()
+		_:
+			info["mode"] = "master"
+			info["body_art"] = "master"
+			_set_layer("master", _tex("doll_%s_master" % fig_id))
+			order = ORDER_MASTER.duplicate()
 	# 武器：每把自己的圖，沒有就預設
 	var weapon_id := String(equipped.get("weapon_1", ""))
 	if weapon_id != "":

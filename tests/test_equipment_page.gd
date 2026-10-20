@@ -108,7 +108,7 @@ func _run() -> void:
 	_check(page._doll.get_node("master").offset_left != 0.0 and absf(page._doll.get_node("master").offset_left + 14.85) < 0.5, "tier 2/3 whole figures are shifted so the eyes line up with the master")
 	page._apply_equip("arm_legend_clothes")
 	_check(page._doll.get_node("master").offset_left == 0.0 or page.doll_info.get("mode") == "tiered", "the shift only applies to whole-figure tiers")
-	_check(page.doll_info.get("body_rarity") == 4 and page.doll_info.get("mode") == "tiered" and page.doll_info.get("body_art") == "doll_r4", "the legend clothes (rarity 4) show the layered fourth-tier set")
+	_check(page.doll_info.get("body_rarity") == 4 and page.doll_info.get("mode") == "tiered" and page.doll_info.get("body_art") == "doll_liuyu_r4", "the legend clothes (rarity 4) show the layered fourth-tier set")
 	_check(page._doll.get_node("body").texture != null and page._doll.get_node("front").texture != null and page._doll.get_node("master").texture == null, "the four clothing layers are shown together and the master is hidden")
 	_check(page._doll.get_node("back").get_index() < page._doll.get_node("body").get_index() and page._doll.get_node("front").get_index() < page._doll.get_node("weapon_back").get_index() and page._doll.get_node("weapon_back").get_index() < page._doll.get_node("weapon_front").get_index(), "layered order: back at the bottom, the sword layers on top of all clothing")
 	_check(page.doll_info.get("mech_art") == "", "no mechanism equipped → no mechanism layer")
@@ -124,7 +124,7 @@ func _run() -> void:
 	_check(page.doll_info.get("mech_art") == "" and page._doll.get_node("mech").texture == null and page._doll.get_node("strap").texture == null, "taking the crossbow off hides the crossbow and the strap")
 	# 書眠：筆拿在手上，不畫紙娃娃的武器層（不能憑空背一把劍）；連弩有她自己的微調
 	var shu: Dictionary = page._doll.show_actor("shumian")
-	_check(shu.get("mode") == "master" and shu.get("weapon_art") == "", "書眠 shows her own figure and no sword layers for the brush")
+	_check(shu.get("mode") == "whole" and shu.get("art_rarity") == 4 and shu.get("weapon_art") == "", "書眠 only has her fourth-tier figure so far: it is shown for every outfit, and no sword layers for the brush")
 	_check(page._doll.get_node("weapon_back").texture == null and page._doll.get_node("weapon_front").texture == null, "no weapon layers for a brush")
 	page._doll.show_actor("liuyu")
 	# 鎖定欄、特殊效果區可捲動

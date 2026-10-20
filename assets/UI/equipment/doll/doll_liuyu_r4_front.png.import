@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d4hcth0lu7epl"
-path="res://.godot/imported/doll_r4_front.png-0ee373ab561a6dc4cf3b6783ef60f521.ctex"
+uid="uid://bhi2rh5hce35b"
+path="res://.godot/imported/doll_liuyu_r4_front.png-9ec1a53dfa2478a15620406052b690fa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment/doll/doll_r4_front.png"
-dest_files=["res://.godot/imported/doll_r4_front.png-0ee373ab561a6dc4cf3b6783ef60f521.ctex"]
+source_file="res://assets/UI/equipment/doll/doll_liuyu_r4_front.png"
+dest_files=["res://.godot/imported/doll_liuyu_r4_front.png-9ec1a53dfa2478a15620406052b690fa.ctex"]
 
 [params]
 
