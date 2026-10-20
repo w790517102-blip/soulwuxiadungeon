@@ -114,6 +114,15 @@ static func resolve_tier(id: String, rarity: int) -> Dictionary:
 			return {"kind": kind, "rarity": int(r)}
 	return {}
 
+## 一～三階與第四階的大小不同（老闆定案：統一用第四階的大小）。TIER_SCALE＝這一階的圖要放大幾倍才跟第四階一樣大（以左眼為支點，所以放大後眼睛仍在對齊的位置）。
+## 量測：兩眼間距第四階 40.7、一階 35.8、二階 35.6、三階 37.0（畫布像素），與頭部輪廓對位的結果取平均 → 一階 1.136、二階 1.11、三階 1.10；±0.02。
+const TIER_SCALE := {"shumian": {1: 1.136, 2: 1.11, 3: 1.10}}
+## 縮放與頭像裁切的基準點：第四階的左眼瞳孔（畫布像素）
+const BASE_EYE := {"shumian": Vector2(271.3, 171.0)}
+
+static func tier_scale(id: String, rarity: int) -> float:
+	return float(Dictionary(TIER_SCALE.get(id, {})).get(rarity, 1.0))
+
 static func eye_shift(id: String, rarity: int) -> Vector2:
 	return Vector2(Dictionary(EYE_SHIFT.get(id, {})).get(rarity, Vector2.ZERO))
 
@@ -136,10 +145,16 @@ static func head_portrait(id: String) -> Texture2D:
 			return _tiered_head(id, used, region)
 		"whole":
 			path = DIR + "doll_%s_r%d.png" % [id, used]
-			origin -= eye_shift(id, used)        # 整張圖有平移過，頭也跟著在那邊
+			var k := tier_scale(id, used)
+			var base: Vector2 = BASE_EYE.get(id, Vector2.ZERO)
+			origin = (origin - base) / k + base - eye_shift(id, used)        # 整張圖有平移並放大過（以左眼為支點），頭也跟著
+			region.size = region.size / k
 		"master":
 			path = DIR + "doll_%s_master.png" % id
-			origin -= eye_shift(id, 1)
+			var k1 := tier_scale(id, 1)
+			var base1: Vector2 = BASE_EYE.get(id, Vector2.ZERO)
+			origin = (origin - base1) / k1 + base1 - eye_shift(id, 1)
+			region.size = region.size / k1
 	if path == "":
 		return null
 	var atlas := AtlasTexture.new()
@@ -188,6 +203,8 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 	var order: Array = ORDER_MASTER.duplicate()
 	var shift := Vector2(CHAR_SHIFT.get(id, Vector2.ZERO))
 	var mech_shift := Vector2.ZERO
+	var fig_scale := 1.0
+	var pivot_es := Vector2.ZERO
 	# 這一階有圖就用，沒有就退到最接近的一階（素材還沒交齊時，角色仍有人物可看）
 	var pick := resolve_tier(fig_id, rarity)
 	if pick.is_empty():
@@ -207,11 +224,15 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			info["body_art"] = "r%d_whole" % art_r
 			shift += eye_shift(fig_id, art_r)
 			_set_layer("master", _tex("doll_%s_r%d" % [fig_id, art_r]))
+			fig_scale = tier_scale(fig_id, art_r)
+			pivot_es = eye_shift(fig_id, art_r)
 			order = ORDER_MASTER.duplicate()
 		_:
 			info["mode"] = "master"
 			info["body_art"] = "master"
 			shift += eye_shift(fig_id, 1)
+			fig_scale = tier_scale(fig_id, 1)
+			pivot_es = eye_shift(fig_id, 1)
 			_set_layer("master", _tex("doll_%s_master" % fig_id))
 			order = ORDER_MASTER.duplicate()
 	# 武器：每把自己的圖，沒有就預設
@@ -250,6 +271,11 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			order.insert(at, "strap")
 			order.insert(at + 1, "mech")
 	_apply_shift(shift)
+	# 整張人物圖（一～三階）縮放成第四階的大小：以左眼為支點
+	var fig_layer := _layers["master"] as TextureRect
+	fig_layer.scale = Vector2.ONE * fig_scale
+	var eye_pivot: Vector2 = Vector2(BASE_EYE.get(fig_id, Vector2.ZERO)) - pivot_es
+	fig_layer.pivot_offset = eye_pivot * 0.5
 	if mech_shift != Vector2.ZERO:
 		for mech_layer in ["mech", "strap"]:
 			var mr2 := _layers[mech_layer] as TextureRect
