@@ -48,6 +48,28 @@ const CHAR_MECH := {
 var actor_id := ""
 var _layers: Dictionary = {}         # 名稱 → TextureRect
 
+## 下擺與左緣的墨暈淡出（老闆定案：像劉語塵那樣剪裁）：立繪超出畫框的部分不是硬切，而是慢慢融進紙裡。
+## 在螢幕座標上算（FRAGCOORD），所以不管圖層怎麼位移、縮放都對齊畫框；範圍用 uniform 傳進來。
+const FADE_SHADER := "shader_type canvas_item;
+uniform vec4 frame = vec4(0.0, 0.0, 1.0, 1.0);
+uniform float fade_bottom = 60.0;
+uniform float fade_left = 30.0;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float vnoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	float n = vnoise(FRAGCOORD.xy * 0.045) * 0.6 + vnoise(FRAGCOORD.xy * 0.18) * 0.4;
+	float db = (frame.y + frame.w - FRAGCOORD.y) / fade_bottom;
+	float dl = (FRAGCOORD.x - frame.x) / fade_left;
+	float a = clamp(db * 1.4 - (1.0 - n) * 0.5, 0.0, 1.0) * clamp(dl * 1.4 - (1.0 - n) * 0.5, 0.0, 1.0);
+	c.a *= a * a * (3.0 - 2.0 * a);
+	COLOR = c;
+}
+"
+var _fade_material: ShaderMaterial
+const FADE_BOTTOM := 56.0      # 邏輯 px
+const FADE_LEFT := 24.0
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for layer_name in LAYER_NAMES:
@@ -57,9 +79,31 @@ func _ready() -> void:
 		r.stretch_mode = TextureRect.STRETCH_SCALE
 		r.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		r.material = _get_fade_material()
 		r.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		add_child(r)
 		_layers[layer_name] = r
+	resized.connect(update_fade)
+
+func _get_fade_material() -> ShaderMaterial:
+	if _fade_material == null:
+		var sh := Shader.new()
+		sh.code = FADE_SHADER
+		_fade_material = ShaderMaterial.new()
+		_fade_material.shader = sh
+	return _fade_material
+
+## 把畫框範圍（螢幕像素）傳給淡出 shader；畫面縮放或頁面移動後要再呼叫
+func update_fade() -> void:
+	if not is_inside_tree():
+		return
+	var xf: Transform2D = get_viewport().get_final_transform() * get_global_transform_with_canvas()      # 含視窗的拉伸縮放 → 螢幕像素（FRAGCOORD 的座標）
+	var tl := xf * Vector2.ZERO
+	var br := xf * size
+	var scale_px := (br.y - tl.y) / maxf(size.y, 1.0)          # 邏輯 px → 螢幕 px
+	_get_fade_material().set_shader_parameter("frame", Vector4(tl.x, tl.y, br.x - tl.x, br.y - tl.y))
+	_get_fade_material().set_shader_parameter("fade_bottom", FADE_BOTTOM * scale_px)
+	_get_fade_material().set_shader_parameter("fade_left", FADE_LEFT * scale_px)
 
 func _tex(file: String) -> Texture2D:
 	var p := DIR + file + ".png"
@@ -189,6 +233,7 @@ static func _tiered_head(id: String, rarity: int, region: Rect2 = HEAD_REGION) -
 ## 依這位角色目前的裝備重畫所有圖層。回傳 {mode, body_rarity, body_art, weapon_art, mech_art}，給測試與除錯用
 func show_actor(id: String, master_name: String = "") -> Dictionary:
 	actor_id = id
+	update_fade()
 	var info := {"mode": "none", "body_rarity": 0, "body_art": "", "weapon_art": "", "mech_art": ""}
 	for layer_name in LAYER_NAMES:
 		_set_layer(layer_name, null)
