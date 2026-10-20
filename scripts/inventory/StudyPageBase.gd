@@ -285,3 +285,277 @@ func _bar(parent: Node, pos: Vector2, kind: String, value: float, max_value: flo
 	fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 
 
+
+
+# ------------------------------------------------------------------
+# 裝備格（裝備頁與狀態頁的「裝備摘要」共用）
+# ------------------------------------------------------------------
+const E := "equipment/"                  # 素材資料夾前綴（assets/UI/equipment/）
+## 格內版面（邏輯 px，以 100×96 的格子為準；其他大小會等比縮放）：上＝部位名稱、其餘全是大圖示；留白越少越好
+const SLOT_BASE := Vector2(100, 96)
+const SLOT_ICON_BOX := Rect2(-1, 6, 102, 98)        # 圖示蓋過邊框也沒關係（像棋子壓在棋盤格上），盡量填滿
+## 個別格子的圖示縮放（往下靠齊，避免頂到上面的部位名稱）
+const SLOT_ICON_SCALE := {"head": 0.80}
+## 個別格子的圖示位移（邏輯 px，負＝往上）：圖本身的重心不在中心，用位移校正
+const SLOT_ICON_SHIFT := {"body": Vector2(0, -8)}
+## 八格底框：先把對比度調高一點點，再把 alpha 調低（讓格子融進卷軸、圖示更突出）
+const SLOT_FRAME_CONTRAST := 1.12
+const SLOT_FRAME_ALPHA := 0.86
+const SLOT_FRAME_SHADER := "shader_type canvas_item;
+uniform float contrast = 1.12;
+uniform float alpha = 0.86;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	c.rgb = clamp((c.rgb - 0.5) * contrast + 0.5, 0.0, 1.0);
+	c.a *= alpha;
+	COLOR = c;
+}
+"
+const SLOT_LABEL_CHAR_PX := 13.0          # 部位名稱每個字的大小（八格統一）
+const SLOT_LABEL_CHARS := {"main_weapon": 3, "off_weapon": 3, "head": 2, "body": 2, "hands": 2, "feet": 2, "accessory": 2, "mechanism": 2}
+var _slot_frame_material: ShaderMaterial
+## 候選底框（老闆提供的新框：金邊、黑墨暈邊、紙面墨圈）。true＝八格都用它，不加外暈與對比度處理；false＝共邊國 V3 框
+static var use_candidate_slot_frame := true
+var _trim_cache: Dictionary = {}
+
+## 做一格裝備格（底框、部位名稱、空格剪影、物品圖、選中金光）。回傳的 Button 沒有接 pressed，由頁面決定要不要互動。
+## size 是這格的大小（邏輯 px）；其他元件按 size.x / 100 等比縮放。
+func make_slot_tile(slot_id: String, size: Vector2, parent: Node) -> Button:
+	var part := _empty_icon_name(slot_id)
+	var k := size.x / SLOT_BASE.x
+	var b := Button.new()
+	b.name = "Slot_" + slot_id
+	b.size = size
+	b.focus_mode = Control.FOCUS_NONE
+	b.toggle_mode = true
+	b.z_index = 1
+	b.set_meta("tile_scale", k)
+	for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+		b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+	parent.add_child(b)
+	var frame: TextureRect
+	if use_candidate_slot_frame:
+		frame = _image(E + "slots/slot_frame_candidate", Vector2.ZERO, size, b)
+	else:
+		_image(E + "slots/slot_bleed_" + part, Vector2(-8, -8) * k, Vector2(116, 112) * k, b).name = "Bleed"
+		frame = _image(E + "slots/slot_frame_" + part, Vector2.ZERO, size, b)
+		frame.material = _frame_material()
+	frame.name = "Frame"
+	var label_tex := _tex(E + "slots/label_" + part)
+	if label_tex != null:
+		var char_px := SLOT_LABEL_CHAR_PX * k
+		var per_char := label_tex.get_size().x / float(SLOT_LABEL_CHARS.get(part, 2))
+		var disp := label_tex.get_size() * (char_px / per_char)
+		var pl := _image(E + "slots/label_" + part, Vector2((size.x - disp.x) * 0.5, 5.0 * k + (char_px - disp.y) * 0.5), disp, b)
+		pl.name = "PartLabel"
+	var icon_rect := _slot_icon_rect(part, k)
+	var empty_icon := _image(E + "slots/ghost_" + part, icon_rect.position, icon_rect.size, b)
+	empty_icon.name = "EmptyIcon"
+	empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var icon := _image_from("", icon_rect.position, icon_rect.size, b)
+	icon.name = "Icon"
+	if b.has_node("PartLabel"):
+		b.move_child(b.get_node("PartLabel"), b.get_child_count() - 1)       # 部位名稱蓋在圖示上面，不被劍尖之類擋住
+	# 金光：兩層疊加（加色混合）；內層是共邊國的光暈（240×232，疊在格子 (-10,-10)），外層放大一圈做出更粗的光邊。素材是靜態的，呼吸由程式調透明度。
+	var glow := Control.new()
+	glow.name = "SelectedGlow"
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.visible = false
+	b.add_child(glow)
+	var additive := CanvasItemMaterial.new()
+	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	for layer in [[Vector2(-20, -20), Vector2(140, 136), 0.5], [Vector2(-10, -10), Vector2(120, 116), 0.8], [Vector2(-10, -10), Vector2(120, 116), 0.55]]:
+		var g := _image(E + "slots/slot_selected_gold_overlay", Vector2(layer[0]) * k, Vector2(layer[1]) * k, glow)
+		g.material = additive
+		g.modulate = Color(1.0, 0.80, 0.32, layer[2])      # 偏金色，不要加成純白
+	var breath := glow.create_tween().set_loops()
+	breath.tween_property(glow, "modulate:a", 0.8, 1.1).set_trans(Tween.TRANS_SINE)
+	breath.tween_property(glow, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE)
+	# 沒有移入圖，用提亮代替
+	b.mouse_entered.connect(func(): if not b.disabled: b.modulate = Color(1.1, 1.08, 1.02))
+	b.mouse_exited.connect(func(): b.modulate = Color(0.55, 0.52, 0.48) if b.disabled else Color.WHITE)
+	return b
+
+## 把格子填成「穿了 item_id」（空字串＝空格剪影）。locked＝固定欄位（整格壓暗），selected＝選中（金光、蓋在鄰格上面）。
+func fill_slot_tile(b: Button, item_id: String, locked: bool, selected: bool) -> void:
+	b.set_pressed_no_signal(selected)
+	(b.get_node("SelectedGlow") as Control).visible = selected and not locked
+	b.z_index = 3 if selected else 1
+	b.disabled = locked
+	b.modulate = Color(0.55, 0.52, 0.48) if locked else Color.WHITE      # 停用（固定欄位）：整格壓暗
+	var icon := b.get_node("Icon") as TextureRect
+	var empty_icon := b.get_node("EmptyIcon") as TextureRect
+	if item_id != "":
+		icon.texture = _slot_icon_texture(item_id, ItemDB.get_def(item_id))
+		empty_icon.visible = false
+	else:
+		icon.texture = null
+		empty_icon.visible = true
+
+## 空格剪影的檔名（V3：slots/ghost_<名稱>.png）
+func _empty_icon_name(slot_id: String) -> String:
+	match slot_id:
+		"weapon_1": return "main_weapon"
+		"weapon_2": return "off_weapon"
+		"armor_head": return "head"
+		"armor_body": return "body"
+		"armor_hands": return "hands"
+		"armor_feet": return "feet"
+		"accessory_1": return "accessory"
+	return "mechanism"
+
+func _slot_icon_rect(part: String, k: float = 1.0) -> Rect2:
+	var s: float = float(SLOT_ICON_SCALE.get(part, 1.0))
+	var size := SLOT_ICON_BOX.size * s
+	return Rect2((SLOT_ICON_BOX.position + (SLOT_ICON_BOX.size - size) * Vector2(0.5, 1.0) + Vector2(SLOT_ICON_SHIFT.get(part, Vector2.ZERO))) * k, size * k)
+
+## 底框用的材質（對比度與 alpha 的參數在上面的常數）
+func _frame_material() -> ShaderMaterial:
+	if _slot_frame_material == null:
+		var sh := Shader.new()
+		sh.code = SLOT_FRAME_SHADER
+		_slot_frame_material = ShaderMaterial.new()
+		_slot_frame_material.shader = sh
+		_slot_frame_material.set_shader_parameter("contrast", SLOT_FRAME_CONTRAST)
+		_slot_frame_material.set_shader_parameter("alpha", SLOT_FRAME_ALPHA)
+	return _slot_frame_material
+
+## 格子用的圖示：用大圖（380×560）裁到不透明範圍再縮小，比放大 80×80 小圖清楚，而且圖形填得滿
+func _slot_icon_texture(item_id: String, def: Dictionary) -> Texture2D:
+	var art_path := ItemIconMap.art_path(item_id, def)
+	if ResourceLoader.exists(art_path):
+		if _trim_cache.has(art_path):
+			return _trim_cache[art_path]
+		var tex := load(art_path) as Texture2D
+		if tex != null:
+			var used := tex.get_image().get_used_rect()
+			if used.size.x > 0 and used.size.y > 0:
+				var atlas := AtlasTexture.new()
+				atlas.atlas = tex
+				atlas.region = used
+				_trim_cache[art_path] = atlas
+				return atlas
+	var icon_path := ItemIconMap.icon_path(item_id, def)
+	return load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+
+# ------------------------------------------------------------------
+# 左側同行俠客（裝備頁與狀態頁共用）
+# ------------------------------------------------------------------
+const EquipmentDollScript = preload("res://scripts/inventory/EquipmentDoll.gd")
+## 三個角色卡槽（V2 placement.json 的 runtime 座標 ÷ 2）
+const ROSTER_SLOTS := [Rect2(55, 142, 246.5, 123), Rect2(55, 273, 246.5, 123.5), Rect2(55, 402.5, 246.5, 122)]
+const COMPANION_CARD := Vector2(233, 124)          # 共邊國 V3 角色卡的卡框大小（金光留白另算）
+var menu: Node                      # 系統選單（提供 compute_overview_stats、鎖定欄等）
+var actor_id := ""                  # 目前查看的角色
+var _roster_box: Control
+var _roster_buttons: Dictionary = {}
+
+func _actor(id: String) -> Dictionary:
+	return TeamData.get_character_by_id(id) if TeamData else {}
+
+## 白字加黑色外框，不會被背景的山水畫或卡片紙紋吃掉（右頁文字與左側角色卡文字都用）
+func _outlined(l: Label) -> Label:
+	var current := l.get_theme_color("font_color")
+	if current == INK or current == INK_DIM or current == CREAM:
+		l.add_theme_color_override("font_color", Color.WHITE)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 4)
+	return l
+
+## 左側面板：標題牌（老闆截的「同行俠客」）＋放角色卡的容器；with_quote＝底部引言框（裝備頁有，狀態頁沒有）
+func build_roster_panel(with_quote: bool) -> void:
+	_image(E + "equip_roster_title", Vector2(55, 96), Vector2(246.5, 37))
+	_image(E + "equip_roster_title_cut", Vector2(55, 93), Vector2(246.5, 43.2))
+	if with_quote:
+		_panel(E + "equip_roster_quote", 22, 22, Vector2(62, 530), Vector2(233, 38))
+		_outlined(_label("江湖如逆旅，幸有同路人。", Vector2(70, 530), Vector2(190, 38), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT))
+		_image(E + "equip_quote_seal", Vector2(261, 535), Vector2(28, 28))
+	_roster_box = Control.new()
+	_roster_box.position = Vector2.ZERO
+	_roster_box.size = Vector2(1152, 648)
+	_roster_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_roster_box.z_index = 1
+	add_child(_roster_box)
+
+## 左側的角色卡槽（永遠三個；名冊多於三位時顯示包含選中者的那三位）。pick＝點卡時呼叫 pick.call(角色 id)。
+func rebuild_roster(ids: Array, selected_id: String, pick: Callable) -> void:
+	for c in _roster_box.get_children():
+		_roster_box.remove_child(c)
+		c.queue_free()
+	_roster_buttons.clear()
+	# 永遠三個卡槽；名冊多於三位時，顯示包含目前角色的那三位
+	var start := 0
+	var selected_index := ids.find(selected_id)
+	if ids.size() > ROSTER_SLOTS.size():
+		start = clampi(selected_index - 1, 0, ids.size() - ROSTER_SLOTS.size())
+	for i in ROSTER_SLOTS.size():
+		var slot_rect: Rect2 = ROSTER_SLOTS[i]
+		# 共邊國 V3 角色卡：卡框 233×124；三態都是整合圖（506×288 的畫布，卡框在 (20,20)，外圈是金光留白，不可裁切）
+		var rect := Rect2(slot_rect.position.x + (slot_rect.size.x - COMPANION_CARD.x) * 0.5, slot_rect.position.y, COMPANION_CARD.x, COMPANION_CARD.y)
+		var index := start + i
+		if index >= ids.size():
+			# 空位：還沒有同行的人（名冊沒解鎖更多角色），畫暗一點的一般卡
+			var empty := _image(E + "companion/actor_card_normal", rect.position - Vector2(10, 10), Vector2(253, 144), _roster_box)
+			empty.modulate = Color(0.72, 0.68, 0.62, 0.85)
+			_outlined(_label("尚未同行", rect.position, rect.size, 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _roster_box))
+			continue
+		var id := String(ids[index])
+		var a := _actor(id)
+		var on: bool = id == selected_id
+		var card := Button.new()
+		card.position = rect.position
+		card.size = rect.size
+		card.focus_mode = Control.FOCUS_NONE
+		card.toggle_mode = true
+		card.set_pressed_no_signal(on)
+		for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+			card.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+		_roster_box.add_child(card)
+		var art := _image(E + "companion/actor_card_" + ("selected" if on else "normal"), Vector2(-10, -10), Vector2(253, 144), card)
+		art.name = "StateArt"
+		if not on:
+			card.mouse_entered.connect(func(): art.texture = _tex(E + "companion/actor_card_hover"))
+			card.mouse_exited.connect(func(): art.texture = _tex(E + "companion/actor_card_normal"))
+		# 頭像：直接融進卡面（V3 沒有額外頭像框），放在左側 100×108，裁在範圍內
+		var clip := Control.new()
+		clip.position = Vector2(7, 8)
+		clip.size = Vector2(100, 108)
+		clip.clip_contents = true
+		clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(clip)
+		# 頭像：有立繪的角色用立繪的頭部（會跟著衣裝換），沒有就退回戰鬥頭像
+		var pr := TextureRect.new()
+		pr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pr.size = clip.size
+		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		var head: Texture2D = EquipmentDollScript.head_portrait(id)
+		if head != null:
+			pr.texture = head
+		else:
+			var portrait_path := String(a.get("portrait_path", ""))
+			if portrait_path != "" and ResourceLoader.exists(portrait_path):
+				pr.texture = load(portrait_path) as Texture2D
+		clip.add_child(pr)
+		if TeamData and TeamData.current_team_ids.has(id):
+			_image(E + "companion/deployed_tag", Vector2(1, 8), Vector2(22, 40), card)      # 原圖的「上陣」字版
+		var job := String(a.get("job", ""))
+		var subclass := String(a.get("subclass", ""))
+		var job_text := "%s·%s" % [subclass, job] if subclass != "" and job != "" else (job + subclass)
+		_outlined(_label(String(a.get("name", id)), Vector2(118, 12), Vector2(110, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card))
+		_outlined(_label(job_text, Vector2(118, 36), Vector2(110, 18), 12, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card))
+		_outlined(_label("Lv.%d" % int(a.get("level", 1)), Vector2(118, 54), Vector2(110, 18), 13, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card))
+		# 氣血、內力：與狀態頁同一套顯示（含裝備加成的最大值；本來是滿的就顯示滿）
+		var stats: Dictionary = menu.compute_overview_stats(a, InventorySync.get_equipment_stat_bonus(id)) if menu != null else {}
+		var hp_max := int(stats.get("max_hp", a.get("max_hp", 1)))
+		var mp_max := int(stats.get("max_mp", a.get("max_mp", 1)))
+		var hp_now: int = menu._displayed_resource(int(a.get("hp", 0)), int(a.get("max_hp", 1)), hp_max) if menu != null else int(a.get("hp", 0))
+		var mp_now: int = menu._displayed_resource(int(a.get("mp", 0)), int(a.get("max_mp", 1)), mp_max) if menu != null else int(a.get("mp", 0))
+		_bar(card, Vector2(120, 82), "hp", float(hp_now), float(maxi(1, hp_max)), 64.0)
+		_outlined(_label("%d/%d" % [hp_now, hp_max], Vector2(190, 77), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card))
+		_bar(card, Vector2(120, 101), "mp", float(mp_now), float(maxi(1, mp_max)), 64.0)
+		_outlined(_label("%d/%d" % [mp_now, mp_max], Vector2(190, 96), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card))
+		card.pressed.connect(pick.bind(id))
+		_roster_buttons[id] = card
+

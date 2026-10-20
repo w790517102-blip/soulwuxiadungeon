@@ -13,7 +13,6 @@ const LIST_POS := Vector2(200, 176)
 const LIST_SIZE := Vector2(393, 384)
 const BUTTON_Y := 586
 
-var menu: Node                      # 系統選單（提供 use_item_by_id 等）
 var category := ItemCategory.ALL
 var selected_id := ""
 var _entries: Array = []            # 目前清單：[{id, def}]
