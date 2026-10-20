@@ -88,7 +88,8 @@ static func head_portrait(id: String) -> Texture2D:
 	var path := ""
 	var origin := HEAD_REGION.position
 	if rarity > 1 and ResourceLoader.exists(DIR + "doll_r%d_front.png" % rarity):
-		path = DIR + "doll_r%d_front.png" % rarity
+		# 分層衣裝：頭部那層（front）只有頭髮與領子，單獨裁會缺一塊，所以把 back、body、cloak_front、front 四層疊起來再裁
+		return _tiered_head(rarity)
 	elif rarity > 1 and ResourceLoader.exists(DIR + "doll_%s_r%d.png" % [id, rarity]):
 		path = DIR + "doll_%s_r%d.png" % [id, rarity]
 		origin -= Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))        # 整張圖有平移過，頭也跟著在那邊
@@ -100,6 +101,29 @@ static func head_portrait(id: String) -> Texture2D:
 	atlas.atlas = load(path) as Texture2D
 	atlas.region = Rect2(origin, HEAD_REGION.size)
 	return atlas
+
+static var _tiered_head_cache: Dictionary = {}
+
+static func _tiered_head(rarity: int) -> Texture2D:
+	if _tiered_head_cache.has(rarity):
+		return _tiered_head_cache[rarity]
+	var canvas: Image = null
+	for part in ["back", "body", "cloak_front", "front"]:
+		var tex := load(DIR + "doll_r%d_%s.png" % [rarity, part]) as Texture2D
+		if tex == null:
+			continue
+		var img := tex.get_image()
+		img.convert(Image.FORMAT_RGBA8)
+		if canvas == null:
+			canvas = Image.create_empty(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8)
+		canvas.blend_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), Vector2i.ZERO)
+	if canvas == null:
+		return null
+	var out := AtlasTexture.new()
+	out.atlas = ImageTexture.create_from_image(canvas)
+	out.region = HEAD_REGION
+	_tiered_head_cache[rarity] = out
+	return out
 
 ## 依這位角色目前的裝備重畫所有圖層。回傳 {mode, body_rarity, body_art, weapon_art, mech_art}，給測試與除錯用
 func show_actor(id: String, master_name: String = "") -> Dictionary:
