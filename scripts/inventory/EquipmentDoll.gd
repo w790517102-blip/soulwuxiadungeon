@@ -36,7 +36,7 @@ const MECH_ROTATION_DEG := 0.0
 const MECH_PIVOT := Vector2(84, 170)
 ## 各角色的機關（連弩、背帶）微調：母圖是對著劉語塵的背擺的，別的角色身形不同，要各自位移、縮放、旋轉（以 MECH_PIVOT 為轉軸；shift 是畫布像素）。
 const CHAR_MECH := {
-	"shumian": {"shift": Vector2(44, 16), "scale": 0.92, "rot": 0.0},
+	"shumian": {"shift": Vector2(40, 30), "scale": 1.1, "rot": -8.0},
 }
 
 var actor_id := ""
