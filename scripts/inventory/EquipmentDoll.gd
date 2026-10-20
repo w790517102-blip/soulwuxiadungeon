@@ -20,6 +20,11 @@ const ItemRarityScript = preload("res://scripts/inventory/ItemRarity.gd")
 const ItemDBScript = preload("res://scripts/db/ItemDB.gd")
 
 const LAYER_NAMES := ["back", "weapon_back", "master", "body", "cloak_front", "weapon_front", "mech", "strap", "front"]
+## 眼睛對齊（老闆定案：第二、三階是獨立畫的整張圖，臉不同也沒關係，但眼睛要在同一個位置，切換衣裝時視線不跳）。
+## 以母圖與第四階（同一張臉）的兩眼中點為基準（畫布 508×972 像素 (300,170)）；下面是第二、三階整張圖需要平移的量（畫布像素，連同疊在上面的劍、連弩一起移，身體與武器的相對位置不變）。
+## 量測方式：看兩眼瞳孔中心，取中點，與基準相減（母圖 (299.8,169.5)、二階 (329.5,155.5)、三階 (331,155.8)）。
+const EYE_SHIFT := {2: Vector2(-29.7, 14.0), 3: Vector2(-31.2, 13.7)}
+
 const ORDER_MASTER := ["master", "weapon_back", "weapon_front"]
 ## 劍大方露出來（老闆定案）：衣服不蓋劍，所以劍的兩層都放在所有衣裝層的上面
 const ORDER_TIERED := ["back", "body", "cloak_front", "front", "weapon_back", "weapon_front"]
@@ -57,6 +62,16 @@ func has_figure() -> bool:
 func _set_layer(layer_name: String, tex: Texture2D) -> void:
 	(_layers[layer_name] as TextureRect).texture = tex
 
+## 整個人物（含劍、連弩）平移 v（畫布像素；節點尺寸是邏輯 px，所以除以 2）
+func _apply_shift(v: Vector2) -> void:
+	var d := v * 0.5
+	for layer_name in LAYER_NAMES:
+		var r := _layers[layer_name] as TextureRect
+		r.offset_left = d.x
+		r.offset_right = d.x
+		r.offset_top = d.y
+		r.offset_bottom = d.y
+
 func _apply_order(order: Array) -> void:
 	for i in order.size():
 		move_child(_layers[order[i]], i)
@@ -78,6 +93,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		rarity = ItemRarityScript.rarity_of(ItemDBScript.get_def(body_id))
 		info["body_rarity"] = rarity
 	var order: Array = ORDER_MASTER.duplicate()
+	var shift := Vector2.ZERO
 	var tier_body := _tex("doll_r%d_body" % rarity) if rarity > 1 else null
 	var whole := _tex("doll_%s_r%d" % [master_name if master_name != "" else id, rarity]) if rarity > 1 else null
 	if tier_body != null:
@@ -90,6 +106,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		# 整張衣裝（第二、三階：沒有分層，劍與機關疊在它上面）
 		info["mode"] = "whole"
 		info["body_art"] = "r%d_whole" % rarity
+		shift = Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))
 		_set_layer("master", whole)
 		order = ORDER_MASTER.duplicate()
 	else:
@@ -126,5 +143,6 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			var at := order.find("weapon_back")
 			order.insert(at, "strap")
 			order.insert(at + 1, "mech")
+	_apply_shift(shift)
 	_apply_order(order)
 	return info
