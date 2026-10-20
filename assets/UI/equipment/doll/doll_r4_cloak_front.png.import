@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://docykpgnoekms"
-path="res://.godot/imported/doll_r3_back.png-81afbac628b1466756b52978d8fa7972.ctex"
+uid="uid://cm7uih7614ci8"
+path="res://.godot/imported/doll_r4_cloak_front.png-acf06bdebc4a5846d61cd20de4b844de.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/equipment/doll/doll_r3_back.png"
-dest_files=["res://.godot/imported/doll_r3_back.png-81afbac628b1466756b52978d8fa7972.ctex"]
+source_file="res://assets/UI/equipment/doll/doll_r4_cloak_front.png"
+dest_files=["res://.godot/imported/doll_r4_cloak_front.png-acf06bdebc4a5846d61cd20de4b844de.ctex"]
 
 [params]
 

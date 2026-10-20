@@ -7,7 +7,8 @@ extends Control
 ## 其他部位（頭、手、足、飾品）暫時不影響人物。
 ## 兩種衣裝模式：
 ##   整張母圖（凡品，目前只有一張未分層的圖）：機關後層墊在母圖下面，其餘（含整把劍）蓋在母圖上面；
-##   分層衣裝（有 doll_r<稀有度>_* 四張）：由後到前 back → body → cloak_front → front → weapon_back → weapon_front（劍不被衣服蓋住）；背帶、連弩是另外兩張全畫布圖，疊在衣裝之上、劍之下（背帶 → 連弩 → 劍）。
+##   整張衣裝（第二、三階：doll_<角色>_r<稀有度>.png，沒有分層，劍與機關疊在上面）
+##   分層衣裝（第四階：有 doll_r<稀有度>_* 四張）：由後到前 back → body → cloak_front → front → weapon_back → weapon_front（劍不被衣服蓋住）；背帶、連弩是另外兩張全畫布圖，疊在衣裝之上、劍之下（背帶 → 連弩 → 劍）。
 ## 檔案放在 assets/UI/equipment/doll/：
 ##   doll_<角色>_master.png                         凡品用的整張母圖
 ##   doll_r<稀有度>_back／body／cloak_front／front.png   分層衣裝（稀有度＝ItemRarity 的 1~4）
@@ -78,12 +79,19 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		info["body_rarity"] = rarity
 	var order: Array = ORDER_MASTER.duplicate()
 	var tier_body := _tex("doll_r%d_body" % rarity) if rarity > 1 else null
+	var whole := _tex("doll_%s_r%d" % [master_name if master_name != "" else id, rarity]) if rarity > 1 else null
 	if tier_body != null:
 		info["mode"] = "tiered"
 		info["body_art"] = "doll_r%d" % rarity
 		for part in ["back", "body", "cloak_front", "front"]:
 			_set_layer(part, _tex("doll_r%d_%s" % [rarity, part]))
 		order = ORDER_TIERED.duplicate()
+	elif whole != null:
+		# 整張衣裝（第二、三階：沒有分層，劍與機關疊在它上面）
+		info["mode"] = "whole"
+		info["body_art"] = "r%d_whole" % rarity
+		_set_layer("master", whole)
+		order = ORDER_MASTER.duplicate()
 	else:
 		info["mode"] = "master"
 		info["body_art"] = "master"

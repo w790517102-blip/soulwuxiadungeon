@@ -25,7 +25,9 @@ var party_inventory: Array = [
 	{"id": "wep_short_blade", "count": 1},
 	{"id": "arm_cloth", "count": 1},
 	{"id": "arm_cloth_cap", "count": 1},
+	{"id": "arm_fine_clothes", "count": 1},
 	{"id": "arm_rare_clothes", "count": 1},
+	{"id": "arm_legend_clothes", "count": 1},
 	{"id": "jade_pendant", "count": 1},
 	{"id": "quest_letter", "count": 1},
 ]
