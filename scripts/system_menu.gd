@@ -54,6 +54,10 @@ const USE_NEW_INVENTORY_UI := true
 const USE_NEW_EQUIPMENT_UI := true
 const EquipmentPageScript = preload("res://scripts/inventory/EquipmentPage.gd")
 var _equipment_page: Control = null
+## 新狀態頁開關：true = 狀態分頁改用 scripts/inventory/StatusPage.gd；false = 回到舊的狀態頁（舊頁原封不動保留）。
+const USE_NEW_STATUS_UI := true
+const StatusPageScript = preload("res://scripts/inventory/StatusPage.gd")
+var _status_page: Control = null
 var _inventory_page: Control = null
 ## 新道具頁用：要選隊友時呼叫它（entries: [{id,name}]，done: Callable(actor_id)）。無效時用舊的 PopupMenu。
 var external_target_picker: Callable = Callable()
@@ -313,6 +317,7 @@ func _on_tab_changed(tab_index: int) -> void:
 	var quest_tab_index = $VBoxContainer/任務.get_index()
 	_update_inventory_page(tab_index == item_tab_index)
 	_update_equipment_page(tab_index == equipment_tab_index)
+	_update_status_page(tab_index == $VBoxContainer/狀態.get_index())
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == equipment_tab_index:
@@ -342,6 +347,21 @@ func _update_inventory_page(show_it: bool) -> void:
 		external_target_picker = Callable(_inventory_page, "pick_target") if show_it else Callable()
 		if show_it:
 			_inventory_page._refresh()
+
+## 新狀態頁：停在狀態分頁時顯示，離開時隱藏（舊頁節點照常存在，開關關掉就回到舊頁）。
+func _update_status_page(show_it: bool) -> void:
+	if not USE_NEW_STATUS_UI:
+		return
+	if show_it and _status_page == null:
+		_status_page = StatusPageScript.new()
+		_status_page.menu = self
+		_status_page.close_requested.connect(func(): SystemMenu._close_system_menu())
+		_status_page.tab_requested.connect(_on_inventory_nav_requested)
+		add_child(_status_page)
+	if _status_page != null:
+		_status_page.visible = show_it
+		if show_it:
+			_status_page._refresh()
 
 ## 新裝備頁：停在裝備分頁時顯示，離開時隱藏（舊頁節點照常存在，開關關掉就回到舊頁）。
 func _update_equipment_page(show_it: bool) -> void:
@@ -2713,16 +2733,6 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var overview := compute_overview_stats(actor, equip_bonus)
 	var total_max_hp := int(overview["max_hp"])
 	var total_max_mp := int(overview["max_mp"])
-	var base_str := int(_get_actor_value(actor, "str", 5))
-	var base_agi := int(_get_actor_value(actor, "agi", 5))
-	var base_int := int(_get_actor_value(actor, "int", 5))
-	var base_con := int(_get_actor_value(actor, "con", 5))
-	var base_luck := int(_get_actor_value(actor, "luck", 5))
-	var bonus_str := int(equip_bonus.get("str", 0)) + int(inner_bonus.get("str", 0))
-	var bonus_agi := int(equip_bonus.get("agi", 0)) + int(inner_bonus.get("agi", 0))
-	var bonus_int := int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0))
-	var bonus_con := int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0))
-	var bonus_luck := int(equip_bonus.get("luck", 0)) + int(inner_bonus.get("luck", 0))
 	var hit_power := int(overview["hit"])
 	var evade_power := int(overview["evade"])
 	var crit_rate_pct: float = float(overview["crit"])
@@ -2789,23 +2799,23 @@ func _fill_status_member_slot(slot_data: Dictionary, actor) -> void:
 	var str_label := slot_data.get("str") as Label
 	if str_label:
 		str_label.set_meta("actor_id", actor_id)
-		str_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_str + bonus_str)]
+		str_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["str"])]
 	var dex_label := slot_data.get("dex") as Label
 	if dex_label:
 		dex_label.set_meta("actor_id", actor_id)
-		dex_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_agi + bonus_agi)]
+		dex_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["agi"])]
 	var int_label := slot_data.get("int") as Label
 	if int_label:
 		int_label.set_meta("actor_id", actor_id)
-		int_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_int + bonus_int)]
+		int_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["int"])]
 	var con_label := slot_data.get("con") as Label
 	if con_label:
 		con_label.set_meta("actor_id", actor_id)
-		con_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_con + bonus_con)]
+		con_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["con"])]
 	var luck_label := slot_data.get("luck") as Label
 	if luck_label:
 		luck_label.set_meta("actor_id", actor_id)
-		luck_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, (base_luck + bonus_luck)]
+		luck_label.text = "%s%d" % [STATUS_VALUE_OFFSET_PREFIX, int(overview["luck"])]
 
 ## 裝備頁用：依「指定的裝備加成」算出狀態頁同一套公式的總數值（命中、閃避是「力」，與狀態頁一致）。
 ## 傳入換裝後的 equip_bonus 就能算出「換上去之後」的數值，不會動到實際裝備。
@@ -2828,6 +2838,12 @@ func compute_overview_stats(actor, equip_bonus: Dictionary) -> Dictionary:
 		"hit": int(round((float(total_accuracy) - 100.0) + agi_stat * 0.7 + luck_stat * 0.3)),
 		"evade": int(round(agi_stat * 0.7 + luck_stat * 0.3 + float(total_evasion))),
 		"crit": _calc_actor_overview_crit_rate_pct(actor, equip_bonus, inner_bonus),
+		# 五個素質（狀態頁與角色卡共用）：基礎＋裝備＋內功
+		"str": int(_get_actor_value(actor, "str", 5)) + int(equip_bonus.get("str", 0)) + int(inner_bonus.get("str", 0)),
+		"agi": int(agi_stat),
+		"int": int(_get_actor_value(actor, "int", 5)) + int(equip_bonus.get("int", 0)) + int(inner_bonus.get("int", 0)),
+		"con": int(_get_actor_value(actor, "con", 5)) + int(equip_bonus.get("con", 0)) + int(inner_bonus.get("con", 0)),
+		"luck": int(luck_stat),
 	}
 
 ## 目前氣血/內力的顯示值：存檔裡的目前值不含裝備加成，所以「本來是滿的」要顯示成滿（與戰鬥開場同一個規則），受過傷的維持原值。
