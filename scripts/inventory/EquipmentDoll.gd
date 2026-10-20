@@ -24,6 +24,8 @@ const LAYER_NAMES := ["back", "weapon_back", "master", "body", "cloak_front", "w
 ## 以母圖與第四階（同一張臉）的兩眼中點為基準（畫布 508×972 像素 (300,170)）；下面是第二、三階整張圖需要平移的量（畫布像素，連同疊在上面的劍、連弩一起移，身體與武器的相對位置不變）。
 ## 量測方式：看兩眼瞳孔中心，取中點，與基準相減（母圖 (299.8,169.5)、二階 (329.5,155.5)、三階 (331,155.8)）。
 const EYE_SHIFT := {2: Vector2(-29.7, 14.0), 3: Vector2(-31.2, 13.7)}
+## 各角色整體的水平對齊：畫面左眼瞳孔與劉語塵在同一個 X（量測：劉語塵 278.8、書眠 271.3，畫布像素）；連弩與背帶跟著人物一起移，相對位置不變
+const CHAR_SHIFT := {"shumian": Vector2(7.5, 0.0)}
 
 const ORDER_MASTER := ["master", "weapon_back", "weapon_front"]
 ## 劍大方露出來（老闆定案）：衣服不蓋劍，所以劍的兩層都放在所有衣裝層的上面
@@ -150,7 +152,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		rarity = ItemRarityScript.rarity_of(ItemDBScript.get_def(body_id))
 		info["body_rarity"] = rarity
 	var order: Array = ORDER_MASTER.duplicate()
-	var shift := Vector2.ZERO
+	var shift := Vector2(CHAR_SHIFT.get(id, Vector2.ZERO))
 	var mech_shift := Vector2.ZERO
 	var tier_body := _tex("doll_r%d_body" % rarity) if rarity > 1 else null
 	var whole := _tex("doll_%s_r%d" % [master_name if master_name != "" else id, rarity]) if rarity > 1 else null
@@ -164,7 +166,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		# 整張衣裝（第二、三階：沒有分層，劍與機關疊在它上面）
 		info["mode"] = "whole"
 		info["body_art"] = "r%d_whole" % rarity
-		shift = Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))
+		shift += Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))
 		_set_layer("master", whole)
 		order = ORDER_MASTER.duplicate()
 	else:
