@@ -122,6 +122,11 @@ func _run() -> void:
 	_check(page._doll.get_node("master").get_index() < page._doll.get_node("strap").get_index() and page._doll.get_node("strap").get_index() < page._doll.get_node("mech").get_index() and page._doll.get_node("mech").get_index() < page._doll.get_node("weapon_back").get_index(), "order: clothing, then strap, then crossbow, then the sword on top")
 	page._on_unequip_pressed()
 	_check(page.doll_info.get("mech_art") == "" and page._doll.get_node("mech").texture == null and page._doll.get_node("strap").texture == null, "taking the crossbow off hides the crossbow and the strap")
+	# 書眠：筆拿在手上，不畫紙娃娃的武器層（不能憑空背一把劍）；連弩有她自己的微調
+	var shu: Dictionary = page._doll.show_actor("shumian")
+	_check(shu.get("mode") == "master" and shu.get("weapon_art") == "", "書眠 shows her own figure and no sword layers for the brush")
+	_check(page._doll.get_node("weapon_back").texture == null and page._doll.get_node("weapon_front").texture == null, "no weapon layers for a brush")
+	page._doll.show_actor("liuyu")
 	# 鎖定欄、特殊效果區可捲動
 	_check(menu.is_slot_locked_for("shumian", "weapon_2") and not menu.is_slot_locked_for("liuyu", "weapon_2"), "only 書眠's sub weapon is locked")
 	_check(page._scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "the description / special effect area scrolls (bar only when needed)")

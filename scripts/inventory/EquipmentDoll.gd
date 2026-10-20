@@ -34,6 +34,10 @@ const ORDER_TIERED := ["back", "body", "cloak_front", "front", "weapon_back", "w
 ## 連弩的微調旋轉：負值＝逆時針（Godot 正值是順時針）。轉軸是弩托靠肩的位置（全畫布 508×972 的座標），背帶不跟著轉。
 const MECH_ROTATION_DEG := 0.0
 const MECH_PIVOT := Vector2(84, 170)
+## 各角色的機關（連弩、背帶）微調：母圖是對著劉語塵的背擺的，別的角色身形不同，要各自位移、縮放、旋轉（以 MECH_PIVOT 為轉軸；shift 是畫布像素）。
+const CHAR_MECH := {
+	"shumian": {"shift": Vector2(44, 16), "scale": 0.92, "rot": 0.0},
+}
 
 var actor_id := ""
 var _layers: Dictionary = {}         # 名稱 → TextureRect
@@ -143,6 +147,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		info["body_rarity"] = rarity
 	var order: Array = ORDER_MASTER.duplicate()
 	var shift := Vector2.ZERO
+	var mech_shift := Vector2.ZERO
 	var tier_body := _tex("doll_r%d_body" % rarity) if rarity > 1 else null
 	var whole := _tex("doll_%s_r%d" % [master_name if master_name != "" else id, rarity]) if rarity > 1 else null
 	if tier_body != null:
@@ -169,7 +174,9 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		var used := weapon_id
 		var back := _tex("doll_weapon_%s_back" % weapon_id)
 		var front := _tex("doll_weapon_%s_front" % weapon_id)
-		if back == null and front == null:
+		# 預設武器圖是長劍：只有劍類武器才退回它（筆、琴、刀不會憑空背一把劍；它們要有自己的圖才會畫）
+		var is_sword := String(ItemDBScript.get_def(weapon_id).get("weapon_type", "")) == "劍"
+		if back == null and front == null and is_sword:
 			used = "default"
 			back = _tex("doll_weapon_default_back")
 			front = _tex("doll_weapon_default_front")
@@ -183,9 +190,13 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 		var mech := _tex("doll_mech_%s" % mech_id)
 		if mech != null:
 			_set_layer("mech", mech)
-			var mech_rect := _layers["mech"] as TextureRect
-			mech_rect.pivot_offset = MECH_PIVOT
-			mech_rect.rotation_degrees = MECH_ROTATION_DEG
+			var fit: Dictionary = CHAR_MECH.get(id, {"shift": Vector2.ZERO, "scale": 1.0, "rot": 0.0})
+			for mech_layer in ["mech", "strap"]:
+				var mr := _layers[mech_layer] as TextureRect
+				mr.pivot_offset = MECH_PIVOT
+				mr.rotation_degrees = MECH_ROTATION_DEG + float(fit["rot"])
+				mr.scale = Vector2.ONE * float(fit["scale"])
+				mech_shift = Vector2(fit["shift"]) * 0.5
 			_set_layer("strap", _tex("doll_strap_%s" % mech_id))
 			info["mech_art"] = mech_id
 			# 老闆定案的順序：背帶在最下（衣服之上），連弩壓在背帶上面，但不超過劍
@@ -193,5 +204,12 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			order.insert(at, "strap")
 			order.insert(at + 1, "mech")
 	_apply_shift(shift)
+	if mech_shift != Vector2.ZERO:
+		for mech_layer in ["mech", "strap"]:
+			var mr2 := _layers[mech_layer] as TextureRect
+			mr2.offset_left += mech_shift.x
+			mr2.offset_right += mech_shift.x
+			mr2.offset_top += mech_shift.y
+			mr2.offset_bottom += mech_shift.y
 	_apply_order(order)
 	return info
