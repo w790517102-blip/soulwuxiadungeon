@@ -112,7 +112,7 @@ func _run() -> void:
 	inv.party_inventory.append({"id": "tool_zhuge_crossbow", "count": 1})
 	page._apply_equip("tool_zhuge_crossbow")
 	_check(page.doll_info.get("mech_art") == "tool_zhuge_crossbow" and page._doll.get_node("mech").texture != null and page._doll.get_node("strap").texture != null, "the crossbow and its strap are two full-canvas layers")
-	_check(page._doll.get_child(page._doll.get_child_count() - 1).name == "strap" or page._doll.get_node("strap").get_index() > page._doll.get_node("weapon_front").get_index(), "the strap is above the sword")
+	_check(page._doll.get_node("master").get_index() < page._doll.get_node("strap").get_index() and page._doll.get_node("strap").get_index() < page._doll.get_node("mech").get_index() and page._doll.get_node("mech").get_index() < page._doll.get_node("weapon_back").get_index(), "order: clothing, then strap, then crossbow, then the sword on top")
 	page._on_unequip_pressed()
 	_check(page.doll_info.get("mech_art") == "" and page._doll.get_node("mech").texture == null and page._doll.get_node("strap").texture == null, "taking the crossbow off hides the crossbow and the strap")
 	# 鎖定欄、特殊效果區可捲動

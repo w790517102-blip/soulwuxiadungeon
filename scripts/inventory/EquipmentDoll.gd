@@ -7,7 +7,7 @@ extends Control
 ## 其他部位（頭、手、足、飾品）暫時不影響人物。
 ## 兩種衣裝模式：
 ##   整張母圖（凡品，目前只有一張未分層的圖）：機關後層墊在母圖下面，其餘（含整把劍）蓋在母圖上面；
-##   分層衣裝（有 doll_r<稀有度>_* 四張）：由後到前 back → body → cloak_front → front → weapon_back → weapon_front（劍不被衣服蓋住）；連弩與背帶是另外兩張全畫布圖，疊在最上面。
+##   分層衣裝（有 doll_r<稀有度>_* 四張）：由後到前 back → body → cloak_front → front → weapon_back → weapon_front（劍不被衣服蓋住）；背帶、連弩是另外兩張全畫布圖，疊在衣裝之上、劍之下（背帶 → 連弩 → 劍）。
 ## 檔案放在 assets/UI/equipment/doll/：
 ##   doll_<角色>_master.png                         凡品用的整張母圖
 ##   doll_r<稀有度>_back／body／cloak_front／front.png   分層衣裝（稀有度＝ItemRarity 的 1~4）
@@ -24,8 +24,7 @@ const ORDER_MASTER := ["master", "weapon_back", "weapon_front"]
 const ORDER_TIERED := ["back", "body", "cloak_front", "front", "weapon_back", "weapon_front"]
 
 ## 連弩（老闆手把手給的位置）：連弩與背帶各是一張全畫布圖，與母圖同一個縮放，直接疊上去；背帶永遠在最上面（斜跨過肩）。
-## mech_above_sword＝連弩在劍上面；false＝劍在連弩上面。
-static var mech_above_sword := true
+## 疊放（由後到前）：衣裝 → 背帶 → 連弩 → 劍。
 
 var actor_id := ""
 var _layers: Dictionary = {}         # 名稱 → TextureRect
@@ -109,10 +108,9 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			_set_layer("mech", mech)
 			_set_layer("strap", _tex("doll_strap_%s" % mech_id))
 			info["mech_art"] = mech_id
-			if mech_above_sword:
-				order.append("mech")
-			else:
-				order.insert(order.find("weapon_back"), "mech")
-			order.append("strap")
+			# 老闆定案的順序：背帶在最下（衣服之上），連弩壓在背帶上面，但不超過劍
+			var at := order.find("weapon_back")
+			order.insert(at, "strap")
+			order.insert(at + 1, "mech")
 	_apply_order(order)
 	return info
