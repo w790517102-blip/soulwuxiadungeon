@@ -23,7 +23,11 @@ const LAYER_NAMES := ["back", "weapon_back", "master", "body", "cloak_front", "w
 ## 眼睛對齊（老闆定案：第二、三階是獨立畫的整張圖，臉不同也沒關係，但眼睛要在同一個位置，切換衣裝時視線不跳）。
 ## 以母圖與第四階（同一張臉）的兩眼中點為基準（畫布 508×972 像素 (300,170)）；下面是第二、三階整張圖需要平移的量（畫布像素，連同疊在上面的劍、連弩一起移，身體與武器的相對位置不變）。
 ## 量測方式：看兩眼瞳孔中心，取中點，與基準相減（母圖 (299.8,169.5)、二階 (329.5,155.5)、三階 (331,155.8)）。
-const EYE_SHIFT := {"liuyu": {2: Vector2(-29.7, 14.0), 3: Vector2(-31.2, 13.7)}}
+## 書眠：以她的第四階（傳說，原檔）為基準，一～三階是另外畫的圖、臉在畫布上的位置不同，要平移到與第四階的左眼同一點（量測：第四階左眼瞳孔 (271.3, 171)；一階 (347.8, 141.9)、二階 (348.8, 140)、三階 (351.3, 140.6)）。
+const EYE_SHIFT := {
+	"liuyu": {2: Vector2(-29.7, 14.0), 3: Vector2(-31.2, 13.7)},
+	"shumian": {1: Vector2(-76.5, 29.1), 2: Vector2(-77.5, 31.0), 3: Vector2(-80.0, 30.4)},
+}
 ## 各角色整體的水平對齊：畫面左眼瞳孔與劉語塵在同一個 X（量測：劉語塵 278.8、書眠 271.3，畫布像素）；連弩與背帶跟著人物一起移，相對位置不變
 const CHAR_SHIFT := {"shumian": Vector2(7.5, 0.0)}
 
@@ -110,6 +114,9 @@ static func resolve_tier(id: String, rarity: int) -> Dictionary:
 			return {"kind": kind, "rarity": int(r)}
 	return {}
 
+static func eye_shift(id: String, rarity: int) -> Vector2:
+	return Vector2(Dictionary(EYE_SHIFT.get(id, {})).get(rarity, Vector2.ZERO))
+
 static func head_portrait(id: String) -> Texture2D:
 	var equipped: Dictionary = InventorySync.get_equipped(id)
 	var rarity := 1
@@ -129,8 +136,10 @@ static func head_portrait(id: String) -> Texture2D:
 			return _tiered_head(id, used, region)
 		"whole":
 			path = DIR + "doll_%s_r%d.png" % [id, used]
+			origin -= eye_shift(id, used)        # 整張圖有平移過，頭也跟著在那邊
 		"master":
 			path = DIR + "doll_%s_master.png" % id
+			origin -= eye_shift(id, 1)
 	if path == "":
 		return null
 	var atlas := AtlasTexture.new()
@@ -196,12 +205,13 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			# 整張衣裝（沒有分層，劍與機關疊在它上面）
 			info["mode"] = "whole"
 			info["body_art"] = "r%d_whole" % art_r
-			shift += Vector2(Dictionary(EYE_SHIFT.get(fig_id, {})).get(art_r, Vector2.ZERO))
+			shift += eye_shift(fig_id, art_r)
 			_set_layer("master", _tex("doll_%s_r%d" % [fig_id, art_r]))
 			order = ORDER_MASTER.duplicate()
 		_:
 			info["mode"] = "master"
 			info["body_art"] = "master"
+			shift += eye_shift(fig_id, 1)
 			_set_layer("master", _tex("doll_%s_master" % fig_id))
 			order = ORDER_MASTER.duplicate()
 	# 武器：每把自己的圖，沒有就預設

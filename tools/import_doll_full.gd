@@ -5,6 +5,9 @@ extends SceneTree
 const JOBS := [
 	["res://docs/system_menu/doll_pack_v1/liu_tier2_plain.webp", "doll_liuyu_r2"],
 	["res://docs/system_menu/doll_pack_v1/liu_tier3_bracer.webp", "doll_liuyu_r3"],
+	["res://docs/system_menu/doll_pack_v1/shumian_tier1_boss.webp", "doll_shumian_master"],
+	["res://docs/system_menu/doll_pack_v1/shumian_tier2_boss.webp", "doll_shumian_r2"],
+	["res://docs/system_menu/doll_pack_v1/shumian_tier3_boss.webp", "doll_shumian_r3"],
 	["res://docs/system_menu/doll_pack_v1/shumian_master_v2_boss.webp", "doll_shumian_r4"],
 ]
 
