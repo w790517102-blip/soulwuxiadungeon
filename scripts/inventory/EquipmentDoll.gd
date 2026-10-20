@@ -76,6 +76,31 @@ func _apply_order(order: Array) -> void:
 	for i in order.size():
 		move_child(_layers[order[i]], i)
 
+## 角色卡用的頭像：從目前穿的那一階立繪裁出頭部（畫質比戰鬥小頭像好，也會跟著衣裝換）；這個角色沒有立繪就回傳 null，呼叫端退回戰鬥頭像。
+const HEAD_REGION := Rect2(150, 20, 250, 270)       # 以母圖與第四階的眼睛為基準（畫布 508×972 像素）
+
+static func head_portrait(id: String) -> Texture2D:
+	var equipped: Dictionary = InventorySync.get_equipped(id)
+	var rarity := 1
+	var body_id := String(equipped.get("armor_body", ""))
+	if body_id != "":
+		rarity = ItemRarityScript.rarity_of(ItemDBScript.get_def(body_id))
+	var path := ""
+	var origin := HEAD_REGION.position
+	if rarity > 1 and ResourceLoader.exists(DIR + "doll_r%d_front.png" % rarity):
+		path = DIR + "doll_r%d_front.png" % rarity
+	elif rarity > 1 and ResourceLoader.exists(DIR + "doll_%s_r%d.png" % [id, rarity]):
+		path = DIR + "doll_%s_r%d.png" % [id, rarity]
+		origin -= Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))        # 整張圖有平移過，頭也跟著在那邊
+	elif ResourceLoader.exists(DIR + "doll_%s_master.png" % id):
+		path = DIR + "doll_%s_master.png" % id
+	if path == "":
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = load(path) as Texture2D
+	atlas.region = Rect2(origin, HEAD_REGION.size)
+	return atlas
+
 ## 依這位角色目前的裝備重畫所有圖層。回傳 {mode, body_rarity, body_art, weapon_art, mech_art}，給測試與除錯用
 func show_actor(id: String, master_name: String = "") -> Dictionary:
 	actor_id = id

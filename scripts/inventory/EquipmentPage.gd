@@ -115,7 +115,7 @@ func _build_roster() -> void:
 	_image(E + "equip_roster_title", Vector2(55, 96), Vector2(246.5, 37))
 	_image(E + "equip_roster_title_cut", Vector2(55, 93), Vector2(246.5, 43.2))
 	_panel(E + "equip_roster_quote", 22, 22, Vector2(62, 530), Vector2(233, 38))
-	_label("江湖如逆旅，幸有同路人。", Vector2(70, 530), Vector2(190, 38), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT)
+	_outlined(_label("江湖如逆旅，幸有同路人。", Vector2(70, 530), Vector2(190, 38), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT))
 	_image(E + "equip_quote_seal", Vector2(261, 535), Vector2(28, 28))
 	_roster_box = Control.new()
 	_roster_box.position = Vector2.ZERO
@@ -267,10 +267,10 @@ func _build_detail() -> void:
 	_desc_text = _section("說明")
 	_effect_text = _section("特殊效果")
 
-## 右側文字：白字加黑色外框，不會被背景的山水畫吃掉
+## 白字加黑色外框，不會被背景的山水畫或卡片紙紋吃掉（右頁文字與左側角色卡文字都用）
 func _outlined(l: Label) -> Label:
 	var current := l.get_theme_color("font_color")
-	if current == INK or current == INK_DIM:
+	if current == INK or current == INK_DIM or current == CREAM:
 		l.add_theme_color_override("font_color", Color.WHITE)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
 	l.add_theme_constant_override("outline_size", 4)
@@ -359,7 +359,7 @@ func _rebuild_roster(ids: Array) -> void:
 			# 空位：還沒有同行的人（名冊沒解鎖更多角色），畫暗一點的一般卡
 			var empty := _image(E + "companion/actor_card_normal", rect.position - Vector2(10, 10), Vector2(253, 144), _roster_box)
 			empty.modulate = Color(0.72, 0.68, 0.62, 0.85)
-			_label("尚未同行", rect.position, rect.size, 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _roster_box)
+			_outlined(_label("尚未同行", rect.position, rect.size, 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _roster_box))
 			continue
 		var id := String(ids[index])
 		var a := _actor(id)
@@ -385,18 +385,29 @@ func _rebuild_roster(ids: Array) -> void:
 		clip.clip_contents = true
 		clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(clip)
-		var portrait_path := String(a.get("portrait_path", ""))
-		if portrait_path != "":
-			var pr := _image_from(portrait_path, Vector2.ZERO, clip.size, clip)
-			pr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		# 頭像：有立繪的角色用立繪的頭部（會跟著衣裝換），沒有就退回戰鬥頭像
+		var pr := TextureRect.new()
+		pr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pr.size = clip.size
+		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		var head: Texture2D = EquipmentDollScript.head_portrait(id)
+		if head != null:
+			pr.texture = head
+		else:
+			var portrait_path := String(a.get("portrait_path", ""))
+			if portrait_path != "" and ResourceLoader.exists(portrait_path):
+				pr.texture = load(portrait_path) as Texture2D
+		clip.add_child(pr)
 		if TeamData and TeamData.current_team_ids.has(id):
 			_image(E + "companion/deployed_tag", Vector2(1, 8), Vector2(22, 40), card)      # 原圖的「上陣」字版
 		var job := String(a.get("job", ""))
 		var subclass := String(a.get("subclass", ""))
 		var job_text := "%s·%s" % [subclass, job] if subclass != "" and job != "" else (job + subclass)
-		_label(String(a.get("name", id)), Vector2(118, 12), Vector2(110, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
-		_label(job_text, Vector2(118, 36), Vector2(110, 18), 12, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
-		_label("Lv.%d" % int(a.get("level", 1)), Vector2(118, 54), Vector2(110, 18), 13, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_outlined(_label(String(a.get("name", id)), Vector2(118, 12), Vector2(110, 24), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, card))
+		_outlined(_label(job_text, Vector2(118, 36), Vector2(110, 18), 12, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card))
+		_outlined(_label("Lv.%d" % int(a.get("level", 1)), Vector2(118, 54), Vector2(110, 18), 13, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, card))
 		# 氣血、內力：與狀態頁同一套顯示（含裝備加成的最大值；本來是滿的就顯示滿）
 		var stats: Dictionary = menu.compute_overview_stats(a, InventorySync.get_equipment_stat_bonus(id)) if menu != null else {}
 		var hp_max := int(stats.get("max_hp", a.get("max_hp", 1)))
@@ -404,9 +415,9 @@ func _rebuild_roster(ids: Array) -> void:
 		var hp_now: int = menu._displayed_resource(int(a.get("hp", 0)), int(a.get("max_hp", 1)), hp_max) if menu != null else int(a.get("hp", 0))
 		var mp_now: int = menu._displayed_resource(int(a.get("mp", 0)), int(a.get("max_mp", 1)), mp_max) if menu != null else int(a.get("mp", 0))
 		_bar(card, Vector2(120, 82), "hp", float(hp_now), float(maxi(1, hp_max)), 64.0)
-		_label("%d/%d" % [hp_now, hp_max], Vector2(190, 77), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_outlined(_label("%d/%d" % [hp_now, hp_max], Vector2(190, 77), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card))
 		_bar(card, Vector2(120, 101), "mp", float(mp_now), float(maxi(1, mp_max)), 64.0)
-		_label("%d/%d" % [mp_now, mp_max], Vector2(190, 96), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card)
+		_outlined(_label("%d/%d" % [mp_now, mp_max], Vector2(190, 96), Vector2(44, 18), 11, INK, HORIZONTAL_ALIGNMENT_LEFT, card))
 		card.pressed.connect(_on_actor_pressed.bind(id))
 		_roster_buttons[id] = card
 
