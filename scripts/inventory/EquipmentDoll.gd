@@ -89,7 +89,7 @@ func _apply_order(order: Array) -> void:
 ## 角色卡用的頭像：從目前穿的那一階立繪裁出頭部（畫質比戰鬥小頭像好，也會跟著衣裝換）；這個角色沒有立繪就回傳 null，呼叫端退回戰鬥頭像。
 const HEAD_REGION := Rect2(150, 20, 250, 270)       # 以母圖與第四階的眼睛為基準（畫布 508×972 像素）
 ## 各角色自己的頭像裁切（畫布像素）：臉要在卡片頭像的正中間
-const HEAD_REGIONS := {"shumian": Rect2(160, 0, 290, 313)}
+const HEAD_REGIONS := {"shumian": Rect2(102, 0, 290, 313)}      # 頭像內容往右 20 邏輯 px（卡片頭像框 100 寬 ↔ 290 畫布像素，1 邏輯 px ≈ 2.9 畫布像素 → 58）
 
 ## 這個角色這一階有什麼圖："master"（凡品整張母圖）、"tiered"（分層衣裝）、"whole"（整張衣裝）、""（沒有）
 static func tier_kind(id: String, rarity: int) -> String:
