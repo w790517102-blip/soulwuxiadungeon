@@ -82,6 +82,8 @@ func _apply_order(order: Array) -> void:
 
 ## 角色卡用的頭像：從目前穿的那一階立繪裁出頭部（畫質比戰鬥小頭像好，也會跟著衣裝換）；這個角色沒有立繪就回傳 null，呼叫端退回戰鬥頭像。
 const HEAD_REGION := Rect2(150, 20, 250, 270)       # 以母圖與第四階的眼睛為基準（畫布 508×972 像素）
+## 各角色自己的頭像裁切（畫布像素）：臉要在卡片頭像的正中間
+const HEAD_REGIONS := {"shumian": Rect2(160, 0, 290, 313)}
 
 static func head_portrait(id: String) -> Texture2D:
 	var equipped: Dictionary = InventorySync.get_equipped(id)
@@ -90,10 +92,11 @@ static func head_portrait(id: String) -> Texture2D:
 	if body_id != "":
 		rarity = ItemRarityScript.rarity_of(ItemDBScript.get_def(body_id))
 	var path := ""
-	var origin := HEAD_REGION.position
+	var region: Rect2 = HEAD_REGIONS.get(id, HEAD_REGION)
+	var origin := region.position
 	if rarity > 1 and ResourceLoader.exists(DIR + "doll_r%d_front.png" % rarity):
 		# 分層衣裝：頭部那層（front）只有頭髮與領子，單獨裁會缺一塊，所以把 back、body、cloak_front、front 四層疊起來再裁
-		return _tiered_head(rarity)
+		return _tiered_head(rarity, region)
 	elif rarity > 1 and ResourceLoader.exists(DIR + "doll_%s_r%d.png" % [id, rarity]):
 		path = DIR + "doll_%s_r%d.png" % [id, rarity]
 		origin -= Vector2(EYE_SHIFT.get(rarity, Vector2.ZERO))        # 整張圖有平移過，頭也跟著在那邊
@@ -103,14 +106,15 @@ static func head_portrait(id: String) -> Texture2D:
 		return null
 	var atlas := AtlasTexture.new()
 	atlas.atlas = load(path) as Texture2D
-	atlas.region = Rect2(origin, HEAD_REGION.size)
+	atlas.region = Rect2(origin, region.size)
 	return atlas
 
 static var _tiered_head_cache: Dictionary = {}
 
-static func _tiered_head(rarity: int) -> Texture2D:
-	if _tiered_head_cache.has(rarity):
-		return _tiered_head_cache[rarity]
+static func _tiered_head(rarity: int, region: Rect2 = HEAD_REGION) -> Texture2D:
+	var cache_key := "%d_%s" % [rarity, str(region)]
+	if _tiered_head_cache.has(cache_key):
+		return _tiered_head_cache[cache_key]
 	var canvas: Image = null
 	for part in ["back", "body", "cloak_front", "front"]:
 		var tex := load(DIR + "doll_r%d_%s.png" % [rarity, part]) as Texture2D
@@ -125,8 +129,8 @@ static func _tiered_head(rarity: int) -> Texture2D:
 		return null
 	var out := AtlasTexture.new()
 	out.atlas = ImageTexture.create_from_image(canvas)
-	out.region = HEAD_REGION
-	_tiered_head_cache[rarity] = out
+	out.region = region
+	_tiered_head_cache[cache_key] = out
 	return out
 
 ## 依這位角色目前的裝備重畫所有圖層。回傳 {mode, body_rarity, body_art, weapon_art, mech_art}，給測試與除錯用
