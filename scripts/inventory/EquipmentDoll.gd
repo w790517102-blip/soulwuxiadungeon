@@ -26,7 +26,7 @@ const ORDER_TIERED := ["back", "body", "cloak_front", "front", "weapon_back", "w
 ## 連弩（老闆手把手給的位置）：連弩與背帶各是一張全畫布圖，與母圖同一個縮放，直接疊上去；背帶永遠在最上面（斜跨過肩）。
 ## 疊放（由後到前）：衣裝 → 背帶 → 連弩 → 劍。
 ## 連弩的微調旋轉：負值＝逆時針（Godot 正值是順時針）。轉軸是弩托靠肩的位置（全畫布 508×972 的座標），背帶不跟著轉。
-const MECH_ROTATION_DEG := -8.0
+const MECH_ROTATION_DEG := 0.0
 const MECH_PIVOT := Vector2(84, 170)
 
 var actor_id := ""
