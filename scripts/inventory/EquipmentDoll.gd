@@ -34,9 +34,9 @@ const ORDER_TIERED := ["back", "body", "cloak_front", "front", "weapon_back", "w
 ## 連弩的微調旋轉：負值＝逆時針（Godot 正值是順時針）。轉軸是弩托靠肩的位置（全畫布 508×972 的座標），背帶不跟著轉。
 const MECH_ROTATION_DEG := 0.0
 const MECH_PIVOT := Vector2(84, 170)
-## 各角色的機關（連弩、背帶）微調：母圖是對著劉語塵的背擺的，別的角色身形不同，要各自位移、縮放、旋轉（以 MECH_PIVOT 為轉軸；shift 是畫布像素）。
+## 各角色的機關（連弩、背帶）微調：預設完全不動（所有角色共用同一個位置）；真的對不上才在這裡加一行，各自位移、縮放、旋轉（以 MECH_PIVOT 為轉軸；shift 是畫布像素）。
 const CHAR_MECH := {
-	"shumian": {"shift": Vector2(46, 64), "scale": 1.1, "rot": -8.0},
+	# 書眠：老闆定案，連弩與背帶完全不動（與劉語塵同一個位置，同一張全畫布圖層），所以這裡沒有她的條目
 }
 
 var actor_id := ""
