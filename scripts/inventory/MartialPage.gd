@@ -589,32 +589,33 @@ func _open_skill_detail() -> void:
 		return
 	_clear_overlay()
 	_overlay.visible = true
-	var pos := Vector2(226, 134)
-	var size := Vector2(700, 380)
+	# 卷軸的裝飾：右上竹葉（x>76%、y<45%）、左下竹子（x<16%）、右下山水（x>45%、y>55%）。文字只放在左欄與中上方，避開這三塊
+	var pos := Vector2(186, 104)
+	var size := Vector2(780, 440)
 	_paper_dialog(pos, size)
-	_skill_icon(selected_skill, 72, _overlay, pos + Vector2(44, 34))
-	_label(String(selected_skill.get("name", "???")), pos + Vector2(132, 34), Vector2(360, 36), 28, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
-	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(132, 74), Vector2(360, 24), 15, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	_skill_icon(selected_skill, 72, _overlay, pos + Vector2(124, 46))
+	_label(String(selected_skill.get("name", "???")), pos + Vector2(124, 126), Vector2(220, 34), 26, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(124, 160), Vector2(220, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	var usable: bool = menu._can_use_skill_now(selected_skill, actor_id) if menu != null else true
-	_chip("可施展" if usable else "不可施展", Rect2(pos.x + size.x - 44 - 76, pos.y + 40, 76, 24), _overlay, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 13)
+	_chip("可施展" if usable else "不可施展", Rect2(pos.x + 124, pos.y + 190, 76, 24), _overlay, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 13)
 	var mp := int(selected_skill.get("mp_cost", 0))
 	var rows := [["消耗", ("內力 %d" % mp) if mp > 0 else "無"], ["目標", MartialInfoScript.target_text(selected_skill)]]
 	for i in rows.size():
-		var y := pos.y + 124.0 + i * 30.0
-		_chip(rows[i][0], Rect2(pos.x + 44, y, 52, 24), _overlay, Color(0.30, 0.24, 0.16), CREAM, 13)
-		_label(String(rows[i][1]), Vector2(pos.x + 108, y), Vector2(360, 24), 16, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		var y := pos.y + 232.0 + i * 30.0
+		_chip(rows[i][0], Rect2(pos.x + 124, y, 48, 24), _overlay, Color(0.30, 0.24, 0.16), CREAM, 13)
+		_label(String(rows[i][1]), Vector2(pos.x + 180, y), Vector2(160, 24), 15, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	var body := RichTextLabel.new()
-	body.position = pos + Vector2(44, 192)
-	body.size = Vector2(size.x - 88, 150)
+	body.position = pos + Vector2(360, 62)
+	body.size = Vector2(230, 190)
 	body.bbcode_enabled = true
 	body.add_theme_font_override("normal_font", FONT)
-	body.add_theme_font_size_override("normal_font_size", 15)
+	body.add_theme_font_size_override("normal_font_size", 14)
 	body.add_theme_color_override("default_color", INK)
 	var effects: Array = MartialInfoScript.effect_lines(selected_skill)
 	var desc := String(selected_skill.get("description", selected_skill.get("desc", ""))).strip_edges()
 	body.text = "%s[color=#7A4A12]效果[/color]\n%s" % [(desc + "\n\n") if desc != "" else "", "\n".join(effects.map(func(l): return "• " + String(l)))]
 	_overlay.add_child(body)
-	var close := _tex_button(Vector2(170, 40), pos + Vector2((size.x - 170.0) * 0.5, size.y - 64), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
+	var close := _tex_button(Vector2(160, 40), pos + Vector2(150, size.y - 70), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
 	close.text = "關閉"
 	close.pressed.connect(_close_overlay)
 
@@ -672,16 +673,16 @@ func _forces_in(element: String) -> Array:
 func _show_force_picker() -> void:
 	_clear_overlay()
 	_overlay.visible = true
-	var pos := Vector2(206, 110)
-	var size := Vector2(740, 430)
+	var pos := Vector2(126, 84)
+	var size := Vector2(900, 480)
 	_paper_dialog(pos, size)
-	_label("更換內功", pos + Vector2(40, 22), Vector2(300, 30), 22, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	_label("更換內功", pos + Vector2(140, 44), Vector2(300, 30), 22, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	# 五個篩選標籤：全部｜快｜遲｜柔｜剛
 	var tabs: Array = ["全部"] + Array(MartialInfoScript.ELEMENTS)
 	for i in tabs.size():
 		var t: String = tabs[i]
 		var on: bool = t == _pick_element
-		var b := _tex_button(Vector2(62, 30), pos + Vector2(40 + i * 66, 58), "btn_primary_normal" if on else "btn_normal", "btn_primary_hover" if on else "btn_hover", "btn_primary_pressed", "btn_disabled", 24, 12, _overlay)
+		var b := _tex_button(Vector2(62, 30), pos + Vector2(140 + i * 66, 82), "btn_primary_normal" if on else "btn_normal", "btn_primary_hover" if on else "btn_hover", "btn_primary_pressed", "btn_disabled", 24, 12, _overlay)
 		b.text = t
 		b.add_theme_font_size_override("font_size", 15)
 		b.pressed.connect(func():
@@ -691,8 +692,8 @@ func _show_force_picker() -> void:
 				_pick_force_id = String(list[0].get("id", ""))
 			_show_force_picker())
 	var scroll := ScrollContainer.new()
-	scroll.position = pos + Vector2(40, 100)
-	scroll.size = Vector2(300, 250)
+	scroll.position = pos + Vector2(140, 124)
+	scroll.size = Vector2(300, 280)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_overlay.add_child(scroll)
 	var rows := VBoxContainer.new()
@@ -728,22 +729,22 @@ func _show_force_picker() -> void:
 		if String(f.get("id", "")) == _pick_force_id:
 			chosen = f
 	if not chosen.is_empty():
-		_label(MartialInfoScript.force_name(chosen), pos + Vector2(380, 98), Vector2(320, 32), 24, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
-		_label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(380, 130), Vector2(320, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		_label(MartialInfoScript.force_name(chosen), pos + Vector2(470, 90), Vector2(210, 32), 24, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		_label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(470, 122), Vector2(210, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 		var detail := RichTextLabel.new()
-		detail.position = pos + Vector2(380, 158)
-		detail.size = Vector2(320, 196)
+		detail.position = pos + Vector2(470, 148)
+		detail.size = Vector2(215, 150)
 		detail.bbcode_enabled = true
 		detail.add_theme_font_override("normal_font", FONT)
-		detail.add_theme_font_size_override("normal_font_size", 14)
+		detail.add_theme_font_size_override("normal_font_size", 13)
 		detail.add_theme_color_override("default_color", INK)
 		var eff: Array = MartialInfoScript.force_effect_lines(chosen, _actor_dict())
 		detail.text = "%s\n\n[color=#7A4A12]效果[/color]\n%s" % [String(chosen.get("description", "")), "\n".join(eff.map(func(l): return "• " + String(l)))]
 		_overlay.add_child(detail)
-	var ok := _tex_button(Vector2(170, 40), pos + Vector2(size.x - 40 - 170 - 190, size.y - 66), "btn_primary_normal", "btn_primary_hover", "btn_primary_pressed", "btn_primary_disabled", 48, 16, _overlay)
+	var ok := _tex_button(Vector2(160, 40), pos + Vector2(150, size.y - 76), "btn_primary_normal", "btn_primary_hover", "btn_primary_pressed", "btn_primary_disabled", 48, 16, _overlay)
 	ok.text = "更換"
 	ok.disabled = chosen.is_empty() or _pick_force_id == cur_id
-	var cancel := _tex_button(Vector2(170, 40), pos + Vector2(size.x - 40 - 170, size.y - 66), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
+	var cancel := _tex_button(Vector2(160, 40), pos + Vector2(330, size.y - 76), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
 	cancel.text = "取消"
 	ok.pressed.connect(func():
 		var id := _pick_force_id
