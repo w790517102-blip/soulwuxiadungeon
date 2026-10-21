@@ -10,7 +10,7 @@ const MartialInfoScript = preload("res://scripts/inventory/MartialInfo.gd")
 const BUTTON_Y := 586
 const FIGURE_POS := Vector2(486, 70)
 const FIGURE_SIZE := Vector2(254, 486)
-const FIGURE_CLIP := Rect2(412, 76, 400, 330)      # 搭配框標題飄帶（y≈410）以上才露出人物
+const SYN_FRAME := Rect2(418, 396, 382, 219)      # 搭配框獨立圖（共邊國單獨摳出）的位置與大小
 const NAME_POS := Vector2(752, 100)
 const NAME_BOX := Vector2(50, 300)
 const ROSTER_POS := Vector2(28, 140)
@@ -136,8 +136,11 @@ func _rich(rect: Rect2, parent: Node, font_size := 13) -> RichTextLabel:
 
 ## 共邊國素材載入：mart("martial_page_v3")。沒有檔案回傳 null（呼叫處自行退回暫代畫法）
 func mart(name_: String) -> Texture2D:
-	var p := "%s%s.png" % [MD, name_]
-	return load(p) as Texture2D if ResourceLoader.exists(p) else null
+	for ext in ["png", "webp"]:
+		var p := "%s%s.%s" % [MD, name_, ext]
+		if ResourceLoader.exists(p):
+			return load(p) as Texture2D
+	return null
 
 func _m_image(name_: String, pos: Vector2, size: Vector2, parent: Node) -> TextureRect:
 	var r := TextureRect.new()
@@ -191,28 +194,21 @@ func _build_roster() -> void:
 	scroll.add_child(_roster_scroll)
 
 func _build_figure() -> void:
-	# 搭配框是底圖的一部分，人物不能蓋住它：人物放在一個裁切框裡，只露出搭配框上緣以上（半身，與概念圖相同）
-	var clip := Control.new()
-	clip.name = "FigureClip"
-	clip.position = FIGURE_CLIP.position
-	clip.size = FIGURE_CLIP.size
-	clip.clip_contents = true
-	clip.z_index = 1
-	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(clip)
 	_doll = EquipmentDollScript.new()
 	_doll.name = "PaperDoll"
-	_doll.position = FIGURE_POS - FIGURE_CLIP.position
+	_doll.position = FIGURE_POS
 	_doll.size = FIGURE_SIZE
-	clip.add_child(_doll)
+	_doll.z_index = 1      # 搭配框（z 2）疊在人物前面，人物完整站在後面
+	add_child(_doll)
 	_fallback = TextureRect.new()
 	_fallback.name = "PortraitFallback"
 	_fallback.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_fallback.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_fallback.position = FIGURE_POS - FIGURE_CLIP.position + Vector2(0, 40)
+	_fallback.position = FIGURE_POS + Vector2(0, 40)
 	_fallback.size = Vector2(FIGURE_SIZE.x, 250)
+	_fallback.z_index = 1
 	_fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	clip.add_child(_fallback)
+	add_child(_fallback)
 	_name_box = Control.new()
 	_name_box.name = "VerticalName"
 	_name_box.position = NAME_POS
@@ -270,8 +266,9 @@ func _build_synergy() -> void:
 	box.name = "Synergy"
 	box.position = SYN_RECT.position
 	box.size = SYN_RECT.size
-	box.z_index = 2
+	box.z_index = 3
 	add_child(box)
+	_m_image("combination_frame", SYN_FRAME.position, SYN_FRAME.size, self).z_index = 2      # 疊在人物前面
 	# 底圖已含框、標題「內外功搭配」與紙面；這裡只放兩側圖示、名稱、× 與說明
 	_syn_left = Control.new()
 	_syn_left.position = Vector2(30, 36)
