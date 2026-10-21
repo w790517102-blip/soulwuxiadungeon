@@ -1110,8 +1110,11 @@ func _start_syn_fx(tier: int) -> void:
 		band.pivot_offset = band.size * 0.5
 		band.rotation_degrees = 22.0
 		band.position = Vector2(-40, -r.size.y * 0.6)
-		band.modulate = Color(color.r, color.g, color.b, 0.75)      # 一般混合（不用加亮），不會洗白，保留圖示本來的顏色
+		band.modulate = color
 		band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		band.material = mat
 		clip.add_child(band)
 		bands.append(band)
 		_syn_fx_nodes.append(clip)
@@ -1125,7 +1128,7 @@ func _shine_texture() -> Texture2D:
 	if _fx_tex_cache.has("shine"):
 		return _fx_tex_cache["shine"]
 	var g := Gradient.new()
-	g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.9), Color(1, 1, 1, 0)])
+	g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.85), Color(1, 1, 1, 0)])
 	g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
 	var t := GradientTexture2D.new()
 	t.gradient = g
