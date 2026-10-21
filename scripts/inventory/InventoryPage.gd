@@ -194,6 +194,7 @@ func _section(title: String) -> RichTextLabel:
 	t.add_theme_font_override("normal_font", FONT)
 	t.add_theme_font_size_override("normal_font_size", 14)
 	t.add_theme_color_override("default_color", INK)
+	_halo(t)
 	_detail_box.add_child(t)
 	return t
 

@@ -64,6 +64,7 @@ func build(owner_shop: Node) -> void:
 	shop.info_desc_label.add_theme_font_override("normal_font", FONT)
 	shop.info_desc_label.add_theme_font_size_override("normal_font_size", 16)
 	shop.info_desc_label.add_theme_color_override("default_color", INK)
+	_halo(shop.info_desc_label)
 	add_child(shop.info_desc_label)
 	shop.info_effect_label = _label("", Vector2(DETAIL_X, 350), Vector2(250, 90), 16, Color("#2F5A2A"), HORIZONTAL_ALIGNMENT_LEFT)
 	shop.info_effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

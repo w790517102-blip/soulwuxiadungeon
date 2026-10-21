@@ -114,9 +114,20 @@ func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Co
 	l.add_theme_font_override("font", FONT)
 	l.add_theme_font_size_override("font_size", font_size)
 	l.add_theme_color_override("font_color", color)
+	if soft_halo and color.get_luminance() < 0.4:
+		_halo(l)
 	parent.add_child(l)
 	return l
 
+
+## 深色字的白色柔邊（紙面上的墨字更清楚，不被紙紋與山水吃掉）。武術頁不用（soft_halo = false）
+var soft_halo := true
+
+func _halo(l: Control) -> void:
+	l.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.85))
+	l.add_theme_constant_override("shadow_offset_x", 0)
+	l.add_theme_constant_override("shadow_offset_y", 0)
+	l.add_theme_constant_override("shadow_outline_size", 4)
 
 ## 用貼圖樣式的按鈕。state 名稱對應檔名（例如 btn_normal / btn_hover / btn_pressed / btn_disabled）
 func _tex_button(size: Vector2, pos: Vector2, normal: String, hover: String, pressed: String, disabled: String, mx: int, my: int, parent: Node = self) -> Button:

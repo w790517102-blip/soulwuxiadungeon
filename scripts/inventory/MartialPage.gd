@@ -61,6 +61,7 @@ var _pick_force_id := ""
 
 func _ready() -> void:
 	name = "MartialPage"
+	soft_halo = false
 	set_meta("skip_menu_skin", true)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
