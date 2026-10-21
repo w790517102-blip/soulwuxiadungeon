@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1152 660" width="1152" height="660" font-family="Microsoft JhengHei, sans-serif">
+  <style>.t{font-size:12px;fill:#222}.h{font-size:15px;font-weight:bold;fill:#111}.sky{fill:#e8f6fb;stroke:#18b8d8;stroke-width:3}.ph{fill:#d9d9d9;stroke:#888;stroke-dasharray:3 2}.art{fill:none;stroke:#b33;stroke-width:1.5;stroke-dasharray:5 3}</style>
+  <rect width="1152" height="660" fill="#fff"/><rect width="1152" height="648" fill="none" stroke="#999"/>
+  <text x="12" y="20" class="h">武術頁 V3：整頁一口氣摳（天藍框）。灰塊＝程式放入；紅虛線＝請共邊國交的配套小件位置</text>
+  <polygon class="sky" points="3,72 1034,72 1034,93 1120,93 1120,623 3,623"/>
+  <text x="560" y="64" class="t">天藍框外框（交 2304×1296，位置對準畫布，框外透明）</text>
+  <!-- roster -->
+  <rect x="29" y="145" width="138" height="96" class="ph"/><rect x="29" y="251" width="138" height="96" class="ph"/><rect x="29" y="357" width="138" height="96" class="ph"/>
+  <text x="98" y="196" class="t" text-anchor="middle">名帖 138×96</text>
+  <!-- left -->
+  <rect x="214" y="103" width="182" height="35" class="ph"/><text x="305" y="125" class="t" text-anchor="middle">標題條（烤進底圖）</text>
+  <circle cx="303" cy="203" r="55" class="ph"/><text x="303" y="207" class="t" text-anchor="middle">內功心法圖示</text>
+  <text x="233" y="275" class="t">名稱／運行中</text><rect x="233" y="300" width="147" height="51" class="ph"/>
+  <rect x="283" y="395" width="40" height="40" class="ph"/><text x="303" y="418" class="t" text-anchor="middle">屬性</text>
+  <rect x="233" y="448" width="147" height="38" class="art"/><text x="306" y="471" class="t" text-anchor="middle">更換內功鈕</text>
+  <rect x="233" y="527" width="147" height="55" class="ph"/><text x="306" y="558" class="t" text-anchor="middle">當前效果</text>
+  <!-- middle -->
+  <rect x="470" y="83" width="250" height="400" class="ph" opacity=".7"/><text x="595" y="280" class="t" text-anchor="middle">人物（程式放）</text>
+  <rect x="750" y="148" width="22" height="114" class="ph"/>
+  <!-- synergy -->
+  <rect x="422" y="403" width="377" height="210" fill="none" stroke="#7a5c2e"/>
+  <circle cx="520" cy="475" r="30" class="ph"/><text x="608" y="481" class="h" text-anchor="middle">×</text><circle cx="689" cy="475" r="30" class="ph"/>
+  <rect x="440" y="554" width="340" height="32" class="ph"/><text x="610" y="574" class="t" text-anchor="middle">搭配說明</text>
+  <!-- right -->
+  <rect x="839" y="107" width="236" height="31" class="ph"/><text x="957" y="127" class="t" text-anchor="middle">標題條（烤進底圖）</text>
+  <rect x="851" y="153" width="217" height="25" class="art"/><text x="960" y="170" class="t" text-anchor="middle">分類標籤（配套小件）</text>
+  <rect x="849" y="186" width="218" height="48" class="art"/><rect x="849" y="236" width="218" height="48" class="art"/><rect x="849" y="286" width="218" height="48" class="art"/>
+  <text x="958" y="214" class="t" text-anchor="middle">招式列 ×3 態（配套小件）</text>
+  <rect x="849" y="505" width="218" height="80" class="ph"/><text x="958" y="548" class="t" text-anchor="middle">詳情（類型／消耗／目標／效果）</text>
+</svg>
