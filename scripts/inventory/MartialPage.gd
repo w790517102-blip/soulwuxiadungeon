@@ -589,8 +589,8 @@ func _open_skill_detail() -> void:
 		return
 	_clear_overlay()
 	_overlay.visible = true
-	var pos := Vector2(306, 118)
-	var size := Vector2(540, 412)
+	var pos := Vector2(226, 134)
+	var size := Vector2(700, 380)
 	_paper_dialog(pos, size)
 	_skill_icon(selected_skill, 72, _overlay, pos + Vector2(44, 34))
 	_label(String(selected_skill.get("name", "???")), pos + Vector2(132, 34), Vector2(360, 36), 28, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
@@ -806,32 +806,9 @@ func _skill_icon(skill: Dictionary, size_: float, parent: Node, pos: Vector2) ->
 		return _m_image(specific, pos, Vector2(size_, size_), parent)
 	return _icon("weapon", String(skill.get("weapon_type", "")).strip_edges(), size_, parent, pos)
 
-## 宣紙風格視窗底板（暫代：深色細框＋金邊＋取自底圖搭配框內的空白宣紙）。共邊國交正式的宣紙視窗底板後換成圖
+## 宣紙風格視窗底板：用專案現成的卷軸（scroll_body，與道具、裝備頁同一張）
 func _paper_dialog(pos: Vector2, size_: Vector2) -> void:
-	var frame := Panel.new()
-	frame.position = pos
-	frame.size = size_
-	frame.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color("#2A1D12")
-	sb.set_border_width_all(2)
-	sb.border_color = Color("#B88A3A")
-	sb.set_corner_radius_all(3)
-	sb.shadow_color = Color(0, 0, 0, 0.55)
-	sb.shadow_size = 12
-	frame.add_theme_stylebox_override("panel", sb)
-	_overlay.add_child(frame)
-	var paper := TextureRect.new()
-	var frame_tex := mart("combination_frame")
-	if frame_tex != null:
-		var at := AtlasTexture.new()
-		at.atlas = frame_tex
-		at.region = Rect2(260, 250, 1000, 520)      # 搭配框內沒有葉子的空白宣紙
-		paper.texture = at
-	paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	paper.stretch_mode = TextureRect.STRETCH_SCALE
-	paper.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	paper.position = pos + Vector2(6, 6)
-	paper.size = size_ - Vector2(12, 12)
-	paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_overlay.add_child(paper)
+	# 現成素材：道具頁、裝備頁同一張卷軸（scroll_body）攤開當視窗，整張縮放（兩端軸桿保留）
+	var scroll := _image("scroll_body", pos, size_, _overlay)
+	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	scroll.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
