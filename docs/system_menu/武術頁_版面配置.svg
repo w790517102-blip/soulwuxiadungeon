@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1152 700" width="1152" height="700" font-family="Microsoft JhengHei, sans-serif">
+  <style>
+    .t{font-size:13px;fill:#222}.s{font-size:11px;fill:#555}.h{font-size:15px;font-weight:bold;fill:#111}
+    .box{fill:none;stroke:#b33;stroke-width:1.5;stroke-dasharray:5 3}
+    .art{fill:#f3e9cf;stroke:#7a5c2e;stroke-width:1.5}
+    .dr{fill:#e8d9b0;stroke:#7a5c2e;stroke-width:1.5}
+    .ph{fill:#d9d9d9;stroke:#888;stroke-dasharray:3 2}
+    .hd{fill:#c9a24a;stroke:#6b4e12;stroke-width:1.5}
+  </style>
+  <rect width="1152" height="700" fill="#fff"/>
+  <rect x="0" y="0" width="1152" height="648" fill="none" stroke="#999"/>
+  <text x="12" y="20" class="h">武術頁版面配置（邏輯 1152×648；交圖為 2 倍）。紅色虛線＝請共邊國繪製的素材範圍，灰塊＝由程式放入的內容</text>
+
+  <!-- 中間頁面板塊 -->
+  <rect x="178" y="92" width="924" height="486" class="art"/>
+  <rect x="178" y="92" width="924" height="486" class="box"/>
+  <text x="640" y="116" class="h" text-anchor="middle">A 中間頁面板塊 924×486（交圖 1848×972）</text>
+
+  <!-- 人物 -->
+  <rect x="468" y="66" width="252" height="512" class="ph" opacity="0.6"/>
+  <text x="594" y="250" class="t" text-anchor="middle">人物（紙娃娃）</text>
+  <text x="594" y="268" class="s" text-anchor="middle">x468 y66 · 人物不畫進板塊</text>
+  <rect x="750" y="100" width="40" height="300" class="ph" opacity="0.6"/>
+  <text x="770" y="250" class="s" text-anchor="middle" writing-mode="tb">直排姓名</text>
+
+  <!-- 左名帖列 -->
+  <rect x="24" y="92" width="146" height="506" class="dr"/>
+  <rect x="28" y="96" width="138" height="96" class="box"/>
+  <text x="97" y="140" class="t" text-anchor="middle">D 窄版名帖 138×96</text>
+  <text x="97" y="158" class="s" text-anchor="middle">一般／移入／選中／空位</text>
+  <rect x="28" y="196" width="138" height="96" class="box" opacity=".5"/>
+  <rect x="28" y="296" width="138" height="96" class="box" opacity=".5"/>
+  <text x="97" y="84" class="s" text-anchor="middle">同行俠客（x24 y92 146×506）</text>
+
+  <!-- 左抽屜 -->
+  <rect x="178" y="92" width="236" height="486" class="dr"/>
+  <rect x="178" y="92" width="236" height="486" class="box"/>
+  <text x="296" y="88" class="h" text-anchor="middle">B 內功心法抽屜 236×486</text>
+  <rect x="178" y="92" width="236" height="30" class="ph"/><text x="296" y="112" class="t" text-anchor="middle">標題條（程式寫字）</text>
+  <circle cx="226" cy="168" r="26" class="ph"/><text x="226" y="172" class="s" text-anchor="middle">圖示</text>
+  <text x="270" y="210" class="t">內功名稱／運行中標籤</text>
+  <rect x="190" y="240" width="212" height="92" class="ph"/><text x="296" y="290" class="s" text-anchor="middle">內功描述</text>
+  <text x="192" y="344" class="s">內功屬性傾向（E 屬性徽記 ×4）</text>
+  <rect x="202" y="398" width="188" height="34" class="ph"/><text x="296" y="420" class="s" text-anchor="middle">更換內功（按鈕）</text>
+  <rect x="190" y="462" width="212" height="108" class="ph"/><text x="296" y="520" class="s" text-anchor="middle">當前效果</text>
+
+  <!-- 左把手 -->
+  <rect x="412" y="270" width="38" height="64" rx="6" class="hd"/><rect x="412" y="270" width="38" height="64" class="box"/>
+  <text x="431" y="308" class="t" text-anchor="middle">▶</text>
+  <text x="431" y="350" class="s" text-anchor="middle">C 把手</text>
+  <text x="431" y="362" class="s" text-anchor="middle">收起▶ 展開◀</text>
+
+  <!-- 右抽屜 -->
+  <rect x="836" y="92" width="266" height="486" class="dr"/>
+  <rect x="836" y="92" width="266" height="486" class="box"/>
+  <text x="969" y="88" class="h" text-anchor="middle">B 外功武術抽屜 266×486</text>
+  <rect x="836" y="92" width="266" height="30" class="ph"/><text x="969" y="112" class="t" text-anchor="middle">標題條</text>
+  <rect x="846" y="130" width="246" height="26" class="ph"/><text x="969" y="148" class="s" text-anchor="middle">分類標籤列（含 F 左右切換鈕 ×2）</text>
+  <rect x="846" y="164" width="246" height="210" class="ph"/><text x="969" y="260" class="s" text-anchor="middle">招式列表（F 列底三態 244×40）</text>
+  <rect x="846" y="388" width="246" height="100" class="ph"/><text x="969" y="440" class="s" text-anchor="middle">招式詳情（內力／目標／狀態）</text>
+  <rect x="846" y="494" width="246" height="76" class="ph"/><text x="969" y="536" class="s" text-anchor="middle">效果條列</text>
+
+  <!-- 右把手 -->
+  <rect x="800" y="270" width="38" height="64" rx="6" class="hd"/><rect x="800" y="270" width="38" height="64" class="box"/>
+  <text x="819" y="308" class="t" text-anchor="middle">◀</text>
+  <text x="819" y="350" class="s" text-anchor="middle">收起◀ 展開▶</text>
+  <text x="819" y="362" class="s" text-anchor="middle">（上一版畫反了）</text>
+
+  <!-- 搭配區 -->
+  <rect x="420" y="404" width="386" height="174" class="art"/>
+  <rect x="420" y="404" width="386" height="174" class="box"/>
+  <text x="613" y="424" class="h" text-anchor="middle">F 內外功搭配底板 386×174</text>
+  <circle cx="490" cy="480" r="30" class="ph"/><text x="490" y="484" class="s" text-anchor="middle">內功圖示</text>
+  <text x="613" y="486" class="h" text-anchor="middle">×</text>
+  <circle cx="736" cy="480" r="30" class="ph"/><text x="736" y="484" class="s" text-anchor="middle">外功圖示</text>
+  <rect x="432" y="522" width="362" height="48" class="ph"/><text x="613" y="550" class="s" text-anchor="middle">搭配說明文字</text>
+
+  <!-- 返回 -->
+  <rect x="494" y="586" width="165" height="38" class="ph"/><text x="576" y="610" class="s" text-anchor="middle">返回（沿用現有按鈕）</text>
+
+  <!-- 圖例 -->
+  <g transform="translate(24,652)">
+    <rect width="18" height="12" class="box"/><text x="26" y="11" class="s">請繪製的素材範圍</text>
+    <rect x="160" width="18" height="12" class="ph"/><text x="186" y="11" class="s">程式放入的內容（不需畫進底圖）</text>
+    <text x="440" y="11" class="s">E 分類圖示 14、屬性徽記 ×8 放在內功傾向列／分類標籤／搭配區圓位；座標見《武術頁_美術規格.md》</text>
+  </g>
+</svg>
