@@ -29,6 +29,7 @@ const ROW_SIZE := Vector2(232, 46)
 ## 搭配區（紙面 x438–780、y423–599）
 const SYN_RECT := Rect2(438, 410, 342, 180)
 const GOLD_EDGE := Color("#8A6A2E")
+const PAPER_ACCENT := Color("#7A4A12")         # 宣紙視窗上的小標題色（深棕）
 const DARK := Color(0.10, 0.08, 0.06, 0.96)
 const NAME_INK := Color("#2A1D12")
 const MUTED := Color("#8A7F6A")
@@ -590,10 +591,10 @@ func _open_skill_detail() -> void:
 	_overlay.visible = true
 	var pos := Vector2(306, 118)
 	var size := Vector2(540, 412)
-	_panel("confirm_panel", 28, 24, pos, size, _overlay)
+	_paper_dialog(pos, size)
 	_skill_icon(selected_skill, 72, _overlay, pos + Vector2(44, 34))
-	_label(String(selected_skill.get("name", "???")), pos + Vector2(132, 34), Vector2(360, 36), 28, CREAM, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
-	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(132, 74), Vector2(360, 24), 15, GOLD, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	_label(String(selected_skill.get("name", "???")), pos + Vector2(132, 34), Vector2(360, 36), 28, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(132, 74), Vector2(360, 24), 15, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	var usable: bool = menu._can_use_skill_now(selected_skill, actor_id) if menu != null else true
 	_chip("可施展" if usable else "不可施展", Rect2(pos.x + size.x - 44 - 76, pos.y + 40, 76, 24), _overlay, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 13)
 	var mp := int(selected_skill.get("mp_cost", 0))
@@ -601,17 +602,17 @@ func _open_skill_detail() -> void:
 	for i in rows.size():
 		var y := pos.y + 124.0 + i * 30.0
 		_chip(rows[i][0], Rect2(pos.x + 44, y, 52, 24), _overlay, Color(0.30, 0.24, 0.16), CREAM, 13)
-		_label(String(rows[i][1]), Vector2(pos.x + 108, y), Vector2(360, 24), 16, CREAM, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		_label(String(rows[i][1]), Vector2(pos.x + 108, y), Vector2(360, 24), 16, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	var body := RichTextLabel.new()
 	body.position = pos + Vector2(44, 192)
 	body.size = Vector2(size.x - 88, 150)
 	body.bbcode_enabled = true
 	body.add_theme_font_override("normal_font", FONT)
 	body.add_theme_font_size_override("normal_font_size", 15)
-	body.add_theme_color_override("default_color", CREAM)
+	body.add_theme_color_override("default_color", INK)
 	var effects: Array = MartialInfoScript.effect_lines(selected_skill)
 	var desc := String(selected_skill.get("description", selected_skill.get("desc", ""))).strip_edges()
-	body.text = "%s[color=#E6C46A]效果[/color]\n%s" % [(desc + "\n\n") if desc != "" else "", "\n".join(effects.map(func(l): return "• " + String(l)))]
+	body.text = "%s[color=#7A4A12]效果[/color]\n%s" % [(desc + "\n\n") if desc != "" else "", "\n".join(effects.map(func(l): return "• " + String(l)))]
 	_overlay.add_child(body)
 	var close := _tex_button(Vector2(170, 40), pos + Vector2((size.x - 170.0) * 0.5, size.y - 64), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
 	close.text = "關閉"
@@ -673,8 +674,8 @@ func _show_force_picker() -> void:
 	_overlay.visible = true
 	var pos := Vector2(206, 110)
 	var size := Vector2(740, 430)
-	_panel("confirm_panel", 28, 24, pos, size, _overlay)
-	_label("更換內功", pos + Vector2(40, 22), Vector2(300, 30), 22, GOLD, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	_paper_dialog(pos, size)
+	_label("更換內功", pos + Vector2(40, 22), Vector2(300, 30), 22, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	# 五個篩選標籤：全部｜快｜遲｜柔｜剛
 	var tabs: Array = ["全部"] + Array(MartialInfoScript.ELEMENTS)
 	for i in tabs.size():
@@ -700,7 +701,7 @@ func _show_force_picker() -> void:
 	var cur_id := String(_current_force().get("id", ""))
 	var list := _forces_in(_pick_element)
 	if list.is_empty():
-		var none := _label("這個分類還沒有學會的內功。", Vector2.ZERO, Vector2(290, 60), 15, CREAM, HORIZONTAL_ALIGNMENT_CENTER, rows)
+		var none := _label("這個分類還沒有學會的內功。", Vector2.ZERO, Vector2(290, 60), 15, INK, HORIZONTAL_ALIGNMENT_CENTER, rows)
 		none.custom_minimum_size = Vector2(290, 60)
 	for f in list:
 		var fid := String(f.get("id", ""))
@@ -727,17 +728,17 @@ func _show_force_picker() -> void:
 		if String(f.get("id", "")) == _pick_force_id:
 			chosen = f
 	if not chosen.is_empty():
-		_label(MartialInfoScript.force_name(chosen), pos + Vector2(380, 98), Vector2(320, 32), 24, CREAM, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
-		_label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(380, 130), Vector2(320, 22), 14, GOLD, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		_label(MartialInfoScript.force_name(chosen), pos + Vector2(380, 98), Vector2(320, 32), 24, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		_label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(380, 130), Vector2(320, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 		var detail := RichTextLabel.new()
 		detail.position = pos + Vector2(380, 158)
 		detail.size = Vector2(320, 196)
 		detail.bbcode_enabled = true
 		detail.add_theme_font_override("normal_font", FONT)
 		detail.add_theme_font_size_override("normal_font_size", 14)
-		detail.add_theme_color_override("default_color", CREAM)
+		detail.add_theme_color_override("default_color", INK)
 		var eff: Array = MartialInfoScript.force_effect_lines(chosen, _actor_dict())
-		detail.text = "%s\n\n[color=#E6C46A]效果[/color]\n%s" % [String(chosen.get("description", "")), "\n".join(eff.map(func(l): return "• " + String(l)))]
+		detail.text = "%s\n\n[color=#7A4A12]效果[/color]\n%s" % [String(chosen.get("description", "")), "\n".join(eff.map(func(l): return "• " + String(l)))]
 		_overlay.add_child(detail)
 	var ok := _tex_button(Vector2(170, 40), pos + Vector2(size.x - 40 - 170 - 190, size.y - 66), "btn_primary_normal", "btn_primary_hover", "btn_primary_pressed", "btn_primary_disabled", 48, 16, _overlay)
 	ok.text = "更換"
@@ -804,3 +805,33 @@ func _skill_icon(skill: Dictionary, size_: float, parent: Node, pos: Vector2) ->
 	if mart(specific) != null:
 		return _m_image(specific, pos, Vector2(size_, size_), parent)
 	return _icon("weapon", String(skill.get("weapon_type", "")).strip_edges(), size_, parent, pos)
+
+## 宣紙風格視窗底板（暫代：深色細框＋金邊＋取自底圖搭配框內的空白宣紙）。共邊國交正式的宣紙視窗底板後換成圖
+func _paper_dialog(pos: Vector2, size_: Vector2) -> void:
+	var frame := Panel.new()
+	frame.position = pos
+	frame.size = size_
+	frame.mouse_filter = Control.MOUSE_FILTER_STOP
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("#2A1D12")
+	sb.set_border_width_all(2)
+	sb.border_color = Color("#B88A3A")
+	sb.set_corner_radius_all(3)
+	sb.shadow_color = Color(0, 0, 0, 0.55)
+	sb.shadow_size = 12
+	frame.add_theme_stylebox_override("panel", sb)
+	_overlay.add_child(frame)
+	var paper := TextureRect.new()
+	var frame_tex := mart("combination_frame")
+	if frame_tex != null:
+		var at := AtlasTexture.new()
+		at.atlas = frame_tex
+		at.region = Rect2(260, 250, 1000, 520)      # 搭配框內沒有葉子的空白宣紙
+		paper.texture = at
+	paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	paper.stretch_mode = TextureRect.STRETCH_SCALE
+	paper.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	paper.position = pos + Vector2(6, 6)
+	paper.size = size_ - Vector2(12, 12)
+	paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_overlay.add_child(paper)
