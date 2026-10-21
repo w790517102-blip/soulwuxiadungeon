@@ -51,8 +51,7 @@ var _force_effects: RichTextLabel
 var _btn_switch_force: Button
 var _cat_row: Control
 var _skill_rows: VBoxContainer
-var _detail_vals: Dictionary = {}
-var _detail_effects: RichTextLabel
+var _btn_detail: Button
 var _syn_left: Control
 var _syn_right: Control
 var _syn_text: RichTextLabel
@@ -280,26 +279,24 @@ func _baked_piece(src_px: Rect2, pos: Vector2, size_: Vector2) -> void:
 
 ## 外功面板：標題「外功武術」「招式詳情」烤在底圖上
 func _build_outer_panel() -> void:
+	# 底圖上烤的「招式詳情」小標題改成按鈕：先用同面板的空白紙面蓋掉（要在列表之前建，列表才會壓在上面）
+	_cover_baked(Rect2(840, 472, 192, 34), Rect2(840, 548, 192, 34))
 	_cat_row = Control.new()
 	_cat_row.position = Vector2(OUTER_X, 148)
 	_cat_row.size = Vector2(CAT_W, 28)
 	add_child(_cat_row)
 	var list_scroll := ScrollContainer.new()
 	list_scroll.position = Vector2(OUTER_X, 182)
-	list_scroll.size = Vector2(CAT_W + 2, 288)
+	list_scroll.size = Vector2(CAT_W + 2, 346)
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(list_scroll)
 	_skill_rows = VBoxContainer.new()
 	_skill_rows.add_theme_constant_override("separation", 2)
 	_skill_rows.custom_minimum_size = Vector2(ROW_SIZE.x, 0)
 	list_scroll.add_child(_skill_rows)
-	var rows := [["type", "類型"], ["cost", "消耗"], ["target", "目標"]]
-	for i in rows.size():
-		var y := 502.0 + i * 20.0
-		var tag := _m_image("detail_tag_blank", Vector2(OUTER_X + 2, y), Vector2(44, 18), self)
-		_label(rows[i][1], Vector2.ZERO, tag.size, 11, CREAM, HORIZONTAL_ALIGNMENT_CENTER, tag)
-		_detail_vals[rows[i][0]] = _label("", Vector2(OUTER_X + 52, y - 1), Vector2(180, 20), 13, INK, HORIZONTAL_ALIGNMENT_LEFT)
-	_detail_effects = _rich(Rect2(OUTER_X + 2, 563, CAT_W - 4, 38), self, 11)
+	# 「招式詳情」按鈕：按下才彈出視窗，列出選中招式的類型、消耗、目標與效果
+	_btn_detail = _art_button(Rect2(OUTER_X + 43, 548, 147, 38), "change_inner_normal", "change_inner_hover", "change_inner_pressed", "change_inner_disabled", "招式詳情")
+	_btn_detail.pressed.connect(_open_skill_detail)
 
 func _build_synergy() -> void:
 	var box := Control.new()
@@ -322,12 +319,12 @@ func _build_synergy() -> void:
 	_syn_text = _rich(Rect2(16, 106, 310, 58), box, 12)
 
 ## 讀進素材的按鈕（四態）：一般／移入／按下／停用，字由程式放
-func _art_button(rect: Rect2, normal: String, hover: String, pressed: String, disabled: String) -> Button:
+func _art_button(rect: Rect2, normal: String, hover: String, pressed: String, disabled: String, label := "更換內功") -> Button:
 	var b := Button.new()
 	b.position = rect.position
 	b.size = rect.size
 	b.focus_mode = Control.FOCUS_NONE
-	b.text = "更換內功"
+	b.text = label
 	var arts := {"normal": normal, "hover": hover, "pressed": pressed, "disabled": disabled}
 	for st in arts.keys():
 		var sb := StyleBoxTexture.new()
@@ -583,18 +580,42 @@ func _on_skill_pressed(s: Dictionary) -> void:
 	_refresh_synergy()
 
 func _refresh_detail() -> void:
+	_btn_detail.disabled = selected_skill.is_empty()
+
+## 招式詳情視窗：按「招式詳情」才彈出
+func _open_skill_detail() -> void:
 	if selected_skill.is_empty():
-		_detail_vals["type"].text = "—"
-		_detail_vals["cost"].text = "—"
-		_detail_vals["target"].text = "—"
-		_detail_effects.text = "請選擇武術。"
 		return
-	_detail_vals["type"].text = "%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))]
+	_clear_overlay()
+	_overlay.visible = true
+	var pos := Vector2(306, 118)
+	var size := Vector2(540, 412)
+	_panel("confirm_panel", 28, 24, pos, size, _overlay)
+	_skill_icon(selected_skill, 72, _overlay, pos + Vector2(44, 34))
+	_label(String(selected_skill.get("name", "???")), pos + Vector2(132, 34), Vector2(360, 36), 28, CREAM, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(132, 74), Vector2(360, 24), 15, GOLD, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	var usable: bool = menu._can_use_skill_now(selected_skill, actor_id) if menu != null else true
+	_chip("可施展" if usable else "不可施展", Rect2(pos.x + size.x - 44 - 76, pos.y + 40, 76, 24), _overlay, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 13)
 	var mp := int(selected_skill.get("mp_cost", 0))
-	_detail_vals["cost"].text = ("內力 %d" % mp) if mp > 0 else "無"
-	_detail_vals["target"].text = MartialInfoScript.target_text(selected_skill)
-	var lines: Array = MartialInfoScript.effect_lines(selected_skill)
-	_detail_effects.text = "\n".join(lines.map(func(l): return "• " + String(l)))
+	var rows := [["消耗", ("內力 %d" % mp) if mp > 0 else "無"], ["目標", MartialInfoScript.target_text(selected_skill)]]
+	for i in rows.size():
+		var y := pos.y + 124.0 + i * 30.0
+		_chip(rows[i][0], Rect2(pos.x + 44, y, 52, 24), _overlay, Color(0.30, 0.24, 0.16), CREAM, 13)
+		_label(String(rows[i][1]), Vector2(pos.x + 108, y), Vector2(360, 24), 16, CREAM, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	var body := RichTextLabel.new()
+	body.position = pos + Vector2(44, 192)
+	body.size = Vector2(size.x - 88, 150)
+	body.bbcode_enabled = true
+	body.add_theme_font_override("normal_font", FONT)
+	body.add_theme_font_size_override("normal_font_size", 15)
+	body.add_theme_color_override("default_color", CREAM)
+	var effects: Array = MartialInfoScript.effect_lines(selected_skill)
+	var desc := String(selected_skill.get("description", selected_skill.get("desc", ""))).strip_edges()
+	body.text = "%s[color=#E6C46A]效果[/color]\n%s" % [(desc + "\n\n") if desc != "" else "", "\n".join(effects.map(func(l): return "• " + String(l)))]
+	_overlay.add_child(body)
+	var close := _tex_button(Vector2(170, 40), pos + Vector2((size.x - 170.0) * 0.5, size.y - 64), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
+	close.text = "關閉"
+	close.pressed.connect(_close_overlay)
 
 func _refresh_synergy() -> void:
 	_clear(_syn_left)
