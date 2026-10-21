@@ -3,6 +3,7 @@ class_name ShopUI
 
 const ShopDatabaseScript = preload("res://scripts/db/ShopDatabase.gd")
 const MenuUIFont = preload("res://assets/fonts/UIFontKaiti.tres")
+const ShopSkinScript = preload("res://scripts/ui/ShopSkin.gd")
 
 var _shop_db: Node = ShopDatabaseScript.new()
 var _shop_id := ""
@@ -17,13 +18,13 @@ var _buy_entries: Dictionary = {}
 var _sell_cart: Dictionary = {}
 var _sell_entries: Dictionary = {}
 
-var panel: Panel
+var panel: Control
+var _skin: Control
 var title_label: Label
 var gold_label: Label
 var item_list: ItemList
 var buy_scroll: ScrollContainer
 var buy_list_vbox: VBoxContainer
-var info_panel: PanelContainer
 var info_name_label: Label
 var info_price_label: Label
 var info_desc_label: RichTextLabel
@@ -36,8 +37,6 @@ var close_button: Button
 var qty_label: Label
 var qty_minus_button: Button
 var qty_plus_button: Button
-var confirm_dialog: ConfirmationDialog
-var notice_dialog: AcceptDialog
 
 static func open_shop(shop_id: String, buyer = null) -> void:
 	var tree := Engine.get_main_loop() as SceneTree
@@ -68,160 +67,9 @@ func _ready() -> void:
 	_refresh_gold()
 
 func _build_ui() -> void:
-	panel = Panel.new()
-	panel.size = Vector2(820, 530)
-	panel.position = (get_viewport().get_visible_rect().size - panel.size) * 0.5
-	add_child(panel)
-
-	var vb = VBoxContainer.new()
-	vb.anchor_right = 1
-	vb.anchor_bottom = 1
-	vb.offset_left = 12
-	vb.offset_top = 12
-	vb.offset_right = -12
-	vb.offset_bottom = -12
-	panel.add_child(vb)
-
-	title_label = Label.new()
-	title_label.text = "商店"
-	vb.add_child(title_label)
-
-	gold_label = Label.new()
-	vb.add_child(gold_label)
-
-	var mode_hb := HBoxContainer.new()
-	vb.add_child(mode_hb)
-	mode_buy_button = Button.new()
-	mode_buy_button.text = "購買"
-	mode_hb.add_child(mode_buy_button)
-	mode_sell_button = Button.new()
-	mode_sell_button.text = "販賣"
-	mode_hb.add_child(mode_sell_button)
-
-	var content_hb := HBoxContainer.new()
-	content_hb.custom_minimum_size = Vector2(0, 270)
-	vb.add_child(content_hb)
-
-	var list_panel := PanelContainer.new()
-	list_panel.custom_minimum_size = Vector2(360, 270)
-	list_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_hb.add_child(list_panel)
-
-	var list_stack := VBoxContainer.new()
-	list_stack.anchor_right = 1
-	list_stack.anchor_bottom = 1
-	list_stack.offset_left = 13
-	list_stack.offset_top = 13
-	list_stack.offset_right = -13
-	list_stack.offset_bottom = -13
-	list_panel.add_child(list_stack)
-
-	buy_scroll = ScrollContainer.new()
-	buy_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	buy_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list_stack.add_child(buy_scroll)
-
-	buy_list_vbox = VBoxContainer.new()
-	buy_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	buy_scroll.add_child(buy_list_vbox)
-
-	item_list = ItemList.new()
-	item_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	item_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	item_list.visible = false
-	item_list.add_theme_font_override("font", MenuUIFont)
-	item_list.add_theme_font_size_override("font_size", 18)
-	item_list.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	item_list.add_theme_constant_override("outline_size", 4)
-	list_stack.add_child(item_list)
-
-	info_panel = PanelContainer.new()
-	info_panel.custom_minimum_size = Vector2(250, 270)
-	info_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_hb.add_child(info_panel)
-
-	var info_vb := VBoxContainer.new()
-	info_vb.anchor_right = 1
-	info_vb.anchor_bottom = 1
-	info_vb.offset_left = 10
-	info_vb.offset_top = 10
-	info_vb.offset_right = -10
-	info_vb.offset_bottom = -10
-	info_panel.add_child(info_vb)
-
-	info_name_label = Label.new()
-	info_name_label.text = "名稱：-"
-	info_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info_vb.add_child(info_name_label)
-
-	info_price_label = Label.new()
-	info_price_label.text = "價格：-"
-	info_price_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info_vb.add_child(info_price_label)
-
-	info_extra_label = Label.new()
-	info_extra_label.text = "備註：-"
-	info_extra_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info_vb.add_child(info_extra_label)
-
-	var desc_margin := MarginContainer.new()
-	desc_margin.add_theme_constant_override("margin_left", 5)
-	desc_margin.add_theme_constant_override("margin_top", 5)
-	desc_margin.add_theme_constant_override("margin_right", 5)
-	desc_margin.add_theme_constant_override("margin_bottom", 5)
-	desc_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	info_vb.add_child(desc_margin)
-
-	info_desc_label = RichTextLabel.new()
-	info_desc_label.bbcode_enabled = true
-	info_desc_label.fit_content = true
-	info_desc_label.scroll_active = false
-	info_desc_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	info_desc_label.custom_minimum_size = Vector2(0, 130)
-	desc_margin.add_child(info_desc_label)
-
-	info_effect_label = Label.new()
-	info_effect_label.text = "效果：-"
-	info_effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info_vb.add_child(info_effect_label)
-
-	var action_hb := HBoxContainer.new()
-	vb.add_child(action_hb)
-
-	qty_minus_button = Button.new()
-	qty_minus_button.text = "-"
-	action_hb.add_child(qty_minus_button)
-
-	qty_label = Label.new()
-	qty_label.text = "數量: 1"
-	qty_label.custom_minimum_size = Vector2(92, 0)
-	action_hb.add_child(qty_label)
-
-	qty_plus_button = Button.new()
-	qty_plus_button.text = "+"
-	action_hb.add_child(qty_plus_button)
-
-	action_button = Button.new()
-	action_button.text = "購買"
-	action_hb.add_child(action_button)
-
-	close_button = Button.new()
-	close_button.text = "離開"
-	action_hb.add_child(close_button)
-
-	confirm_dialog = ConfirmationDialog.new()
-	confirm_dialog.title = "確認"
-	confirm_dialog.add_theme_font_override("font", MenuUIFont)
-	confirm_dialog.add_theme_font_size_override("font_size", 18)
-	confirm_dialog.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	confirm_dialog.add_theme_constant_override("outline_size", 4)
-	confirm_dialog.about_to_popup.connect(_apply_confirm_dialog_style)
-	panel.add_child(confirm_dialog)
-
-	notice_dialog = AcceptDialog.new()
-	notice_dialog.title = "提示"
-	panel.add_child(notice_dialog)
-
+	_skin = ShopSkinScript.new()
+	add_child(_skin)
+	_skin.build(self)
 	mode_buy_button.pressed.connect(func(): _set_mode("buy"))
 	mode_sell_button.pressed.connect(func(): _set_mode("sell"))
 	action_button.pressed.connect(_on_action_pressed)
@@ -229,49 +77,6 @@ func _build_ui() -> void:
 	qty_minus_button.pressed.connect(_on_qty_minus_pressed)
 	qty_plus_button.pressed.connect(_on_qty_plus_pressed)
 	item_list.item_selected.connect(_on_item_selected)
-	confirm_dialog.confirmed.connect(_on_confirmed)
-	_apply_shop_font_style(panel)
-	_apply_confirm_dialog_style()
-
-func _apply_shop_font_style(root: Node) -> void:
-	if root is Control:
-		var ctrl := root as Control
-		ctrl.add_theme_font_override("font", MenuUIFont)
-		ctrl.add_theme_font_size_override("font_size", 18)
-		ctrl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		ctrl.add_theme_constant_override("outline_size", 4)
-		if ctrl is RichTextLabel:
-			ctrl.add_theme_font_override("normal_font", MenuUIFont)
-			ctrl.add_theme_font_size_override("normal_font_size", 18)
-	for child in root.get_children():
-		_apply_shop_font_style(child)
-
-func _apply_confirm_dialog_style() -> void:
-	if confirm_dialog == null:
-		return
-	confirm_dialog.add_theme_font_override("font", MenuUIFont)
-	confirm_dialog.add_theme_font_size_override("font_size", 18)
-	confirm_dialog.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	confirm_dialog.add_theme_constant_override("outline_size", 4)
-	var text_label := confirm_dialog.get_label()
-	if text_label:
-		text_label.add_theme_font_override("font", MenuUIFont)
-		text_label.add_theme_font_size_override("font_size", 18)
-		text_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		text_label.add_theme_constant_override("outline_size", 4)
-	var ok_btn := confirm_dialog.get_ok_button()
-	if ok_btn:
-		ok_btn.add_theme_font_override("font", MenuUIFont)
-		ok_btn.add_theme_font_size_override("font_size", 18)
-		ok_btn.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		ok_btn.add_theme_constant_override("outline_size", 4)
-	if confirm_dialog.has_method("get_cancel_button"):
-		var cancel_btn = confirm_dialog.get_cancel_button()
-		if cancel_btn:
-			cancel_btn.add_theme_font_override("font", MenuUIFont)
-			cancel_btn.add_theme_font_size_override("font_size", 18)
-			cancel_btn.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-			cancel_btn.add_theme_constant_override("outline_size", 4)
 
 func _set_mode(mode: String) -> void:
 	_mode = mode if ["buy", "sell"].has(mode) else "buy"
@@ -367,37 +172,20 @@ func _refresh_buy_items() -> void:
 		_buy_entries[item_id] = metadata
 		if not _buy_cart.has(item_id):
 			_buy_cart[item_id] = 0
-		var row := HBoxContainer.new()
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var parts: Dictionary = _skin.make_row(item_id, _item_name(item_id))
+		var row: Control = parts["row"]
 		buy_list_vbox.add_child(row)
-		var name_btn := Button.new()
-		name_btn.flat = true
-		name_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_apply_cart_list_text_style(name_btn)
+		var name_btn: Button = parts["name_btn"]
 		var stock_text := "∞" if runtime_stock < 0 else str(runtime_stock)
-		name_btn.text = "%s｜%d文｜庫存:%s" % [_item_name(item_id), price, stock_text]
+		(parts["sub"] as Label).text = "%d文｜庫存:%s" % [price, stock_text]
 		name_btn.pressed.connect(func():
 			_selected_entry = metadata.duplicate(true)
 			_update_info_panel(_selected_entry)
 		)
-		row.add_child(name_btn)
-		var minus_btn := Button.new()
-		minus_btn.text = "-"
-		minus_btn.custom_minimum_size = Vector2(28, 0)
-		_apply_cart_list_text_style(minus_btn)
-		row.add_child(minus_btn)
-		var qty_label_row := Label.new()
-		qty_label_row.custom_minimum_size = Vector2(34, 0)
-		qty_label_row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var minus_btn: Button = parts["minus"]
+		var qty_label_row: Label = parts["qty"]
 		qty_label_row.text = str(int(_buy_cart.get(item_id, 0)))
-		_apply_cart_list_text_style(qty_label_row)
-		row.add_child(qty_label_row)
-		var plus_btn := Button.new()
-		plus_btn.text = "+"
-		plus_btn.custom_minimum_size = Vector2(28, 0)
-		_apply_cart_list_text_style(plus_btn)
-		row.add_child(plus_btn)
+		var plus_btn: Button = parts["plus"]
 		minus_btn.pressed.connect(func():
 			var qty: int = max(int(_buy_cart.get(item_id, 0)) - 1, 0)
 			_buy_cart[item_id] = qty
@@ -452,38 +240,21 @@ func _refresh_sell_items() -> void:
 			_sell_cart[item_id] = 0
 		if first_entry.is_empty():
 			first_entry = metadata.duplicate(true)
-		var row := HBoxContainer.new()
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var parts: Dictionary = _skin.make_row(item_id, _item_name(item_id))
+		var row: Control = parts["row"]
 		buy_list_vbox.add_child(row)
-		var name_btn := Button.new()
-		name_btn.flat = true
-		name_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		name_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_apply_cart_list_text_style(name_btn)
+		var name_btn: Button = parts["name_btn"]
 		var equipped_text := "（已裝備）" if equipped_blocked else ""
-		name_btn.text = "%s｜持有:%d｜回收:%d文%s" % [_item_name(item_id), quantity, sell_price, equipped_text]
+		(parts["sub"] as Label).text = "持有:%d｜回收:%d文%s" % [quantity, sell_price, equipped_text]
 		name_btn.pressed.connect(func():
 			_selected_entry = metadata.duplicate(true)
 			_update_info_panel(_selected_entry)
 		)
-		row.add_child(name_btn)
-		var minus_btn := Button.new()
-		minus_btn.text = "-"
-		minus_btn.custom_minimum_size = Vector2(28, 0)
-		_apply_cart_list_text_style(minus_btn)
-		row.add_child(minus_btn)
-		var qty_label_row := Label.new()
-		qty_label_row.custom_minimum_size = Vector2(34, 0)
-		qty_label_row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var minus_btn: Button = parts["minus"]
+		var qty_label_row: Label = parts["qty"]
 		qty_label_row.text = str(int(_sell_cart.get(item_id, 0)))
-		_apply_cart_list_text_style(qty_label_row)
-		row.add_child(qty_label_row)
-		var plus_btn := Button.new()
-		plus_btn.text = "+"
-		plus_btn.custom_minimum_size = Vector2(28, 0)
+		var plus_btn: Button = parts["plus"]
 		plus_btn.disabled = equipped_blocked
-		_apply_cart_list_text_style(plus_btn)
-		row.add_child(plus_btn)
 		minus_btn.pressed.connect(func():
 			var qty: int = max(int(_sell_cart.get(item_id, 0)) - 1, 0)
 			_sell_cart[item_id] = qty
@@ -525,10 +296,12 @@ func _on_item_selected(index: int) -> void:
 	_update_info_panel(_selected_entry)
 
 func _update_info_panel(entry: Dictionary) -> void:
+	_skin.set_art(String(entry.get("item_id", "")))
+	_skin.highlight_row(String(entry.get("item_id", "")))
 	if info_name_label == null or info_price_label == null or info_desc_label == null or info_extra_label == null or info_effect_label == null:
 		return
 	if entry.is_empty():
-		info_name_label.text = "名稱：-"
+		info_name_label.text = "請選擇商品"
 		info_price_label.text = "價格：-"
 		info_extra_label.text = "備註：請先選擇商品"
 		info_desc_label.text = "描述：-"
@@ -541,7 +314,7 @@ func _update_info_panel(entry: Dictionary) -> void:
 	var item_effect := ItemDB.get_effect_display_text(item_def)
 	if item_desc == "":
 		item_desc = "（尚無描述）"
-	info_name_label.text = "名稱：%s" % item_name
+	info_name_label.text = item_name
 	var type_text := _item_type_display_name(String(item_def.get("type", "-")))
 	if _mode == "buy":
 		info_price_label.text = "價格：%d 文" % int(entry.get("price", 0))
@@ -627,8 +400,7 @@ func _on_qty_plus_pressed() -> void:
 	_update_qty_label()
 
 func _show_notice(text: String) -> void:
-	notice_dialog.dialog_text = text
-	notice_dialog.popup_centered()
+	_skin.notice(text)
 
 func _on_action_pressed() -> void:
 	if _mode == "buy":
@@ -650,8 +422,7 @@ func _on_action_pressed() -> void:
 		if _pending_item.is_empty():
 			_show_notice("請先選擇要購買的商品。")
 			return
-		confirm_dialog.dialog_text = "是否購買以下商品？\n\n%s\n\n總計：%d 文" % ["\n".join(lines), total_cost]
-		confirm_dialog.popup_centered()
+		_skin.ask("是否購買以下商品？\n\n%s\n\n總計：%d 文" % ["\n".join(lines), total_cost], _on_confirmed)
 		return
 	_pending_item.clear()
 	var sell_lines: Array[String] = []
@@ -677,8 +448,7 @@ func _on_action_pressed() -> void:
 	if _pending_item.is_empty():
 		_show_notice("請先選擇要販賣的商品。")
 		return
-	confirm_dialog.dialog_text = "是否販賣以下商品？\n\n%s\n\n總計：%d 文" % ["\n".join(sell_lines), total_gain]
-	confirm_dialog.popup_centered()
+	_skin.ask("是否販賣以下商品？\n\n%s\n\n總計：%d 文" % ["\n".join(sell_lines), total_gain], _on_confirmed)
 
 func _on_confirmed() -> void:
 	if _mode == "buy":
