@@ -1061,10 +1061,10 @@ func _stamp(text: String, rect: Rect2, parent: Node, font_size: int) -> TextureR
 	return r
 
 # ------------------------------------------------------------------
-# 搭配特效（只有「成立」才有）：加乘＝圖示呼吸放大縮小；專屬＝橘、絕技分支＝紫、奧義＝紅的閃卡。
+# 搭配特效（只有「成立」才有）：加乘＝藍；專屬＝橘、絕技分支＝紫、奧義＝紅的閃卡。
 # 閃卡是斜向的反光波，慢慢由左往右掃：先掃過內功圖示，接著（想像光在移動）再從外功圖示左邊接上、掃到右邊，停一下後重來
 # ------------------------------------------------------------------
-const SYN_SHINE_COLORS := {2: Color(1.0, 0.62, 0.18), 3: Color(0.72, 0.38, 1.0), 4: Color(1.0, 0.22, 0.22)}
+const SYN_SHINE_COLORS := {1: Color(0.2, 0.5, 1.0), 2: Color(1.0, 0.62, 0.18), 3: Color(0.72, 0.38, 1.0), 4: Color(1.0, 0.22, 0.22)}
 const SYN_ICON_BOX := [Rect2(75, 36, 40, 40), Rect2(227, 36, 40, 40)]      # 兩個圖示在搭配框內的範圍（掃光的裁切框）
 var _syn_fx_tween: Tween
 var _syn_fx_nodes: Array = []
@@ -1092,15 +1092,6 @@ func _stop_syn_fx() -> void:
 func _start_syn_fx(tier: int) -> void:
 	if tier <= 0 or not is_inside_tree():
 		return
-	if tier == 1:
-		_syn_fx_tween = create_tween().set_loops()
-		for c in [_syn_left, _syn_right]:
-			c.pivot_offset = Vector2(65, 20)
-		_syn_fx_tween.tween_property(_syn_left, "scale", Vector2(1.14, 1.14), 0.7).set_trans(Tween.TRANS_SINE)
-		_syn_fx_tween.parallel().tween_property(_syn_right, "scale", Vector2(1.14, 1.14), 0.7).set_trans(Tween.TRANS_SINE)
-		_syn_fx_tween.tween_property(_syn_left, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_SINE)
-		_syn_fx_tween.parallel().tween_property(_syn_right, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_SINE)
-		return
 	var color: Color = SYN_SHINE_COLORS[tier]
 	var box: Control = _syn_left.get_parent()
 	var bands: Array = []
@@ -1119,11 +1110,8 @@ func _start_syn_fx(tier: int) -> void:
 		band.pivot_offset = band.size * 0.5
 		band.rotation_degrees = 22.0
 		band.position = Vector2(-40, -r.size.y * 0.6)
-		band.modulate = color
+		band.modulate = Color(color.r, color.g, color.b, 0.75)      # 一般混合（不用加亮），不會洗白，保留圖示本來的顏色
 		band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var mat := CanvasItemMaterial.new()
-		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		band.material = mat
 		clip.add_child(band)
 		bands.append(band)
 		_syn_fx_nodes.append(clip)
@@ -1137,7 +1125,7 @@ func _shine_texture() -> Texture2D:
 	if _fx_tex_cache.has("shine"):
 		return _fx_tex_cache["shine"]
 	var g := Gradient.new()
-	g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.85), Color(1, 1, 1, 0)])
+	g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.9), Color(1, 1, 1, 0)])
 	g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
 	var t := GradientTexture2D.new()
 	t.gradient = g
