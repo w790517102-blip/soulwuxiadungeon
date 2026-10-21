@@ -27,7 +27,7 @@ const OUTER_X := 842.0
 const CAT_W := 234.0
 const ROW_SIZE := Vector2(232, 46)
 ## 搭配區（紙面 x438–780、y423–599）
-const SYN_RECT := Rect2(438, 420, 342, 180)
+const SYN_RECT := Rect2(438, 410, 342, 180)
 const GOLD_EDGE := Color("#8A6A2E")
 const DARK := Color(0.10, 0.08, 0.06, 0.96)
 const NAME_INK := Color("#2A1D12")
@@ -319,7 +319,7 @@ func _build_synergy() -> void:
 	_syn_right.size = Vector2(130, 70)
 	box.add_child(_syn_right)
 	_label("×", Vector2(138, 40), Vector2(66, 40), 28, INK, HORIZONTAL_ALIGNMENT_CENTER, box)
-	_syn_text = _rich(Rect2(16, 112, 310, 64), box, 12)
+	_syn_text = _rich(Rect2(16, 106, 310, 58), box, 12)
 
 ## 讀進素材的按鈕（四態）：一般／移入／按下／停用，字由程式放
 func _art_button(rect: Rect2, normal: String, hover: String, pressed: String, disabled: String) -> Button:
