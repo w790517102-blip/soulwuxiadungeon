@@ -58,6 +58,10 @@ var _equipment_page: Control = null
 const USE_NEW_STATUS_UI := true
 const StatusPageScript = preload("res://scripts/inventory/StatusPage.gd")
 var _status_page: Control = null
+## 新武術頁開關：true = 武術分頁改用 scripts/inventory/MartialPage.gd（雙抽屜式內外功管理）；false = 回到舊的武術頁（舊頁原封不動保留）。
+const USE_NEW_MARTIAL_UI := true
+const MartialPageScript = preload("res://scripts/inventory/MartialPage.gd")
+var _martial_page: Control = null
 var _inventory_page: Control = null
 ## 新道具頁用：要選隊友時呼叫它（entries: [{id,name}]，done: Callable(actor_id)）。無效時用舊的 PopupMenu。
 var external_target_picker: Callable = Callable()
@@ -318,6 +322,7 @@ func _on_tab_changed(tab_index: int) -> void:
 	_update_inventory_page(tab_index == item_tab_index)
 	_update_equipment_page(tab_index == equipment_tab_index)
 	_update_status_page(tab_index == $VBoxContainer/狀態.get_index())
+	_update_martial_page(tab_index == martial_tab_index)
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == equipment_tab_index:
@@ -347,6 +352,21 @@ func _update_inventory_page(show_it: bool) -> void:
 		external_target_picker = Callable(_inventory_page, "pick_target") if show_it else Callable()
 		if show_it:
 			_inventory_page._refresh()
+
+## 新武術頁：停在武術分頁時顯示，離開時隱藏（舊頁節點照常存在，開關關掉就回到舊頁）。
+func _update_martial_page(show_it: bool) -> void:
+	if not USE_NEW_MARTIAL_UI:
+		return
+	if show_it and _martial_page == null:
+		_martial_page = MartialPageScript.new()
+		_martial_page.menu = self
+		_martial_page.close_requested.connect(func(): SystemMenu._close_system_menu())
+		_martial_page.tab_requested.connect(_on_inventory_nav_requested)
+		add_child(_martial_page)
+	if _martial_page != null:
+		_martial_page.visible = show_it
+		if show_it:
+			_martial_page._refresh()
 
 ## 新狀態頁：停在狀態分頁時顯示，離開時隱藏（舊頁節點照常存在，開關關掉就回到舊頁）。
 func _update_status_page(show_it: bool) -> void:
