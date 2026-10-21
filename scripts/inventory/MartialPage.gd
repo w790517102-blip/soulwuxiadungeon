@@ -27,6 +27,9 @@ const OUTER_X := 842.0
 const CAT_W := 234.0
 const ROW_SIZE := Vector2(232, 46)
 ## 搭配區（紙面 x438–780、y423–599）
+const EQUIP_ORDER := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "mechanism"]
+const EQUIP_TILE := Vector2(34, 33)
+const EQUIP_X0 := 30.0
 const SYN_RECT := Rect2(438, 410, 342, 180)
 const GOLD_EDGE := Color("#8A6A2E")
 const PAPER_ACCENT := Color("#5A3208")         # 宣紙視窗上的小標題色（深棕）
@@ -56,6 +59,7 @@ var _btn_detail: Button
 var _syn_left: Control
 var _syn_right: Control
 var _syn_text: RichTextLabel
+var _equip_tiles: Dictionary = {}
 var _pick_element := "全部"
 var _pick_force_id := ""
 
@@ -314,7 +318,13 @@ func _build_synergy() -> void:
 	_syn_right.size = Vector2(130, 70)
 	box.add_child(_syn_right)
 	_label("×", Vector2(138, 40), Vector2(66, 40), 28, INK, HORIZONTAL_ALIGNMENT_CENTER, box)
-	_syn_text = _rich(Rect2(16, 106, 310, 58), box, 12)
+	# 八格裝備框（與狀態頁的裝備摘要同一套格子，只顯示目前角色穿的東西）
+	for i in EQUIP_ORDER.size():
+		var tile := make_slot_tile(EQUIP_ORDER[i], EQUIP_TILE, box)
+		tile.position = Vector2(EQUIP_X0 + i * (EQUIP_TILE.x + 3.0), 100)
+		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_equip_tiles[EQUIP_ORDER[i]] = tile
+	_syn_text = _rich(Rect2(16, 140, 310, 36), box, 11)
 
 ## 讀進素材的按鈕（四態）：一般／移入／按下／停用，字由程式放
 func _art_button(rect: Rect2, normal: String, hover: String, pressed: String, disabled: String, label := "更換內功") -> Button:
@@ -623,6 +633,7 @@ func _open_skill_detail() -> void:
 	close.pressed.connect(_close_overlay)
 
 func _refresh_synergy() -> void:
+	_refresh_equip_tiles()
 	_stop_syn_fx()
 	var tier := 0
 	_clear(_syn_left)
@@ -1144,3 +1155,11 @@ func _shine_texture() -> Texture2D:
 	t.height = 8
 	_fx_tex_cache["shine"] = t
 	return t
+
+func _refresh_equip_tiles() -> void:
+	if _equip_tiles.is_empty() or not InventorySync:
+		return
+	var equipped: Dictionary = InventorySync.get_equipped(actor_id)
+	for slot_id in EQUIP_ORDER:
+		var locked: bool = menu != null and menu.is_slot_locked_for(actor_id, slot_id)
+		fill_slot_tile(_equip_tiles[slot_id], String(equipped.get(slot_id, "")), locked, false)
