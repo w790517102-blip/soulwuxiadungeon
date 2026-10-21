@@ -10,6 +10,7 @@ const BUTTON_Y := 586
 const FIGURE_CLIP := Rect2(318, 92, 447, 486)       # 中頁人物的顯示範圍（超出裁掉）
 const PORTRAIT_SIZE := Vector2(330, 632)            # 半身立繪（母圖 508×972 約放大 1.3 倍）
 const PORTRAIT_DIR := "res://assets/UI/equipment/doll/"
+const DOLL_SIZE := Vector2(254, 486)               # 紙娃娃的原始畫布（邏輯 px）
 const NAME_POS := Vector2(684, 108)         # 直排姓名（中頁右側）
 const NAME_BOX := Vector2(60, 330)
 const X0 := 790.0                           # 右頁內容左緣（右頁 770 起，往右縮進）
@@ -22,6 +23,8 @@ const TRAIT_ROWS := [["str", "力量"], ["agi", "敏捷"], ["int", "智力"], ["
 
 var _fig_clip: Control
 var _portrait: TextureRect
+var _doll: Control
+var doll_info: Dictionary = {}
 var _name_box: Control
 var _level_label: Label
 var _exp_fill: TextureRect
@@ -69,12 +72,19 @@ func _build_figure() -> void:
 	_fig_clip.clip_contents = true
 	_fig_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fig_clip)
+	# 紙娃娃（衣裝、武器、機關都隨裝備變）；放大 1.3 倍、頂端對齊。沒有紙娃娃圖的角色退回靜態立繪
+	_doll = EquipmentDollScript.new()
+	_doll.name = "PaperDoll"
+	_doll.size = DOLL_SIZE
+	_doll.scale = PORTRAIT_SIZE / DOLL_SIZE
+	_doll.position = _portrait_pos()
+	_fig_clip.add_child(_doll)
 	_portrait = TextureRect.new()
 	_portrait.name = "HalfBodyPortrait"
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_portrait.size = PORTRAIT_SIZE
-	_portrait.position = Vector2((FIGURE_CLIP.size.x - PORTRAIT_SIZE.x) * 0.5 - 22.0, 0)
+	_portrait.position = _portrait_pos()
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_fig_clip.add_child(_portrait)
@@ -153,11 +163,15 @@ func _on_actor_pressed(id: String) -> void:
 		menu._remember_tab_actor("equipment", id)
 	_refresh()
 
+func _portrait_pos() -> Vector2:
+	return Vector2((FIGURE_CLIP.size.x - PORTRAIT_SIZE.x) * 0.5 - 22.0, 0)
+
 func _refresh_figure() -> void:
-	var art := PORTRAIT_DIR + "doll_%s_master.png" % actor_id
-	if ResourceLoader.exists(art):
-		_portrait.texture = load(art) as Texture2D
-	else:
+	doll_info = _doll.show_actor(actor_id)
+	var has_figure: bool = _doll.has_figure()
+	_doll.visible = has_figure
+	_portrait.visible = not has_figure
+	if not has_figure:
 		var path := String(_actor(actor_id).get("portrait_path", ""))
 		_portrait.texture = load(path) as Texture2D if path != "" and ResourceLoader.exists(path) else null
 

@@ -46,6 +46,7 @@ const CHAR_MECH := {
 }
 
 var actor_id := ""
+var show_weapons := true        # false＝不畫武器（狀態頁只要身體衣裝）
 var _layers: Dictionary = {}         # 名稱 → TextureRect
 
 ## 下擺與左緣的墨暈淡出（老闆定案：像劉語塵那樣剪裁）：立繪超出畫框的部分不是硬切，而是慢慢融進紙裡。
@@ -282,7 +283,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			order = ORDER_MASTER.duplicate()
 	# 武器：每把自己的圖，沒有就預設
 	var weapon_id := String(equipped.get("weapon_1", ""))
-	if weapon_id != "":
+	if show_weapons and weapon_id != "":
 		var used := weapon_id
 		var back := _tex("doll_weapon_%s_back" % weapon_id)
 		var front := _tex("doll_weapon_%s_front" % weapon_id)
