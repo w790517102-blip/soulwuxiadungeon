@@ -571,9 +571,11 @@ func _rebuild_skill_rows() -> void:
 		_skill_icon(s, 46, row, Vector2(10, 0))
 		_label(String(s.get("name", "???")), Vector2(62, 4), Vector2(106, 20), 14, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
 		_label(wt, Vector2(62, 25), Vector2(90, 14), 10, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, row)
-		var usable: bool = menu._can_use_skill_now(s, actor_id) if menu != null else true
-		_chip("可施展" if usable else "不可施展", Rect2(ROW_SIZE.x - 58, 13, 52, 20), row, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 11)
+		# 「可施展」只標在大地圖能用的招式（menu_usable）；其他招式只能在戰鬥中用，不標。雙擊施展
+		if _world_usable(s):
+			_chip("可施展", Rect2(ROW_SIZE.x - 58, 13, 52, 20), row, Color("#2F6B3A"), Color.WHITE, 11)
 		row.pressed.connect(_on_skill_pressed.bind(s))
+		row.gui_input.connect(_on_row_gui_input.bind(s))
 
 func _on_skill_pressed(s: Dictionary) -> void:
 	selected_skill = s
@@ -597,8 +599,8 @@ func _open_skill_detail() -> void:
 	_skill_icon(selected_skill, 72, _overlay, pos + Vector2(124, 46))
 	_label(String(selected_skill.get("name", "???")), pos + Vector2(124, 126), Vector2(220, 34), 26, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(124, 160), Vector2(220, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
-	var usable: bool = menu._can_use_skill_now(selected_skill, actor_id) if menu != null else true
-	_chip("可施展" if usable else "不可施展", Rect2(pos.x + 124, pos.y + 190, 76, 24), _overlay, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 13)
+	if _world_usable(selected_skill):
+		_chip("可施展（雙擊招式列）", Rect2(pos.x + 124, pos.y + 190, 150, 24), _overlay, Color("#2F6B3A"), Color.WHITE, 13)
 	var mp := int(selected_skill.get("mp_cost", 0))
 	var rows := [["消耗", ("內力 %d" % mp) if mp > 0 else "無"], ["目標", MartialInfoScript.target_text(selected_skill)]]
 	for i in rows.size():
@@ -826,3 +828,217 @@ func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Co
 
 func _outline_rich(t: RichTextLabel) -> void:
 	t.add_theme_color_override("default_color", Color.BLACK)
+
+# ------------------------------------------------------------------
+# 大地圖施展：只有 menu_usable 的招式（氣療掌、墨筆舒心、澄心落筆…）可施展；雙擊招式列。
+# 單體 → 選對象；全體 → 直接施展。扣內力、套用效果沿用 system_menu._apply_world_skill（與舊武學頁同一套）
+# ------------------------------------------------------------------
+func _world_usable(s: Dictionary) -> bool:
+	return bool(s.get("menu_usable", false)) and (menu == null or menu._can_use_skill_now(s, actor_id))
+
+func _on_row_gui_input(event: InputEvent, s: Dictionary) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and event.double_click:
+		_cast_skill(s)
+
+func _party_entries() -> Array:
+	var out: Array = []
+	if menu == null or not TeamData or not TeamData.has_method("get_active_party"):
+		return out
+	for a in TeamData.get_active_party():
+		var id: String = menu._get_actor_id_from_entry(a)
+		if id != "":
+			out.append(id)
+	return out
+
+func _cast_skill(s: Dictionary) -> void:
+	if menu == null:
+		return
+	var skill_name := String(s.get("name", "這一招"))
+	if not bool(s.get("menu_usable", false)):
+		show_toast("「%s」只能在戰鬥中施展" % skill_name)
+		return
+	if not menu._can_use_skill_now(s, actor_id):
+		show_toast("目前的裝備無法施展「%s」" % skill_name)
+		return
+	var caster = menu._get_actor_by_id(actor_id)
+	if caster == null:
+		return
+	if int(menu._get_actor_value(caster, "mp", 0)) < int(s.get("mp_cost", 0)):
+		show_toast("內力不足")
+		return
+	if String(s.get("target_scope", "single")) == "ally_all":
+		_do_cast(s, "")
+	else:
+		_show_target_picker(s)
+
+func _show_target_picker(s: Dictionary) -> void:
+	_clear_overlay()
+	_overlay.visible = true
+	var pos := Vector2(186, 104)
+	var size := Vector2(780, 440)
+	_paper_dialog(pos, size)
+	_label("「%s」要施展在誰身上？" % String(s.get("name", "")), pos + Vector2(124, 44), Vector2(420, 30), 20, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	var ids := _party_entries()
+	var x0 := pos.x + 124.0
+	for i in mini(ids.size(), 3):
+		var id: String = ids[i]
+		var a := _actor(id)
+		var card := _tex_button(Vector2(140, 160), Vector2(x0 + i * 150, pos.y + 96), "pick_card_normal", "pick_card_hover", "pick_card_selected", "pick_card_disabled", 24, 24, _overlay)
+		var head: Texture2D = EquipmentDollScript.head_portrait(id)
+		var portrait_path := String(a.get("portrait_path", ""))
+		var pr := TextureRect.new()
+		pr.texture = head if head != null else (load(portrait_path) as Texture2D if portrait_path != "" and ResourceLoader.exists(portrait_path) else null)
+		pr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pr.position = Vector2(22, 12)
+		pr.size = Vector2(96, 96)
+		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(pr)
+		var nm := _label(String(a.get("name", id)), Vector2(0, 108), Vector2(140, 20), 15, INK, HORIZONTAL_ALIGNMENT_CENTER, card)
+		nm.add_theme_color_override("font_color", Color.WHITE)      # 選人卡是深色底，字用白色
+		nm.add_theme_color_override("font_outline_color", Color.BLACK)
+		nm.add_theme_constant_override("outline_size", 3)
+		var actor = menu._get_actor_by_id(id)
+		var hp: int = int(menu._get_actor_value(actor, "hp", 0))
+		var max_hp: int = int(menu._get_effective_max_hp(actor, id))
+		var hl := _label("%d / %d" % [hp, max_hp], Vector2(0, 128), Vector2(140, 18), 12, INK, HORIZONTAL_ALIGNMENT_CENTER, card)
+		hl.add_theme_color_override("font_color", Color("#9BE0A8"))
+		hl.add_theme_color_override("font_outline_color", Color.BLACK)
+		hl.add_theme_constant_override("outline_size", 3)
+		card.pressed.connect(func():
+			_close_overlay()
+			_do_cast(s, id))
+	var cancel := _tex_button(Vector2(160, 40), pos + Vector2(150, size.y - 70), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
+	cancel.text = "取消"
+	cancel.pressed.connect(_close_overlay)
+
+## target_id 為空字串 ＝ 全體
+func _do_cast(s: Dictionary, target_id: String) -> void:
+	var caster = menu._get_actor_by_id(actor_id)
+	var target = menu._get_actor_by_id(target_id) if target_id != "" else null
+	var ids: Array = [target_id] if target != null else _party_entries()
+	var before := {}
+	for id in ids:
+		before[id] = int(menu._get_actor_value(menu._get_actor_by_id(id), "hp", 0))
+	var mp_before := int(menu._get_actor_value(caster, "mp", 0))
+	menu._apply_world_skill(s, caster, target)
+	var healed := 0
+	for id in ids:
+		var gain: int = int(menu._get_actor_value(menu._get_actor_by_id(id), "hp", 0)) - int(before[id])
+		if gain > 0:
+			healed += gain
+		_play_heal_fx(id, gain > 0)
+	var spent: int = mp_before - int(menu._get_actor_value(caster, "mp", 0))
+	var who := "全隊" if target == null else String(_actor(target_id).get("name", ""))
+	show_toast("%s 對 %s 施展「%s」：回復氣血 %d（消耗內力 %d）" % [String(_actor(actor_id).get("name", "")), who, String(s.get("name", "")), healed, spent])
+	_refresh()
+
+# ------------------------------------------------------------------
+# 恢復特效：綠色光暈＋上升亮粉＋飄落葉片。疊在該角色的名帖（和中間立繪，若就是目前這位）上
+# ------------------------------------------------------------------
+var _fx_tex_cache: Dictionary = {}
+
+func _fx_texture(kind: String) -> Texture2D:
+	if _fx_tex_cache.has(kind):
+		return _fx_tex_cache[kind]
+	if kind == "glow":
+		var g := Gradient.new()
+		g.set_color(0, Color(0.55, 1.0, 0.6, 0.95))
+		g.set_color(1, Color(0.2, 0.9, 0.4, 0.0))
+		var gt := GradientTexture2D.new()
+		gt.gradient = g
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		gt.width = 128
+		gt.height = 128
+		_fx_tex_cache[kind] = gt
+		return gt
+	var img: Image
+	if kind == "spark":
+		img = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		for y in 16:
+			for x in 16:
+				var d := Vector2(x - 7.5, y - 7.5).length() / 7.5
+				img.set_pixel(x, y, Color(1, 1, 1, pow(clampf(1.0 - d, 0.0, 1.0), 1.6)))
+	else:      # leaf：細長的橢圓，帶一條中脈
+		img = Image.create(20, 12, false, Image.FORMAT_RGBA8)
+		for y in 12:
+			for x in 20:
+				var nx := (x - 9.5) / 9.5
+				var ny := (y - 5.5) / 5.5
+				var inside := nx * nx + ny * ny * 1.6 <= 1.0
+				var vein := absf(ny) < 0.12
+				var c := Color(1, 1, 1, 0)
+				if inside:
+					c = Color(0.8, 1.0, 0.8, 1.0) if vein else Color(1, 1, 1, 1)
+				img.set_pixel(x, y, c)
+	var tex := ImageTexture.create_from_image(img)
+	_fx_tex_cache[kind] = tex
+	return tex
+
+func _fx_emitter(rect: Rect2, kind: String, amount: int, colors: Array, vel: Vector2, scale_range: Vector2) -> CPUParticles2D:
+	var p := CPUParticles2D.new()
+	p.texture = _fx_texture(kind)
+	p.position = rect.get_center()
+	p.amount = amount
+	p.lifetime = 1.5
+	p.one_shot = true
+	p.explosiveness = 0.35
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	p.emission_rect_extents = rect.size * 0.5
+	p.direction = Vector2(0, -1)
+	p.spread = 28.0
+	p.initial_velocity_min = vel.x
+	p.initial_velocity_max = vel.y
+	p.gravity = Vector2(0, -18) if kind == "spark" else Vector2(6, 22)
+	p.angular_velocity_min = -160.0
+	p.angular_velocity_max = 160.0
+	p.scale_amount_min = scale_range.x
+	p.scale_amount_max = scale_range.y
+	var c0: Color = colors[0]
+	var c1: Color = colors[1]
+	var ramp := Gradient.new()
+	ramp.colors = PackedColorArray([c0, c1, Color(c1.r, c1.g, c1.b, 0.0)])
+	ramp.offsets = PackedFloat32Array([0.0, 0.6, 1.0])
+	p.color_ramp = ramp
+	p.emitting = true
+	return p
+
+func _play_heal_fx(id: String, healed: bool) -> void:
+	if not healed:
+		return
+	var rects: Array = []
+	var idx := _actor_ids().find(id)
+	if idx >= 0 and _roster_scroll != null and idx < _roster_scroll.get_child_count():
+		var card: Control = _roster_scroll.get_child(idx)
+		rects.append(Rect2(card.global_position - global_position, card.size))
+	if id == actor_id:
+		rects.append(Rect2(FIGURE_POS + Vector2(20, 60), Vector2(214, 340)))
+	for r in rects:
+		var fx := Control.new()
+		fx.z_index = 40
+		fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(fx)
+		var glow := TextureRect.new()
+		glow.texture = _fx_texture("glow")
+		glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		glow.stretch_mode = TextureRect.STRETCH_SCALE
+		var gsize: Vector2 = r.size * 1.5
+		glow.size = gsize
+		glow.position = r.get_center() - gsize * 0.5
+		glow.pivot_offset = gsize * 0.5
+		glow.modulate.a = 0.0
+		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		glow.material = mat
+		fx.add_child(glow)
+		fx.add_child(_fx_emitter(r, "spark", 34, [Color(1, 1, 0.8, 1), Color(0.5, 1.0, 0.6, 1)], Vector2(30, 80), Vector2(0.5, 1.2)))
+		fx.add_child(_fx_emitter(r, "leaf", 14, [Color(0.65, 1.0, 0.55, 1), Color(0.3, 0.8, 0.35, 1)], Vector2(20, 55), Vector2(0.7, 1.3)))
+		var tw := create_tween()
+		tw.tween_property(glow, "modulate:a", 1.0, 0.25)
+		tw.parallel().tween_property(glow, "scale", Vector2(1.15, 1.15), 0.7)
+		tw.tween_property(glow, "modulate:a", 0.0, 0.9)
+		tw.tween_interval(0.6)
+		tw.tween_callback(fx.queue_free)

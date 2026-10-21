@@ -99,5 +99,31 @@ func _run() -> void:
 	_check(page._force_name.text == info.force_name(page._current_force()), "the force panel shows the new force")
 	page._switch_force(cur_id)
 
+
+	# 大地圖施展：只有 menu_usable 的招式標「可施展」；單體選對象、全體直接施展；扣內力、回復氣血
+	var qi: Dictionary = {}
+	var mo: Dictionary = {}
+	var sword: Dictionary = {}
+	for s in page._skills:
+		match String(s.get("id", "")):
+			"skill_qiliaozhang": qi = s
+			"skill_mobishuxin": mo = s
+			"skill_lianjuejian": sword = s
+	_check(not qi.is_empty() and page._world_usable(qi), "氣療掌 is usable on the world map")
+	_check(not sword.is_empty() and not page._world_usable(sword), "連決劍 is battle-only (no 可施展 mark)")
+	var liu = menu._get_actor_by_id("liuyu")
+	menu._set_actor_value(liu, "hp", 20)
+	menu._set_actor_value(liu, "mp", 50)
+	page._do_cast(qi, "liuyu")
+	_check(int(menu._get_actor_value(liu, "hp", 0)) > 20, "single-target cast heals the chosen ally")
+	_check(int(menu._get_actor_value(liu, "mp", 0)) == 50 - int(qi.get("mp_cost", 0)), "casting spends the MP cost")
+	menu._set_actor_value(liu, "hp", 20)
+	menu._set_actor_value(liu, "mp", 0)
+	page._cast_skill(qi)
+	_check(int(menu._get_actor_value(liu, "hp", 0)) == 20 and not page._overlay.visible, "not enough MP: nothing happens")
+	if not mo.is_empty():
+		menu._set_actor_value(liu, "hp", 20)
+		page._do_cast(mo, "")
+		_check(int(menu._get_actor_value(liu, "hp", 0)) > 20, "all-ally cast heals the whole party")
 	print("PASS test_martial_page" if _failures == 0 else "FAILED test_martial_page: %d" % _failures)
 	quit(1 if _failures > 0 else 0)
