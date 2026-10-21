@@ -22,7 +22,8 @@ const MD := "res://assets/UI/martial/"       # 共邊國武術頁素材（2 倍�
 const WEAPON_ICONS := {"刀": "dao", "劍": "jian", "琴": "qin", "筆": "brush", "棍": "staff", "槍": "spear", "拳": "fist", "掌": "palm", "通用": "universal"}
 const ELEMENT_ICONS := {"快": "fast", "遲": "slow", "柔": "soft", "剛": "hard"}
 const COMPANION_SLOTS := 4                    # 左邊名帖列至少排這麼多格，不足的用空位補滿
-const ROW_SIZE := Vector2(244, 40)
+const ROW_SIZE := Vector2(206, 36)
+const CAT_W := 206.0                           # 右抽屜紙面的內容寬度（V2 外框）
 const PAPER := Color(0.91, 0.85, 0.70, 0.97)
 const PAPER_DIM := Color(0.84, 0.77, 0.62, 1.0)
 const GOLD_EDGE := Color("#8A6A2E")
@@ -285,28 +286,29 @@ func _build_left_drawer() -> void:
 	_left_body.name = "Body"
 	_left.add_child(_left_body)
 	_m_image("drawer_inner", Vector2.ZERO, LEFT_RECT.size, _left_body)
-	_outlined(_label("內功心法", Vector2(12, 8), Vector2(212, 20), 18, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, _left_body))
+	# V2 外框：原概念圖的框邊保持比例縮進 236×486，內容紙面約 x45–212、y50–468（抽屜內邏輯座標），中軸 x=129
+	_outlined(_label("內功心法", Vector2(45, 19), Vector2(167, 29), 18, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, _left_body))
 	_force_icon_holder = Control.new()
-	_force_icon_holder.position = Vector2(84, 44)
-	_force_icon_holder.size = Vector2(68, 68)
+	_force_icon_holder.position = Vector2(71, 48)
+	_force_icon_holder.size = Vector2(116, 116)
 	_force_icon_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_left_body.add_child(_force_icon_holder)
-	_force_name = _label("", Vector2(14, 116), Vector2(150, 28), 21, INK, HORIZONTAL_ALIGNMENT_LEFT, _left_body)
-	_force_tag = _chip("運行中", Rect2(172, 120, 54, 20), _left_body, Color("#9A2A2A"), Color.WHITE)
-	_force_desc = _rich(Rect2(12, 148, 212, 92), _left_body, 13)
-	_label("內功屬性傾向", Vector2(14, 244), Vector2(120, 20), 13, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, _left_body)
-	# 內功屬性只顯示目前這門的那一個字（快／遲／柔／剛），不一次排四個
+	_force_name = _label("", Vector2(58, 166), Vector2(100, 24), 17, INK, HORIZONTAL_ALIGNMENT_LEFT, _left_body)
+	_force_tag = _chip("運行中", Rect2(160, 168, 46, 19), _left_body, Color("#9A2A2A"), Color.WHITE, 11)
+	_force_desc = _rich(Rect2(58, 192, 148, 58), _left_body, 11)
+	_label("內功屬性傾向", Vector2(58, 252), Vector2(148, 20), 12, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _left_body)
+	# 內功屬性只顯示目前這門的那一個圖章（快／遲／柔／剛），不一次排四個
 	_force_element_holder = Control.new()
-	_force_element_holder.position = Vector2(96, 266)
-	_force_element_holder.size = Vector2(44, 34)
+	_force_element_holder.position = Vector2(105, 280)
+	_force_element_holder.size = Vector2(48, 48)
 	_force_element_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_left_body.add_child(_force_element_holder)
-	_btn_switch_force = _tex_button(Vector2(188, 34), Vector2(24, 306), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _left_body)
+	_btn_switch_force = _tex_button(Vector2(142, 30), Vector2(58, 334), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _left_body)
 	_btn_switch_force.text = "更換內功"
-	_btn_switch_force.add_theme_font_size_override("font_size", 17)
+	_btn_switch_force.add_theme_font_size_override("font_size", 15)
 	_btn_switch_force.pressed.connect(_open_force_picker)
-	_label("當前效果", Vector2(14, 348), Vector2(120, 20), 14, INK, HORIZONTAL_ALIGNMENT_LEFT, _left_body)
-	_force_effects = _rich(Rect2(12, 370, 212, 108), _left_body, 14)
+	_label("當前效果", Vector2(58, 370), Vector2(100, 20), 13, INK, HORIZONTAL_ALIGNMENT_LEFT, _left_body)
+	_force_effects = _rich(Rect2(58, 392, 148, 72), _left_body, 12)
 	_left_handle = _handle_button(_left, Vector2(LEFT_RECT.size.x, 178))      # 邏輯 (412,270)
 	_left_handle.pressed.connect(func(): _toggle_drawer(true))
 
@@ -321,27 +323,28 @@ func _build_right_drawer() -> void:
 	_right_body.name = "Body"
 	_right.add_child(_right_body)
 	_m_image("drawer_outer", Vector2.ZERO, RIGHT_RECT.size, _right_body)
-	_outlined(_label("外功武術", Vector2(12, 8), Vector2(242, 20), 18, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, _right_body))
+	# V2 外框：內容紙面約 x40–252、y50–468；標題墨條 y14–45
+	_outlined(_label("外功武術", Vector2(40, 14), Vector2(190, 31), 18, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, _right_body))
 	_cat_row = Control.new()
-	_cat_row.position = Vector2(8, 42)
-	_cat_row.size = Vector2(250, 28)
+	_cat_row.position = Vector2(44, 54)
+	_cat_row.size = Vector2(CAT_W, 28)
 	_right_body.add_child(_cat_row)
 	var list_scroll := ScrollContainer.new()
-	list_scroll.position = Vector2(8, 76)
-	list_scroll.size = Vector2(250, 214)
+	list_scroll.position = Vector2(44, 88)
+	list_scroll.size = Vector2(CAT_W, 190)
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_right_body.add_child(list_scroll)
 	_skill_rows = VBoxContainer.new()
 	_skill_rows.add_theme_constant_override("separation", 3)
 	_skill_rows.custom_minimum_size = Vector2(ROW_SIZE.x, 0)
 	list_scroll.add_child(_skill_rows)
-	_label("招式詳情", Vector2(12, 296), Vector2(100, 22), 15, INK, HORIZONTAL_ALIGNMENT_LEFT, _right_body)
+	_label("招式詳情", Vector2(46, 282), Vector2(100, 20), 14, INK, HORIZONTAL_ALIGNMENT_LEFT, _right_body)
 	var rows := [["type", "類型"], ["cost", "消耗"], ["target", "目標"]]
 	for i in rows.size():
-		var y := 322.0 + i * 26.0
-		_chip(rows[i][1], Rect2(12, y, 46, 22), _right_body, DARK, CREAM)
-		_detail_vals[rows[i][0]] = _label("", Vector2(66, y), Vector2(190, 22), 14, INK, HORIZONTAL_ALIGNMENT_LEFT, _right_body)
-	_detail_effects = _rich(Rect2(12, 402, 244, 76), _right_body, 13)
+		var y := 304.0 + i * 24.0
+		_chip(rows[i][1], Rect2(46, y, 40, 20), _right_body, DARK, CREAM, 12)
+		_detail_vals[rows[i][0]] = _label("", Vector2(92, y), Vector2(156, 20), 13, INK, HORIZONTAL_ALIGNMENT_LEFT, _right_body)
+	_detail_effects = _rich(Rect2(46, 380, 202, 84), _right_body, 12)
 	_right_handle = _handle_button(_right, Vector2(-HANDLE_SIZE.x, 178))      # 邏輯 (800,270)
 	_right_handle.pressed.connect(func(): _toggle_drawer(false))
 
@@ -353,17 +356,18 @@ func _build_synergy() -> void:
 	box.z_index = 2
 	add_child(box)
 	_m_image("combination_panel", Vector2.ZERO, SYN_RECT.size, box)
-	# 兩個圓位的圓心（面板內邏輯座標）：(70,76)、(316,76)；每側放一個以圓心為中心的 130 寬欄位
+	# V2 搭配框保持原比例縮入，左右各有透明留邊：框體約 x41–345、紙面 x56–330、y20–162；標題墨條 (145,10)–(252,29)
+	_outlined(_label("內外功搭配", Vector2(145, 9), Vector2(107, 21), 13, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, box))
 	_syn_left = Control.new()
-	_syn_left.position = Vector2(5, 52)
-	_syn_left.size = Vector2(130, 62)
+	_syn_left.position = Vector2(48, 38)
+	_syn_left.size = Vector2(130, 66)
 	box.add_child(_syn_left)
 	_syn_right = Control.new()
-	_syn_right.position = Vector2(251, 52)
-	_syn_right.size = Vector2(130, 62)
+	_syn_right.position = Vector2(208, 38)
+	_syn_right.size = Vector2(130, 66)
 	box.add_child(_syn_right)
-	_label("×", Vector2(160, 54), Vector2(66, 44), 30, INK, HORIZONTAL_ALIGNMENT_CENTER, box)
-	_syn_text = _rich(Rect2(12, 122, 362, 44), box, 13)
+	_label("×", Vector2(160, 40), Vector2(66, 40), 28, INK, HORIZONTAL_ALIGNMENT_CENTER, box)
+	_syn_text = _rich(Rect2(62, 104, 262, 54), box, 12)
 
 # ------------------------------------------------------------------
 # 抽屜開關
@@ -549,7 +553,7 @@ func _refresh_left() -> void:
 		_force_effects.text = ""
 		_btn_switch_force.disabled = _forces().is_empty()
 	else:
-		_m_image("category_meditation", Vector2.ZERO, Vector2(68, 68), _force_icon_holder)      # 內功心法的象徵圖（打坐人像），不是屬性
+		_m_image("inner_liuchen_icon_large", Vector2.ZERO, Vector2(116, 116), _force_icon_holder)      # 內功心法的象徵圖（打坐人像），不是屬性
 		_force_name.text = MartialInfoScript.force_name(force)
 		_force_tag.visible = true
 		var desc := String(force.get("description", ""))
@@ -560,7 +564,7 @@ func _refresh_left() -> void:
 	_clear(_force_element_holder)
 	if ELEMENT_ICONS.has(cur_el):
 		# 暫代：先用屬性徽記；共邊國交「快遲柔剛」單字素材後換成單字
-		_m_image("attribute_%s_selected" % ELEMENT_ICONS[cur_el], Vector2(2, -4), Vector2(40, 40), _force_element_holder)
+		_m_image("attribute_%s" % ELEMENT_ICONS[cur_el], Vector2.ZERO, Vector2(48, 48), _force_element_holder)
 
 func _rebuild_categories() -> void:
 	_clear(_cat_row)
@@ -575,13 +579,13 @@ func _rebuild_categories() -> void:
 	var overflow := tabs.size() > per
 	var left_x := 0.0
 	var tab_x := 30.0 if overflow else 0.0
-	var tab_w := (250.0 - (60.0 if overflow else 0.0)) / float(per)
+	var tab_w := (CAT_W - (60.0 if overflow else 0.0)) / float(per)
 	if overflow:
 		var prev := _tri_button(Rect2(0, 1, 26, 26), "switch_left_normal", "switch_left_hover", "switch_left_pressed", _cat_row)
 		prev.disabled = _cat_page <= 0
 		prev.modulate = Color(1, 1, 1, 0.4) if prev.disabled else Color.WHITE
 		prev.pressed.connect(func(): _cat_page = maxi(0, _cat_page - 1); _rebuild_categories())
-		var nxt := _tri_button(Rect2(224, 1, 26, 26), "switch_right_normal", "switch_right_hover", "switch_right_pressed", _cat_row)
+		var nxt := _tri_button(Rect2(CAT_W - 26.0, 1, 26, 26), "switch_right_normal", "switch_right_hover", "switch_right_pressed", _cat_row)
 		nxt.disabled = _cat_page >= pages - 1
 		nxt.modulate = Color(1, 1, 1, 0.4) if nxt.disabled else Color.WHITE
 		nxt.pressed.connect(func(): _cat_page = mini(pages - 1, _cat_page + 1); _rebuild_categories())
@@ -654,11 +658,11 @@ func _rebuild_skill_rows() -> void:
 			row.mouse_entered.connect(func(): base.texture = mart("technique_row_hover"))
 			row.mouse_exited.connect(func(): base.texture = mart("technique_row_normal"))
 		var wt := String(s.get("weapon_type", "")).strip_edges()
-		_icon("weapon", wt, 30, row, Vector2(8, 5))
-		_label(String(s.get("name", "???")), Vector2(44, 2), Vector2(130, 22), 15, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
-		_label(wt, Vector2(44, 21), Vector2(110, 16), 11, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, row)
+		_icon("weapon", wt, 26, row, Vector2(6, 5))
+		_label(String(s.get("name", "???")), Vector2(38, 0), Vector2(110, 20), 14, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
+		_label(wt, Vector2(38, 20), Vector2(90, 14), 10, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, row)
 		var usable: bool = menu._can_use_skill_now(s, actor_id) if menu != null else true
-		_chip("可施展" if usable else "不可施展", Rect2(180, 10, 56, 20), row, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 11)
+		_chip("可施展" if usable else "不可施展", Rect2(ROW_SIZE.x - 54, 8, 50, 20), row, Color("#2F6B3A") if usable else Color("#7A7468"), Color.WHITE, 11)
 		row.pressed.connect(_on_skill_pressed.bind(s))
 
 func _on_skill_pressed(s: Dictionary) -> void:
@@ -686,19 +690,19 @@ func _refresh_synergy() -> void:
 	_clear(_syn_right)
 	var force := _current_force()
 	if force.is_empty():
-		_glyph_icon("—", 44, _syn_left, Vector2(43, 2))
-		_label("尚未修習", Vector2(0, 48), Vector2(130, 18), 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
+		_glyph_icon("—", 36, _syn_left, Vector2(47, 2))
+		_label("尚未修習", Vector2(0, 44), Vector2(130, 18), 13, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
 	else:
-		_m_image("category_meditation", Vector2(41, 0), Vector2(48, 48), _syn_left)      # 內功一律用心法象徵圖
-		_label("%s（%s）" % [MartialInfoScript.force_name(force), String(force.get("element", ""))], Vector2(0, 48), Vector2(130, 18), 14, INK, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
+		_m_image("inner_liuchen_icon", Vector2(45, 0), Vector2(40, 40), _syn_left)      # 內功一律用心法象徵圖
+		_label("%s（%s）" % [MartialInfoScript.force_name(force), String(force.get("element", ""))], Vector2(0, 44), Vector2(130, 18), 13, INK, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
 	if selected_skill.is_empty():
-		_glyph_icon("？", 44, _syn_right, Vector2(43, 2))
-		_label("請選擇外功", Vector2(0, 48), Vector2(130, 18), 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _syn_right)
+		_glyph_icon("？", 36, _syn_right, Vector2(47, 2))
+		_label("請選擇外功", Vector2(0, 44), Vector2(130, 18), 13, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _syn_right)
 		_syn_text.text = "在右邊的外功清單選一招，這裡會顯示目前的內功對它的影響。"
 		return
 	var wt := String(selected_skill.get("weapon_type", "")).strip_edges()
-	_icon("weapon", wt, 48, _syn_right, Vector2(41, 0))
-	_label("%s（%s）" % [String(selected_skill.get("name", "???")), wt], Vector2(0, 48), Vector2(130, 18), 14, INK, HORIZONTAL_ALIGNMENT_CENTER, _syn_right)
+	_icon("weapon", wt, 40, _syn_right, Vector2(45, 0))
+	_label("%s（%s）" % [String(selected_skill.get("name", "???")), wt], Vector2(0, 44), Vector2(130, 18), 13, INK, HORIZONTAL_ALIGNMENT_CENTER, _syn_right)
 	var lines: Array = []
 	if menu != null and menu._skill_data_db != null and menu._skill_data_db.has_method("get_inner_force_linkage_entries"):
 		var rows_any = menu._skill_data_db.get_inner_force_linkage_entries(selected_skill, _actor_dict(), force)
@@ -711,7 +715,7 @@ func _refresh_synergy() -> void:
 				if text == "":
 					continue
 				var met := bool(row.get("met", false))
-				lines.append("[color=%s]• %s：%s[/color]" % ["#2F6B3A" if met else "#8A7F6A", String(row.get("kind", "聯動")), text])
+				lines.append("[color=%s]• %s：%s[/color]" % ["#2F6B3A" if met else "#6B614D", String(row.get("kind", "聯動")), text])
 	_syn_text.text = "\n".join(lines) if not lines.is_empty() else "目前的內功與這一招沒有特別的相合。"
 
 # ------------------------------------------------------------------
@@ -778,7 +782,7 @@ func _show_force_picker() -> void:
 		rows.add_child(row)
 		if fid == _pick_force_id:
 			_image("row_selected", Vector2.ZERO, Vector2(290, 48), row)
-		_m_image("category_meditation", Vector2(6, 6), Vector2(36, 36), row)
+		_m_image("inner_liuchen_icon", Vector2(6, 6), Vector2(36, 36), row)
 		_label(MartialInfoScript.force_name(f), Vector2(52, 0), Vector2(150, 48), 17, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
 		if fid == cur_id:
 			_chip("運行中", Rect2(218, 14, 54, 20), row, Color("#9A2A2A"), Color.WHITE)

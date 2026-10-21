@@ -1,0 +1,389 @@
+{
+  "version": "2-concept-cutouts",
+  "scale": 2,
+  "logical_canvas": [
+    1152,
+    648
+  ],
+  "assets": [
+    {
+      "file": "martial_panel.png",
+      "size_px": [
+        1848,
+        972
+      ],
+      "logical_size": [
+        924.0,
+        486.0
+      ],
+      "method": "localized_restore_and_original_visible_landscape",
+      "native_size": [
+        1338,
+        769
+      ],
+      "fit_padding_px": [
+        0,
+        0
+      ],
+      "native_scale": null,
+      "logical_xy": [
+        178,
+        92
+      ]
+    },
+    {
+      "file": "drawer_inner.png",
+      "size_px": [
+        472,
+        972
+      ],
+      "logical_size": [
+        236.0,
+        486.0
+      ],
+      "method": "original_frame_cutout_plus_content_cleanup",
+      "native_size": [
+        356,
+        766
+      ],
+      "fit_padding_px": [
+        10,
+        0
+      ],
+      "native_scale": 1.268929503916449,
+      "logical_xy": [
+        178,
+        92
+      ]
+    },
+    {
+      "file": "drawer_outer.png",
+      "size_px": [
+        532,
+        972
+      ],
+      "logical_size": [
+        266.0,
+        486.0
+      ],
+      "method": "original_frame_cutout_plus_content_cleanup",
+      "native_size": [
+        423,
+        756
+      ],
+      "fit_padding_px": [
+        0,
+        10
+      ],
+      "native_scale": 1.2576832151300237,
+      "logical_xy": [
+        836,
+        92
+      ]
+    },
+    {
+      "file": "combination_panel.png",
+      "size_px": [
+        772,
+        348
+      ],
+      "logical_size": [
+        386.0,
+        174.0
+      ],
+      "method": "original_frame_cutout_plus_content_cleanup",
+      "native_size": [
+        552,
+        316
+      ],
+      "fit_padding_px": [
+        82,
+        0
+      ],
+      "native_scale": 1.1012658227848102,
+      "logical_xy": [
+        420,
+        404
+      ]
+    },
+    {
+      "file": "header_inner_named_no_arrow.png",
+      "size_px": [
+        350,
+        72
+      ],
+      "logical_size": [
+        175,
+        36
+      ],
+      "method": "direct_source_crop_with_arrow_patch",
+      "native_size": [
+        275,
+        57
+      ],
+      "fit_padding_px": [
+        0,
+        0
+      ],
+      "native_scale": null
+    },
+    {
+      "file": "header_inner_blank.png",
+      "size_px": [
+        350,
+        72
+      ],
+      "logical_size": [
+        175,
+        36
+      ],
+      "method": "blank_title_strip",
+      "native_size": [
+        275,
+        57
+      ],
+      "fit_padding_px": [
+        0,
+        0
+      ],
+      "native_scale": null
+    },
+    {
+      "file": "inner_liuchen_icon.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "method": "direct_source_crop_circle_mask",
+      "native_size": [
+        188,
+        168
+      ],
+      "fit_padding_px": [
+        0,
+        5
+      ],
+      "native_scale": 0.5106382978723404,
+      "meaning": "內功心法圖示，非屬性",
+      "source_rect": [
+        351,
+        215,
+        188,
+        168
+      ]
+    },
+    {
+      "file": "attribute_fast.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "method": "original_diamond_cutout_no_blue_glow",
+      "native_size": [
+        64,
+        64
+      ],
+      "fit_padding_px": [
+        0,
+        0
+      ],
+      "native_scale": 1.5,
+      "label": "快",
+      "display_rule": "Only ONE current attribute is visible"
+    },
+    {
+      "file": "attribute_slow.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "method": "original_diamond_cutout_no_blue_glow",
+      "native_size": [
+        64,
+        64
+      ],
+      "fit_padding_px": [
+        0,
+        0
+      ],
+      "native_scale": 1.5,
+      "label": "遲",
+      "display_rule": "Only ONE current attribute is visible"
+    },
+    {
+      "file": "attribute_soft.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "method": "original_diamond_cutout_no_blue_glow",
+      "native_size": [
+        64,
+        64
+      ],
+      "fit_padding_px": [
+        0,
+        0
+      ],
+      "native_scale": 1.5,
+      "label": "柔",
+      "display_rule": "Only ONE current attribute is visible"
+    },
+    {
+      "file": "attribute_hard.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "method": "original_diamond_cutout_no_blue_glow",
+      "native_size": [
+        64,
+        64
+      ],
+      "fit_padding_px": [
+        0,
+        0
+      ],
+      "native_scale": 1.5,
+      "label": "剛",
+      "display_rule": "Only ONE current attribute is visible"
+    },
+    {
+      "file": "handle_left_open.png",
+      "size_px": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "method": "direct_source_crop_arrow_patch",
+      "native_size": [
+        46,
+        116
+      ],
+      "fit_padding_px": [
+        12,
+        0
+      ],
+      "native_scale": 1.103448275862069,
+      "arrow": "left"
+    },
+    {
+      "file": "handle_left_closed.png",
+      "size_px": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "method": "direct_source_crop_arrow_patch",
+      "native_size": [
+        46,
+        116
+      ],
+      "fit_padding_px": [
+        12,
+        0
+      ],
+      "native_scale": 1.103448275862069,
+      "arrow": "right"
+    },
+    {
+      "file": "handle_right_open.png",
+      "size_px": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "method": "direct_source_crop_arrow_patch",
+      "native_size": [
+        44,
+        116
+      ],
+      "fit_padding_px": [
+        13,
+        0
+      ],
+      "native_scale": 1.103448275862069,
+      "arrow": "right"
+    },
+    {
+      "file": "handle_right_closed.png",
+      "size_px": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "method": "direct_source_crop_arrow_patch",
+      "native_size": [
+        44,
+        116
+      ],
+      "fit_padding_px": [
+        13,
+        0
+      ],
+      "native_scale": 1.103448275862069,
+      "arrow": "left"
+    },
+    {
+      "file": "inner_liuchen_icon_large.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "logical_size": [
+        128,
+        128
+      ],
+      "method": "direct_source_crop_circle_mask",
+      "meaning": "內功面板大圖示；96px版供小圓位使用"
+    }
+  ],
+  "source": "水墨武俠武術介面.png",
+  "source_id": "libfile_362eab7a68648191b9d584f4b547fce8",
+  "attribute_mode": "single_current_diamond",
+  "engine_integrated": false,
+  "fast_rim_note": "Fast face and glyph retained from original; blue effect excluded, unlit rim adapted from original hard badge.",
+  "inner_panel_anchors_px": {
+    "neigong_icon_center": [
+      258.71,
+      223.33
+    ],
+    "attribute_single_center": [
+      258.71,
+      609.09
+    ]
+  },
+  "integration_note": "V2 preserves source frame proportions using transparent padding. Reposition contents using native dimensions and fit transform; not a blind V1 texture replacement."
+}
