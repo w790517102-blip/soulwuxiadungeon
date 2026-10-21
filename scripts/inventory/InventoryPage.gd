@@ -304,7 +304,6 @@ func _rebuild_rows() -> void:
 		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		var def := e as Dictionary
 		var icon := _image_from(ItemIconMap.icon_path(id, def), Vector2(8, 4), Vector2(40, 40), b)
-		InkGlowScript.attach(icon)
 		_label(String(def.get("name", id)), Vector2(56, 0), Vector2(150, ROW_H), 17, INK, HORIZONTAL_ALIGNMENT_LEFT, b)
 		_label("× %d" % int(def.get("quantity", def.get("count", 0))), Vector2(270, 0), Vector2(70, ROW_H), 16, Color("#7A1C1C"), HORIZONTAL_ALIGNMENT_LEFT, b)
 		var cat_id := ItemCategory.category_of(def)

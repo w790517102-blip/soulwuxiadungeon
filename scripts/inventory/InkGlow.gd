@@ -2,11 +2,11 @@ extends Node
 ## 水墨圖示的白色柔邊：在圖示後面墊一張「同形狀、白色、模糊放大」的光暈，圖示深色的筆觸不被紙紋與山水吃掉。
 ## 用法：InkGlow.attach(texture_rect)。圖示換圖時光暈自動跟著換（每格每幀只比對一次貼圖）。
 
-const PAD := 0.16        # 光暈外擴（占圖示長邊的比例）
-const BLUR_DIV := 7      # 模糊程度：縮小成幾分之一再放大
+const PAD := 0.22        # 光暈外擴（占圖示長邊的比例）
+const BLUR_DIV := 9      # 模糊程度：縮小成幾分之一再放大
 const SHADER := "shader_type canvas_item;
-uniform float strength = 0.95;
-void fragment() { COLOR = vec4(1.0, 1.0, 1.0, clamp(texture(TEXTURE, UV).a * 1.7, 0.0, 1.0) * strength); }"
+uniform float strength = 1.0;
+void fragment() { COLOR = vec4(1.0, 1.0, 1.0, clamp(texture(TEXTURE, UV).a * 3.2, 0.0, 1.0) * strength); }"
 
 static var _cache: Dictionary = {}
 static var _mat: ShaderMaterial

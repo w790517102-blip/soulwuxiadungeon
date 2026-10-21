@@ -136,7 +136,6 @@ func make_row(item_id: String, item_name: String) -> Dictionary:
 	name_btn.mouse_exited.connect(func(): glow.color.a = 0.0)
 	var def := ItemDB.get_def(item_id)
 	var icon := _image_from(ItemIconMap.icon_path(item_id, def), Vector2(8, 6), Vector2(42, 42), row)
-	InkGlowScript.attach(icon)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var nm := _label(item_name, Vector2(58, 3), Vector2(220, 28), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
 	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE

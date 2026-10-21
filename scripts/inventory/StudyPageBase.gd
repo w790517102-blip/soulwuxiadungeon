@@ -365,7 +365,6 @@ func make_slot_tile(slot_id: String, size: Vector2, parent: Node) -> Button:
 	empty_icon.name = "EmptyIcon"
 	empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var icon := _image_from("", icon_rect.position, icon_rect.size, b)
-	InkGlowScript.attach(icon)
 	icon.name = "Icon"
 	if b.has_node("PartLabel"):
 		b.move_child(b.get_node("PartLabel"), b.get_child_count() - 1)       # 部位名稱蓋在圖示上面，不被劍尖之類擋住
