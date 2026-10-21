@@ -53,7 +53,7 @@ var _force_icon_holder: Control
 var _force_name: Label
 var _force_tag: Control
 var _force_desc: RichTextLabel
-var _force_badges: Dictionary = {}
+var _force_element_holder: Control
 var _force_effects: RichTextLabel
 var _btn_switch_force: Button
 var _cat_row: Control
@@ -295,14 +295,12 @@ func _build_left_drawer() -> void:
 	_force_tag = _chip("運行中", Rect2(172, 120, 54, 20), _left_body, Color("#9A2A2A"), Color.WHITE)
 	_force_desc = _rich(Rect2(12, 148, 212, 92), _left_body, 13)
 	_label("內功屬性傾向", Vector2(14, 244), Vector2(120, 20), 13, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, _left_body)
-	for i in MartialInfoScript.ELEMENTS.size():
-		var el: String = MartialInfoScript.ELEMENTS[i]
-		var holder := Control.new()
-		holder.position = Vector2(14 + i * 52, 268)
-		holder.size = Vector2(40, 30)
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_left_body.add_child(holder)
-		_force_badges[el] = holder
+	# 內功屬性只顯示目前這門的那一個字（快／遲／柔／剛），不一次排四個
+	_force_element_holder = Control.new()
+	_force_element_holder.position = Vector2(96, 266)
+	_force_element_holder.size = Vector2(44, 34)
+	_force_element_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_left_body.add_child(_force_element_holder)
 	_btn_switch_force = _tex_button(Vector2(188, 34), Vector2(24, 306), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _left_body)
 	_btn_switch_force.text = "更換內功"
 	_btn_switch_force.add_theme_font_size_override("font_size", 17)
@@ -551,11 +549,7 @@ func _refresh_left() -> void:
 		_force_effects.text = ""
 		_btn_switch_force.disabled = _forces().is_empty()
 	else:
-		var el := String(force.get("element", ""))
-		if ELEMENT_ICONS.has(el):
-			_m_image("attribute_%s_selected" % ELEMENT_ICONS[el], Vector2.ZERO, Vector2(68, 68), _force_icon_holder)
-		else:
-			_m_image("category_meditation", Vector2.ZERO, Vector2(68, 68), _force_icon_holder)
+		_m_image("category_meditation", Vector2.ZERO, Vector2(68, 68), _force_icon_holder)      # 內功心法的象徵圖（打坐人像），不是屬性
 		_force_name.text = MartialInfoScript.force_name(force)
 		_force_tag.visible = true
 		var desc := String(force.get("description", ""))
@@ -563,11 +557,10 @@ func _refresh_left() -> void:
 		_force_effects.text = "\n".join(MartialInfoScript.force_effect_lines(force, _actor_dict()).map(func(l): return "• " + String(l)))
 		_btn_switch_force.disabled = _forces().size() <= 1
 	var cur_el := String(force.get("element", ""))
-	for el in MartialInfoScript.ELEMENTS:
-		var holder: Control = _force_badges[el]
-		_clear(holder)
-		var on: bool = el == cur_el
-		_m_image("attribute_%s_%s" % [ELEMENT_ICONS[el], "selected" if on else "normal"], Vector2(0, -6), Vector2(40, 40), holder)
+	_clear(_force_element_holder)
+	if ELEMENT_ICONS.has(cur_el):
+		# 暫代：先用屬性徽記；共邊國交「快遲柔剛」單字素材後換成單字
+		_m_image("attribute_%s_selected" % ELEMENT_ICONS[cur_el], Vector2(2, -4), Vector2(40, 40), _force_element_holder)
 
 func _rebuild_categories() -> void:
 	_clear(_cat_row)
@@ -696,7 +689,7 @@ func _refresh_synergy() -> void:
 		_glyph_icon("—", 44, _syn_left, Vector2(43, 2))
 		_label("尚未修習", Vector2(0, 48), Vector2(130, 18), 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
 	else:
-		_icon("element", String(force.get("element", "")), 48, _syn_left, Vector2(41, 0), true)
+		_m_image("category_meditation", Vector2(41, 0), Vector2(48, 48), _syn_left)      # 內功一律用心法象徵圖
 		_label("%s（%s）" % [MartialInfoScript.force_name(force), String(force.get("element", ""))], Vector2(0, 48), Vector2(130, 18), 14, INK, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
 	if selected_skill.is_empty():
 		_glyph_icon("？", 44, _syn_right, Vector2(43, 2))
@@ -785,7 +778,7 @@ func _show_force_picker() -> void:
 		rows.add_child(row)
 		if fid == _pick_force_id:
 			_image("row_selected", Vector2.ZERO, Vector2(290, 48), row)
-		_icon("element", String(f.get("element", "")), 36, row, Vector2(6, 6), fid == cur_id)
+		_m_image("category_meditation", Vector2(6, 6), Vector2(36, 36), row)
 		_label(MartialInfoScript.force_name(f), Vector2(52, 0), Vector2(150, 48), 17, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
 		if fid == cur_id:
 			_chip("運行中", Rect2(218, 14, 54, 20), row, Color("#9A2A2A"), Color.WHITE)
