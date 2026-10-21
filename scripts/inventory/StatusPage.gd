@@ -7,8 +7,9 @@ extends "res://scripts/inventory/StudyPageBase.gd"
 const EquipmentInfoScript = preload("res://scripts/inventory/EquipmentInfo.gd")
 
 const BUTTON_Y := 586
-const FIGURE_POS := Vector2(392, 92)        # 人物畫布（254×486）的左上角；中頁是 x 318–765
-const FIGURE_SIZE := Vector2(254, 486)
+const FIGURE_CLIP := Rect2(318, 92, 447, 486)       # 中頁人物的顯示範圍（超出裁掉）
+const PORTRAIT_SIZE := Vector2(330, 632)            # 半身立繪（母圖 508×972 約放大 1.3 倍）
+const PORTRAIT_DIR := "res://assets/UI/equipment/doll/"
 const NAME_POS := Vector2(684, 108)         # 直排姓名（中頁右側）
 const NAME_BOX := Vector2(60, 330)
 const X0 := 790.0                           # 右頁內容左緣（右頁 770 起，往右縮進）
@@ -16,13 +17,11 @@ const COL_W := 148.0
 const ROW_H := 25.0
 const SUMMARY_TILE := Vector2(66, 63)
 const SUMMARY_ORDER := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "mechanism"]
-const STATUS_DIR := "res://assets/UI/status/"
 const COMBAT_ROWS := [["atk", "攻擊"], ["def", "防禦"], ["speed", "身法"], ["hit", "命中"], ["crit", "暴擊"], ["evade", "閃避"]]
 const TRAIT_ROWS := [["str", "力量"], ["agi", "敏捷"], ["int", "智力"], ["con", "體能"], ["luck", "幸運"]]
 
-var _doll: Control
-var doll_info: Dictionary = {}
-var _fallback: TextureRect
+var _fig_clip: Control
+var _portrait: TextureRect
 var _name_box: Control
 var _level_label: Label
 var _exp_fill: TextureRect
@@ -62,20 +61,23 @@ func _foreground_preset() -> String:
 # 建立畫面
 # ------------------------------------------------------------------
 func _build_figure() -> void:
-	_doll = EquipmentDollScript.new()
-	_doll.name = "PaperDoll"
-	_doll.position = FIGURE_POS
-	_doll.size = FIGURE_SIZE
-	add_child(_doll)
-	_fallback = TextureRect.new()
-	_fallback.name = "PortraitFallback"
-	_fallback.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_fallback.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_fallback.position = FIGURE_POS + Vector2(0, 60)
-	_fallback.size = Vector2(FIGURE_SIZE.x, 250)
-	_fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fallback.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	add_child(_fallback)
+	# 狀態頁用半身立繪（靜態圖，不是紙娃娃）：放大、頂端對齊，下緣被中頁裁掉，比全身更有張力。紙娃娃留給裝備頁與武術頁
+	_fig_clip = Control.new()
+	_fig_clip.name = "FigureClip"
+	_fig_clip.position = FIGURE_CLIP.position
+	_fig_clip.size = FIGURE_CLIP.size
+	_fig_clip.clip_contents = true
+	_fig_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_fig_clip)
+	_portrait = TextureRect.new()
+	_portrait.name = "HalfBodyPortrait"
+	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait.size = PORTRAIT_SIZE
+	_portrait.position = Vector2((FIGURE_CLIP.size.x - PORTRAIT_SIZE.x) * 0.5 - 22.0, 0)
+	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_fig_clip.add_child(_portrait)
 	_name_box = Control.new()
 	_name_box.name = "VerticalName"
 	_name_box.position = NAME_POS
@@ -152,37 +154,15 @@ func _on_actor_pressed(id: String) -> void:
 	_refresh()
 
 func _refresh_figure() -> void:
-	doll_info = _doll.show_actor(actor_id)
-	var has_figure: bool = _doll.has_figure()
-	_fallback.visible = not has_figure
-	if not has_figure:
+	var art := PORTRAIT_DIR + "doll_%s_master.png" % actor_id
+	if ResourceLoader.exists(art):
+		_portrait.texture = load(art) as Texture2D
+	else:
 		var path := String(_actor(actor_id).get("portrait_path", ""))
-		_fallback.texture = load(path) as Texture2D if path != "" and ResourceLoader.exists(path) else null
+		_portrait.texture = load(path) as Texture2D if path != "" and ResourceLoader.exists(path) else null
 
-## 直排姓名：有美術摳的字（assets/UI/status/name_<角色id>.png）就用圖，沒有就用程式直排（一個字一行）
 func _refresh_name() -> void:
-	for c in _name_box.get_children():
-		_name_box.remove_child(c)
-		c.queue_free()
-	var a := _actor(actor_id)
-	var art_path := STATUS_DIR + "name_%s.png" % actor_id
-	if ResourceLoader.exists(art_path):
-		var r := _image_from(art_path, Vector2.ZERO, _name_box.size, _name_box)
-		r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-		return
-	var full := String(a.get("name", actor_id))
-	# 一個字一個 Label（直排，字距固定），姓名在上、職業小字接在下面
-	var y := 0.0
-	for ch in full:
-		_label(ch, Vector2(0, y), Vector2(NAME_BOX.x, 46), 42, INK, HORIZONTAL_ALIGNMENT_CENTER, _name_box)
-		y += 46.0
-	var job := String(a.get("job", ""))
-	var subclass := String(a.get("subclass", ""))
-	var job_text := "%s/%s" % [job, subclass] if job != "" and subclass != "" else job + subclass
-	y += 6.0
-	for ch in job_text:
-		_label(ch, Vector2(0, y), Vector2(NAME_BOX.x, 17), 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _name_box)
-		y += 17.0
+	fill_vertical_name(_name_box, actor_id)
 
 func _refresh_stats() -> void:
 	var a := _actor(actor_id)
