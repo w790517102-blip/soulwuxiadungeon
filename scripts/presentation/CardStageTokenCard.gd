@@ -5,7 +5,7 @@ extends Node3D
 ## Same contract as the other entity cards: home_position, home_rotation, card_size,
 ## interaction_priority, set_home(), refresh(entity). Presentation only.
 
-const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT = preload("res://assets/fonts/UIFontKaiti.tres")
 const CANVAS := Vector2(300, 490)
 const GOLD := Color("c9a565")
 const PAPER := Color("eee4ca")

@@ -7,9 +7,9 @@ signal battle_opening_confirmed
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const ItemDB = preload("res://scripts/db/ItemDB.gd")
-const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const MenuUIFont = preload("res://assets/fonts/UIFontKaiti.tres")
 const SkillViewScript = preload("res://scripts/battlescripts/SkillView.gd")
-const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/DotGothic16-Regular.ttf"
+const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/UIFontKaiti.tres"
 const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
 const DEBUG_ENEMY_PANEL_LAYOUT := true
@@ -696,7 +696,7 @@ func _build_status_hover_text(actor: Dictionary) -> String:
 	var stat_luck = int(actor.get("luck", 0))
 	var lines = []
 	lines.append("[b]%s[/b]" % name)
-	lines.append("HP：%d / %d" % [hp, max_hp])
+	lines.append("HP：%d / %d" % [clampi(hp, 0, max_hp), max_hp])
 	lines.append("MP：%d / %d" % [mp, max_mp])
 	lines.append("ATK：%d   DEF：%d   SPD：%d" % [atk, def, speed])
 	lines.append("STR：%d   AGI：%d   INT：%d" % [stat_str, stat_agi, stat_int])

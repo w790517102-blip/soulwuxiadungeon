@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://1mjd56d38eyw" path="res://scripts/battlescripts/SkillExecutor.gd" id="2_rca61"]
 [ext_resource type="Script" uid="uid://cu05s38f3jiwv" path="res://scripts/battlescripts/TurnManager.gd" id="2_svpld"]
 [ext_resource type="Script" uid="uid://w5mkkmvvvq26" path="res://scripts/battlescripts/PopupSkillSelect.gd" id="4_8qdv8"]
-[ext_resource type="FontFile" uid="uid://dpnhv7778sg1k" path="res://assets/fonts/DotGothic16-Regular.ttf" id="5_1i8jf"]
+[ext_resource type="Font" path="res://assets/fonts/UIFontKaiti.tres" id="5_1i8jf"]
 [ext_resource type="Script" uid="uid://b4cc072wxnf5v" path="res://scripts/battlescripts/CharacterSkill.gd" id="5_pxwbd"]
 [ext_resource type="Script" uid="uid://c747gfhv5jsun" path="res://scripts/battlescripts/TargetSelectPopup.gd" id="5_ti0og"]
 [ext_resource type="Script" uid="uid://di1n4fdr4eftg" path="res://scripts/battlescripts/TeamMateSlot.gd" id="5_yt3ua"]

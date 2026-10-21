@@ -1,7 +1,7 @@
 extends RefCounted
 ## Shared presentation only. Existing popup lists, data and callbacks remain
 ## authoritative; page navigation never confirms or executes an action.
-const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT = preload("res://assets/fonts/UIFontKaiti.tres")
 const PAGE_SIZE := 8
 
 static func install(popup: PopupPanel, list: ItemList, description: RichTextLabel, buttons: Control, title_text: String, quantity: Label = null) -> void:

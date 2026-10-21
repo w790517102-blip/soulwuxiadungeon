@@ -12,7 +12,7 @@ extends Control
 ## The persistent status row on the cards and Card Inspect are separate layers and are not touched here.
 
 const BattleEventScript = preload("res://scripts/presentation/BattleEvent.gd")
-const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT = preload("res://assets/fonts/UIFontKaiti.tres")
 const BattleNumberFont = preload("res://scripts/presentation/BattleNumberFont.gd")
 const BattleRoundTitle = preload("res://scripts/presentation/BattleRoundTitle.gd")
 

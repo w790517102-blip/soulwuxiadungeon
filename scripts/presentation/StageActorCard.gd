@@ -3,7 +3,7 @@ extends Node3D
 ## resource values and combat outcomes remain owned by BattleController.
 
 const InnerForceDBScript = preload("res://scripts/battlescripts/InnerForceDB.gd")
-const BODY_FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const BODY_FONT = preload("res://assets/fonts/UIFontKaiti.tres")
 const TITLE_FONT = BODY_FONT
 const CANVAS_SIZE := Vector2i(640, 300)
 const VIEWPORT_SIZE := Vector2i(1280, 600)
@@ -116,7 +116,7 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	var max_hp := maxi(1, int(actor.get("max_hp", hp)))
 	var mp := int(actor.get("mp", 0))
 	var max_mp := maxi(0, int(actor.get("max_mp", mp)))
-	hp_label.text = "氣血：%d/%d" % [hp, max_hp]
+	hp_label.text = "氣血：%d/%d" % [clampi(hp, 0, max_hp), max_hp]
 	hp_bar.max_value = max_hp
 	hp_bar.value = clampi(hp, 0, max_hp)
 	mp_label.text = "內力：%d/%d" % [mp, max_mp]

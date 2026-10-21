@@ -1,6 +1,6 @@
 extends HBoxContainer
 
-const BATTLE_SLOT_FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const BATTLE_SLOT_FONT = preload("res://assets/fonts/UIFontKaiti.tres")
 const ENEMY_NAME_MIN_HEIGHT := 23.5
 const ENEMY_HP_MIN_HEIGHT := 23.0
 const ENEMY_ELEMENT_MIN_HEIGHT := 23.0

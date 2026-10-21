@@ -6,7 +6,7 @@ signal close_requested
 signal tab_requested(tab_name: String)
 
 const DIR := "res://assets/UI/inventory/"
-const FONT := preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT := preload("res://assets/fonts/UIFontKaiti.tres")
 
 const INK := Color("#2B1B0E")
 const INK_DIM := Color("#5A4630")
@@ -583,3 +583,32 @@ func _show_confirm(title: String, body: String, ok_text: String, action: Callabl
 			a.call())
 	cancel.pressed.connect(_close_overlay)
 
+
+# ------------------------------------------------------------------
+# 直排姓名（狀態頁、武術頁共用）
+# ------------------------------------------------------------------
+const STATUS_DIR := "res://assets/UI/status/"
+
+## 直排姓名：有美術摳的字（assets/UI/status/name_<角色id>.png）就用圖，沒有就用程式直排（一個字一個 Label），職業小字接在下面
+func fill_vertical_name(box: Control, id: String) -> void:
+	for c in box.get_children():
+		box.remove_child(c)
+		c.queue_free()
+	var a := _actor(id)
+	var art_path := STATUS_DIR + "name_%s.png" % id
+	if ResourceLoader.exists(art_path):
+		var r := _image_from(art_path, Vector2.ZERO, box.size, box)
+		r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		return
+	var full := String(a.get("name", id))
+	var y := 0.0
+	for ch in full:
+		_label(ch, Vector2(0, y), Vector2(box.size.x, 46), 42, INK, HORIZONTAL_ALIGNMENT_CENTER, box)
+		y += 46.0
+	var job := String(a.get("job", ""))
+	var subclass := String(a.get("subclass", ""))
+	var job_text := "%s/%s" % [job, subclass] if job != "" and subclass != "" else job + subclass
+	y += 6.0
+	for ch in job_text:
+		_label(ch, Vector2(0, y), Vector2(box.size.x, 17), 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, box)
+		y += 17.0

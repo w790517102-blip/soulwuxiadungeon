@@ -5,7 +5,7 @@ extends Node3D
 ## return any Node3D that follows the same small contract:
 ##   home_position, home_rotation, card_size, interaction_priority, refresh(entity).
 
-const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT = preload("res://assets/fonts/UIFontKaiti.tres")
 
 var entity: Object
 var card_size: Vector2 = Vector2(1.0, 1.4)

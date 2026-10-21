@@ -3,7 +3,7 @@ class_name ChronicleSlotItem
 # 《江湖行跡錄》左側目錄的單筆欄位（312×88）。
 # 子節點：Thumb（縮圖 112×63）、NumberLabel、MapLabel、DateLabel。由 ChronicleScreen 動態建立 10 個、翻頁時重複使用。
 
-const FONT := preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT := preload("res://assets/fonts/UIFontKaiti.tres")
 const ITEM_SIZE := Vector2(322, 98)
 const THUMB_SIZE := Vector2(112, 63)
 

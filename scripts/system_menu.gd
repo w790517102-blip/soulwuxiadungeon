@@ -106,7 +106,7 @@ var _pending_equip_slot: String = ""
 
 const CharacterSkillDB = preload("res://scripts/battlescripts/CharacterSkill.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
-const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const MenuUIFont = preload("res://assets/fonts/UIFontKaiti.tres")
 const TAB_STATUS_NORMAL = preload("res://assets/UI/system_menu/tab_status.png")
 const TAB_STATUS_SELECTED = preload("res://assets/UI/system_menu/tab_status_selected.png")
 const TAB_ITEM_NORMAL = preload("res://assets/UI/system_menu/tab_item.png")

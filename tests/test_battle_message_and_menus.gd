@@ -52,7 +52,7 @@ func _run() -> void:
 	quit(0 if _failures.is_empty() else 1)
 
 func _menus(actor: Dictionary) -> void:
-	var font: Font = load("res://assets/fonts/DotGothic16-Regular.ttf")
+	var font: Font = load("res://assets/fonts/UIFontKaiti.tres")
 	for popup: Window in [ui.skill_list_popup, ui.inner_force_popup, ui.item_list_popup]:
 		var panel: Control = popup.get_node("ActionItemListPanel")
 		_expect(panel.has_node("PageControls") and panel.has_node("ConfirmAndCancel") and panel.has_node("ListAndDescription/DescriptionArea"), "all three menus share the same framework")

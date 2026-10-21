@@ -11,7 +11,7 @@ signal closed
 
 enum Mode { SAVE, LOAD, TITLE_LOAD }
 
-const FONT := preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT := preload("res://assets/fonts/UIFontKaiti.tres")
 
 # ---------------- LAYOUT（參考解析度 1152×648） ----------------
 const FRAME_RECT := Rect2(32, 24, 1088, 600)

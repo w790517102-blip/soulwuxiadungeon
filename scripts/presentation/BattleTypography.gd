@@ -1,6 +1,6 @@
 extends RefCounted
 ## One font contract for both battle presentations, including popup Windows.
-const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const FONT = preload("res://assets/fonts/UIFontKaiti.tres")
 
 static func apply(root: Node) -> void:
 	if root is Control or root is Window:
