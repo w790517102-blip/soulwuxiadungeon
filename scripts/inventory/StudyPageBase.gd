@@ -7,6 +7,7 @@ signal tab_requested(tab_name: String)
 
 const DIR := "res://assets/UI/inventory/"
 const FONT := preload("res://assets/fonts/UIFontKaiti.tres")
+const InkGlowScript = preload("res://scripts/inventory/InkGlow.gd")
 
 const INK := Color("#2B1B0E")
 const INK_DIM := Color("#5A4630")
@@ -364,6 +365,7 @@ func make_slot_tile(slot_id: String, size: Vector2, parent: Node) -> Button:
 	empty_icon.name = "EmptyIcon"
 	empty_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var icon := _image_from("", icon_rect.position, icon_rect.size, b)
+	InkGlowScript.attach(icon)
 	icon.name = "Icon"
 	if b.has_node("PartLabel"):
 		b.move_child(b.get_node("PartLabel"), b.get_child_count() - 1)       # 部位名稱蓋在圖示上面，不被劍尖之類擋住

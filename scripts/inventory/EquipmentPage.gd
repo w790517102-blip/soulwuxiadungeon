@@ -112,6 +112,7 @@ func _build_detail() -> void:
 	# 版面：右頁左右平分——左半是大圖（概念圖的裝備圖案很大），右半是名稱與資訊
 	_art_bg = _image("detail_art_bg", Vector2(DETAIL_X, 96), Vector2(140, 196))
 	_art = _image_from("", Vector2(DETAIL_X + 6, 102), Vector2(128, 184), self)
+	InkGlowScript.attach(_art)
 	_name_label = _label("", Vector2(DETAIL_X + 150, 96), Vector2(146, 40), 22, INK, HORIZONTAL_ALIGNMENT_LEFT)
 	_outlined(_name_label)
 	_rarity_holder = Control.new()
