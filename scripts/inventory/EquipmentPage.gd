@@ -87,7 +87,7 @@ func _build_slots() -> void:
 		var slot_id: String = entry[0]
 		var b := make_slot_tile(slot_id, SLOT_SIZE, self)
 		b.position = Vector2(entry[1], entry[2])
-		b.pressed.connect(_on_slot_clicked.bind(slot_id))
+		b.pressed.connect(_on_slot_pressed.bind(slot_id))      # 單擊：只選中，右頁顯示這件裝備的詳情
 		b.gui_input.connect(_on_slot_gui_input.bind(slot_id))
 		_slot_buttons[slot_id] = b
 
@@ -301,15 +301,19 @@ func _on_slot_pressed(slot_id: String) -> void:
 		slot = slot_id
 	_refresh()
 
-## 左鍵點格子：選中這一格並直接開「更換裝備」視窗（固定欄位只選中不開）
-func _on_slot_clicked(slot_id: String) -> void:
+## 雙擊（連續兩下左鍵）：選中這一格並開「更換裝備」視窗（固定欄位只選中不開）；單擊只選中
+func _on_slot_double_clicked(slot_id: String) -> void:
 	_on_slot_pressed(slot_id)
 	if not _is_locked(slot_id):
 		_on_change_pressed()
 
-## 右鍵點格子：卸下（先問一次，防誤觸）
+## 格子的滑鼠輸入：左鍵雙擊＝更換、右鍵單擊＝卸下（先問一次，防誤觸）
 func _on_slot_gui_input(event: InputEvent, slot_id: String) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+	if not (event is InputEventMouseButton) or not event.pressed:
+		return
+	if event.button_index == MOUSE_BUTTON_LEFT and event.double_click:
+		_on_slot_double_clicked(slot_id)
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
 		_on_slot_pressed(slot_id)
 		_ask_unequip()
 

@@ -80,12 +80,23 @@ func _run() -> void:
 	_check(inv.get_equipped("liuyu").get("weapon_1") == "bronze_sword", "swapped back")
 
 	# 卸下
-	# 滑鼠：左鍵點格子＝選中並開「更換裝備」視窗；右鍵＝先問再卸下
-	page._on_slot_clicked("weapon_1")
-	_check(page._overlay.visible and page.slot == "weapon_1", "left click opens the change window for that slot")
+	# 滑鼠：單擊只選中；左鍵雙擊才開「更換裝備」視窗；右鍵單擊＝先問再卸下
+	var left := InputEventMouseButton.new()
+	left.button_index = MOUSE_BUTTON_LEFT
+	left.pressed = true
+	page._on_slot_gui_input(left, "weapon_1")      # 單擊（Button 自己會發 pressed → 選中）
+	_check(not page._overlay.visible, "a single left click does not open the change window")
+	page._on_slot_pressed("weapon_1")
+	_check(page.slot == "weapon_1" and not page._overlay.visible, "a single click only selects the slot")
+	var dbl := InputEventMouseButton.new()
+	dbl.button_index = MOUSE_BUTTON_LEFT
+	dbl.pressed = true
+	dbl.double_click = true
+	page._on_slot_gui_input(dbl, "weapon_1")
+	_check(page._overlay.visible and page.slot == "weapon_1", "a double click opens the change window for that slot")
 	page._close_overlay()
-	page._on_slot_clicked("armor_head")
-	_check(page._overlay.visible, "left click on another slot opens its window")
+	page._on_slot_gui_input(dbl, "armor_head")
+	_check(page._overlay.visible and page.slot == "armor_head", "a double click on another slot opens its window")
 	page._close_overlay()
 	var right := InputEventMouseButton.new()
 	right.button_index = MOUSE_BUTTON_RIGHT
