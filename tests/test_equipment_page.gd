@@ -80,8 +80,31 @@ func _run() -> void:
 	_check(inv.get_equipped("liuyu").get("weapon_1") == "bronze_sword", "swapped back")
 
 	# 卸下
+	# 滑鼠：左鍵點格子＝選中並開「更換裝備」視窗；右鍵＝先問再卸下
+	page._on_slot_clicked("weapon_1")
+	_check(page._overlay.visible and page.slot == "weapon_1", "left click opens the change window for that slot")
+	page._close_overlay()
+	page._on_slot_clicked("armor_head")
+	_check(page._overlay.visible, "left click on another slot opens its window")
+	page._close_overlay()
+	var right := InputEventMouseButton.new()
+	right.button_index = MOUSE_BUTTON_RIGHT
+	right.pressed = true
+	page._on_slot_gui_input(right, "armor_head")
+	_check(page._overlay.visible and inv.get_equipped("liuyu").get("armor_head") == "arm_cloth_cap", "right click asks first: nothing is taken off yet")
+	page._close_overlay()      # 取消
+	_check(inv.get_equipped("liuyu").get("armor_head") == "arm_cloth_cap", "cancelling keeps the cap on")
+	page._on_slot_gui_input(right, "weapon_2")
+	_check(not page._overlay.visible, "right click on an empty slot does nothing")
+	page._on_slot_gui_input(right, "armor_head")
+	page._confirm_action.call()
+	page._close_overlay()
+	_check(inv.get_equipped("liuyu").get("armor_head") == "", "confirming takes the cap off")
+	page._apply_equip("arm_cloth_cap")
 	page._on_slot_pressed("armor_head")
 	page._on_unequip_pressed()
+	page._confirm_action.call()      # 卸下要先確認；這裡模擬按下「確認卸下」
+	page._close_overlay()
 	_check(inv.get_equipped("liuyu").get("armor_head") == "", "cap taken off")
 	_check(inv.has_item("arm_cloth_cap"), "cap returned to the bag")
 	_check(page._btn_unequip.disabled, "nothing to take off now → 卸下 is disabled")
@@ -121,6 +144,8 @@ func _run() -> void:
 	_check(page.doll_info.get("mech_art") == "tool_zhuge_crossbow" and page._doll.get_node("mech").texture != null and page._doll.get_node("strap").texture != null, "the crossbow and its strap are two full-canvas layers")
 	_check(page._doll.get_node("master").get_index() < page._doll.get_node("strap").get_index() and page._doll.get_node("strap").get_index() < page._doll.get_node("mech").get_index() and page._doll.get_node("mech").get_index() < page._doll.get_node("weapon_back").get_index(), "order: clothing, then strap, then crossbow, then the sword on top")
 	page._on_unequip_pressed()
+	page._confirm_action.call()      # 卸下要先確認；這裡模擬按下「確認卸下」
+	page._close_overlay()
 	_check(page.doll_info.get("mech_art") == "" and page._doll.get_node("mech").texture == null and page._doll.get_node("strap").texture == null, "taking the crossbow off hides the crossbow and the strap")
 	# 書眠：筆拿在手上，不畫紙娃娃的武器層（不能憑空背一把劍）；連弩有她自己的微調
 	var shu: Dictionary = page._doll.show_actor("shumian")

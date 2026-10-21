@@ -87,7 +87,8 @@ func _build_slots() -> void:
 		var slot_id: String = entry[0]
 		var b := make_slot_tile(slot_id, SLOT_SIZE, self)
 		b.position = Vector2(entry[1], entry[2])
-		b.pressed.connect(_on_slot_pressed.bind(slot_id))
+		b.pressed.connect(_on_slot_clicked.bind(slot_id))
+		b.gui_input.connect(_on_slot_gui_input.bind(slot_id))
 		_slot_buttons[slot_id] = b
 
 func _build_figure() -> void:
@@ -300,11 +301,29 @@ func _on_slot_pressed(slot_id: String) -> void:
 		slot = slot_id
 	_refresh()
 
-func _on_unequip_pressed() -> void:
+## 左鍵點格子：選中這一格並直接開「更換裝備」視窗（固定欄位只選中不開）
+func _on_slot_clicked(slot_id: String) -> void:
+	_on_slot_pressed(slot_id)
+	if not _is_locked(slot_id):
+		_on_change_pressed()
+
+## 右鍵點格子：卸下（先問一次，防誤觸）
+func _on_slot_gui_input(event: InputEvent, slot_id: String) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		_on_slot_pressed(slot_id)
+		_ask_unequip()
+
+## 「卸下」按鈕與右鍵共用：有裝備、沒鎖定才問；確認後才卸下
+func _ask_unequip() -> void:
 	var item_id := _equipped_item_id()
 	if item_id == "" or _is_locked(slot):
 		return
-	_apply_equip("")
+	var item_name := String(ItemDB.get_def(item_id).get("name", item_id))
+	_show_confirm("卸下裝備", "確定要卸下「%s」嗎？
+卸下後會放回背包。" % item_name, "確認卸下", func(): _apply_equip(""))
+
+func _on_unequip_pressed() -> void:
+	_ask_unequip()
 
 ## 換上 new_item_id（空字串＝卸下），並記下「前 → 後」讓詳情顯示變化量
 func _apply_equip(new_item_id: String) -> void:
@@ -352,14 +371,24 @@ func _show_pick() -> void:
 	var size := Vector2(800, 420)
 	_panel("confirm_panel", 28, 24, pos, size, _overlay)
 	_label("更換%s" % EquipmentInfoScript.slot_label(slot), pos + Vector2(40, 22), Vector2(300, 30), 22, GOLD, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+	# 目前裝備（玩家左鍵點格子就直接進這個視窗，所以目前穿的東西要在這裡看得到）
+	var cur_id := _equipped_item_id()
+	var cur_text := "目前裝備：（無）"
+	if cur_id != "":
+		var cur_def := ItemDB.get_def(cur_id)
+		var parts: Array[String] = []
+		for row: Dictionary in EquipmentInfoScript.item_stat_rows(cur_def):
+			parts.append("%s %s" % [row["label"], row["text"]])
+		cur_text = "目前裝備：%s　%s" % [String(cur_def.get("name", cur_id)), "　".join(parts) if not parts.is_empty() else "無數值加成"]
+	_outlined(_label(cur_text, pos + Vector2(40, 58), Vector2(720, 26), 15, CREAM, HORIZONTAL_ALIGNMENT_LEFT, _overlay))
 	if _pick_candidates.is_empty():
 		var none := _label("背包裡沒有可以裝在這個欄位的道具。", pos + Vector2(40, 140), size - Vector2(80, 60), 18, CREAM, HORIZONTAL_ALIGNMENT_CENTER, _overlay)
 		none.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	else:
-		_build_pick_list(pos + Vector2(40, 64))
+		_build_pick_list(pos + Vector2(40, 92))
 		_pick_compare = Control.new()
-		_pick_compare.position = pos + Vector2(380, 64)
-		_pick_compare.size = Vector2(380, 280)
+		_pick_compare.position = pos + Vector2(380, 92)
+		_pick_compare.size = Vector2(380, 252)
 		_pick_compare.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_overlay.add_child(_pick_compare)
 		_refresh_pick_compare()
@@ -378,7 +407,7 @@ func _show_pick() -> void:
 func _build_pick_list(pos: Vector2) -> void:
 	var scroll := ScrollContainer.new()
 	scroll.position = pos
-	scroll.size = Vector2(320, 280)
+	scroll.size = Vector2(320, 252)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_overlay.add_child(scroll)
 	_pick_rows = VBoxContainer.new()

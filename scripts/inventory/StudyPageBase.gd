@@ -559,3 +559,28 @@ func rebuild_roster(ids: Array, selected_id: String, pick: Callable) -> void:
 		card.pressed.connect(pick.bind(id))
 		_roster_buttons[id] = card
 
+
+# 確認視窗（道具頁的丟棄、裝備頁的卸下共用）
+var _confirm_action: Callable
+
+func _show_confirm(title: String, body: String, ok_text: String, action: Callable) -> void:
+	_confirm_action = action
+	_clear_overlay()
+	_overlay.visible = true
+	var panel_pos := Vector2(276, 148)
+	_panel("confirm_panel", 28, 24, panel_pos, Vector2(600, 344), _overlay)
+	_label(title, panel_pos + Vector2(56, 54), Vector2(488, 34), 24, GOLD, HORIZONTAL_ALIGNMENT_CENTER, _overlay)
+	var b := _label(body, panel_pos + Vector2(56, 100), Vector2(488, 130), 17, CREAM, HORIZONTAL_ALIGNMENT_CENTER, _overlay)
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	var ok := _tex_button(Vector2(190, 40), panel_pos + Vector2(72, 248), "btn_primary_normal", "btn_primary_hover", "btn_primary_pressed", "btn_primary_disabled", 48, 16, _overlay)
+	ok.text = ok_text
+	var cancel := _tex_button(Vector2(190, 40), panel_pos + Vector2(600 - 72 - 190, 248), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
+	cancel.text = "取消"
+	ok.pressed.connect(func():
+		var a := _confirm_action
+		_close_overlay()
+		if a.is_valid():
+			a.call())
+	cancel.pressed.connect(_close_overlay)
+

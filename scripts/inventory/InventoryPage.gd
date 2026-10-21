@@ -42,7 +42,6 @@ var _btn_sort: Button
 var _btn_drop: Button
 var _btn_back: Button
 var _pick_callback: Callable
-var _confirm_action: Callable
 
 # ------------------------------------------------------------------
 # 建立畫面
@@ -538,27 +537,6 @@ func _on_pick(actor_id: String) -> void:
 	if cb.is_valid():
 		await cb.call(actor_id)
 	_refresh()
-
-func _show_confirm(title: String, body: String, ok_text: String, action: Callable) -> void:
-	_confirm_action = action
-	_clear_overlay()
-	_overlay.visible = true
-	var panel_pos := Vector2(276, 148)
-	_panel("confirm_panel", 28, 24, panel_pos, Vector2(600, 344), _overlay)
-	_label(title, panel_pos + Vector2(56, 54), Vector2(488, 34), 24, GOLD, HORIZONTAL_ALIGNMENT_CENTER, _overlay)
-	var b := _label(body, panel_pos + Vector2(56, 100), Vector2(488, 130), 17, CREAM, HORIZONTAL_ALIGNMENT_CENTER, _overlay)
-	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	b.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	var ok := _tex_button(Vector2(190, 40), panel_pos + Vector2(72, 248), "btn_primary_normal", "btn_primary_hover", "btn_primary_pressed", "btn_primary_disabled", 48, 16, _overlay)
-	ok.text = ok_text
-	var cancel := _tex_button(Vector2(190, 40), panel_pos + Vector2(600 - 72 - 190, 248), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
-	cancel.text = "取消"
-	ok.pressed.connect(func():
-		var a := _confirm_action
-		_close_overlay()
-		if a.is_valid():
-			a.call())
-	cancel.pressed.connect(_close_overlay)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
