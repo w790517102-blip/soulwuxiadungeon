@@ -623,6 +623,8 @@ func _open_skill_detail() -> void:
 	close.pressed.connect(_close_overlay)
 
 func _refresh_synergy() -> void:
+	_stop_syn_fx()
+	var tier := 0
 	_clear(_syn_left)
 	_clear(_syn_right)
 	var force := _current_force()
@@ -652,8 +654,11 @@ func _refresh_synergy() -> void:
 				if text == "":
 					continue
 				var met := bool(row.get("met", false))
+				if met:
+					tier = maxi(tier, _syn_tier(String(row.get("kind", ""))))
 				lines.append("[color=%s]• %s：%s[/color]" % ["#1E4D28" if met else "#3A3428", String(row.get("kind", "聯動")), text])
 	_syn_text.text = "\n".join(lines) if not lines.is_empty() else "目前的內功與這一招沒有特別的相合。"
+	_start_syn_fx(tier)
 
 # ------------------------------------------------------------------
 # 更換內功視窗
@@ -1051,3 +1056,91 @@ func _stamp(text: String, rect: Rect2, parent: Node, font_size: int) -> TextureR
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
 	l.add_theme_constant_override("outline_size", 2)
 	return r
+
+# ------------------------------------------------------------------
+# 搭配特效（只有「成立」才有）：加乘＝圖示呼吸放大縮小；專屬＝橘、絕技分支＝紫、奧義＝紅的閃卡。
+# 閃卡是斜向的反光波，慢慢由左往右掃：先掃過內功圖示，接著（想像光在移動）再從外功圖示左邊接上、掃到右邊，停一下後重來
+# ------------------------------------------------------------------
+const SYN_SHINE_COLORS := {2: Color(1.0, 0.62, 0.18), 3: Color(0.72, 0.38, 1.0), 4: Color(1.0, 0.22, 0.22)}
+const SYN_ICON_BOX := [Rect2(93, 38, 40, 40), Rect2(253, 38, 40, 40)]      # 兩個圖示在搭配框內的範圍（掃光的裁切框）
+var _syn_fx_tween: Tween
+var _syn_fx_nodes: Array = []
+
+func _syn_tier(kind: String) -> int:
+	if kind.contains("奧義"):
+		return 4
+	if kind.contains("絕技"):
+		return 3
+	if kind.contains("專屬"):
+		return 2
+	return 1
+
+func _stop_syn_fx() -> void:
+	if _syn_fx_tween != null and _syn_fx_tween.is_valid():
+		_syn_fx_tween.kill()
+	for n in _syn_fx_nodes:
+		if is_instance_valid(n):
+			n.queue_free()
+	_syn_fx_nodes.clear()
+	for c in [_syn_left, _syn_right]:
+		if c != null:
+			c.scale = Vector2.ONE
+
+func _start_syn_fx(tier: int) -> void:
+	if tier <= 0 or not is_inside_tree():
+		return
+	if tier == 1:
+		_syn_fx_tween = create_tween().set_loops()
+		for c in [_syn_left, _syn_right]:
+			c.pivot_offset = Vector2(65, 20)
+		_syn_fx_tween.tween_property(_syn_left, "scale", Vector2(1.14, 1.14), 0.7).set_trans(Tween.TRANS_SINE)
+		_syn_fx_tween.parallel().tween_property(_syn_right, "scale", Vector2(1.14, 1.14), 0.7).set_trans(Tween.TRANS_SINE)
+		_syn_fx_tween.tween_property(_syn_left, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_SINE)
+		_syn_fx_tween.parallel().tween_property(_syn_right, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_SINE)
+		return
+	var color: Color = SYN_SHINE_COLORS[tier]
+	var box: Control = _syn_left.get_parent()
+	var bands: Array = []
+	for r in SYN_ICON_BOX:
+		var clip := Control.new()
+		clip.position = r.position
+		clip.size = r.size
+		clip.clip_contents = true
+		clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(clip)
+		var band := TextureRect.new()
+		band.texture = _shine_texture()
+		band.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		band.stretch_mode = TextureRect.STRETCH_SCALE
+		band.size = Vector2(20, r.size.y * 2.2)
+		band.pivot_offset = band.size * 0.5
+		band.rotation_degrees = 22.0
+		band.position = Vector2(-40, -r.size.y * 0.6)
+		band.modulate = color
+		band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		band.material = mat
+		clip.add_child(band)
+		bands.append(band)
+		_syn_fx_nodes.append(clip)
+	var w: float = SYN_ICON_BOX[0].size.x
+	_syn_fx_tween = create_tween().set_loops()
+	_syn_fx_tween.tween_property(bands[0], "position:x", w + 20.0, 1.1).from(-40.0)
+	_syn_fx_tween.tween_property(bands[1], "position:x", w + 20.0, 1.1).from(-40.0).set_delay(0.35)      # 光在兩圖示之間「移動」的空檔
+	_syn_fx_tween.tween_interval(1.0)
+
+func _shine_texture() -> Texture2D:
+	if _fx_tex_cache.has("shine"):
+		return _fx_tex_cache["shine"]
+	var g := Gradient.new()
+	g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.85), Color(1, 1, 1, 0)])
+	g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill_from = Vector2(0, 0.5)
+	t.fill_to = Vector2(1, 0.5)
+	t.width = 64
+	t.height = 8
+	_fx_tex_cache["shine"] = t
+	return t
