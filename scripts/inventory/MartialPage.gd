@@ -729,11 +729,11 @@ func _show_force_picker() -> void:
 		if String(f.get("id", "")) == _pick_force_id:
 			chosen = f
 	if not chosen.is_empty():
-		_label(MartialInfoScript.force_name(chosen), pos + Vector2(470, 90), Vector2(210, 32), 24, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
-		_label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(470, 122), Vector2(210, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		_label(MartialInfoScript.force_name(chosen), pos + Vector2(515, 90), Vector2(185, 32), 24, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		_label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(515, 122), Vector2(185, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 		var detail := RichTextLabel.new()
-		detail.position = pos + Vector2(470, 148)
-		detail.size = Vector2(215, 150)
+		detail.position = pos + Vector2(515, 148)
+		detail.size = Vector2(190, 170)
 		detail.bbcode_enabled = true
 		detail.add_theme_font_override("normal_font", FONT)
 		detail.add_theme_font_size_override("normal_font_size", 13)
