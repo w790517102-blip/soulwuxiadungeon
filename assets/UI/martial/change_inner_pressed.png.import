@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cn7nqyr8bpujs"
-path="res://.godot/imported/drawer_outer.png-0e271e8e6a68a6becadaeca0f9bab6f4.ctex"
+uid="uid://cfd1prf1uih1"
+path="res://.godot/imported/change_inner_pressed.png-73f48211013eef1da51b7684c7d2e1a2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/drawer_outer.png"
-dest_files=["res://.godot/imported/drawer_outer.png-0e271e8e6a68a6becadaeca0f9bab6f4.ctex"]
+source_file="res://assets/UI/martial/change_inner_pressed.png"
+dest_files=["res://.godot/imported/change_inner_pressed.png-73f48211013eef1da51b7684c7d2e1a2.ctex"]
 
 [params]
 

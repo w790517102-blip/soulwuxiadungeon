@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b3t87ic587hff"
-path="res://.godot/imported/handle_right_open.png-9be440868e1b13a78c36e92dc246fabf.ctex"
+uid="uid://x60jpdvkiffd"
+path="res://.godot/imported/change_inner_normal.png-b97ead38a5f3e273d0f74ba89baedef0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/handle_right_open.png"
-dest_files=["res://.godot/imported/handle_right_open.png-9be440868e1b13a78c36e92dc246fabf.ctex"]
+source_file="res://assets/UI/martial/change_inner_normal.png"
+dest_files=["res://.godot/imported/change_inner_normal.png-b97ead38a5f3e273d0f74ba89baedef0.ctex"]
 
 [params]
 

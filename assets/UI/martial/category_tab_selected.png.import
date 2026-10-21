@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://p8hjvsk3jwd3"
-path="res://.godot/imported/header_inner_blank.png-10e2b38e5e090250a8d38fb1a58457bb.ctex"
+uid="uid://b0kfcsajuggb8"
+path="res://.godot/imported/category_tab_selected.png-581d38f727e921577d19c1bd177f3b57.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/header_inner_blank.png"
-dest_files=["res://.godot/imported/header_inner_blank.png-10e2b38e5e090250a8d38fb1a58457bb.ctex"]
+source_file="res://assets/UI/martial/category_tab_selected.png"
+dest_files=["res://.godot/imported/category_tab_selected.png-581d38f727e921577d19c1bd177f3b57.ctex"]
 
 [params]
 

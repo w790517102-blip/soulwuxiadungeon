@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d2gkm6rhne74f"
-path="res://.godot/imported/combination_socket.png-cd3dfc115fbd048eb165d29a21fa15f0.ctex"
+uid="uid://dxt4rhb48mk5n"
+path="res://.godot/imported/category_tab_normal.png-63abb4d89409166e5b427b327497bb06.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/combination_socket.png"
-dest_files=["res://.godot/imported/combination_socket.png-cd3dfc115fbd048eb165d29a21fa15f0.ctex"]
+source_file="res://assets/UI/martial/category_tab_normal.png"
+dest_files=["res://.godot/imported/category_tab_normal.png-63abb4d89409166e5b427b327497bb06.ctex"]
 
 [params]
 

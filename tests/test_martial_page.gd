@@ -96,19 +96,8 @@ func _run() -> void:
 	page._close_overlay()
 	page._switch_force(target)
 	_check(String(team.get_current_inner_force_id("liuyu")) == target, "switching changes the running inner force through TeamData")
-	_check(page._force_name.text == info.force_name(page._current_force()), "the left drawer shows the new force")
+	_check(page._force_name.text == info.force_name(page._current_force()), "the force panel shows the new force")
 	page._switch_force(cur_id)
-
-	# 抽屜：各自開關、互不影響、不動選取
-	var sel_before: Dictionary = page.selected_skill
-	var l0: bool = page.left_open
-	page._toggle_drawer(true)
-	_check(page.left_open != l0 and page.right_open == true, "the left drawer toggles on its own")
-	page._toggle_drawer(false)
-	_check(page.right_open == false, "the right drawer toggles on its own")
-	_check(page.selected_skill == sel_before and page.actor_id == "liuyu", "toggling a drawer keeps the selection and the actor")
-	page.left_open = true
-	page.right_open = true
 
 	print("PASS test_martial_page" if _failures == 0 else "FAILED test_martial_page: %d" % _failures)
 	quit(1 if _failures > 0 else 0)

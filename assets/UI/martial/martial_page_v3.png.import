@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ddxhou8fissvo"
-path="res://.godot/imported/header_inner_named_no_arrow.png-921fc251ff1cb1ba53643e6c6a07bfa6.ctex"
+uid="uid://dxpsrwtmem4mo"
+path="res://.godot/imported/martial_page_v3.png-7237ea1efe86b9e9cffe8d50cf22f71c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/header_inner_named_no_arrow.png"
-dest_files=["res://.godot/imported/header_inner_named_no_arrow.png-921fc251ff1cb1ba53643e6c6a07bfa6.ctex"]
+source_file="res://assets/UI/martial/martial_page_v3.png"
+dest_files=["res://.godot/imported/martial_page_v3.png-7237ea1efe86b9e9cffe8d50cf22f71c.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bg7omoqwtxhb2"
-path="res://.godot/imported/combination_panel.png-855a820f01c6a7fa82152b1867280527.ctex"
+uid="uid://ca08w8hkms5a7"
+path="res://.godot/imported/change_inner_disabled.png-7d6f0c4ab8105a0ba433998395e5a5e7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/combination_panel.png"
-dest_files=["res://.godot/imported/combination_panel.png-855a820f01c6a7fa82152b1867280527.ctex"]
+source_file="res://assets/UI/martial/change_inner_disabled.png"
+dest_files=["res://.godot/imported/change_inner_disabled.png-7d6f0c4ab8105a0ba433998395e5a5e7.ctex"]
 
 [params]
 

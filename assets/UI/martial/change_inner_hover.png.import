@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://beldyg6acacd1"
-path="res://.godot/imported/handle_right_closed.png-b4053ed7fe05f5e1cc7d8a9fdee0813a.ctex"
+uid="uid://ddh6kwpgpy6f2"
+path="res://.godot/imported/change_inner_hover.png-824801c7fb3bd40432dfead6cf18b8d1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/handle_right_closed.png"
-dest_files=["res://.godot/imported/handle_right_closed.png-b4053ed7fe05f5e1cc7d8a9fdee0813a.ctex"]
+source_file="res://assets/UI/martial/change_inner_hover.png"
+dest_files=["res://.godot/imported/change_inner_hover.png-824801c7fb3bd40432dfead6cf18b8d1.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgpftvi04uqr5"
-path="res://.godot/imported/handle_left_closed.png-d6fe7d5f08440389b3a0f4d97fb9f3c5.ctex"
+uid="uid://isvhmhkd4ofq"
+path="res://.godot/imported/detail_tag_blank.png-ddcffbe73e83337f85912f04ea91a41f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/martial/handle_left_closed.png"
-dest_files=["res://.godot/imported/handle_left_closed.png-d6fe7d5f08440389b3a0f4d97fb9f3c5.ctex"]
+source_file="res://assets/UI/martial/detail_tag_blank.png"
+dest_files=["res://.godot/imported/detail_tag_blank.png-ddcffbe73e83337f85912f04ea91a41f.ctex"]
 
 [params]
 

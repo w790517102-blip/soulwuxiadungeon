@@ -1,0 +1,257 @@
+{
+  "version": 3,
+  "canvas": [
+    2304,
+    1296
+  ],
+  "logical_canvas": [
+    1152,
+    648
+  ],
+  "scale": 2,
+  "assets": [
+    {
+      "file": "martial_page_v3.png",
+      "size_px": [
+        2304,
+        1296
+      ],
+      "logical_xy": [
+        0,
+        0
+      ],
+      "logical_size": [
+        1152,
+        648
+      ],
+      "kind": "single_static_page",
+      "source_polygon": [
+        [
+          5,
+          91
+        ],
+        [
+          43,
+          94
+        ],
+        [
+          43,
+          103
+        ],
+        [
+          1502,
+          107
+        ],
+        [
+          1503,
+          141
+        ],
+        [
+          1619,
+          135
+        ],
+        [
+          1625,
+          895
+        ],
+        [
+          3,
+          895
+        ]
+      ]
+    },
+    {
+      "file": "companion_normal.png",
+      "size_px": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "kind": "companion_state"
+    },
+    {
+      "file": "companion_hover.png",
+      "size_px": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "kind": "companion_state"
+    },
+    {
+      "file": "companion_selected.png",
+      "size_px": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "kind": "companion_state"
+    },
+    {
+      "file": "companion_empty.png",
+      "size_px": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "kind": "companion_state"
+    },
+    {
+      "file": "category_tab_normal.png",
+      "size_px": [
+        104,
+        52
+      ],
+      "logical_size": [
+        52.0,
+        26.0
+      ],
+      "kind": "category_tab"
+    },
+    {
+      "file": "category_tab_selected.png",
+      "size_px": [
+        104,
+        52
+      ],
+      "logical_size": [
+        52.0,
+        26.0
+      ],
+      "kind": "category_tab"
+    },
+    {
+      "file": "technique_row_normal.png",
+      "size_px": [
+        436,
+        96
+      ],
+      "logical_size": [
+        218.0,
+        48.0
+      ],
+      "kind": "technique_row",
+      "icon_center_px": [
+        63,
+        48
+      ]
+    },
+    {
+      "file": "technique_row_hover.png",
+      "size_px": [
+        436,
+        96
+      ],
+      "logical_size": [
+        218.0,
+        48.0
+      ],
+      "kind": "technique_row",
+      "icon_center_px": [
+        63,
+        48
+      ]
+    },
+    {
+      "file": "technique_row_selected.png",
+      "size_px": [
+        436,
+        96
+      ],
+      "logical_size": [
+        218.0,
+        48.0
+      ],
+      "kind": "technique_row",
+      "icon_center_px": [
+        63,
+        48
+      ]
+    },
+    {
+      "file": "detail_tag_blank.png",
+      "size_px": [
+        88,
+        36
+      ],
+      "logical_size": [
+        44.0,
+        18.0
+      ],
+      "kind": "detail_tag"
+    },
+    {
+      "file": "change_inner_normal.png",
+      "size_px": [
+        294,
+        76
+      ],
+      "logical_size": [
+        147.0,
+        38.0
+      ],
+      "kind": "change_inner_button"
+    },
+    {
+      "file": "change_inner_hover.png",
+      "size_px": [
+        294,
+        76
+      ],
+      "logical_size": [
+        147.0,
+        38.0
+      ],
+      "kind": "change_inner_button"
+    },
+    {
+      "file": "change_inner_pressed.png",
+      "size_px": [
+        294,
+        76
+      ],
+      "logical_size": [
+        147.0,
+        38.0
+      ],
+      "kind": "change_inner_button"
+    },
+    {
+      "file": "change_inner_disabled.png",
+      "size_px": [
+        294,
+        76
+      ],
+      "logical_size": [
+        147.0,
+        38.0
+      ],
+      "kind": "change_inner_button"
+    }
+  ],
+  "source": "水墨武俠武術介面.png",
+  "fixed_titles": [
+    "同行俠客",
+    "內功心法",
+    "外功武術",
+    "內外功搭配",
+    "內功屬性傾向",
+    "當前效果",
+    "招式詳情"
+  ],
+  "drawers": false,
+  "handles": false,
+  "engine_tested": false
+}
