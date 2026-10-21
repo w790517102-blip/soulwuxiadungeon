@@ -518,7 +518,7 @@ func actor_display_name(actor_id: String) -> String:
 			var n := String(_as_dict((chars as Dictionary)[actor_id]).get("name", ""))
 			if n != "":
 				return n
-	return {"liuyu": "劉語塵", "shumian": "書眠", "lieshao": "列霄"}.get(actor_id, actor_id)
+	return {"liuyu": "劉語塵", "shumian": "白書眠", "lieshao": "列霄"}.get(actor_id, actor_id)
 
 ## 縮圖檔路徑（給 UI 用；跟隨 save_folder，不再使用存檔裡記的字串路徑）
 func thumb_path_for_slot(slot_index: int) -> String:

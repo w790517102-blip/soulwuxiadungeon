@@ -92,7 +92,7 @@ var all_characters: Dictionary = {
 	},
 	"shumian": {
 		"id": "shumian",
-		"name": "書眠",
+		"name": "白書眠",
 		"hp": 120,
 		"max_hp": 120,
 		"mp": 100,

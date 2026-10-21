@@ -10,7 +10,7 @@ const DB := {
 		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
 	},
 	"shumian": {
-		"display_name": "書眠",
+		"display_name": "白書眠",
 		"portrait_path": "res://assets/sprites/NPC/Yuheng/Su_Mien_battle.png",
 		"job": "詩人",
 		"subclass": "符咒師",
