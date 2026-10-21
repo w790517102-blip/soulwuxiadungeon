@@ -27,9 +27,6 @@ const OUTER_X := 842.0
 const CAT_W := 234.0
 const ROW_SIZE := Vector2(232, 46)
 ## 搭配區（紙面 x438–780、y423–599）
-const EQUIP_ORDER := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "mechanism"]
-const EQUIP_TILE := Vector2(34, 33)
-const EQUIP_X0 := 30.0
 const SYN_RECT := Rect2(438, 410, 342, 180)
 const GOLD_EDGE := Color("#8A6A2E")
 const PAPER_ACCENT := Color("#5A3208")         # 宣紙視窗上的小標題色（深棕）
@@ -59,7 +56,6 @@ var _btn_detail: Button
 var _syn_left: Control
 var _syn_right: Control
 var _syn_text: RichTextLabel
-var _equip_tiles: Dictionary = {}
 var _pick_element := "全部"
 var _pick_force_id := ""
 
@@ -309,6 +305,9 @@ func _build_synergy() -> void:
 	add_child(box)
 	_m_image("combination_frame", SYN_FRAME.position, SYN_FRAME.size, self).z_index = 2      # 疊在人物前面
 	# 底圖已含框、標題「內外功搭配」與紙面；這裡只放兩側圖示、名稱、× 與說明
+	# 兩個圖示底下各墊一個裝備格框（與裝備頁同一套格框素材）
+	for fx in [70.0, 222.0]:
+		_image(E + "slots/slot_frame_candidate", Vector2(fx, 33), Vector2(50, 46), box)
 	_syn_left = Control.new()
 	_syn_left.position = Vector2(30, 36)
 	_syn_left.size = Vector2(130, 70)
@@ -318,13 +317,7 @@ func _build_synergy() -> void:
 	_syn_right.size = Vector2(130, 70)
 	box.add_child(_syn_right)
 	_label("×", Vector2(138, 40), Vector2(66, 40), 28, INK, HORIZONTAL_ALIGNMENT_CENTER, box)
-	# 八格裝備框（與狀態頁的裝備摘要同一套格子，只顯示目前角色穿的東西）
-	for i in EQUIP_ORDER.size():
-		var tile := make_slot_tile(EQUIP_ORDER[i], EQUIP_TILE, box)
-		tile.position = Vector2(EQUIP_X0 + i * (EQUIP_TILE.x + 3.0), 100)
-		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_equip_tiles[EQUIP_ORDER[i]] = tile
-	_syn_text = _rich(Rect2(16, 140, 310, 36), box, 11)
+	_syn_text = _rich(Rect2(16, 106, 310, 58), box, 12)
 
 ## 讀進素材的按鈕（四態）：一般／移入／按下／停用，字由程式放
 func _art_button(rect: Rect2, normal: String, hover: String, pressed: String, disabled: String, label := "更換內功") -> Button:
@@ -633,7 +626,6 @@ func _open_skill_detail() -> void:
 	close.pressed.connect(_close_overlay)
 
 func _refresh_synergy() -> void:
-	_refresh_equip_tiles()
 	_stop_syn_fx()
 	var tier := 0
 	_clear(_syn_left)
@@ -1073,7 +1065,7 @@ func _stamp(text: String, rect: Rect2, parent: Node, font_size: int) -> TextureR
 # 閃卡是斜向的反光波，慢慢由左往右掃：先掃過內功圖示，接著（想像光在移動）再從外功圖示左邊接上、掃到右邊，停一下後重來
 # ------------------------------------------------------------------
 const SYN_SHINE_COLORS := {2: Color(1.0, 0.62, 0.18), 3: Color(0.72, 0.38, 1.0), 4: Color(1.0, 0.22, 0.22)}
-const SYN_ICON_BOX := [Rect2(93, 38, 40, 40), Rect2(253, 38, 40, 40)]      # 兩個圖示在搭配框內的範圍（掃光的裁切框）
+const SYN_ICON_BOX := [Rect2(75, 36, 40, 40), Rect2(227, 36, 40, 40)]      # 兩個圖示在搭配框內的範圍（掃光的裁切框）
 var _syn_fx_tween: Tween
 var _syn_fx_nodes: Array = []
 
@@ -1155,11 +1147,3 @@ func _shine_texture() -> Texture2D:
 	t.height = 8
 	_fx_tex_cache["shine"] = t
 	return t
-
-func _refresh_equip_tiles() -> void:
-	if _equip_tiles.is_empty() or not InventorySync:
-		return
-	var equipped: Dictionary = InventorySync.get_equipped(actor_id)
-	for slot_id in EQUIP_ORDER:
-		var locked: bool = menu != null and menu.is_slot_locked_for(actor_id, slot_id)
-		fill_slot_tile(_equip_tiles[slot_id], String(equipped.get(slot_id, "")), locked, false)
