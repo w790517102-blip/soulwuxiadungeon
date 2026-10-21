@@ -568,7 +568,7 @@ func _rebuild_skill_rows() -> void:
 			row.mouse_entered.connect(func(): base.texture = mart("technique_row_hover"))
 			row.mouse_exited.connect(func(): base.texture = mart("technique_row_normal"))
 		var wt := String(s.get("weapon_type", "")).strip_edges()
-		_skill_icon(s, 40, row, Vector2(14, 3))
+		_skill_icon(s, 46, row, Vector2(10, 0))
 		_label(String(s.get("name", "???")), Vector2(62, 4), Vector2(106, 20), 14, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
 		_label(wt, Vector2(62, 25), Vector2(90, 14), 10, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, row)
 		var usable: bool = menu._can_use_skill_now(s, actor_id) if menu != null else true
