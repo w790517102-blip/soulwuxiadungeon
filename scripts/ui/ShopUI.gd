@@ -2,7 +2,7 @@ extends CanvasLayer
 class_name ShopUI
 
 const ShopDatabaseScript = preload("res://scripts/db/ShopDatabase.gd")
-const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const MenuUIFont = preload("res://assets/fonts/UIFontKaiti.tres")
 
 var _shop_db: Node = ShopDatabaseScript.new()
 var _shop_id := ""
