@@ -11,8 +11,8 @@ const BUTTON_Y := 586
 const FIGURE_POS := Vector2(486, 70)
 const FIGURE_SIZE := Vector2(254, 486)
 const SYN_FRAME := Rect2(413, 392, 392, 224)      # 搭配框獨立圖（共邊國單獨摳出）的位置與大小
-const NAME_POS := Vector2(752, 100)
-const NAME_BOX := Vector2(50, 300)
+const NAME_POS := Vector2(722, 120)
+const NAME_BOX := Vector2(76, 197)      # 書法名字（含紅印）的框，依概念圖紅框
 const ROSTER_POS := Vector2(28, 140)
 const CARD_SIZE := Vector2(138, 96)
 const MD := "res://assets/UI/martial/"       # 共邊國武術頁素材（2 倍圖；說明見 docs/system_menu/martial_originals/）
@@ -74,6 +74,7 @@ func _ready() -> void:
 	_build_outer_panel()
 	_build_synergy()
 	_build_roster()
+	_build_foreground_overlays()
 	var back := _tex_button(Vector2(165, 38), Vector2(494, BUTTON_Y), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16)
 	back.text = "返回"
 	back.pressed.connect(func(): close_requested.emit())
@@ -83,9 +84,9 @@ func _ready() -> void:
 		InventorySync.equipment_changed.connect(_refresh)
 	_refresh()
 
-## 武術頁沿用裝備頁的前景方案（備案 2）
+## 武術頁用自己的前景（左下、右下、右緣，見 _build_foreground_overlays），不用共用前景
 func _foreground_preset() -> String:
-	return "cloth_big"
+	return "none"
 
 # ------------------------------------------------------------------
 # 小元件
@@ -709,3 +710,24 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_overlay()
 		else:
 			close_requested.emit()
+
+## 武術頁專用前景（共邊國 martial_final_overlays）：左下、右下、右緣。圖已裁到內容邊界，依概念圖位置貼邊；全部不吃滑鼠
+func _build_foreground_overlays() -> void:
+	var defs := [
+		["foreground_left", Vector2(0, 648), Vector2(365, 0), Vector2(0, 1)],        # 左下：寬 365，底貼畫布底、左貼畫布左
+		["foreground_right", Vector2(1152, 648), Vector2(332, 0), Vector2(1, 1)],    # 右下：寬 332，右下角貼齊
+		["foreground_edge_right", Vector2(1152, 0), Vector2(0, 561), Vector2(1, 0)], # 右緣：高 561，右上角貼齊
+	]
+	for d in defs:
+		var tex := mart(String(d[0]))
+		if tex == null:
+			continue
+		var tsize := tex.get_size()
+		var size_: Vector2 = d[2]
+		if size_.x == 0.0:
+			size_.x = size_.y * tsize.x / tsize.y
+		elif size_.y == 0.0:
+			size_.y = size_.x * tsize.y / tsize.x
+		var anchor: Vector2 = d[3]
+		var r := _m_image(String(d[0]), Vector2(d[1]) - size_ * anchor, size_, self)
+		r.z_index = 5

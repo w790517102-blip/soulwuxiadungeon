@@ -1,0 +1,91 @@
+{
+  "assets": [
+    {
+      "file": "name_liu_yuchen.png",
+      "size_px": [
+        1024,
+        1536
+      ],
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "content_bbox_alpha_16": [
+        326,
+        115,
+        712,
+        1462
+      ]
+    },
+    {
+      "file": "name_bai_shumian.png",
+      "size_px": [
+        1024,
+        1536
+      ],
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "content_bbox_alpha_16": [
+        363,
+        162,
+        701,
+        1425
+      ]
+    },
+    {
+      "file": "foreground_left.png",
+      "size_px": [
+        1862,
+        845
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "content_bbox_alpha_16": [
+        14,
+        57,
+        1846,
+        823
+      ]
+    },
+    {
+      "file": "foreground_right.png",
+      "size_px": [
+        1804,
+        872
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "content_bbox_alpha_16": [
+        15,
+        12,
+        1799,
+        866
+      ]
+    },
+    {
+      "file": "foreground_edge_right.png",
+      "size_px": [
+        1024,
+        1536
+      ],
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "content_bbox_alpha_16": [
+        839,
+        0,
+        1002,
+        1484
+      ]
+    }
+  ],
+  "method": "built-in image edit with faithful reference restoration",
+  "godot_tested": false
+}

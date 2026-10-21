@@ -44,22 +44,14 @@ func _run() -> void:
 	_check(page._tiles["weapon_1"].get_node("Icon").texture != null and not page._tiles["weapon_1"].get_node("EmptyIcon").visible, "the worn sword fills the main weapon tile")
 	_check(page._tiles["armor_feet"].get_node("EmptyIcon").visible, "an empty slot shows the ghost icon")
 	_check(page._tiles["weapon_1"].mouse_filter == Control.MOUSE_FILTER_IGNORE, "the summary tiles are display only")
-	# 直排姓名：一個字一個 Label
-	var chars := []
-	for c in page._name_box.get_children():
-		if (c as Label).text.length() == 1:
-			chars.append((c as Label).text)
-	_check("".join(chars).begins_with("劉語塵"), "the name is written vertically, one character per line")
+	# 直排姓名：有書法圖就用圖（name_<id>.png），沒有才一個字一個 Label
+	_check(_vertical_name(page) == "art:liuyu" or _vertical_name(page).begins_with("劉語塵"), "the name is shown vertically (calligraphy art or one character per line)")
 	# 切換角色（書眠有立繪）
 	team.unlock_roster("shumian")
 	page._refresh()
 	page._on_actor_pressed("shumian")
 	_check(page.actor_id == "shumian" and page._stat_labels["atk"].text != "", "switching to 書眠 refreshes the page")
-	var names := []
-	for c in page._name_box.get_children():
-		if (c as Label).text.length() == 1:
-			names.append((c as Label).text)
-	_check("".join(names).begins_with("書眠"), "書眠's name is shown vertically")
+	_check(_vertical_name(page) == "art:shumian" or _vertical_name(page).begins_with("書眠") or _vertical_name(page).begins_with("白書眠"), "the second companion's name is shown vertically")
 	# 穿上東西，摘要跟著變
 	page._on_actor_pressed("liuyu")
 	inv.equip_item_to_slot("arm_cloth_cap", "armor_head", "liuyu") if inv.has_item("arm_cloth_cap") else null
@@ -67,3 +59,13 @@ func _run() -> void:
 	_check(page._tiles["armor_head"].get_node("Icon").texture != null, "the summary follows equipment changes")
 	print("PASS test_status_page" if _failures == 0 else "FAILED test_status_page: %d" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+## 直排姓名目前的呈現：有書法圖回傳 "art:<id>"，否則回傳逐字 Label 串起來的字
+func _vertical_name(page) -> String:
+	var chars := ""
+	for c in page._name_box.get_children():
+		if c is TextureRect and (c as TextureRect).texture != null:
+			return "art:" + page.actor_id
+		if c is Label and (c as Label).text.length() == 1:
+			chars += (c as Label).text
+	return chars
