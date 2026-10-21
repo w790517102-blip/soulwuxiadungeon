@@ -219,25 +219,64 @@ func _build_figure() -> void:
 	add_child(_name_box)
 
 
-## 內功面板：標題「內功心法」與各小標題都烤在底圖上，這裡只放動態內容
+## 內功面板：標題「內功心法」烤在底圖上。順序（上到下）：大圖示、名稱＋描述、當前效果、更換內功鈕、內功屬性。
+## 底圖上原本固定的兩條小標題（內功屬性傾向、當前效果）位置不對，這裡先用同區的空白紙面蓋掉、再把原標題圖剪下來貼到新位置。
 func _build_force_panel() -> void:
+	_cover_baked(Rect2(232, 363, 150, 26), Rect2(232, 325, 150, 26))                     # 蓋掉舊的「內功屬性傾向」
+	_cover_baked(Rect2(220, 495, 170, 30), Rect2(220, 545, 170, 30))                     # 蓋掉舊的「當前效果」及其右側細線
+	_baked_piece(Rect2(464, 726, 300, 52), Vector2(232, 503), Vector2(150, 26))           # 「內功屬性傾向」貼到最下面
+	_baked_piece(Rect2(444, 993, 222, 52), Vector2(222, 364), Vector2(111, 26))           # 「當前效果」貼到名稱描述之後
 	_force_icon_holder = Control.new()
-	_force_icon_holder.position = Vector2(251, 146)
-	_force_icon_holder.size = Vector2(108, 108)
+	_force_icon_holder.position = Vector2(237, 146)
+	_force_icon_holder.size = Vector2(136, 136)
 	_force_icon_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_force_icon_holder)
-	_force_name = _label("", Vector2(FORCE_X, 262), Vector2(112, 26), 18, INK, HORIZONTAL_ALIGNMENT_LEFT)
-	_force_tag = _chip("運行中", Rect2(FORCE_X + FORCE_W - 48, 266, 48, 19), self, Color("#9A2A2A"), Color.WHITE, 11)
-	_force_desc = _rich(Rect2(FORCE_X, 290, FORCE_W, 70), self, 12)
+	_force_name = _label("", Vector2(FORCE_X, 281), Vector2(112, 26), 18, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	_force_tag = _chip("運行中", Rect2(FORCE_X + FORCE_W - 48, 285, 48, 19), self, Color("#9A2A2A"), Color.WHITE, 11)
+	_force_desc = _rich(Rect2(FORCE_X, 307, FORCE_W, 56), self, 11)
+	_force_effects = _rich(Rect2(FORCE_X, 394, FORCE_W, 62), self, 12)
+	_btn_switch_force = _art_button(Rect2(231, 459, 147, 38), "change_inner_normal", "change_inner_hover", "change_inner_pressed", "change_inner_disabled")
+	_btn_switch_force.pressed.connect(_open_force_picker)
 	# 內功屬性只顯示目前這門的那一個圖章（快／遲／柔／剛），不一次排四個
 	_force_element_holder = Control.new()
-	_force_element_holder.position = Vector2(281, 391)
+	_force_element_holder.position = Vector2(281, 533)
 	_force_element_holder.size = Vector2(48, 48)
 	_force_element_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_force_element_holder)
-	_btn_switch_force = _art_button(Rect2(231, 446, 147, 38), "change_inner_normal", "change_inner_hover", "change_inner_pressed", "change_inner_disabled")
-	_btn_switch_force.pressed.connect(_open_force_picker)
-	_force_effects = _rich(Rect2(FORCE_X, 524, FORCE_W, 72), self, 12)
+
+## 用底圖（整頁圖）上的一塊貼圖：src 是底圖的邏輯座標矩形（會換算成 2 倍像素）
+func _baked_region(src: Rect2) -> AtlasTexture:
+	var base := mart("martial_page_v3")
+	var at := AtlasTexture.new()
+	at.atlas = base
+	at.region = Rect2(src.position * 2.0, src.size * 2.0)
+	return at
+
+## 蓋掉底圖上的一塊：用同一面板內的空白紙面（src）貼在 dest 上
+func _cover_baked(dest: Rect2, src: Rect2) -> void:
+	var r := TextureRect.new()
+	r.texture = _baked_region(src)
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_SCALE
+	r.position = dest.position
+	r.size = dest.size
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(r)
+
+## 把底圖上的一塊（原像素矩形，2 倍像素）剪下來貼到新位置
+func _baked_piece(src_px: Rect2, pos: Vector2, size_: Vector2) -> void:
+	var at := AtlasTexture.new()
+	at.atlas = mart("martial_page_v3")
+	at.region = src_px
+	var r := TextureRect.new()
+	r.texture = at
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_SCALE
+	r.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	r.position = pos
+	r.size = size_
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(r)
 
 ## 外功面板：標題「外功武術」「招式詳情」烤在底圖上
 func _build_outer_panel() -> void:
@@ -441,7 +480,7 @@ func _refresh_left() -> void:
 		_force_effects.text = ""
 		_btn_switch_force.disabled = _forces().is_empty()
 	else:
-		_m_image("inner_liuchen_icon_large", Vector2.ZERO, Vector2(108, 108), _force_icon_holder)      # 內功心法的象徵圖（打坐人像），不是屬性
+		_force_icon(force, Vector2.ZERO, 136, true, _force_icon_holder)      # 內功心法象徵圖：有 force_<id>.png 就用，沒有用打坐人像（不是屬性）
 		_force_name.text = MartialInfoScript.force_name(force)
 		_force_tag.visible = true
 		var desc := String(force.get("description", ""))
@@ -530,7 +569,7 @@ func _rebuild_skill_rows() -> void:
 			row.mouse_entered.connect(func(): base.texture = mart("technique_row_hover"))
 			row.mouse_exited.connect(func(): base.texture = mart("technique_row_normal"))
 		var wt := String(s.get("weapon_type", "")).strip_edges()
-		_icon("weapon", wt, 28, row, Vector2(19, 9))
+		_skill_icon(s, 28, row, Vector2(19, 9))
 		_label(String(s.get("name", "???")), Vector2(58, 4), Vector2(110, 20), 14, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
 		_label(wt, Vector2(58, 25), Vector2(90, 14), 10, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, row)
 		var usable: bool = menu._can_use_skill_now(s, actor_id) if menu != null else true
@@ -565,7 +604,7 @@ func _refresh_synergy() -> void:
 		_glyph_icon("—", 36, _syn_left, Vector2(47, 2))
 		_label("尚未修習", Vector2(0, 44), Vector2(130, 18), 13, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
 	else:
-		_m_image("inner_liuchen_icon", Vector2(45, 0), Vector2(40, 40), _syn_left)      # 內功一律用心法象徵圖
+		_force_icon(force, Vector2(45, 0), 40, false, _syn_left)
 		_label("%s（%s）" % [MartialInfoScript.force_name(force), String(force.get("element", ""))], Vector2(0, 44), Vector2(130, 18), 13, INK, HORIZONTAL_ALIGNMENT_CENTER, _syn_left)
 	if selected_skill.is_empty():
 		_glyph_icon("？", 36, _syn_right, Vector2(47, 2))
@@ -573,7 +612,7 @@ func _refresh_synergy() -> void:
 		_syn_text.text = "在右邊的外功清單選一招，這裡會顯示目前的內功對它的影響。"
 		return
 	var wt := String(selected_skill.get("weapon_type", "")).strip_edges()
-	_icon("weapon", wt, 40, _syn_right, Vector2(45, 0))
+	_skill_icon(selected_skill, 40, _syn_right, Vector2(45, 0))
 	_label("%s（%s）" % [String(selected_skill.get("name", "???")), wt], Vector2(0, 44), Vector2(130, 18), 13, INK, HORIZONTAL_ALIGNMENT_CENTER, _syn_right)
 	var lines: Array = []
 	if menu != null and menu._skill_data_db != null and menu._skill_data_db.has_method("get_inner_force_linkage_entries"):
@@ -654,7 +693,7 @@ func _show_force_picker() -> void:
 		rows.add_child(row)
 		if fid == _pick_force_id:
 			_image("row_selected", Vector2.ZERO, Vector2(290, 48), row)
-		_m_image("inner_liuchen_icon", Vector2(6, 6), Vector2(36, 36), row)
+		_force_icon(f, Vector2(6, 6), 36, false, row)
 		_label(MartialInfoScript.force_name(f), Vector2(52, 0), Vector2(150, 48), 17, INK, HORIZONTAL_ALIGNMENT_LEFT, row)
 		if fid == cur_id:
 			_chip("運行中", Rect2(218, 14, 54, 20), row, Color("#9A2A2A"), Color.WHITE)
@@ -731,3 +770,16 @@ func _build_foreground_overlays() -> void:
 		var anchor: Vector2 = d[3]
 		var r := _m_image(String(d[0]), Vector2(d[1]) - size_ * anchor, size_, self)
 		r.z_index = 5
+
+## 內功心法象徵圖：assets/UI/martial/force_<id>.png（共邊國之後逐門補），沒有就用共通的打坐人像
+func _force_icon(force: Dictionary, pos: Vector2, size_: float, large: bool, parent: Node) -> TextureRect:
+	var specific := "force_%s" % String(force.get("id", ""))
+	var art := specific if mart(specific) != null else ("inner_liuchen_icon_large" if large else "inner_liuchen_icon")
+	return _m_image(art, pos, Vector2(size_, size_), parent)
+
+## 武術圖示：assets/UI/martial/skill_<id 去掉 skill_>.png（共邊國分批補），沒有就退回武器類別圖示
+func _skill_icon(skill: Dictionary, size_: float, parent: Node, pos: Vector2) -> Control:
+	var specific := "skill_%s" % String(skill.get("id", "")).trim_prefix("skill_")
+	if mart(specific) != null:
+		return _m_image(specific, pos, Vector2(size_, size_), parent)
+	return _icon("weapon", String(skill.get("weapon_type", "")).strip_edges(), size_, parent, pos)
