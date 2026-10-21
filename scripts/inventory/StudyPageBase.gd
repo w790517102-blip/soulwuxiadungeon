@@ -462,14 +462,13 @@ func _outlined(l: Label) -> Label:
 	l.add_theme_constant_override("outline_size", 4)
 	return l
 
-## 左側面板：標題牌（老闆截的「同行俠客」）＋放角色卡的容器；with_quote＝底部引言框（裝備頁有，狀態頁沒有）
+## 左側面板：標題牌（老闆截的「同行俠客」）＋放角色卡的容器；with_quote＝底部那塊框底（裝備頁有，狀態頁沒有；框裡沒有字也沒有印章）
 func build_roster_panel(with_quote: bool) -> void:
 	_image(E + "equip_roster_title", Vector2(55, 96), Vector2(246.5, 37))
 	_image(E + "equip_roster_title_cut", Vector2(55, 93), Vector2(246.5, 43.2))
+	# 底部的框只當 FRAME 的底（老闆定案：不放引言文字，也不放紅色印章）
 	if with_quote:
 		_panel(E + "equip_roster_quote", 22, 22, Vector2(62, 530), Vector2(233, 38))
-		_outlined(_label("江湖如逆旅，幸有同路人。", Vector2(70, 530), Vector2(190, 38), 13, CREAM, HORIZONTAL_ALIGNMENT_LEFT))
-		_image(E + "equip_quote_seal", Vector2(261, 535), Vector2(28, 28))
 	_roster_box = Control.new()
 	_roster_box.position = Vector2.ZERO
 	_roster_box.size = Vector2(1152, 648)
