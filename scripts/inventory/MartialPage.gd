@@ -18,7 +18,7 @@ const CARD_SIZE := Vector2(138, 96)
 const MD := "res://assets/UI/martial/"       # 共邊國武術頁素材（2 倍圖；說明見 docs/system_menu/martial_originals/）
 const WEAPON_ICONS := {"刀": "dao", "劍": "jian", "琴": "qin", "筆": "brush", "棍": "staff", "槍": "spear", "拳": "fist", "掌": "palm", "通用": "universal"}
 const ELEMENT_ICONS := {"快": "fast", "遲": "slow", "柔": "soft", "剛": "hard"}
-const COMPANION_SLOTS := 4                    # 左邊名帖列至少排這麼多格，不足的用空位補滿
+const COMPANION_SLOTS := 3                    # 左邊名帖列至少排這麼多格，不足的用空位補滿
 ## 內功面板（紙面 x214–397、y144–599）
 const FORCE_X := 222.0
 const FORCE_W := 168.0
