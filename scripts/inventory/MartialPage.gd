@@ -29,7 +29,7 @@ const ROW_SIZE := Vector2(232, 46)
 ## 搭配區（紙面 x438–780、y423–599）
 const SYN_RECT := Rect2(438, 410, 342, 180)
 const GOLD_EDGE := Color("#8A6A2E")
-const PAPER_ACCENT := Color("#7A4A12")         # 宣紙視窗上的小標題色（深棕）
+const PAPER_ACCENT := Color("#F0C850")         # 宣紙視窗上的小標題色（深棕）
 const DARK := Color(0.10, 0.08, 0.06, 0.96)
 const NAME_INK := Color("#2A1D12")
 const MUTED := Color("#8A7F6A")
@@ -129,7 +129,7 @@ func _rich(rect: Rect2, parent: Node, font_size := 13) -> RichTextLabel:
 	t.mouse_filter = Control.MOUSE_FILTER_PASS
 	t.add_theme_font_override("normal_font", FONT)
 	t.add_theme_font_size_override("normal_font_size", font_size)
-	t.add_theme_color_override("default_color", INK)
+	_outline_rich(t)
 	var bar := t.get_v_scroll_bar()
 	bar.custom_minimum_size.x = 6
 	parent.add_child(t)
@@ -334,6 +334,8 @@ func _art_button(rect: Rect2, normal: String, hover: String, pressed: String, di
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	b.add_theme_font_override("font", FONT)
 	b.add_theme_font_size_override("font_size", 16)
+	b.add_theme_color_override("font_outline_color", Color.BLACK)
+	b.add_theme_constant_override("outline_size", 4)
 	b.add_theme_color_override("font_color", GOLD)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
 	b.add_theme_color_override("font_disabled_color", Color(0.55, 0.5, 0.42))
@@ -530,6 +532,8 @@ func _rebuild_categories() -> void:
 		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		b.add_theme_font_override("font", FONT)
 		b.add_theme_font_size_override("font_size", 15)
+		b.add_theme_color_override("font_outline_color", Color.BLACK)
+		b.add_theme_constant_override("outline_size", 4)
 		b.add_theme_color_override("font_color", CREAM if on else GOLD)
 		b.add_theme_color_override("font_hover_color", Color.WHITE)
 		b.pressed.connect(func(): _select_category(name_))
@@ -610,10 +614,10 @@ func _open_skill_detail() -> void:
 	body.bbcode_enabled = true
 	body.add_theme_font_override("normal_font", FONT)
 	body.add_theme_font_size_override("normal_font_size", 14)
-	body.add_theme_color_override("default_color", INK)
+	_outline_rich(body)
 	var effects: Array = MartialInfoScript.effect_lines(selected_skill)
 	var desc := String(selected_skill.get("description", selected_skill.get("desc", ""))).strip_edges()
-	body.text = "%s[color=#7A4A12]效果[/color]\n%s" % [(desc + "\n\n") if desc != "" else "", "\n".join(effects.map(func(l): return "• " + String(l)))]
+	body.text = "%s[color=#F0C850]效果[/color]\n%s" % [(desc + "\n\n") if desc != "" else "", "\n".join(effects.map(func(l): return "• " + String(l)))]
 	_overlay.add_child(body)
 	var close := _tex_button(Vector2(160, 40), pos + Vector2(150, size.y - 70), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16, _overlay)
 	close.text = "關閉"
@@ -649,7 +653,7 @@ func _refresh_synergy() -> void:
 				if text == "":
 					continue
 				var met := bool(row.get("met", false))
-				lines.append("[color=%s]• %s：%s[/color]" % ["#2F6B3A" if met else "#6B614D", String(row.get("kind", "聯動")), text])
+				lines.append("[color=%s]• %s：%s[/color]" % ["#9BE0A8" if met else "#D8CDB4", String(row.get("kind", "聯動")), text])
 	_syn_text.text = "\n".join(lines) if not lines.is_empty() else "目前的內功與這一招沒有特別的相合。"
 
 # ------------------------------------------------------------------
@@ -685,6 +689,8 @@ func _show_force_picker() -> void:
 		var b := _tex_button(Vector2(62, 30), pos + Vector2(140 + i * 66, 82), "btn_primary_normal" if on else "btn_normal", "btn_primary_hover" if on else "btn_hover", "btn_primary_pressed", "btn_disabled", 24, 12, _overlay)
 		b.text = t
 		b.add_theme_font_size_override("font_size", 15)
+		b.add_theme_color_override("font_outline_color", Color.BLACK)
+		b.add_theme_constant_override("outline_size", 4)
 		b.pressed.connect(func():
 			_pick_element = t
 			var list := _forces_in(t)
@@ -737,9 +743,9 @@ func _show_force_picker() -> void:
 		detail.bbcode_enabled = true
 		detail.add_theme_font_override("normal_font", FONT)
 		detail.add_theme_font_size_override("normal_font_size", 13)
-		detail.add_theme_color_override("default_color", INK)
+		_outline_rich(detail)
 		var eff: Array = MartialInfoScript.force_effect_lines(chosen, _actor_dict())
-		detail.text = "%s\n\n[color=#7A4A12]效果[/color]\n%s" % [String(chosen.get("description", "")), "\n".join(eff.map(func(l): return "• " + String(l)))]
+		detail.text = "%s\n\n[color=#F0C850]效果[/color]\n%s" % [String(chosen.get("description", "")), "\n".join(eff.map(func(l): return "• " + String(l)))]
 		_overlay.add_child(detail)
 	var ok := _tex_button(Vector2(160, 40), pos + Vector2(150, size.y - 76), "btn_primary_normal", "btn_primary_hover", "btn_primary_pressed", "btn_primary_disabled", 48, 16, _overlay)
 	ok.text = "更換"
@@ -813,3 +819,15 @@ func _paper_dialog(pos: Vector2, size_: Vector2) -> void:
 	var scroll := _image("scroll_body", pos, size_, _overlay)
 	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	scroll.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+
+## 本頁所有文字統一：白字＋黑色外框（與狀態頁、裝備頁一致），不被紙面底圖吃掉
+func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align := HORIZONTAL_ALIGNMENT_LEFT, parent: Node = self) -> Label:
+	var l := _outlined(super(text, pos, size, font_size, color, align, parent))
+	if font_size <= 16:
+		l.add_theme_constant_override("outline_size", 3)      # 小字外框細一點，免得糊成一團
+	return l
+
+func _outline_rich(t: RichTextLabel) -> void:
+	t.add_theme_color_override("default_color", Color.WHITE)
+	t.add_theme_color_override("font_outline_color", Color.BLACK)
+	t.add_theme_constant_override("outline_size", 3)
