@@ -1,0 +1,658 @@
+{
+  "version": 1,
+  "scale": 2,
+  "logical_canvas": [
+    1152,
+    648
+  ],
+  "assets": [
+    {
+      "file": "martial_panel.png",
+      "group": "panel",
+      "pixels": [
+        1848,
+        972
+      ],
+      "logical_size": [
+        924.0,
+        486.0
+      ],
+      "logical_xy": [
+        178,
+        92
+      ]
+    },
+    {
+      "file": "drawer_inner.png",
+      "group": "drawers",
+      "pixels": [
+        472,
+        972
+      ],
+      "logical_size": [
+        236.0,
+        486.0
+      ],
+      "title_rect_px": [
+        24,
+        16,
+        424,
+        40
+      ],
+      "logical_xy": [
+        178,
+        92
+      ]
+    },
+    {
+      "file": "drawer_outer.png",
+      "group": "drawers",
+      "pixels": [
+        532,
+        972
+      ],
+      "logical_size": [
+        266.0,
+        486.0
+      ],
+      "title_rect_px": [
+        24,
+        16,
+        484,
+        40
+      ],
+      "logical_xy": [
+        836,
+        92
+      ]
+    },
+    {
+      "file": "handle_left_closed.png",
+      "group": "handles",
+      "pixels": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "arrow": "right",
+      "logical_xy": [
+        412,
+        270
+      ]
+    },
+    {
+      "file": "handle_left_open.png",
+      "group": "handles",
+      "pixels": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "arrow": "left",
+      "logical_xy": [
+        412,
+        270
+      ]
+    },
+    {
+      "file": "handle_right_closed.png",
+      "group": "handles",
+      "pixels": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "arrow": "left",
+      "logical_xy": [
+        800,
+        270
+      ]
+    },
+    {
+      "file": "handle_right_open.png",
+      "group": "handles",
+      "pixels": [
+        76,
+        128
+      ],
+      "logical_size": [
+        38.0,
+        64.0
+      ],
+      "arrow": "right",
+      "logical_xy": [
+        800,
+        270
+      ]
+    },
+    {
+      "file": "companion_normal.png",
+      "group": "companion",
+      "pixels": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "portrait_transparent": true
+    },
+    {
+      "file": "companion_hover.png",
+      "group": "companion",
+      "pixels": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "portrait_transparent": true
+    },
+    {
+      "file": "companion_selected.png",
+      "group": "companion",
+      "pixels": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "portrait_transparent": true
+    },
+    {
+      "file": "companion_empty.png",
+      "group": "companion",
+      "pixels": [
+        276,
+        192
+      ],
+      "logical_size": [
+        138.0,
+        96.0
+      ],
+      "portrait_transparent": false
+    },
+    {
+      "file": "category_dao.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "刀"
+    },
+    {
+      "file": "category_jian.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "劍"
+    },
+    {
+      "file": "category_qin.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "琴"
+    },
+    {
+      "file": "category_brush.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "筆"
+    },
+    {
+      "file": "category_staff.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "棍"
+    },
+    {
+      "file": "category_spear.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "槍"
+    },
+    {
+      "file": "category_fist.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "拳"
+    },
+    {
+      "file": "category_palm.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "掌"
+    },
+    {
+      "file": "category_universal.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "通用"
+    },
+    {
+      "file": "category_fast.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "快"
+    },
+    {
+      "file": "category_slow.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "遲"
+    },
+    {
+      "file": "category_soft.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "柔"
+    },
+    {
+      "file": "category_hard.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "剛"
+    },
+    {
+      "file": "category_meditation.png",
+      "group": "categories",
+      "pixels": [
+        96,
+        96
+      ],
+      "logical_size": [
+        48.0,
+        48.0
+      ],
+      "label": "內功通用"
+    },
+    {
+      "file": "attribute_fast_normal.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "快"
+    },
+    {
+      "file": "attribute_slow_normal.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "遲"
+    },
+    {
+      "file": "attribute_soft_normal.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "柔"
+    },
+    {
+      "file": "attribute_hard_normal.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "剛"
+    },
+    {
+      "file": "attribute_fast_selected.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "快"
+    },
+    {
+      "file": "attribute_slow_selected.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "遲"
+    },
+    {
+      "file": "attribute_soft_selected.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "柔"
+    },
+    {
+      "file": "attribute_hard_selected.png",
+      "group": "attributes",
+      "pixels": [
+        88,
+        88
+      ],
+      "logical_size": [
+        44.0,
+        44.0
+      ],
+      "label": "剛"
+    },
+    {
+      "file": "switch_left_normal.png",
+      "group": "switches",
+      "pixels": [
+        52,
+        52
+      ],
+      "logical_size": [
+        26.0,
+        26.0
+      ],
+      "arrow": "left"
+    },
+    {
+      "file": "switch_right_normal.png",
+      "group": "switches",
+      "pixels": [
+        52,
+        52
+      ],
+      "logical_size": [
+        26.0,
+        26.0
+      ],
+      "arrow": "right"
+    },
+    {
+      "file": "switch_left_hover.png",
+      "group": "switches",
+      "pixels": [
+        52,
+        52
+      ],
+      "logical_size": [
+        26.0,
+        26.0
+      ],
+      "arrow": "left"
+    },
+    {
+      "file": "switch_right_hover.png",
+      "group": "switches",
+      "pixels": [
+        52,
+        52
+      ],
+      "logical_size": [
+        26.0,
+        26.0
+      ],
+      "arrow": "right"
+    },
+    {
+      "file": "switch_left_pressed.png",
+      "group": "switches",
+      "pixels": [
+        52,
+        52
+      ],
+      "logical_size": [
+        26.0,
+        26.0
+      ],
+      "arrow": "left"
+    },
+    {
+      "file": "switch_right_pressed.png",
+      "group": "switches",
+      "pixels": [
+        52,
+        52
+      ],
+      "logical_size": [
+        26.0,
+        26.0
+      ],
+      "arrow": "right"
+    },
+    {
+      "file": "technique_row_normal.png",
+      "group": "rows",
+      "pixels": [
+        488,
+        80
+      ],
+      "logical_size": [
+        244.0,
+        40.0
+      ]
+    },
+    {
+      "file": "technique_row_hover.png",
+      "group": "rows",
+      "pixels": [
+        488,
+        80
+      ],
+      "logical_size": [
+        244.0,
+        40.0
+      ]
+    },
+    {
+      "file": "technique_row_selected.png",
+      "group": "rows",
+      "pixels": [
+        488,
+        80
+      ],
+      "logical_size": [
+        244.0,
+        40.0
+      ]
+    },
+    {
+      "file": "combination_panel.png",
+      "group": "combination",
+      "pixels": [
+        772,
+        348
+      ],
+      "logical_size": [
+        386,
+        174
+      ],
+      "logical_xy": [
+        420,
+        404
+      ],
+      "socket_centers_px": [
+        [
+          140,
+          152
+        ],
+        [
+          632,
+          152
+        ]
+      ],
+      "runtime_cross_center_px": [
+        386,
+        152
+      ],
+      "description_rect_px": [
+        24,
+        236,
+        724,
+        96
+      ]
+    }
+  ],
+  "extras": [
+    {
+      "file": "combination_blank.png",
+      "pixels": [
+        772,
+        348
+      ]
+    },
+    {
+      "file": "combination_socket.png",
+      "pixels": [
+        128,
+        128
+      ]
+    }
+  ],
+  "draw_order": [
+    "existing_scroll",
+    "martial_panel",
+    "runtime_portrait",
+    "drawers",
+    "combination_panel",
+    "runtime_icons_and_text",
+    "handles",
+    "companion_frames_and_runtime_portraits"
+  ],
+  "notes": [
+    "All coordinates in assets.logical_xy use1152x648 logical canvas. PNG artwork is2x.",
+    "Central multiplication symbol is a runtime Label, not baked into paper.",
+    "Drawers have blank title bands in the first30 logical px; see title_rect_px.",
+    "No Godot project was provided or modified; this package requires in-engine integration and review."
+  ]
+}
