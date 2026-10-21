@@ -573,7 +573,7 @@ func _rebuild_skill_rows() -> void:
 		_label(wt, Vector2(62, 25), Vector2(90, 14), 10, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, row)
 		# 「可施展」只標在大地圖能用的招式（menu_usable）；其他招式只能在戰鬥中用，不標。雙擊施展
 		if _world_usable(s):
-			_chip("可施展", Rect2(ROW_SIZE.x - 58, 13, 52, 20), row, Color("#2F6B3A"), Color.WHITE, 11)
+			_stamp("可施展", Rect2(ROW_SIZE.x - 60, 12, 56, 22), row, 12)
 		row.pressed.connect(_on_skill_pressed.bind(s))
 		row.gui_input.connect(_on_row_gui_input.bind(s))
 
@@ -600,7 +600,7 @@ func _open_skill_detail() -> void:
 	_label(String(selected_skill.get("name", "???")), pos + Vector2(124, 126), Vector2(220, 34), 26, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(124, 160), Vector2(220, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	if _world_usable(selected_skill):
-		_chip("可施展（雙擊招式列）", Rect2(pos.x + 124, pos.y + 190, 150, 24), _overlay, Color("#2F6B3A"), Color.WHITE, 13)
+		_stamp("可施展（雙擊招式列）", Rect2(pos.x + 124, pos.y + 188, 150, 28), _overlay, 13)
 	var mp := int(selected_skill.get("mp_cost", 0))
 	var rows := [["消耗", ("內力 %d" % mp) if mp > 0 else "無"], ["目標", MartialInfoScript.target_text(selected_skill)]]
 	for i in rows.size():
@@ -735,7 +735,8 @@ func _show_force_picker() -> void:
 			chosen = f
 	if not chosen.is_empty():
 		_label(MartialInfoScript.force_name(chosen), pos + Vector2(515, 90), Vector2(185, 32), 24, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
-		_label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(515, 122), Vector2(185, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		var attr := _label("屬性：%s" % String(chosen.get("element", "")), pos + Vector2(515, 122), Vector2(185, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
+		attr.add_theme_color_override("font_color", PAPER_ACCENT)      # 與「效果」小標題同色
 		var detail := RichTextLabel.new()
 		detail.position = pos + Vector2(515, 148)
 		detail.size = Vector2(190, 170)
@@ -822,7 +823,7 @@ func _paper_dialog(pos: Vector2, size_: Vector2) -> void:
 ## 本頁所有文字統一：白字＋黑色外框（與狀態頁、裝備頁一致），不被紙面底圖吃掉
 func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align := HORIZONTAL_ALIGNMENT_LEFT, parent: Node = self) -> Label:
 	# 紙面上的字一律黑色、不加外框；小牌（Panel 上的字，底是深色或有色）維持原色
-	var on_chip: bool = parent is Panel
+	var on_chip: bool = parent is Panel or parent is TextureRect
 	var l := super(text, pos, size, font_size, color if on_chip else Color.BLACK, align, parent)
 	return l
 
@@ -934,7 +935,7 @@ func _do_cast(s: Dictionary, target_id: String) -> void:
 	_refresh()
 
 # ------------------------------------------------------------------
-# 恢復特效：綠色光暈＋上升亮粉＋飄落葉片。疊在該角色的名帖（和中間立繪，若就是目前這位）上
+# 恢復特效：綠色光暈＋上升亮粉（約 1 秒），不用葉片。疊在該角色的名帖（和中間立繪，若就是目前這位）上
 # ------------------------------------------------------------------
 var _fx_tex_cache: Dictionary = {}
 
@@ -982,7 +983,7 @@ func _fx_emitter(rect: Rect2, kind: String, amount: int, colors: Array, vel: Vec
 	p.texture = _fx_texture(kind)
 	p.position = rect.get_center()
 	p.amount = amount
-	p.lifetime = 1.5
+	p.lifetime = 0.9
 	p.one_shot = true
 	p.explosiveness = 0.35
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
@@ -1035,10 +1036,18 @@ func _play_heal_fx(id: String, healed: bool) -> void:
 		glow.material = mat
 		fx.add_child(glow)
 		fx.add_child(_fx_emitter(r, "spark", 34, [Color(1, 1, 0.8, 1), Color(0.5, 1.0, 0.6, 1)], Vector2(30, 80), Vector2(0.5, 1.2)))
-		fx.add_child(_fx_emitter(r, "leaf", 14, [Color(0.65, 1.0, 0.55, 1), Color(0.3, 0.8, 0.35, 1)], Vector2(20, 55), Vector2(0.7, 1.3)))
 		var tw := create_tween()
-		tw.tween_property(glow, "modulate:a", 1.0, 0.25)
-		tw.parallel().tween_property(glow, "scale", Vector2(1.15, 1.15), 0.7)
-		tw.tween_property(glow, "modulate:a", 0.0, 0.9)
-		tw.tween_interval(0.6)
+		tw.tween_property(glow, "modulate:a", 1.0, 0.15)
+		tw.parallel().tween_property(glow, "scale", Vector2(1.12, 1.12), 0.45)
+		tw.tween_property(glow, "modulate:a", 0.0, 0.4)
+		tw.tween_interval(0.1)
 		tw.tween_callback(fx.queue_free)
+
+## 毛筆痕跡的綠色圖章（道具頁用的使用類型章 status_usable），字壓在上面
+func _stamp(text: String, rect: Rect2, parent: Node, font_size: int) -> TextureRect:
+	var r := _image("status_usable", rect.position, rect.size, parent)
+	var l := _label(text, Vector2.ZERO, rect.size, font_size, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, r)
+	l.add_theme_color_override("font_color", Color.WHITE)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 2)
+	return r
