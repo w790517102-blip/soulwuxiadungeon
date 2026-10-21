@@ -1098,7 +1098,7 @@ func _is_saber_attack(skill: Dictionary) -> bool:
 ## (袈裟斬) is drawn across the target; only when the cut is done does the attacker go back.
 ## Other weapons keep the ribbon trail.
 ## Blows that a card (the scabbard, a substitute charm) takes for the target: for each one the card flies in
-## front of him as the blow arrives. The target does not sidestep for them.
+## front of him as the blow arrives. The target stays composed and does not sidestep.
 func _schedule_block_reactions(target: Dictionary, result: Dictionary) -> void:
 	var strikes: Array = result.get("strikes", [])
 	var blocked: int = 0
@@ -1113,17 +1113,117 @@ func _schedule_block_reactions(target: Dictionary, result: Dictionary) -> void:
 			elif not bool(strike.get("hit", true)):
 				missed_unblocked = true
 	var card: Node3D = card_for(target)
-	if blocked == 0 or card == null or not card.has_method("show_block"):
+	if blocked == 0 or card == null:
 		return
 	card.block_pending = false
 	card.dodge_suppressed = not missed_unblocked
-	for index: int in range(blocked):
-		get_tree().create_timer(0.5 + 0.22 * float(index)).timeout.connect(func() -> void:
-			if is_instance_valid(card):
-				card.show_block())
 	get_tree().create_timer(0.5 + 0.22 * float(blocked) + 1.0).timeout.connect(func() -> void:
 		if is_instance_valid(card):
 			card.dodge_suppressed = false)
+
+
+
+## Common presentation contract for support cards that actively cross an attack path.
+## New card types only need a style entry and matching resolution; ADB logic stays elsewhere.
+const INTERVENTION_STYLES: Dictionary = {
+	"substitute_talisman": {"resolution": "break", "impact": "paper", "motion": "sacrifice"},
+	"sheath_card": {"resolution": "return", "impact": "metal", "motion": "parry"},
+}
+const INTERVENTION_SLOWMO_SECONDS: float = 0.3
+const INTERVENTION_SLOWMO_SCALE: float = 0.22
+
+
+func _intervention_for_result(result: Dictionary) -> Dictionary:
+	var strikes: Array = result.get("strikes", [])
+	# A mixed multi-strike result still damaged the actor. Do not present the
+	# whole skill as a complete interception and conceal its landed hits.
+	if strikes.size() > 1 and bool(result.get("hit", false)):
+		return {}
+	var candidates: Array = strikes.duplicate()
+	candidates.append(result)
+	for candidate_any: Variant in candidates:
+		var candidate: Dictionary = candidate_any
+		var kind: String = String(candidate.get("blocker_type", ""))
+		var entity_id: String = String(candidate.get("blocker_entity_id", ""))
+		if INTERVENTION_STYLES.has(kind) and entity_id != "":
+			return {"type": kind, "entity_id": entity_id}
+	return {}
+
+
+## Enemy intent, support-card draw-out, collision and return/break share one route.
+## The protected actor never receives an ordinary hit, dodge or guard reaction.
+func _present_active_intervention(attacker: Dictionary, target: Dictionary, skill: Dictionary, intervention: Dictionary) -> void:
+	var source: Node3D = card_for(attacker)
+	var protected: Node3D = card_for(target)
+	var support_card: Node3D = entity_cards.get(String(intervention.get("entity_id", "")))
+	if source == null or protected == null or support_card == null:
+		return
+	var kind: String = String(intervention.get("type", ""))
+	var style: Dictionary = INTERVENTION_STYLES.get(kind, {})
+	busy = true
+	command_tray.set_enabled(false)
+	# The lunge first reveals whom the enemy intended to strike.
+	await source.lunge_to(protected.home_position, 0.35)
+	await support_card.fly_to_intercept(source.position, protected.position, String(style.get("motion", "sacrifice")))
+	var side: float = 1.0 if protected.position.x >= source.position.x else -1.0
+	var origin: Vector3 = source.position + Vector3(side * source.card_size.x * 0.42, source.card_size.y * 0.05, 0.8)
+	var impact: Vector3 = support_card.position + Vector3(0.0, support_card.card_size.y * 0.05, 0.5)
+	if _is_water_bullet(skill):
+		var water_fx := WaterBulletFX.play_between(fx_root, origin, impact, support_card.card_size, WaterBulletFX.defaults())
+		await water_fx.impact
+	elif _is_spear_attack(skill):
+		var params: Dictionary = SpearThrustFX.defaults()
+		params["penetration_extension"] = 0.0
+		params["penetration_fade_time"] = 0.0
+		var spear_fx := SpearThrustFX.play_between(fx_root, origin, impact, support_card.card_size, params)
+		await spear_fx.impact
+	else:
+		var trail: Node3D = SwordTrail.new()
+		fx_root.add_child(trail)
+		await trail.play(origin, impact, true)
+		trail.queue_free()
+	# Every weapon's attack path terminates on the support card, never on the actor behind it.
+	_hit_spark(impact, support_card.card_size.y * (0.75 if String(style.get("impact")) == "metal" else 0.55), false)
+	_intervention_warp(impact, support_card, style)
+	var collision: Tween = support_card.intercept_impact(String(style.get("motion", "sacrifice")))
+	_intervention_camera_kick()
+	await _intervention_slowmo()
+	if collision.is_running():
+		await collision.finished
+	if String(style.get("resolution")) == "return":
+		await support_card.return_from_intercept()
+	# A sacrificial card stays at the collision point until _spend_substitutes()
+	# awaits its full crack / shard sequence and unregisters it.
+	await source.lunge_return()
+	busy = false
+
+
+func _intervention_camera_kick() -> Tween:
+	var original: Vector3 = camera.position
+	var kick: Tween = create_tween()
+	kick.tween_property(camera, "position", original + Vector3(0.035, -0.018, 0.0), 0.035)
+	kick.tween_property(camera, "position", original - Vector3(0.025, -0.012, 0.0), 0.035)
+	kick.tween_property(camera, "position", original, 0.05)
+	return kick
+
+
+func _intervention_warp(impact: Vector3, support_card: Node3D, style: Dictionary) -> void:
+	var metal: bool = String(style.get("impact", "")) == "metal"
+	SpaceWarpFX.play_at(fx_root, impact, support_card.card_size.y * (0.78 if metal else 0.68),
+		SpaceWarpFX.NORMAL_STRENGTH * (1.1 if metal else 0.85), 0.12, true)
+
+
+## The same real-time slow beat used by the 語魅 shell break, shortened to one impact.
+## Nothing hands off until this and the actual collision/return tweens have completed.
+func _intervention_slowmo() -> void:
+	if _slowmo_active or _hit_stop_active:
+		return
+	_slowmo_active = true
+	Engine.time_scale = INTERVENTION_SLOWMO_SCALE
+	await get_tree().create_timer(INTERVENTION_SLOWMO_SECONDS, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_slowmo_active = false
+
 
 
 # --- Battle event popups (damage numbers, MISS / 格擋 / 攔截) ------------------------------------------------------
@@ -1188,10 +1288,12 @@ func show_area_popups(events: Array, first_delay: float, gap: float) -> void:
 	event_presenter.schedule_run(entries, first_delay, gap)
 
 
-
-
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
-	_show_attack_popups(target, skill, result, {})
+	var intervention: Dictionary = _intervention_for_result(result)
+	_show_attack_popups(target, skill, result, intervention)
+	if not intervention.is_empty():
+		await _present_active_intervention(attacker, target, skill, intervention)
+		return
 	_schedule_block_reactions(target, result)
 	if _is_water_bullet(skill):
 		await _present_water_bullet(attacker, target, result)
@@ -1855,9 +1957,9 @@ func present_ultimate_fist_rain(attacker: Dictionary, events: Array) -> void:
 	var view: Vector2 = get_viewport().get_visible_rect().size
 	var half_width: float = half_height * view.x / maxf(view.y, 1.0)
 	var camera_home: Vector3 = camera.position
-	show_area_popups(events, 0.0, RAIN_GAP)
 	_suppress_card_spark = true
 	var per_target_count: Dictionary = {}
+	show_area_popups(events, 0.0, RAIN_GAP)
 	var hover_clock: float = 0.0
 	for index: int in range(events.size()):
 		var event: Dictionary = events[index]
@@ -2697,8 +2799,39 @@ func present_enemy_area(attacker: Dictionary, skill: Dictionary, events: Array) 
 	var middle: Vector3 = sum / float(count)
 	var centre: Vector3 = middle + Vector3(0.0, biggest.y * 0.02, 0.5)
 	var side: float = 1.0 if middle.x >= source.home_position.x else -1.0
-	source.lunge_to(middle, STAFF_REACH)
-	await get_tree().create_timer(0.2).timeout
+	await source.lunge_to(middle, STAFF_REACH)
+	# A swept blow can also be intercepted. Draw each support card out of its
+	# visual slot without changing the queue's actual topology.
+	var drawn_interventions: Dictionary = {}
+	var protection_groups: Dictionary = {}
+	for event: Dictionary in events:
+		if bool(event.get("hit", true)):
+			continue
+		var kind: String = String(event.get("blocker_type", ""))
+		if not INTERVENTION_STYLES.has(kind):
+			continue
+		var blocker_id: String = String(event.get("blocker_entity_id", ""))
+		if blocker_id == "":
+			continue
+		var protected: Node3D = card_for(event.target)
+		if protected == null:
+			continue
+		var group: Dictionary = protection_groups.get(blocker_id, {"kind": kind, "positions": []})
+		(group.positions as Array).append(protected.position)
+		protection_groups[blocker_id] = group
+	for blocker_id: String in protection_groups.keys():
+		var token: Node3D = entity_cards.get(blocker_id)
+		if token == null:
+			continue
+		var group: Dictionary = protection_groups[blocker_id]
+		var protected_middle: Vector3 = Vector3.ZERO
+		for protected_position: Vector3 in group.positions:
+			protected_middle += protected_position
+		protected_middle /= float((group.positions as Array).size())
+		var kind: String = String(group.kind)
+		var style: Dictionary = INTERVENTION_STYLES[kind]
+		await token.fly_to_intercept(source.position, protected_middle, String(style.get("motion", "sacrifice")))
+		drawn_interventions[blocker_id] = kind
 	var params: Dictionary = StaffSweepFX.defaults()
 	params["origin_offset"] = source.home_position - centre
 	params["camera_offset"] = camera.global_position - fx_root.to_global(centre)
@@ -2706,15 +2839,31 @@ func present_enemy_area(attacker: Dictionary, skill: Dictionary, events: Array) 
 	var fx := StaffSweepFX.play_at(fx_root, centre, biggest, params)
 	var body_swing := create_tween().set_parallel(true)
 	body_swing.tween_property(source, "position:x", source.position.x + side * 0.4, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	fx.impact.connect(_area_impacts.bind(events, side, middle))
-	await get_tree().create_timer(1.0).timeout
+	await fx.impact
+	show_area_popups(events, 0.0, 0.0)
+	var collisions: Array = _area_impacts(events, side, middle)
+	if not collisions.is_empty():
+		_intervention_camera_kick()
+		await _intervention_slowmo()
+	for collision_any: Variant in collisions:
+		var collision: Tween = collision_any
+		if collision.is_running():
+			await collision.finished
+	for blocker_id: String in drawn_interventions.keys():
+		var kind: String = String(drawn_interventions[blocker_id])
+		if String((INTERVENTION_STYLES[kind] as Dictionary).get("resolution")) == "return":
+			var token: Node3D = entity_cards.get(blocker_id)
+			if token != null:
+				await token.return_from_intercept()
 	await source.lunge_return()
 	busy = false
 
 
 ## The sweep reaches the line: every struck target is shoved in turn, nearest to the attacker first.
-func _area_impacts(events: Array, side: float, middle: Vector3) -> void:
+func _area_impacts(events: Array, side: float, middle: Vector3) -> Array:
 	var first: bool = true
+	var collisions: Array = []
+	var collided_ids: Dictionary = {}
 	for event: Dictionary in events:
 		var card := card_for(event.target)
 		if card == null:
@@ -2723,8 +2872,22 @@ func _area_impacts(events: Array, side: float, middle: Vector3) -> void:
 			var delay: float = maxf(0.0, (card.position.x - middle.x) * -side) * 0.06
 			get_tree().create_timer(delay).timeout.connect(_staff_impact.bind(card, side, bool(event.get("crit", false)), first))
 			first = false
+		elif INTERVENTION_STYLES.has(String(event.get("blocker_type", ""))):
+			var blocker_id: String = String(event.get("blocker_entity_id", ""))
+			if collided_ids.has(blocker_id):
+				continue
+			var token: Node3D = entity_cards.get(blocker_id)
+			if token != null:
+				var kind: String = String(event.get("blocker_type", ""))
+				var style: Dictionary = INTERVENTION_STYLES[kind]
+				var impact: Vector3 = token.position + Vector3(0.0, token.card_size.y * 0.05, 0.5)
+				_hit_spark(impact, token.card_size.y * (0.75 if String(style.get("impact")) == "metal" else 0.55), false)
+				_intervention_warp(impact, token, style)
+				collisions.append(token.intercept_impact(String(style.get("motion", "sacrifice"))))
+				collided_ids[blocker_id] = true
 		else:
 			card.dodge_motion()
+	return collisions
 
 
 # --- 真．石破天驚拳: a meteor shower of fist-bullets falling slantwise on the enemy region --------------------
@@ -2849,8 +3012,9 @@ func present_substitute_break(entity: Object) -> void:
 	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
 	if card == null or not card.has_method("play_break"):
 		return
-	await get_tree().create_timer(0.25).timeout
+	busy = true
 	await card.play_break()
+	busy = false
 
 
 ## Any card (a character or another) still sliding to its place or playing a motion.

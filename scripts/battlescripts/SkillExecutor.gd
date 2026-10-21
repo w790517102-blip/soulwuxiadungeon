@@ -174,6 +174,8 @@ func execute(
 		result["hit"] = false
 		result["dodged"] = false
 		result["blocked"] = true
+		result["blocker_type"] = String(block_info.get("blocker_type", ""))
+		result["blocker_entity_id"] = String(block_info.get("blocker_entity_id", ""))
 		result["damage"] = 0
 		result["target_down"] = false
 		var block_opener := "" if suppress_attack_opener else "%s 使出「%s」，" % [String(user.get("name", "???")), skill_name]

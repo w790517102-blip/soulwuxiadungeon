@@ -76,7 +76,7 @@ func play() -> void:
 	_axis = (target_point - start_point).normalized()
 	_angle = atan2(_axis.y, _axis.x)
 	# The line runs on behind the target and a little deeper into the stage.
-	_end_point = target_point + _axis * h * penetration_extension + Vector3(0.0, 0.0, -h * 0.35)
+	_end_point = target_point + _axis * h * penetration_extension + Vector3(0.0, 0.0, -h * 0.35 if penetration_extension > 0.0 else 0.0)
 	var reach: float = start_point.distance_to(target_point) / maxf(start_point.distance_to(_end_point), 0.001)
 	var hit_time: float = thrust_speed * effect_time * pow(reach, 0.6)
 	_tip_flash()
@@ -246,7 +246,8 @@ func _head_glint(hit_time: float) -> void:
 	glint.position = start_point + Vector3(0.0, 0.0, 0.5)
 	var tween := create_tween()
 	tween.tween_property(glint, "position", target_point + Vector3(0.0, 0.0, 0.5), hit_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(glint, "position", _end_point + Vector3(0.0, 0.0, 0.5), penetration_extension * 0.12).set_trans(Tween.TRANS_LINEAR)
+	if penetration_extension > 0.0:
+		tween.tween_property(glint, "position", _end_point + Vector3(0.0, 0.0, 0.5), penetration_extension * 0.12).set_trans(Tween.TRANS_LINEAR)
 	tween.tween_callback(glint.queue_free)
 
 

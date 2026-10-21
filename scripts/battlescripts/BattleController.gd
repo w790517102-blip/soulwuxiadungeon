@@ -1503,7 +1503,7 @@ func _run_multi_strikes(actor: Dictionary, target: Dictionary, skill_data: Dicti
 	var summaries: Array = []
 	for strike_any: Variant in strikes:
 		var one: Dictionary = strike_any
-		summaries.append({"hit": bool(one.get("hit", true)), "crit": bool(one.get("crit", false)), "damage": int(one.get("damage", 0)), "element_advantage": bool(one.get("element_advantage", false)), "damage_prevented": bool(one.get("damage_prevented", false)), "blocked": bool(one.get("blocked", false))})
+		summaries.append({"hit": bool(one.get("hit", true)), "crit": bool(one.get("crit", false)), "damage": int(one.get("damage", 0)), "element_advantage": bool(one.get("element_advantage", false)), "damage_prevented": bool(one.get("damage_prevented", false)), "blocked": bool(one.get("blocked", false)), "blocker_type": String(one.get("blocker_type", "")), "blocker_entity_id": String(one.get("blocker_entity_id", ""))})
 	result["strikes"] = summaries
 	return {"result": result, "pairing_bonus": pairing_bonus, "strike_count": strike_count}
 
@@ -2181,7 +2181,15 @@ func _perform_enemy_aoe_action(enemy: Dictionary, skill: Dictionary, inner_force
 		var events: Array = []
 		for row in results:
 			var row_result: Dictionary = row.get("result", {})
-			events.append({"target": row.get("target", {}), "hit": bool(row_result.get("hit", true)), "crit": bool(row_result.get("crit", false))})
+			var blocker_type: String = String(row_result.get("blocker_type", ""))
+			var blocker_id: String = String(row_result.get("blocker_entity_id", ""))
+			for strike_any: Variant in row_result.get("strikes", []):
+				var strike: Dictionary = strike_any
+				if String(strike.get("blocker_type", "")) in ["substitute_talisman", "sheath_card"]:
+					blocker_type = String(strike.get("blocker_type", ""))
+					blocker_id = String(strike.get("blocker_entity_id", ""))
+					break
+			events.append({"target": row.get("target", {}), "hit": bool(row_result.get("hit", true)), "crit": bool(row_result.get("crit", false)), "damage": int(row_result.get("damage", 0)), "element_advantage": bool(row_result.get("element_advantage", false)), "blocker_type": blocker_type, "blocker_entity_id": blocker_id})
 		await battle_ui.play_enemy_area_fx(enemy, skill, events)
 	elif battle_ui and battle_ui.has_method("play_attack_motion"):
 		battle_ui.play_attack_motion(enemy)
@@ -4706,6 +4714,10 @@ func _hit_stage_entities_with_aoe(enemy: Dictionary, skill: Dictionary) -> void:
 	for entity: Object in stage_entities.get_targetable_entities():
 		if String(entity.get("faction")) == faction_of(enemy):
 			continue
+		# An interception has already consumed this charm's one action-level protection.
+		# Do not also hit/destroy it as a separate AoE target before its break presentation.
+		if _substitute_actions.has(String(entity.get("entity_id"))):
+			continue
 		# The charm is just another target of the sweep: it gets its own hit roll (the same
 		# accuracy contest a character gets, with no evasion), so it can be missed.
 		var roll: Dictionary = skill_executor._roll_hit(enemy, {"evasion": 0})
@@ -4954,6 +4966,11 @@ var _substitute_actions: Dictionary = {}
 
 
 func _on_hit_blocked(target: Dictionary, _attacker: Dictionary, _skill_name: String) -> void:
+	# Card Stage resolves either support card in its blocking intervention sequence.
+	# The legacy battle view keeps its existing sheath-block feedback.
+	var card_stage_active: bool = battle_ui != null and battle_ui.has_method("play_substitute_break") and bool(battle_ui.get("stage_enabled"))
+	if _last_blocker != null and (String(_last_blocker.get("entity_type")) == "substitute_talisman" or card_stage_active):
+		return
 	if battle_ui and battle_ui.has_method("play_sheath_block"):
 		battle_ui.play_sheath_block(target, _last_blocker if _last_blocker != null else find_stance_entity(target))
 
@@ -4969,10 +4986,10 @@ func _hit_block_info(target: Dictionary, attacker: Dictionary) -> Dictionary:
 	var substitute: Object = _substitute_for(target)
 	if substitute != null:
 		_last_blocker = substitute
-		return {"blocked": true, "text": "身旁的替身符代為擋下了這一擊。"}
+		return {"blocked": true, "text": "身旁的替身符代為擋下了這一擊。", "blocker_type": "substitute_talisman", "blocker_entity_id": String(substitute.get("entity_id"))}
 	if _sheath_blocks_hit(target, attacker):
 		_last_blocker = find_stance_entity(target)
-		return {"blocked": true, "text": "以左手劍鞘架住了這一擊，攻勢被完全化去。"}
+		return {"blocked": true, "text": "以左手劍鞘架住了這一擊，攻勢被完全化去。", "blocker_type": "sheath_card", "blocker_entity_id": String(_last_blocker.get("entity_id")) if _last_blocker != null else ""}
 	return {}
 
 
@@ -5008,10 +5025,11 @@ func _spend_substitutes() -> void:
 		if entity == null or not stage_entities.get_stage_entities().has(entity):
 			continue
 		entity.set("guard_charges", 0)
-		_log_system("【%s】替我方擋下了這一擊，符紙碎裂。" % String(entity.get("display_name")))
 		if battle_ui and battle_ui.has_method("play_substitute_break"):
 			await battle_ui.play_substitute_break(entity)
 		stage_entities.destroy_entity(entity, {"reason": "blocked"})
+		# Leave the causal result on screen after the visible break, before ADB hands off.
+		_log_system("【%s】替我方擋下了這一擊，符紙碎裂。" % String(entity.get("display_name")))
 	_substitute_actions.clear()
 
 

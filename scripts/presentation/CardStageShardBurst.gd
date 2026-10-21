@@ -15,11 +15,13 @@ const FADE_SECONDS := 0.9
 var _pieces: Array[Dictionary] = []
 var _floor_y: float = 0.0
 var _done_after: float = 0.0
+var rest_seconds: float = REST_SECONDS
+var fade_seconds: float = FADE_SECONDS
 
 
 ## `card`: the card whose shell breaks; `impact` is in the card's own plane (x right, y up) around
 ## its centre; `floor_y` is the world height pieces land on.
-func setup(card: Node3D, card_size: Vector2, impact: Vector2, floor_y: float) -> void:
+func setup(card: Node3D, card_size: Vector2, impact: Vector2, floor_y: float, palette: Array[Color] = []) -> void:
 	_floor_y = floor_y
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
@@ -35,6 +37,8 @@ func setup(card: Node3D, card_size: Vector2, impact: Vector2, floor_y: float) ->
 			row.append(impact + Vector2.from_angle(angle) * radius)
 		grid.append(row)
 	var colours: Array[Color] = [Color(0.58, 0.24, 0.88, 0.50), Color(0.36, 0.08, 0.55, 0.55), Color(0.74, 0.44, 0.96, 0.45)]
+	if not palette.is_empty():
+		colours = palette
 	var triangles: Array = []
 	for spoke: int in range(spokes):
 		var next: int = (spoke + 1) % spokes
@@ -152,8 +156,8 @@ func _process(delta: float) -> void:
 					piece.state = "rest"
 			"rest":
 				piece.rest = float(piece.rest) + delta
-				if float(piece.rest) > REST_SECONDS:
-					node.transparency = clampf((float(piece.rest) - REST_SECONDS) / FADE_SECONDS, 0.0, 1.0)
+				if float(piece.rest) > rest_seconds:
+					node.transparency = clampf((float(piece.rest) - rest_seconds) / fade_seconds, 0.0, 1.0)
 					if node.transparency >= 1.0:
 						node.queue_free()
 	if alive == 0:

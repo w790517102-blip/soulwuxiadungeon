@@ -7,6 +7,8 @@ var _sparks: GPUParticles3D
 var _ray_size: Vector2 = Vector2.ONE
 var _ray_time_left: float = 0.0
 var _ray_wait: float = 0.0
+## Boss fire remains violet by default; impact-burned support cards can request red.
+var palette: String = "violet"
 
 
 
@@ -68,9 +70,10 @@ func play(size: Vector2, seconds: float, ray_seconds: float = 0.0) -> void:
 	spark_process.turbulence_noise_speed = Vector3(0.0, 0.4, 0.0)
 	spark_process.scale_min = 0.35
 	spark_process.scale_max = 1.2
-	spark_process.color_ramp = _ramp(
-		PackedColorArray([Color(1.0, 0.95, 1.0, 1.0), Color(0.72, 0.32, 1.0, 0.95), Color(0.30, 0.08, 0.55, 0.0)]),
-		PackedFloat32Array([0.0, 0.35, 1.0]))
+	var spark_colours := PackedColorArray([Color(1.0, 0.95, 1.0, 1.0), Color(0.72, 0.32, 1.0, 0.95), Color(0.30, 0.08, 0.55, 0.0)])
+	if palette == "red":
+		spark_colours = PackedColorArray([Color(1.0, 0.88, 0.64, 1.0), Color(1.0, 0.28, 0.08, 0.95), Color(0.35, 0.035, 0.02, 0.0)])
+	spark_process.color_ramp = _ramp(spark_colours, PackedFloat32Array([0.0, 0.35, 1.0]))
 	_sparks.process_material = spark_process
 	var spark_quad := QuadMesh.new()
 	spark_quad.size = Vector2(0.09, 0.09)
@@ -114,7 +117,10 @@ func ray_burst(size: Vector2, count: int) -> void:
 		material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 		material.render_priority = 25
-		material.albedo_color = Color(0.66, 0.30, 1.0, 0.95) if index % 4 != 0 else Color(0.88, 0.70, 1.0, 0.95)
+		if palette == "red":
+			material.albedo_color = Color(1.0, 0.24, 0.06, 0.95) if index % 4 != 0 else Color(1.0, 0.73, 0.38, 0.95)
+		else:
+			material.albedo_color = Color(0.66, 0.30, 1.0, 0.95) if index % 4 != 0 else Color(0.88, 0.70, 1.0, 0.95)
 		ray.material_override = material
 		ray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(ray)

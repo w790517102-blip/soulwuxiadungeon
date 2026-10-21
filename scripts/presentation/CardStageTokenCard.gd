@@ -6,6 +6,11 @@ extends Node3D
 ## interaction_priority, set_home(), refresh(entity). Presentation only.
 
 const FONT = preload("res://assets/fonts/UIFontKaiti.tres")
+const BurnShader = preload("res://scripts/presentation/shaders/card_burn.gdshader")
+const GhostFire = preload("res://scripts/presentation/CardStageGhostFire.gd")
+const ShardBurst = preload("res://scripts/presentation/CardStageShardBurst.gd")
+const TangramSeams = preload("res://scripts/presentation/CardStageTangramSeams.gd")
+const TangramBurst = preload("res://scripts/presentation/CardStageTangramBurst.gd")
 const CANVAS := Vector2(300, 490)
 const GOLD := Color("c9a565")
 const PAPER := Color("eee4ca")
@@ -29,6 +34,12 @@ var _crack_layer: Control
 var _flash: ColorRect
 var _tween: Tween
 var _relocate_tween: Tween
+var _intercept_return_position: Vector3 = Vector3.ZERO
+var _intercept_return_rotation: Vector3 = Vector3.ZERO
+var _intercept_return_scale: Vector3 = Vector3.ONE
+var _crack_paths: Array = []
+var _burn_sheet: MeshInstance3D = null
+var _shard_burst: Node3D = null
 
 
 func configure(target_entity: Object) -> void:
@@ -255,25 +266,118 @@ func hit_shake() -> void:
 	await _tween.finished
 
 
-## Cracks open across the paper, then the card tears apart into ink and scraps and fades.
+## A support card is briefly drawn out of its ADB slot. Only its visual transform moves;
+## home_position, owner, adjacency and turn order remain untouched.
+func fly_to_intercept(attacker_position: Vector3, protected_position: Vector3, motion_style: String = "sacrifice") -> void:
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	_intercept_return_position = position
+	_intercept_return_rotation = rotation
+	_intercept_return_scale = scale
+	var interception: Vector3 = attacker_position.lerp(protected_position, 0.56 if motion_style == "sacrifice" else 0.72)
+	interception.z = maxf(attacker_position.z, protected_position.z) + 0.65
+	var draw_out: Vector3 = position.lerp(interception, 0.12) + Vector3(0.0, 0.2, 0.38)
+	var tilt: float = -0.16 if motion_style == "parry" else 0.08
+	_tween = create_tween()
+	_tween.tween_property(self, "position", draw_out, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween.parallel().tween_property(self, "scale", _intercept_return_scale * 1.1, 0.07)
+	_tween.parallel().tween_property(self, "rotation:z", _intercept_return_rotation.z + tilt, 0.07)
+	_tween.tween_property(self, "position", interception, 0.12 if motion_style == "sacrifice" else 0.15).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await _tween.finished
+
+
+## The attack stops here, not on the character behind this card. Returns the actual
+## animation tween so the stage can hold its presentation barrier through collision.
+func intercept_impact(motion_style: String = "sacrifice") -> Tween:
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	var centre: Vector3 = position
+	_flash.color = Color(0.85, 0.94, 1.0, 0.95) if motion_style == "parry" else Color(1.0, 0.95, 0.8, 0.85)
+	_tween = create_tween()
+	_tween.tween_property(self, "position", centre + Vector3(0.11, 0.0, 0.0), 0.045)
+	_tween.tween_property(self, "position", centre + Vector3(-0.08, 0.0, 0.0), 0.045)
+	_tween.tween_property(self, "position", centre, 0.06)
+	_tween.parallel().tween_property(_flash, "color:a", 0.0, 0.16)
+	if motion_style == "parry":
+		_tween.parallel().tween_property(self, "rotation:z", _intercept_return_rotation.z - 0.28, 0.16)
+	return _tween
+
+
+## A sheath card parries and returns; a substitute never calls this because it breaks instead.
+func return_from_intercept() -> void:
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	_tween = create_tween().set_parallel(true)
+	_tween.tween_property(self, "position", _intercept_return_position, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(self, "rotation", _intercept_return_rotation, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(self, "scale", _intercept_return_scale, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await _tween.finished
+
+
+## The substitute has unseen cuts in it, like a tangram: light shines out of them one cut after another and swells,
+## then the card falls apart along them into its seven pieces, leaves its broken paper visible for one beat, and burns
+## for two seconds using the boss card's fire shader.
 func play_break() -> void:
-	_draw_cracks()
-	_crack_layer.show()
-	_crack_layer.modulate.a = 0.0
-	var crack_tween := create_tween()
-	crack_tween.tween_property(_crack_layer, "modulate:a", 1.0, 0.14)
-	await crack_tween.finished
-	_spray_fragments()
-	var fade_tween := create_tween().set_parallel(true)
-	fade_tween.tween_method(set_fade, 0.0, 1.0, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	fade_tween.tween_property(self, "scale", Vector3(1.06, 1.06, 1.0), 0.4)
-	fade_tween.tween_property(self, "position", home_position + Vector3(0.0, -0.15, 0.1), 0.4)
-	await fade_tween.finished
+	# The cuts are light in 3D (additive quads standing in front of the card, drawn like the 真．石破天驚拳 meteors),
+	# not a 2D overlay.
+	var seams := TangramSeams.new()
+	add_child(seams)
+	seams.position = Vector3(0.0, card_mesh.position.y, 0.08)
+	seams.setup(card_size)
+	var light := create_tween().set_parallel(true)
+	light.tween_property(seams, "progress", 1.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	light.tween_property(seams, "glow", 1.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await light.finished
+	# the light swells to a flash through every cut, and the pieces come apart
+	var flash := create_tween()
+	flash.tween_property(seams, "glow", 2.4, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	await flash.finished
+	_shatter_tangram()
+	var dim := create_tween()
+	dim.tween_property(seams, "glow", 0.0, 0.2)
+	dim.tween_callback(seams.queue_free)
+	var paper_fade := create_tween()
+	paper_fade.tween_method(set_fade, 0.0, 0.35, 0.25)
+	await get_tree().create_timer(1.0).timeout
+	await _burn_after_break(2.0)
+
+
+## The shell comes apart along the tangram cuts.
+func _shatter_tangram() -> void:
+	_shard_burst = TangramBurst.new()
+	get_parent().add_child(_shard_burst)
+	_shard_burst.set("rest_seconds", 0.4)
+	_shard_burst.set("fade_seconds", 0.6)
+	var paper_and_ink: Array[Color] = [
+		Color(0.90, 0.80, 0.66, 0.94),
+		Color(0.69, 0.57, 0.46, 0.92),
+		Color(0.055, 0.045, 0.045, 0.96),
+		Color(0.14, 0.11, 0.10, 0.94),
+	]
+	var floor_y: float = to_global(Vector3(0.0, -card_size.y * 0.5 + 0.02, 0.0)).y
+	_shard_burst.setup_tangram(self, card_size, floor_y, paper_and_ink)
+
+
+## The older radial star of triangles (kept for reference / other uses).
+func _shatter_triangles() -> void:
+	_shard_burst = ShardBurst.new()
+	get_parent().add_child(_shard_burst)
+	_shard_burst.set("rest_seconds", 0.4)
+	_shard_burst.set("fade_seconds", 0.6)
+	var paper_and_ink: Array[Color] = [
+		Color(0.90, 0.80, 0.66, 0.94),
+		Color(0.69, 0.57, 0.46, 0.92),
+		Color(0.055, 0.045, 0.045, 0.96),
+		Color(0.14, 0.11, 0.10, 0.94),
+	]
+	var floor_y: float = to_global(Vector3(0.0, -card_size.y * 0.5 + 0.02, 0.0)).y
+	_shard_burst.setup(self, card_size, Vector2(0.0, card_size.y * 0.04), floor_y, paper_and_ink)
 
 
 func _draw_cracks() -> void:
 	for child: Node in _crack_layer.get_children():
 		child.queue_free()
+	_crack_paths.clear()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(String(entity.get("entity_id")))
 	for branch: int in range(4):
@@ -281,46 +385,61 @@ func _draw_cracks() -> void:
 		line.width = 3.0
 		line.default_color = Color(0.03, 0.02, 0.02, 0.95)
 		var point := Vector2(rng.randf_range(70.0, 230.0), rng.randf_range(80.0, 130.0))
-		line.add_point(point)
+		var path: PackedVector2Array = PackedVector2Array([point])
 		for step: int in range(7):
 			point += Vector2(rng.randf_range(-34.0, 34.0), rng.randf_range(26.0, 52.0))
-			line.add_point(point)
+			path.append(point)
+		_crack_paths.append(path)
 		_crack_layer.add_child(line)
+	_set_crack_progress(0.0)
 
 
-func _spray_fragments() -> void:
-	var holder := Node3D.new()
-	get_parent().add_child(holder)
-	holder.position = home_position
-	holder.rotation = home_rotation
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	for index: int in range(26):
-		var piece := MeshInstance3D.new()
-		var ink: bool = index % 3 != 0
-		if ink:
-			var sphere := SphereMesh.new()
-			sphere.radius = rng.randf_range(0.03, 0.09)
-			sphere.height = sphere.radius * 2.0
-			piece.mesh = sphere
-		else:
-			var quad := QuadMesh.new()
-			quad.size = Vector2(rng.randf_range(0.12, 0.26), rng.randf_range(0.10, 0.22))
-			piece.mesh = quad
-		var material := StandardMaterial3D.new()
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		material.albedo_color = Color(0.02, 0.02, 0.03, 0.95) if ink else Color(0.86, 0.8, 0.68, 0.95)
-		piece.material_override = material
-		piece.position = Vector3(rng.randf_range(-card_size.x * 0.4, card_size.x * 0.4), rng.randf_range(-card_size.y * 0.35, card_size.y * 0.4), 0.05)
-		holder.add_child(piece)
-		var travel := Vector3(rng.randf_range(-1.1, 1.1), rng.randf_range(-1.6, 0.5), rng.randf_range(0.2, 1.1))
-		var tween := create_tween().set_parallel(true)
-		tween.tween_property(piece, "position", piece.position + travel, 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(piece, "rotation", Vector3(rng.randf_range(-3.0, 3.0), rng.randf_range(-3.0, 3.0), rng.randf_range(-4.0, 4.0)), 0.7)
-		tween.tween_property(material, "albedo_color:a", 0.0, 0.7).set_delay(0.25)
-	get_tree().create_timer(0.95).timeout.connect(holder.queue_free)
+func _set_crack_progress(progress: float) -> void:
+	for branch: int in range(_crack_paths.size()):
+		var line: Line2D = _crack_layer.get_child(branch)
+		var path: PackedVector2Array = _crack_paths[branch]
+		var phase: float = clampf(progress * 1.25 - float(branch) * 0.08, 0.0, 1.0)
+		var distance: float = phase * float(path.size() - 1)
+		var last_full: int = floori(distance)
+		line.clear_points()
+		for index: int in range(last_full + 1):
+			line.add_point(path[index])
+		if last_full < path.size() - 1:
+			line.add_point(path[last_full].lerp(path[last_full + 1], distance - float(last_full)))
+
+
+func _burn_after_break(seconds: float) -> void:
+	var quad := QuadMesh.new()
+	quad.size = card_size
+	_burn_sheet = MeshInstance3D.new()
+	_burn_sheet.name = "BurnSheet"
+	_burn_sheet.mesh = quad
+	var material := ShaderMaterial.new()
+	material.shader = BurnShader
+	material.set_shader_parameter("face_tex", card_viewport.get_texture())
+	material.set_shader_parameter("window", Vector4(22.0 / CANVAS.x, 62.0 / CANVAS.y, 278.0 / CANVAS.x, 402.0 / CANVAS.y))
+	material.set_shader_parameter("seed", randf() * 10.0)
+	material.set_shader_parameter("flame_core", Color(1.0, 0.83, 0.55, 1.0))
+	material.set_shader_parameter("flame_edge", Color(0.95, 0.13, 0.035, 1.0))
+	material.render_priority = 5
+	_burn_sheet.material_override = material
+	_burn_sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_burn_sheet.position = card_mesh.position + Vector3(0.0, 0.0, 0.04)
+	_burn_sheet.sorting_offset = 0.5
+	add_child(_burn_sheet)
+	var fire: Node3D = GhostFire.new()
+	add_child(fire)
+	fire.position = Vector3(0.0, 0.0, 0.18)
+	fire.set("palette", "red")
+	fire.play(card_size, seconds, 0.0)
+	var burn_tween := create_tween().set_parallel(true)
+	burn_tween.tween_method(func(value: float) -> void:
+		material.set_shader_parameter("burn", value), 0.0, 1.0, seconds)
+	burn_tween.tween_method(func(value: float) -> void:
+		material.set_shader_parameter("time_value", value), 0.0, seconds, seconds)
+	burn_tween.tween_method(set_fade, 0.35, 1.0, 0.25).set_delay(seconds - 0.25)
+	burn_tween.tween_property(_burn_sheet, "transparency", 1.0, 0.25).set_delay(seconds - 0.25)
+	await burn_tween.finished
 
 
 func _style_label(label: Label, size: int, color: Color) -> void:

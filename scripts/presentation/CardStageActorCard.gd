@@ -335,7 +335,7 @@ func refresh(actor: Dictionary, status_bbcode: String = "") -> void:
 	var max_hp := maxi(1, int(actor.get("max_hp", hp)))
 	var mp := int(actor.get("mp", 0))
 	var max_mp := maxi(0, int(actor.get("max_mp", mp)))
-	hp_label.text = "氣血：%d/%d" % [hp, max_hp]
+	hp_label.text = "氣血：%d/%d" % [clampi(hp, 0, max_hp), max_hp]
 	hp_bar.max_value = max_hp
 	hp_bar.value = clampi(hp, 0, max_hp)
 	mp_label.text = "內力：%d/%d" % [mp, max_mp]
@@ -412,17 +412,15 @@ var block_card: Node3D = null
 var dodge_suppressed: bool = false
 
 
-## A card (the scabbard, a substitute charm) flies in front of this character and takes the blow; he only
-## braces. Never a sidestep.
+## The support card owns the impact. The protected actor stays composed rather than
+## flashing, guarding or dodging for an attack that never reached him.
 func show_block() -> void:
 	block_pending = false
-	_flash(Color(0.88, 0.94, 1.0, 0.4))
 	if block_card != null and is_instance_valid(block_card):
 		if block_card.has_method("fly_to_block"):
 			block_card.fly_to_block(self)
 		elif block_card.has_method("pulse"):
 			block_card.pulse()
-	guard_motion()
 
 
 func dodge_motion() -> void:

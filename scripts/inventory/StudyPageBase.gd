@@ -122,7 +122,7 @@ func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Co
 
 
 ## 深色字的白色柔邊（紙面上的墨字更清楚，不被紙紋與山水吃掉）。武術頁不用（soft_halo = false）
-var soft_halo := true
+var soft_halo := false
 
 func _halo(l: Control) -> void:
 	l.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.85))
