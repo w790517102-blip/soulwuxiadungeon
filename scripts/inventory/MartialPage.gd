@@ -67,7 +67,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 1100      # 舊分頁的節點 z_index 是 1024，新頁要蓋在它上面
 	_build_background(false)
-	_m_image("martial_page_v3", Vector2.ZERO, Vector2(1152, 648), self)      # 整頁底圖：位置對準畫布，框外透明
+	_m_image("martial_page_v3_inner_clean", Vector2.ZERO, Vector2(1152, 648), self)      # 整頁底圖：位置對準畫布，框外透明
 	_build_nav("TabSkill")
 	_build_figure()
 	_build_force_panel()
@@ -135,7 +135,7 @@ func _rich(rect: Rect2, parent: Node, font_size := 13) -> RichTextLabel:
 	parent.add_child(t)
 	return t
 
-## 共邊國素材載入：mart("martial_page_v3")。沒有檔案回傳 null（呼叫處自行退回暫代畫法）
+## 共邊國素材載入：mart("martial_page_v3_inner_clean")。沒有檔案回傳 null（呼叫處自行退回暫代畫法）
 func mart(name_: String) -> Texture2D:
 	for ext in ["png", "webp"]:
 		var p := "%s%s.%s" % [MD, name_, ext]
@@ -219,13 +219,10 @@ func _build_figure() -> void:
 	add_child(_name_box)
 
 
-## 內功面板：標題「內功心法」烤在底圖上。順序（上到下）：大圖示、名稱＋描述、當前效果、更換內功鈕、內功屬性。
-## 底圖上原本固定的兩條小標題（內功屬性傾向、當前效果）位置不對，這裡先用同區的空白紙面蓋掉、再把原標題圖剪下來貼到新位置。
+## 內功面板：標題「內功心法」烤在底圖上，兩條小標題是獨立素材。順序（上到下）：大圖示、名稱＋描述、當前效果、更換內功鈕、內功屬性。
 func _build_force_panel() -> void:
-	_cover_baked(Rect2(232, 363, 150, 26), Rect2(232, 325, 150, 26))                     # 蓋掉舊的「內功屬性傾向」
-	_cover_baked(Rect2(220, 495, 170, 30), Rect2(220, 545, 170, 30))                     # 蓋掉舊的「當前效果」及其右側細線
-	_baked_piece(Rect2(464, 726, 300, 52), Vector2(232, 503), Vector2(150, 26))           # 「內功屬性傾向」貼到最下面
-	_baked_piece(Rect2(444, 993, 222, 52), Vector2(222, 364), Vector2(111, 26))           # 「當前效果」貼到名稱描述之後
+	_m_image("inner_attribute_heading", Vector2(213, 497), Vector2(185, 32), self)      # 共邊國獨立小標題：內功屬性傾向（最下面）
+	_m_image("inner_effects_heading", Vector2(216, 360), Vector2(144, 34), self)         # 當前效果（名稱描述之後）
 	_force_icon_holder = Control.new()
 	_force_icon_holder.position = Vector2(237, 146)
 	_force_icon_holder.size = Vector2(136, 136)
@@ -246,7 +243,7 @@ func _build_force_panel() -> void:
 
 ## 用底圖（整頁圖）上的一塊貼圖：src 是底圖的邏輯座標矩形（會換算成 2 倍像素）
 func _baked_region(src: Rect2) -> AtlasTexture:
-	var base := mart("martial_page_v3")
+	var base := mart("martial_page_v3_inner_clean")
 	var at := AtlasTexture.new()
 	at.atlas = base
 	at.region = Rect2(src.position * 2.0, src.size * 2.0)
@@ -266,7 +263,7 @@ func _cover_baked(dest: Rect2, src: Rect2) -> void:
 ## 把底圖上的一塊（原像素矩形，2 倍像素）剪下來貼到新位置
 func _baked_piece(src_px: Rect2, pos: Vector2, size_: Vector2) -> void:
 	var at := AtlasTexture.new()
-	at.atlas = mart("martial_page_v3")
+	at.atlas = mart("martial_page_v3_inner_clean")
 	at.region = src_px
 	var r := TextureRect.new()
 	r.texture = at

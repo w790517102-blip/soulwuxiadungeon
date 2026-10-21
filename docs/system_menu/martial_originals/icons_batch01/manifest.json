@@ -1,0 +1,81 @@
+{
+  "batch": 1,
+  "assets": [
+    {
+      "file": "skill_lianjuejian.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "rgba": true
+    },
+    {
+      "file": "skill_luobichengshi.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "rgba": true
+    },
+    {
+      "file": "skill_linfu_humai.png",
+      "size_px": [
+        96,
+        96
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "rgba": true
+    },
+    {
+      "file": "force_qingfeng_jue.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "rgba": true
+    },
+    {
+      "file": "force_fuchao_jue.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "rgba": true
+    },
+    {
+      "file": "force_qingqu_gongyin.png",
+      "size_px": [
+        256,
+        256
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "rgba": true
+    }
+  ],
+  "total_list": 38,
+  "delivered": 6,
+  "remaining": 32,
+  "godot_tested": false
+}

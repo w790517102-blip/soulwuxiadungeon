@@ -1,0 +1,80 @@
+{
+  "version": "V3.1 inner reorder",
+  "page": {
+    "file": "martial_page_v3_inner_clean.png",
+    "size_px": [
+      2304,
+      1296
+    ],
+    "xy_2x": [
+      0,
+      0
+    ],
+    "scale_to_logical": 0.5
+  },
+  "headings": [
+    {
+      "file": "inner_attribute_heading.png",
+      "title": "內功屬性傾向",
+      "size_px": [
+        300,
+        52
+      ],
+      "suggested_xy_2x": [
+        466,
+        1006
+      ],
+      "suggested_xy_logical": [
+        233.0,
+        503.0
+      ],
+      "position_is_suggestion": true,
+      "method": "original pixels with ink-contour alpha extraction"
+    },
+    {
+      "file": "inner_effects_heading.png",
+      "title": "當前效果",
+      "size_px": [
+        222,
+        52
+      ],
+      "suggested_xy_2x": [
+        446,
+        728
+      ],
+      "suggested_xy_logical": [
+        223.0,
+        364.0
+      ],
+      "position_is_suggestion": true,
+      "method": "original pixels with ink-contour alpha extraction"
+    }
+  ],
+  "new_order": [
+    "圖示",
+    "名稱與描述",
+    "當前效果",
+    "更換內功",
+    "內功屬性"
+  ],
+  "qa": {
+    "outside_two_title_regions_pixel_identical": true,
+    "page_alpha_identical": true,
+    "changed_pixel_count": 35524,
+    "allowed_patch_rectangles_2x": [
+      [
+        450,
+        723,
+        791,
+        787
+      ],
+      [
+        434,
+        991,
+        789,
+        1048
+      ]
+    ],
+    "engine_tested": false
+  }
+}
