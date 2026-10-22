@@ -6120,7 +6120,7 @@ position = Vector2(-753, 413)
 [node name="DangerZone" type="Area2D" parent="."]
 position = Vector2(0, 800)
 script = ExtResource("3_d4kd8")
-zone_id = "yuheng_bamboo_outskirts"
+zone_id = "yuheng_sewer"
 distance_threshold_override = 280.0
 chance_override = 0.25
 cooldown_distance_override = 320.0

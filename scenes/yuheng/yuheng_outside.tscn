@@ -18,9 +18,9 @@
 [ext_resource type="Script" uid="uid://un7bbnrd5su1" path="res://scripts/overhead_label.gd" id="15_er17y"]
 [ext_resource type="PackedScene" uid="uid://rmvdqsxilwwu" path="res://scenes/yuheng/yuheng_outside/pen_girl.tscn" id="15_g5fqp"]
 [ext_resource type="Script" uid="uid://w8e7rv618eva" path="res://scripts/ChatterStageRule.gd" id="16_6rdbe"]
-[ext_resource type="Script" path="res://scripts/ChatterVersionRule.gd" id="17_qiushen_version"]
 [ext_resource type="Script" uid="uid://y6y1k7dsvqxr" path="res://scripts/yuheng/yuheng_outside/pen_girl.gd" id="16_pmu4d"]
 [ext_resource type="PackedScene" uid="uid://btibi1ocbj6j1" path="res://scenes/yuheng/yuheng_outside/sword_boy.tscn" id="17_hwlhx"]
+[ext_resource type="Script" uid="uid://wbt4ce81j2g2" path="res://scripts/ChatterVersionRule.gd" id="17_qiushen_version"]
 [ext_resource type="PackedScene" uid="uid://4y2sw0rece5e" path="res://scenes/yuheng/yuheng_outside/Romeo.tscn" id="18_oc7vj"]
 [ext_resource type="PackedScene" uid="uid://cuo8q65ai3f0y" path="res://scenes/yuheng/yuheng_outside/Juliet.tscn" id="19_bjn36"]
 [ext_resource type="PackedScene" uid="uid://e1shc750jdva" path="res://scenes/yuheng/yuheng_outside/Wash_woman.tscn" id="20_bjn36"]
@@ -4581,11 +4581,11 @@ script = ExtResource("15_er17y")
 type_time = 0.3
 gap_time = 0.1
 source_mode = 1
-enable_wrap = true
-wrap_width_px = 180.0
 stage_rules = Array[ExtResource("16_6rdbe")]([SubResource("Resource_3fkc0")])
 version_rules = Array[ExtResource("17_qiushen_version")]([SubResource("Resource_qiushen_v1"), SubResource("Resource_qiushen_v2"), SubResource("Resource_qiushen_v3")])
 default_version_id = 1
+enable_wrap = true
+wrap_width_px = 180.0
 
 [node name="wash woman2" type="Path2D" parent="."]
 position = Vector2(115.18, -40.035)

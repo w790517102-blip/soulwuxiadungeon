@@ -6118,7 +6118,6 @@ position = Vector2(20, -60)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InvestigationAreas/memory_room_qin"]
 position = Vector2(-52, -59)
 rotation = 0.516617
-scale = Vector2(1, 1)
 shape = SubResource("RectangleShape2D_room_wide")
 
 [node name="memory_room_writing_desk" type="Area2D" parent="InvestigationAreas"]

@@ -7,11 +7,11 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cctem"]
 size = Vector2(70.8787, 72.9554)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ih7r8"]
-size = Vector2(654, 134)
-
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7tfld"]
 size = Vector2(75.5, 50)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ih7r8"]
+size = Vector2(654, 134)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_h8aaa"]
 size = Vector2(1061.82, 846)
@@ -59,7 +59,6 @@ rotation = 0.221657
 shape = SubResource("RectangleShape2D_7tfld")
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
-visible = false
 z_index = 1999
 offset_left = -1318.0
 offset_top = -808.0
@@ -69,7 +68,6 @@ scale = Vector2(0.871308, 2.18516)
 color = Color(0, 0, 0, 1)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-visible = false
 
 [node name="MapNamePopup" type="Label" parent="CanvasLayer"]
 visible = false
@@ -99,6 +97,9 @@ shape = SubResource("RectangleShape2D_h8aaa")
 
 [node name="from_yuheng_market_east_night" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-84, 339)
+
+[node name="from_yuheng_sewer_center" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(82, 161)
 
 [connection signal="body_entered" from="To_yuheng_market_east_night" to="." method="_on_to_yuheng_market_east_night_body_entered"]
 [connection signal="body_entered" from="To_yuheng_sewer_center" to="." method="_on_to_yuheng_sewer_center_body_entered"]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=4 uid="uid://b4g0rd5sqrfcl"]
+[gd_scene load_steps=17 format=4 uid="uid://b4g0rd5sqrfcl"]
 
 [ext_resource type="Script" uid="uid://xt4a7q755pb7" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_final_room/yuheng_sewer_final_room.gd" id="1_qi2bj"]
 [ext_resource type="Texture2D" uid="uid://dnuhx3t26vb4e" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_final_room/yuheng_sewer_final_room.jpg" id="2_chanb"]
@@ -6047,14 +6047,26 @@ sources/0 = SubResource("TileSetAtlasSource_gotld")
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_okaxq"]
 size = Vector2(2160, 1607)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_d1vb5"]
+size = Vector2(134.539, 110.286)
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ukny8"]
 size = Vector2(720.366, 63)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bypn7"]
-size = Vector2(1029.44, 1999.37)
+size = Vector2(623.243, 1999.37)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_chanb"]
 size = Vector2(132.044, 68)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_d0fg7"]
+size = Vector2(263.567, 156.31)
+
+[sub_resource type="Curve2D" id="Curve2D_chanb"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -298, 687, 0, 0, 0, 0, -159, 367)
+}
+point_count = 2
 
 [node name="yuheng_sewer_final_room" type="Node2D"]
 script = ExtResource("1_qi2bj")
@@ -6109,6 +6121,20 @@ position = Vector2(973.66, -270)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("3_bypn7")
 
+[node name="Area2D" type="Area2D" parent="talisman"]
+
+[node name="entry_forbidden" type="CollisionShape2D" parent="talisman/Area2D"]
+position = Vector2(976.002, -178.422)
+rotation = 0.148353
+shape = SubResource("RectangleShape2D_d1vb5")
+
+[node name="EntryBarrier" type="StaticBody2D" parent="talisman"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="talisman/EntryBarrier"]
+position = Vector2(984.642, -246.807)
+rotation = 0.148353
+shape = SubResource("RectangleShape2D_d1vb5")
+
 [node name="totem" type="Node2D" parent="."]
 
 [node name="qin_totem" type="Sprite2D" parent="totem"]
@@ -6139,7 +6165,7 @@ shape = SubResource("RectangleShape2D_ukny8")
 [node name="SpawnPoints" type="Node2D" parent="."]
 
 [node name="from_yuheng_sewer_center" type="Marker2D" parent="SpawnPoints"]
-position = Vector2(-340, 681)
+position = Vector2(-298, 687)
 
 [node name="from_yuheng_stalactite_cave" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(956, -117)
@@ -6147,13 +6173,13 @@ position = Vector2(956, -117)
 [node name="DangerZone" type="Area2D" parent="."]
 position = Vector2(0, 800)
 script = ExtResource("7_chanb")
-zone_id = "yuheng_bamboo_outskirts"
+zone_id = "yuheng_sewer"
 distance_threshold_override = 280.0
 chance_override = 0.25
 cooldown_distance_override = 320.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DangerZone"]
-position = Vector2(-65.8682, -558.662)
+position = Vector2(105.803, -667.188)
 rotation = 2.57785
 skew = -0.891864
 shape = SubResource("RectangleShape2D_bypn7")
@@ -6166,5 +6192,23 @@ rotation = 0.148353
 skew = 0.996583
 shape = SubResource("RectangleShape2D_chanb")
 
+[node name="yuheng_sewer_final_room_event_trigger" type="Node2D" parent="."]
+
+[node name="yuheng_sewer_final_room_event_trigger" type="Area2D" parent="yuheng_sewer_final_room_event_trigger"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="yuheng_sewer_final_room_event_trigger/yuheng_sewer_final_room_event_trigger"]
+position = Vector2(-298.384, 689.84)
+rotation = 0.13439
+shape = SubResource("RectangleShape2D_d0fg7")
+
+[node name="yuheng_sewer_final_room_Path" type="Path2D" parent="yuheng_sewer_final_room_event_trigger"]
+curve = SubResource("Curve2D_chanb")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="yuheng_sewer_final_room_event_trigger/yuheng_sewer_final_room_Path"]
+position = Vector2(-298, 687)
+rotation = -1.16101
+
+[connection signal="body_entered" from="talisman/Area2D" to="." method="_on_entry_forbidden_body_entered"]
 [connection signal="body_entered" from="To_yuheng_sewer_center" to="." method="_on_to_yuheng_sewer_center_body_entered"]
 [connection signal="body_entered" from="To_yuheng_stalactite_cave" to="." method="_on_to_yuheng_stalactite_cave_body_entered"]
+[connection signal="body_entered" from="yuheng_sewer_final_room_event_trigger/yuheng_sewer_final_room_event_trigger" to="." method="_on_yuheng_sewer_final_room_event_trigger_body_entered"]

@@ -8,7 +8,7 @@
 [ext_resource type="Script" uid="uid://mryand7k3ifw" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/bookstore_guest_b.gd" id="6_av5og"]
 [ext_resource type="AudioStream" uid="uid://ci26c3sqnb056" path="res://assets/BGM/yuxin_moonlight_hint.ogg" id="6_pc8n8"]
 [ext_resource type="PackedScene" uid="uid://bbmw3q74wtd0c" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Bookstore_guestB.tscn" id="6_sdah6"]
-[ext_resource type="AudioStream" uid="uid://c577f6ovuydpv" path="res://assets/BGM/qin_loop.ogg" id="7_t80nr"]
+[ext_resource type="AudioStream" uid="uid://np2x4ytchuep" path="res://assets/BGM/qin_sound_suppress.ogg" id="10_s3r0o"]
 [ext_resource type="Script" uid="uid://vh5r30drnba" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/bookstore_guest_a.gd" id="10_vnuvm"]
 [ext_resource type="PackedScene" uid="uid://hhdqqttuga74" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Bookstore_guestC.tscn" id="11_vnuvm"]
 [ext_resource type="Script" uid="uid://duygq51eakb3" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/bookstore_guest_c.gd" id="12_oxhps"]
@@ -4239,7 +4239,7 @@ script = ExtResource("10_vnuvm")
 stream = ExtResource("6_pc8n8")
 
 [node name="QinSound" type="AudioStreamPlayer2D" parent="NPC/Bookstore_guestB"]
-stream = ExtResource("7_t80nr")
+stream = ExtResource("10_s3r0o")
 
 [node name="Bookstore_guestC" parent="NPC" instance=ExtResource("11_vnuvm")]
 position = Vector2(30, 443)

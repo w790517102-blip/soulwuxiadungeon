@@ -1,10 +1,11 @@
-[gd_scene load_steps=14 format=4 uid="uid://c24hklx0v2v8k"]
+[gd_scene load_steps=16 format=4 uid="uid://c24hklx0v2v8k"]
 
 [ext_resource type="Script" uid="uid://dk35d3bgwpub" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.gd" id="1_1sjo8"]
 [ext_resource type="Texture2D" uid="uid://bkq6g3rbueuue" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.jpg" id="1_ex6tk"]
 [ext_resource type="Script" uid="uid://b748hmcmlnnot" path="res://scripts/encounter/DangerZone.gd" id="3_eo4sm"]
 [ext_resource type="Script" uid="uid://dgq2svte6pu68" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_alchemy_room/medicine_cabinet.gd" id="4_56vsb"]
 [ext_resource type="Script" uid="uid://c1sbynh3piqrm" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_alchemy_room/alchemy_table.gd" id="4_amf5x"]
+[ext_resource type="Script" uid="uid://bmy7g2jeb58tv" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_alchemy_room/alchemy_recipe.gd" id="5_recipe"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1sjo8"]
 texture = ExtResource("1_ex6tk")
@@ -6054,6 +6055,9 @@ size = Vector2(1105.06, 335.038)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lukrt"]
 size = Vector2(577, 255)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_recipe"]
+size = Vector2(110, 84)
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_sbjpw"]
 size = Vector2(76.9442, 56.2787)
 
@@ -6070,6 +6074,7 @@ tile_map_data = PackedByteArray("AADT/9//AAAAAAAAAADT/+D/AAAAAAEAAADT/+H/AAAAAAI
 tile_set = SubResource("TileSet_eo4sm")
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
+visible = false
 z_index = 1999
 offset_left = -1318.0
 offset_top = -808.0
@@ -6123,7 +6128,7 @@ position = Vector2(302.667, -492.598)
 [node name="DangerZone" type="Area2D" parent="."]
 position = Vector2(0, 800)
 script = ExtResource("3_eo4sm")
-zone_id = "yuheng_bamboo_outskirts"
+zone_id = "yuheng_sewer"
 distance_threshold_override = 280.0
 chance_override = 0.25
 cooldown_distance_override = 320.0
@@ -6142,6 +6147,15 @@ script = ExtResource("4_amf5x")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="alchemy_table/Area2D"]
 position = Vector2(12.5, 283.5)
 shape = SubResource("RectangleShape2D_lukrt")
+
+[node name="alchemy_recipe" type="Node2D" parent="."]
+position = Vector2(-180, -180)
+script = ExtResource("5_recipe")
+
+[node name="Area2D" type="Area2D" parent="alchemy_recipe"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="alchemy_recipe/Area2D"]
+shape = SubResource("RectangleShape2D_recipe")
 
 [node name="medicine_cabinet" type="Node2D" parent="."]
 script = ExtResource("4_56vsb")

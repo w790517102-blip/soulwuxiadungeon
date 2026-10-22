@@ -131,8 +131,8 @@ rotation = -0.884882
 shape = SubResource("RectangleShape2D_b2bde")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(9, -4.76837e-07)
-scale = Vector2(0.71854, 0.71854)
+position = Vector2(4.18, -20.55)
+scale = Vector2(0.83, 0.83)
 sprite_frames = SubResource("SpriteFrames_ohi11")
 animation = &"idle_right_down"
 

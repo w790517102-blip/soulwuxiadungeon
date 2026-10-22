@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://dh3j3otwjkbxq" path="res://assets/background/Yuheng_Town/yuheng_market_west/yuheng_market_west_night.jpg" id="2_m065t"]
 [ext_resource type="Script" uid="uid://dc6tm6xgkxlmi" path="res://scripts/yuheng/yuheng_marekt_west/night_forbidden_entrance.gd" id="3_oqd8l"]
 [ext_resource type="Script" uid="uid://cuinmdmvxlb01" path="res://scripts/yuheng/yuheng_marekt_west/hong_hue_yin_recall_event_trigger.gd" id="4_6r314"]
-[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/story_scene_entry_fade.gd" id="5_entry_fade"]
+[ext_resource type="Script" uid="uid://b21x3rygo65lw" path="res://scripts/yuheng/yuheng_marekt_west/story_scene_entry_fade.gd" id="5_entry_fade"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_oqd8l"]
 texture = ExtResource("1_otug5")
@@ -12397,14 +12397,13 @@ size = Vector2(135, 277.833)
 size = Vector2(1229.56, 95.4063)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_otug5"]
-size = Vector2(1534, 1024)
+size = Vector2(1509, 1024)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_m065t"]
 size = Vector2(116, 58)
 
 [node name="yuheng_market_west_night" type="Node2D"]
 script = ExtResource("5_entry_fade")
-music_tag = "yuheng_night"
 release_player_after_fade = false
 handoff_node_path = NodePath("Hong_huei_yin_recall_event_trigger")
 
@@ -12443,9 +12442,9 @@ shape = SubResource("RectangleShape2D_d0fsv")
 script = ExtResource("3_oqd8l")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="pharmacy_forbidden"]
-position = Vector2(324.508, 241.354)
+position = Vector2(306, 307)
 rotation = 0.378736
-skew = -0.378736
+skew = 0.406662
 shape = SubResource("RectangleShape2D_yqum2")
 
 [node name="Bamboo_Grove_Suburb_forbidden" type="Area2D" parent="."]
@@ -12463,15 +12462,13 @@ rotation = -0.0628319
 shape = SubResource("RectangleShape2D_p8osj")
 
 [node name="CameraBounds" type="Area2D" parent="."]
-visible = false
 position = Vector2(1.375, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
-position = Vector2(14.625, 48)
+position = Vector2(27.125, 48)
 shape = SubResource("RectangleShape2D_otug5")
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
-visible = false
 z_index = 1999
 offset_left = -1318.0
 offset_top = -808.0
@@ -12505,6 +12502,9 @@ offset_bottom = 185.0
 [node name="Hong_huei_yin_recall_event_point" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-213, 185)
 
+[node name="from_yuheng_market_east_night" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(156, 446)
+
 [node name="Hong_huei_yin_recall_event_trigger" type="Node2D" parent="."]
 script = ExtResource("4_6r314")
 
@@ -12513,3 +12513,5 @@ script = ExtResource("4_6r314")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hong_huei_yin_recall_event_trigger/Hong_huei_yin_recall_event"]
 position = Vector2(-213, 189)
 shape = SubResource("RectangleShape2D_m065t")
+
+[connection signal="body_entered" from="to_yuheng_market_east_night" to="." method="_on_to_yuheng_market_east_night_body_entered"]

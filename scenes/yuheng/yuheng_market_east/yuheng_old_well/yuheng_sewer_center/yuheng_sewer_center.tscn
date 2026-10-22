@@ -1,9 +1,11 @@
-[gd_scene load_steps=15 format=4 uid="uid://b6a4mkiw8t8le"]
+[gd_scene load_steps=21 format=4 uid="uid://b6a4mkiw8t8le"]
 
 [ext_resource type="Script" uid="uid://i62a6vu0jp7g" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_center.gd" id="1_ecbg6"]
 [ext_resource type="Texture2D" uid="uid://da86g74t32c42" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_center.jpg" id="2_g64vl"]
 [ext_resource type="Script" uid="uid://b748hmcmlnnot" path="res://scripts/encounter/DangerZone.gd" id="3_g64vl"]
 [ext_resource type="Texture2D" uid="uid://rv1d2j4k228w" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_center/Door_sealed.png" id="4_3sxth"]
+[ext_resource type="PackedScene" uid="uid://ci6hw80gyicai" path="res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_secret_room/bitterness_tone_phantom.tscn" id="5_ixxeg"]
+[ext_resource type="PackedScene" uid="uid://b8hjveka0gg6r" path="res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_secret_room/turbid_tone_phatom.tscn" id="6_40cs3"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_3sxth"]
 texture = ExtResource("2_g64vl")
@@ -6065,6 +6067,24 @@ size = Vector2(140.416, 85.0927)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kier8"]
 size = Vector2(151.892, 70.8564)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_yurla"]
+size = Vector2(183.303, 70.9085)
+
+[sub_resource type="Curve2D" id="Curve2D_7ddi6"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -303, -525, 0, 0, 0, 0, -584, -417)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_qlxna"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -364, -185, 0, 0, 0, 0, -609, -334)
+}
+point_count = 2
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_2kp1v"]
+size = Vector2(182, 127)
+
 [node name="yuheng_sewer_center" type="Node2D"]
 position = Vector2(-500, -1000)
 script = ExtResource("1_ecbg6")
@@ -6122,25 +6142,28 @@ shape = SubResource("RectangleShape2D_40cs3")
 [node name="SpawnPoints" type="Node2D" parent="."]
 position = Vector2(-662.53, -430.85)
 
-[node name="from_yuheng_old_well" type="Marker2D" parent="SpawnPoints"]
+[node name="from_yuheng_old_well_night" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-0.369995, 30.85)
 
 [node name="from_yuheng_sewer_secret_room" type="Marker2D" parent="SpawnPoints"]
-position = Vector2(-269.47, 748.85)
+position = Vector2(1000.53, 1152.85)
 
 [node name="from_yuheng_sewer_talisman_room" type="Marker2D" parent="SpawnPoints"]
-position = Vector2(696.53, -117.15)
+position = Vector2(-297.47, 755.85)
 
 [node name="from_yuheng_sewer_alchemy_room" type="Marker2D" parent="SpawnPoints"]
-position = Vector2(1042.53, 1069.85)
+position = Vector2(748.53, -94.15)
 
 [node name="from_yuheng_sewer_final_room" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(1542.53, 221.85)
 
+[node name="from_yuheng_sewer_music_room" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(1542.53, 1069.85)
+
 [node name="DangerZone" type="Area2D" parent="."]
 position = Vector2(0, 800)
 script = ExtResource("3_g64vl")
-zone_id = "yuheng_bamboo_outskirts"
+zone_id = "yuheng_sewer"
 distance_threshold_override = 280.0
 chance_override = 0.25
 cooldown_distance_override = 320.0
@@ -6154,14 +6177,14 @@ shape = SubResource("RectangleShape2D_3sxth")
 [node name="To_yuheng_sewer_secrect_room" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_sewer_secrect_room"]
-position = Vector2(-1085, 426)
+position = Vector2(91, 876)
 rotation = 0.809833
 shape = SubResource("RectangleShape2D_g64vl")
 
 [node name="To_yuheng_sewer_talisman_room" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_sewer_talisman_room"]
-position = Vector2(258.517, -630.637)
+position = Vector2(-1098, 419)
 rotation = 0.589921
 skew = 0.424115
 shape = SubResource("RectangleShape2D_xsnql")
@@ -6169,7 +6192,7 @@ shape = SubResource("RectangleShape2D_xsnql")
 [node name="To_yuheng_sewer_alchemy_room" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_sewer_alchemy_room"]
-position = Vector2(202, 800)
+position = Vector2(250, -657)
 rotation = 0.516617
 skew = 0.55327
 shape = SubResource("RectangleShape2D_7ddi6")
@@ -6201,8 +6224,54 @@ shape = SubResource("RectangleShape2D_kier8")
 position = Vector2(-1318, -846)
 scale = Vector2(0.871308, 2.18516)
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_sewer_music_room"]
+position = Vector2(2714.71, 745.777)
+rotation = -0.221657
+skew = -0.959931
+shape = SubResource("RectangleShape2D_yurla")
+
+[node name="enemies" type="Node2D" parent="."]
+
+[node name="bitterness_tone_phantom" type="Path2D" parent="enemies"]
+curve = SubResource("Curve2D_7ddi6")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="enemies/bitterness_tone_phantom"]
+position = Vector2(-303, -525)
+rotation = 2.77466
+
+[node name="bitterness_tone_phantom" parent="enemies/bitterness_tone_phantom/PathFollow2D" instance=ExtResource("5_ixxeg")]
+visible = false
+modulate = Color(1, 1, 1, 0)
+position = Vector2(-17.6663, 44.6308)
+rotation = -2.68257
+scale = Vector2(0.36, 0.36)
+
+[node name="turbid_tone_phantom" type="Path2D" parent="enemies"]
+curve = SubResource("Curve2D_qlxna")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="enemies/turbid_tone_phantom"]
+position = Vector2(-364, -185)
+rotation = -2.59519
+
+[node name="turbid_tone_phantom" parent="enemies/turbid_tone_phantom/PathFollow2D" instance=ExtResource("6_40cs3")]
+visible = false
+modulate = Color(1, 1, 1, 0)
+position = Vector2(38.4515, 63.2256)
+rotation = 2.60578
+scale = Vector2(0.37, 0.37)
+
+[node name="yuheng_sewer_center_battle_event" type="Node2D" parent="."]
+
+[node name="Area2D" type="Area2D" parent="yuheng_sewer_center_battle_event"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="yuheng_sewer_center_battle_event/Area2D"]
+position = Vector2(-659, -401.5)
+shape = SubResource("RectangleShape2D_2kp1v")
+
 [connection signal="body_entered" from="To_yuheng_old_well" to="." method="_on_to_yuheng_old_well_body_entered"]
 [connection signal="body_entered" from="To_yuheng_sewer_secrect_room" to="." method="_on_to_yuheng_sewer_secrect_room_body_entered"]
 [connection signal="body_entered" from="To_yuheng_sewer_talisman_room" to="." method="_on_to_yuheng_sewer_talisman_room_body_entered"]
 [connection signal="body_shape_entered" from="To_yuheng_sewer_alchemy_room" to="." method="_on_to_yuheng_sewer_alchemy_room_body_shape_entered"]
 [connection signal="body_entered" from="To_yuheng_sewer_final_room" to="." method="_on_to_yuheng_sewer_final_room_body_entered"]
+[connection signal="body_entered" from="To_yuheng_sewer_music_room" to="." method="_on_to_yuheng_sewer_music_room_body_entered"]
+[connection signal="body_entered" from="yuheng_sewer_center_battle_event/Area2D" to="." method="_on_yuheng_sewer_center_battle_event_body_entered"]

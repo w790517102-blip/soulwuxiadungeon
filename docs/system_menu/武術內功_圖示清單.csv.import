@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dfk5t5x5i4w3u"
+
+[deps]
+
+files=["res://docs/system_menu/武術內功_圖示清單.分組.translation", "res://docs/system_menu/武術內功_圖示清單.檔名.translation", "res://docs/system_menu/武術內功_圖示清單.id.translation", "res://docs/system_menu/武術內功_圖示清單.名稱.translation", "res://docs/system_menu/武術內功_圖示清單.武器類別.translation", "res://docs/system_menu/武術內功_圖示清單.招式分類.translation", "res://docs/system_menu/武術內功_圖示清單.內力.translation", "res://docs/system_menu/武術內功_圖示清單.誰有.translation", "res://docs/system_menu/武術內功_圖示清單.描述（給畫圖參考）.translation"]
+
+source_file="res://docs/system_menu/武術內功_圖示清單.csv"
+dest_files=["res://docs/system_menu/武術內功_圖示清單.分組.translation", "res://docs/system_menu/武術內功_圖示清單.檔名.translation", "res://docs/system_menu/武術內功_圖示清單.id.translation", "res://docs/system_menu/武術內功_圖示清單.名稱.translation", "res://docs/system_menu/武術內功_圖示清單.武器類別.translation", "res://docs/system_menu/武術內功_圖示清單.招式分類.translation", "res://docs/system_menu/武術內功_圖示清單.內力.translation", "res://docs/system_menu/武術內功_圖示清單.誰有.translation", "res://docs/system_menu/武術內功_圖示清單.描述（給畫圖參考）.translation"]
+
+[params]
+
+compress=true
+delimiter=0

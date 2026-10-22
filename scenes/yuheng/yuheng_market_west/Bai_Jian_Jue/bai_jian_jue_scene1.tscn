@@ -17,8 +17,8 @@
 [ext_resource type="Texture2D" uid="uid://duo1jki2tgquv" path="res://assets/background/Yuheng_Town/yuheng_market_west/Bai_Jian_Jue/counter1.png" id="20_i25tl"]
 [ext_resource type="Texture2D" uid="uid://b1jnsvi2ewsf0" path="res://assets/background/Yuheng_Town/yuheng_market_west/Bai_Jian_Jue/counter2.png" id="21_p6gxf"]
 [ext_resource type="Texture2D" uid="uid://d3wo47t5fxjlg" path="res://assets/background/Yuheng_Town/yuheng_market_west/Bai_Jian_Jue/bookshelf5.png" id="22_u1ea3"]
-[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/story_scene_entry_fade.gd" id="23_entry_fade"]
-[ext_resource type="Script" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/baijianju_scene1_guest_dialog.gd" id="24_guest_dialog"]
+[ext_resource type="Script" uid="uid://b21x3rygo65lw" path="res://scripts/yuheng/yuheng_marekt_west/story_scene_entry_fade.gd" id="23_entry_fade"]
+[ext_resource type="Script" uid="uid://bupxhe32qnqax" path="res://scripts/yuheng/yuheng_marekt_west/Bai_Jian_Jue/baijianju_scene1_guest_dialog.gd" id="24_guest_dialog"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1neay"]
 texture = ExtResource("2_xow8k")
@@ -4162,7 +4162,7 @@ point_count = 2
 
 [sub_resource type="Curve2D" id="Curve2D_ldin7"]
 _data = {
-"points": PackedVector2Array(0, 0, 0, 0, -93, 88.405, 0, 0, 0, 0, -144, 230)
+"points": PackedVector2Array(0, 0, 0, 0, -99, 193, 0, 0, 0, 0, -144, 230)
 }
 point_count = 2
 
@@ -4244,7 +4244,6 @@ z_index_offset = 100
 position = Vector2(-279, 353)
 scale = Vector2(0.3, 0.3)
 script = ExtResource("24_guest_dialog")
-guest_id = "guest_a"
 
 [node name="Bookstore_guestB" parent="NPC" instance=ExtResource("7_3e8nv")]
 position = Vector2(259.19, 376.545)
@@ -4319,7 +4318,6 @@ script = ExtResource("14_ejg1f")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="forbidden_zone"]
 position = Vector2(-192.991, 309.841)
 rotation = -0.516617
-scale = Vector2(1, 1)
 skew = -0.479966
 shape = SubResource("RectangleShape2D_64hey")
 
@@ -4340,11 +4338,14 @@ position = Vector2(-111, 390)
 rotation = 2.5128
 
 [node name="Su_mienPath" type="Node2D" parent="."]
+position = Vector2(16.23, -114.56)
 
 [node name="Su_mien_leave1" type="Path2D" parent="Su_mienPath"]
 curve = SubResource("Curve2D_ldin7")
 
 [node name="PathFollow2D" type="PathFollow2D" parent="Su_mienPath/Su_mien_leave1"]
+position = Vector2(-99, 193)
+rotation = 2.45345
 
 [node name="Su_mien_leave2" type="Path2D" parent="Su_mienPath"]
 curve = SubResource("Curve2D_qkjat")

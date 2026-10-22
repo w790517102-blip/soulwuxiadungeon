@@ -2,3 +2,6 @@
 .godot/
 /android/
 *.uid
+
+# Godot 把 docs 裡的 csv 當翻譯表匯入所產生的檔案
+docs/**/*.translation

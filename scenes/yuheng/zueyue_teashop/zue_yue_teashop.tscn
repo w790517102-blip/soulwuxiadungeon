@@ -4268,8 +4268,9 @@ position = Vector2(-300, -39.86)
 shape = SubResource("RectangleShape2D_m3t3a")
 
 [node name="Hong_Huei_Yin" parent="." instance=ExtResource("4_bowu5")]
-position = Vector2(306, -51.615)
-scale = Vector2(0.74, 0.74)
+position = Vector2(306, -46.66)
+rotation = 0.153589
+scale = Vector2(0.8, 0.8)
 script = ExtResource("5_kvxen")
 
 [node name="object" type="Node2D" parent="."]

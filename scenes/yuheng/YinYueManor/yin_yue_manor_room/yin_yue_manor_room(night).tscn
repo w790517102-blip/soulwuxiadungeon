@@ -6140,22 +6140,22 @@ curve = SubResource("Curve2D_7cqxw")
 
 [node name="PathFollow2D" type="PathFollow2D" parent="yin_yue_manor_event_trigger/Liu_yu_go_path"]
 position = Vector2(-206.265, 124)
-rotation = -0.630929
+rotation = -0.668872
 
 [node name="Su_mien_go_path" type="Path2D" parent="yin_yue_manor_event_trigger"]
 curve = SubResource("Curve2D_c6ak2")
 
 [node name="PathFollow2D" type="PathFollow2D" parent="yin_yue_manor_event_trigger/Su_mien_go_path"]
-position = Vector2(-153, 8)
-rotation = -0.571122
+position = Vector2(-153, 3)
+rotation = -0.583077
 
 [node name="Su_mien_back_path" type="Path2D" parent="yin_yue_manor_event_trigger"]
 position = Vector2(0, -0.05)
 curve = SubResource("Curve2D_reoce")
 
 [node name="PathFollow2D" type="PathFollow2D" parent="yin_yue_manor_event_trigger/Su_mien_back_path"]
-position = Vector2(81, -144)
-rotation = 2.98168
+position = Vector2(81, -153)
+rotation = 2.95663
 
 [node name="Su_mien" parent="." instance=ExtResource("3_hnvfs")]
 position = Vector2(-82, -138)

@@ -16,9 +16,9 @@ script = ExtResource("2_ni5ms")
 
 [node name="DialogBox1" type="TextureRect" parent="DialogManager"]
 offset_left = -2.0
-offset_top = 33.5
-offset_right = 1088.0
-offset_bottom = 255.5
+offset_top = 18.67
+offset_right = 1086.44
+offset_bottom = 243.575
 texture = ExtResource("3_uebra")
 expand_mode = 1
 
@@ -35,8 +35,22 @@ theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("4_jb3nc")
 theme_override_font_sizes/font_size = 28
 
+[node name="SpeakerName" type="Label" parent="DialogManager/DialogBox1"]
+visible = false
+z_index = 999
+layout_mode = 0
+offset_left = 61.0
+offset_top = 12.0
+offset_right = 300.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("4_jb3nc")
+theme_override_font_sizes/font_size = 22
+
 [node name="HeadShot1" type="Sprite2D" parent="DialogManager/DialogBox1"]
-position = Vector2(986.47, 100.875)
+position = Vector2(986.47, 104.19)
 scale = Vector2(1.25, 1.25)
 
 [node name="DialogBox2" type="TextureRect" parent="DialogManager"]
@@ -58,6 +72,20 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("4_jb3nc")
 theme_override_font_sizes/font_size = 28
+
+[node name="SpeakerName" type="Label" parent="DialogManager/DialogBox2"]
+visible = false
+z_index = 999
+layout_mode = 0
+offset_left = 203.365
+offset_top = 12.0
+offset_right = 442.365
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("4_jb3nc")
+theme_override_font_sizes/font_size = 22
 
 [node name="HeadShot2" type="Sprite2D" parent="DialogManager/DialogBox2"]
 position = Vector2(108.35, 102.345)

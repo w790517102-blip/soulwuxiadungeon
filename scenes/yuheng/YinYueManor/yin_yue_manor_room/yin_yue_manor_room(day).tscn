@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bqxs1dmroypvb" path="res://scripts/yuheng/YinYueManor/yin_yue_manor_room(day).gd" id="1_d51pn"]
 [ext_resource type="Texture2D" uid="uid://c35tqefsseml2" path="res://assets/background/Yuheng_Town/yin_yue_manor/yin_yue_manor_room(day).jpg" id="1_hbvvw"]
 [ext_resource type="PackedScene" uid="uid://be5jvmk4r64mc" path="res://scenes/yuheng/YinYueManor/yin_yue_manor_room/zuo_yin.tscn" id="3_5djl6"]
-[ext_resource type="Script" path="res://scripts/yuheng/YinYueManor/yin_yue_manor_day_shumian.gd" id="su_day_script"]
+[ext_resource type="Script" uid="uid://jfwxb4pgucon" path="res://scripts/yuheng/YinYueManor/yin_yue_manor_day_shumian.gd" id="su_day_script"]
 [ext_resource type="PackedScene" uid="uid://cykxkyibmttl1" path="res://scenes/yuheng/yuheng_market_west/Bai_Jian_Jue/Su_mien.tscn" id="su_mien_scene"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_d51pn"]

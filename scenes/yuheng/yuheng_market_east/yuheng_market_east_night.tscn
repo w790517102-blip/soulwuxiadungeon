@@ -1,6 +1,7 @@
-[gd_scene load_steps=9 format=4 uid="uid://bhy45nvd5l0pc"]
+[gd_scene load_steps=10 format=4 uid="uid://bhy45nvd5l0pc"]
 
 [ext_resource type="Texture2D" uid="uid://cj3sge80opumn" path="res://assets/background/Yuheng_Town/yuheng_market_east.jpg" id="1_5514g"]
+[ext_resource type="Script" uid="uid://djo7lqcx1l07a" path="res://scripts/yuheng/yuheng_market_east/yuheng_market_east_night.gd" id="1_jvoas"]
 [ext_resource type="Texture2D" uid="uid://du0xcu31oymiv" path="res://assets/background/Yuheng_Town/yuheng_market_east_night.jpg" id="2_jvoas"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_du8hm"]
@@ -6580,7 +6581,7 @@ physics_layer_0/collision_layer = 1
 sources/0 = SubResource("TileSetAtlasSource_du8hm")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_0oqvl"]
-size = Vector2(1409, 1059)
+size = Vector2(1364, 1059)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_m4f8j"]
 size = Vector2(97, 58.15)
@@ -6592,6 +6593,7 @@ size = Vector2(38, 190.714)
 size = Vector2(93, 73.5643)
 
 [node name="yuheng_market_east_night" type="Node2D"]
+script = ExtResource("1_jvoas")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999
@@ -6601,6 +6603,7 @@ tile_set = SubResource("TileSet_qb1q0")
 [node name="To_yuheng_outside" type="Area2D" parent="."]
 
 [node name="BlackOverlay" type="ColorRect" parent="."]
+visible = false
 z_index = 1999
 offset_left = -1318.0
 offset_top = -808.0
@@ -6629,31 +6632,30 @@ offset_right = 463.0
 offset_bottom = 185.0
 
 [node name="CameraBounds" type="Area2D" parent="."]
-visible = false
 position = Vector2(-0.81, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
-position = Vector2(-27.69, 2.49998)
+position = Vector2(-50.19, 2.49998)
 shape = SubResource("RectangleShape2D_0oqvl")
 
-[node name="ZueYue_entry" type="Area2D" parent="."]
+[node name="to_zueyue_teashop_night" type="Area2D" parent="."]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ZueYue_entry"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="to_zueyue_teashop_night"]
 position = Vector2(352, 39.15)
 rotation = 0.253073
 skew = -0.219911
 shape = SubResource("RectangleShape2D_m4f8j")
 
-[node name="To_yuheng_market_west" type="Area2D" parent="."]
+[node name="To_yuheng_market_west_night" type="Area2D" parent="."]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_market_west"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_market_west_night"]
 position = Vector2(-735.518, 44.4615)
 rotation = -0.188496
 shape = SubResource("RectangleShape2D_hht7u")
 
-[node name="To_yuheng_old_well" type="Area2D" parent="."]
+[node name="To_yuheng_old_well_night" type="Area2D" parent="."]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_old_well"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="To_yuheng_old_well_night"]
 position = Vector2(156.154, -3.10151)
 rotation = 0.37001
 skew = -0.314159
@@ -6664,3 +6666,18 @@ z_index = -1998
 position = Vector2(-28.105, 2.895)
 scale = Vector2(0.975, 0.975)
 texture = ExtResource("2_jvoas")
+
+[node name="SpawnPoints" type="Node2D" parent="."]
+
+[node name="from_yuheng_market_west_night" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-665, 28)
+
+[node name="from_zueyue_teashop_night" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(328, 149)
+
+[node name="from_yuheng_old_well_night" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(120, 83)
+
+[connection signal="body_entered" from="to_zueyue_teashop_night" to="." method="_on_to_zueyue_teashop_night_body_entered"]
+[connection signal="body_entered" from="To_yuheng_market_west_night" to="." method="_on_to_yuheng_market_west_night_body_entered"]
+[connection signal="body_entered" from="To_yuheng_old_well_night" to="." method="_on_to_yuheng_old_well_night_body_entered"]

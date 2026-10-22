@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3 uid="uid://dvkiukp2pm20m"]
+
+[ext_resource type="Texture2D" uid="uid://cgc5do3sic56t" path="res://assets/fx/yumei_absorption_particles_atlas_4x3_lowres_v2_transparent.png" id="1_ci7wv"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_baqg0"]
+atlas = ExtResource("1_ci7wv")
+region = Rect2(777, 410, 372, 330)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mdsi5"]
+atlas = ExtResource("1_ci7wv")
+region = Rect2(1126, 415, 322, 335)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_rw808"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_baqg0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mdsi5")
+}],
+"loop": true,
+"name": &"small_air_particle",
+"speed": 5.0
+}]
+
+[node name="yumei_element" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_rw808")
+animation = &"small_air_particle"
+frame_progress = 0.745322

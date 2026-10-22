@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3 uid="uid://b8hjveka0gg6r"]
+
+[ext_resource type="Texture2D" uid="uid://bbjf4w256igqc" path="res://assets/sprites/enemy/bitterness_and_turbid.png" id="1_b2eb7"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cnoyh"]
+atlas = ExtResource("1_b2eb7")
+region = Rect2(810, 472, 357, 472)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_7r4od"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cnoyh")
+}],
+"loop": true,
+"name": &"idle_left_up",
+"speed": 5.0
+}]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_82tbh"]
+radius = 23.0
+height = 70.0
+
+[node name="turbid_tone_phatom" type="CharacterBody2D"]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_7r4od")
+animation = &"idle_left_up"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_82tbh")

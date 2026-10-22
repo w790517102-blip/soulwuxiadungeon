@@ -1,0 +1,330 @@
+extends Node3D
+## The sword cut as a bundle of ribbons, grown from the original single glowing ribbon
+## (SwordTrail3D). Several ribbons in mint, white, deep mint, red and orange run along one common
+## orbit, each at its own depth and each made of crossing strips (so it has volume, not a flat
+## overlay). Every ribbon is broken into separate pointed pieces with gaps, like dry-brush strokes
+## that part but all keep the same direction, and loose chips fly off along the orbit. Mist and ink
+## flecks are particles. Struck from our side toward the upper right (mirrored for the other
+## side). Presentation only.
+
+const GhostFire = preload("res://scripts/presentation/CardStageGhostFire.gd")
+
+const TILT := 0.50
+const SWEEP_END := 0.34
+const FADE_START := 0.80
+const SAMPLES := 14
+
+const MINT := Color(0.40, 0.86, 0.68)
+const MINT_DEEP := Color(0.20, 0.62, 0.52)
+const PALE := Color(0.90, 1.0, 0.96)
+const RED := Color(0.46, 0.03, 0.11)
+const ORANGE := Color(1.0, 0.50, 0.16)
+const INK := Color(0.04, 0.04, 0.05)
+
+var duration: float = 0.9
+var progress: float = 0.0:
+	set(value):
+		progress = value
+		_rebuild()
+
+var _unit: float = 1.0
+var _ribbons: Array[Dictionary] = []
+var _chips: Array[Dictionary] = []
+var _mesh_instance: MeshInstance3D
+var _material: StandardMaterial3D
+var _mist: GPUParticles3D
+var _flecks: GPUParticles3D
+var _rng := RandomNumberGenerator.new()
+
+
+# --- The orbit ----------------------------------------------------------------------------------
+
+## A point on the common orbit at `s` (0 = left end, 1 = right end): the lower arc of a flattened
+## ellipse, bowing slightly toward the camera. In units of `_unit`.
+func _orbit(s: float) -> Vector3:
+	var phi: float = lerpf(PI + 0.18, TAU - 0.10, s)
+	return Vector3(cos(phi), sin(phi) * 0.42 + 0.34, 0.10 * sin(PI * s))
+
+
+func _orbit_tangent(s: float) -> Vector3:
+	return (_orbit(minf(s + 0.002, 1.0)) - _orbit(maxf(s - 0.002, 0.0))).normalized()
+
+
+# --- Building -----------------------------------------------------------------------------------
+
+## `length` is the cut's length in world units, `direction` +1 swings from the left up to the
+## right (our side striking), -1 is the mirror image.
+func setup(length: float, direction: float) -> void:
+	_unit = length * 0.5
+	_rng.randomize()
+	scale.x = 1.0 if direction >= 0.0 else -1.0
+	rotation.z = TILT * (1.0 if direction >= 0.0 else -1.0)
+	rotation.y = -0.40 * (1.0 if direction >= 0.0 else -1.0)
+	_material = StandardMaterial3D.new()
+	_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_material.vertex_color_use_as_albedo = true
+	_material.emission_enabled = true
+	_material.emission = Color(0.05, 0.14, 0.12)
+	_material.emission_energy_multiplier = 1.0
+	_mesh_instance = MeshInstance3D.new()
+	_mesh_instance.material_override = _material
+	_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_mesh_instance)
+	_plan_ribbons()
+	_build_chips()
+	_mist = _make_mist()
+	add_child(_mist)
+	_flecks = _make_flecks()
+	add_child(_flecks)
+	_rebuild()
+
+
+func _plan_ribbons() -> void:
+	# offset across the orbit (fraction of the unit), half-width, colour, depth, start delay.
+	var plan: Array = [
+		[0.130, 0.020, PALE, 0.02, 0.00],
+		[0.085, 0.052, MINT, -0.01, 0.02],
+		[0.035, 0.040, PALE, 0.03, 0.05],
+		[0.000, 0.060, MINT_DEEP, 0.00, 0.03],
+		[-0.040, 0.044, MINT, -0.03, 0.08],
+		[-0.080, 0.050, RED, 0.01, 0.10],
+		[-0.115, 0.030, ORANGE, -0.02, 0.14],
+		[-0.150, 0.036, RED, 0.02, 0.17],
+	]
+	for index: int in range(plan.size()):
+		var entry: Array = plan[index]
+		# Break the ribbon into 2-4 separate pieces with gaps, all running the same way.
+		var pieces: Array = []
+		var cursor: float = _rng.randf_range(0.0, 0.10)
+		var piece_count: int = _rng.randi_range(2, 4)
+		for piece: int in range(piece_count):
+			var piece_length: float = _rng.randf_range(0.20, 0.42)
+			var end: float = minf(cursor + piece_length, 1.0)
+			if end - cursor > 0.06:
+				pieces.append([cursor, end])
+			cursor = end + _rng.randf_range(0.03, 0.12)
+			if cursor >= 0.96:
+				break
+		_ribbons.append({
+			"offset": float(entry[0]), "width": float(entry[1]), "colour": entry[2],
+			"depth": float(entry[3]), "delay": float(entry[4]), "pieces": pieces,
+			"lead": _rng.randf_range(0.30, 0.55), "drift": _rng.randf_range(0.06, 0.26),
+			"wobble": _rng.randf_range(0.0, TAU),
+		})
+
+
+## Loose chips of the cut, same colours, flying along the same orbit.
+func _build_chips() -> void:
+	var shape := PrismMesh.new()
+	shape.size = Vector3(1.0, 1.0, 0.1)
+	var palette: Array[Color] = [MINT, MINT, PALE, MINT_DEEP, RED, RED, ORANGE, INK, INK]
+	for index: int in range(46):
+		var s: float = _rng.randf_range(0.0, 0.95)
+		var tangent: Vector3 = _orbit_tangent(s)
+		var side := Vector3(-tangent.y, tangent.x, 0.0)
+		var colour: Color = palette[_rng.randi_range(0, palette.size() - 1)]
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		material.albedo_color = colour
+		var chip := MeshInstance3D.new()
+		chip.mesh = shape
+		chip.material_override = material
+		chip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var home: Vector3 = (_orbit(s) + side * _rng.randf_range(-0.30, 0.30)) * _unit
+		home.z += _rng.randf_range(-0.12, 0.12) * _unit
+		chip.position = home
+		var long_side: float = _rng.randf_range(0.035, 0.11) * _unit
+		chip.scale = Vector3(long_side, long_side * _rng.randf_range(0.3, 0.7), long_side)
+		# Pointing along the orbit, with some scatter.
+		chip.rotation = Vector3(0.0, 0.0, atan2(tangent.y, tangent.x) - PI * 0.5 + _rng.randf_range(-0.35, 0.35))
+		chip.visible = false
+		add_child(chip)
+		_chips.append({
+			"node": chip, "material": material, "home": home, "tangent": tangent, "colour": colour,
+			"delay": _rng.randf_range(0.0, 0.30) * SWEEP_END + s * 0.7 * SWEEP_END,
+			"travel": _rng.randf_range(0.15, 0.85) * _unit,
+		})
+
+
+# --- Animation ------------------------------------------------------------------------------------
+
+func _ease_out(value: float) -> float:
+	return 1.0 - pow(1.0 - clampf(value, 0.0, 1.0), 3.0)
+
+
+## Re-draws every ribbon piece for the current progress: the ribbon grows from its start along the
+## orbit (a head and a fading tail, like the original trail), clipped to its separate pieces.
+func _rebuild() -> void:
+	if _mesh_instance == null:
+		return
+	var sweep: float = _ease_out(progress / SWEEP_END)
+	var fade: float = 1.0 - smoothstep(FADE_START, 1.0, progress)
+	var squash: float = sin(clampf(progress / 0.5, 0.0, 1.0) * PI) * (1.0 - smoothstep(0.5, 0.9, progress))
+	scale.y = 1.0 - 0.24 * squash
+	var vertices := PackedVector3Array()
+	var colours := PackedColorArray()
+	var indices := PackedInt32Array()
+	var drift_phase: float = smoothstep(0.30, 1.0, progress)
+	for ribbon: Dictionary in _ribbons:
+		var delay: float = ribbon.delay
+		var head: float = clampf((sweep - delay) / maxf(1.0 - delay, 0.001), 0.0, 1.0)
+		var shifted: float = head + float(ribbon.drift) * drift_phase * 0.5
+		var tail: float = maxf(0.0, head - float(ribbon.lead) * (1.0 - 0.5 * drift_phase)) + float(ribbon.drift) * drift_phase * 0.5
+		var colour: Color = ribbon.colour
+		for piece: Array in ribbon.pieces:
+			var from_s: float = maxf(float(piece[0]), tail)
+			var to_s: float = minf(float(piece[1]), shifted)
+			if to_s - from_s < 0.012:
+				continue
+			# Black backing first, a little wider (the ink contour), then the coloured ribbon.
+			_add_piece(vertices, colours, indices, ribbon, from_s, to_s, piece, 1.45, Color(INK.r, INK.g, INK.b, 0.78 * fade), 0.0)
+			_add_piece(vertices, colours, indices, ribbon, from_s, to_s, piece, 1.0, Color(colour.r, colour.g, colour.b, 0.97 * fade), 0.02 * _unit)
+	if vertices.is_empty():
+		_mesh_instance.mesh = null
+	else:
+		var arrays: Array = []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_COLOR] = colours
+		arrays[Mesh.ARRAY_INDEX] = indices
+		var ribbon_mesh := ArrayMesh.new()
+		ribbon_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		_mesh_instance.mesh = ribbon_mesh
+	for chip: Dictionary in _chips:
+		var local: float = clampf((progress - float(chip.delay)) / 0.5, 0.0, 1.0)
+		var node: MeshInstance3D = chip.node
+		node.visible = progress > float(chip.delay) and fade > 0.0
+		node.position = (chip.home as Vector3) + (chip.tangent as Vector3) * float(chip.travel) * _ease_out(local)
+		var base: Color = chip.colour
+		(chip.material as StandardMaterial3D).albedo_color = Color(base.r, base.g, base.b, fade * (1.0 - smoothstep(0.55, 1.0, local)))
+
+
+## One piece of a ribbon between orbit positions `from_s` and `to_s`: two crossing strips (volume),
+## pointed at both ends of the piece, with a wobble in thickness so it is not uniform.
+func _add_piece(vertices: PackedVector3Array, colours: PackedColorArray, indices: PackedInt32Array, ribbon: Dictionary, from_s: float, to_s: float, piece: Array, widen: float, colour: Color, lift: float) -> void:
+	for strip: int in range(2):
+		var base_index: int = vertices.size()
+		for sample: int in range(SAMPLES):
+			var section: float = float(sample) / float(SAMPLES - 1)
+			var s: float = lerpf(from_s, to_s, section)
+			var piece_t: float = clampf((s - float(piece[0])) / maxf(float(piece[1]) - float(piece[0]), 0.001), 0.0, 1.0)
+			var tangent: Vector3 = _orbit_tangent(s)
+			var side: Vector3 = Vector3(-tangent.y, tangent.x, 0.0) if strip == 0 else Vector3(0.0, 0.0, 1.0)
+			var centre: Vector3 = (_orbit(s) + Vector3(-tangent.y, tangent.x, 0.0) * float(ribbon.offset)) * _unit
+			centre.z += float(ribbon.depth) * _unit + lift
+			# Fat early in the piece, pointed at both ends; a ragged thickness along it.
+			var taper: float = pow(sin(PI * pow(piece_t, 0.6)), 0.9)
+			var ragged: float = 0.75 + 0.45 * sin(s * 37.0 + float(ribbon.wobble))
+			var width: float = (0.012 + float(ribbon.width) * taper * ragged) * _unit * widen * (1.0 if strip == 0 else 0.55)
+			vertices.append(centre - side * width)
+			vertices.append(centre + side * width)
+			colours.append(colour)
+			colours.append(colour)
+			if sample > 0:
+				var offset: int = base_index + sample * 2
+				indices.append_array(PackedInt32Array([offset - 2, offset - 1, offset, offset - 1, offset + 1, offset]))
+
+
+# --- Particles ------------------------------------------------------------------------------------
+
+func _billboard_material(texture: Texture2D) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.vertex_color_use_as_albedo = true
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.albedo_texture = texture
+	material.render_priority = 31
+	return material
+
+
+func _ramp(colors: PackedColorArray, offsets: PackedFloat32Array) -> GradientTexture1D:
+	var gradient := Gradient.new()
+	gradient.offsets = offsets
+	gradient.colors = colors
+	var texture := GradientTexture1D.new()
+	texture.gradient = gradient
+	return texture
+
+
+## Pale mint mist puffing off the leading edge (GPU particles).
+func _make_mist() -> GPUParticles3D:
+	var particles := GPUParticles3D.new()
+	var process := ParticleProcessMaterial.new()
+	process.direction = Vector3(-1.0, 0.0, 0.0)
+	process.spread = 70.0
+	process.initial_velocity_min = _unit * 0.12
+	process.initial_velocity_max = _unit * 0.55
+	process.gravity = Vector3.ZERO
+	process.damping_min = _unit * 0.5
+	process.damping_max = _unit * 1.0
+	process.scale_min = 0.6
+	process.scale_max = 1.8
+	process.color_ramp = _ramp(
+		PackedColorArray([Color(0.86, 0.98, 0.93, 0.0), Color(0.80, 0.97, 0.90, 0.45), Color(0.55, 0.85, 0.75, 0.0)]),
+		PackedFloat32Array([0.0, 0.3, 1.0]))
+	particles.process_material = process
+	var quad := QuadMesh.new()
+	quad.size = Vector2(_unit * 0.14, _unit * 0.14)
+	quad.material = _billboard_material(GhostFire._soft_dot())
+	particles.draw_pass_1 = quad
+	particles.amount = 70
+	particles.lifetime = 0.7
+	particles.visibility_aabb = AABB(Vector3(-8, -8, -8), Vector3(16, 16, 16))
+	particles.emitting = false
+	return particles
+
+
+## A burst of small black ink dots at the impact (GPU particles).
+func _make_flecks() -> GPUParticles3D:
+	var particles := GPUParticles3D.new()
+	var process := ParticleProcessMaterial.new()
+	process.direction = Vector3(1.0, 0.4, 0.0)
+	process.spread = 120.0
+	process.initial_velocity_min = _unit * 0.7
+	process.initial_velocity_max = _unit * 2.3
+	process.gravity = Vector3(0.0, -_unit * 0.9, 0.0)
+	process.damping_min = _unit * 0.3
+	process.damping_max = _unit * 0.9
+	process.scale_min = 0.25
+	process.scale_max = 0.9
+	process.color_ramp = _ramp(
+		PackedColorArray([Color(0.04, 0.04, 0.05, 1.0), Color(0.04, 0.04, 0.05, 0.9), Color(0.04, 0.04, 0.05, 0.0)]),
+		PackedFloat32Array([0.0, 0.7, 1.0]))
+	particles.process_material = process
+	var quad := QuadMesh.new()
+	quad.size = Vector2(_unit * 0.05, _unit * 0.05)
+	quad.material = _billboard_material(GhostFire._soft_dot())
+	particles.draw_pass_1 = quad
+	particles.amount = 90
+	particles.lifetime = 0.8
+	particles.one_shot = true
+	particles.explosiveness = 0.92
+	particles.visibility_aabb = AABB(Vector3(-8, -8, -8), Vector3(16, 16, 16))
+	particles.emitting = false
+	return particles
+
+
+## Plays the cut once; frees itself at the end. Awaitable.
+func play() -> void:
+	progress = 0.0
+	_mist.position = _orbit(0.0) * _unit
+	_mist.emitting = true
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(self, "progress", 1.0, duration)
+	tween.tween_method(func(value: float) -> void: _mist.position = _orbit(clampf(_ease_out(value / SWEEP_END), 0.0, 1.0)) * _unit, 0.0, 1.0, duration)
+	get_tree().create_timer(duration * SWEEP_END).timeout.connect(_burst)
+	get_tree().create_timer(duration * 0.5).timeout.connect(func() -> void: _mist.emitting = false)
+	await tween.finished
+	await get_tree().create_timer(0.3).timeout
+	queue_free()
+
+
+func _burst() -> void:
+	_flecks.position = _orbit(0.58) * _unit
+	_flecks.restart()
+	_flecks.emitting = true

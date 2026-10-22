@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bbd6p0khdwlb6"
-path="res://.godot/imported/equip_actor_card_normal_02.png-d19c18bb57201fbacaeb11770eb7703b.ctex"
+uid="uid://bmwpkjynuiqxe"
+path="res://.godot/imported/candle_corner_original.png-27e4739c88808ff2583f315968213088.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/system_menu/equipment_originals/equip_actor_card_normal_02.png"
-dest_files=["res://.godot/imported/equip_actor_card_normal_02.png-d19c18bb57201fbacaeb11770eb7703b.ctex"]
+source_file="res://docs/system_menu/concept_cutouts_v1/original_pixels/candle_corner_original.png"
+dest_files=["res://.godot/imported/candle_corner_original.png-27e4739c88808ff2583f315968213088.ctex"]
 
 [params]
 

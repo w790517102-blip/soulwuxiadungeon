@@ -1,8 +1,8 @@
 [gd_scene load_steps=12 format=4 uid="uid://cjyginuctx1xt"]
 
 [ext_resource type="Script" uid="uid://dfab63fb2180q" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_true/yuheng_sewer_true.gd" id="1_asxju"]
-[ext_resource type="Script" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 [ext_resource type="Texture2D" uid="uid://cvl25i7bam1nq" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_true/yuheng_sewer_true.jpg" id="2_1qrjt"]
+[ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_5hrbl"]
 texture = ExtResource("2_1qrjt")
@@ -6188,100 +6188,98 @@ position = Vector2(435, 220)
 position = Vector2(-577, -405)
 shape = SubResource("RectangleShape2D_qd_medium")
 
-
-
 [node name="InteractionZones" type="Node2D" parent="."]
 
 [node name="memory_qin" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
-display_name = "水邊舊琴"
 mode = 2
+display_name = "水邊舊琴"
 interaction_radius = 0.0
 hover_margin = 2.0
-use_sprite_feet = false
-require_facing = true
 selection_polygon = PackedVector2Array(119.3, 251.4, 238.6, 190.9, 301.8, 221.2, 186.5, 284.8)
-zone_polygon = PackedVector2Array(15.8, 264.9, 233.9, 152.0, 406.9, 235.5, 194.4, 349.3)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(15.8, 264.9, 233.9, 152, 406.9, 235.5, 194.4, 349.3)
+require_facing = true
 
 [node name="qin_collision" type="StaticBody2D" parent="InteractionZones"]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionZones/qin_collision"]
-polygon = PackedVector2Array(127.2, 281.6, 244.1, 228.3, 323.1, 270.5, 306.5, 280.0, 278.1, 265.7, 188.8, 308.7)
+polygon = PackedVector2Array(127.2, 281.6, 244.1, 228.3, 323.1, 270.5, 306.5, 280, 278.1, 265.7, 188.8, 308.7)
 
 [node name="memory_writing_desk" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
-display_name = "書案"
 mode = 2
+display_name = "書案"
 interaction_radius = 0.0
 hover_margin = 2.0
-use_sprite_feet = false
-require_facing = true
 selection_polygon = PackedVector2Array(-57.7, -200.5, -2.4, -221.2, 97.2, -177.4, 47.4, -156.7)
+use_sprite_feet = false
 zone_polygon = PackedVector2Array(-127.2, -172.6, -0.8, -229.1, 172.2, -155.9, 41.9, -91.5)
+require_facing = true
 
 [node name="desk_collision" type="StaticBody2D" parent="InteractionZones"]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionZones/desk_collision"]
-polygon = PackedVector2Array(-58.5, -170.3, -7.1, -187.8, 92.4, -144.0, 45.0, -124.9)
+polygon = PackedVector2Array(-58.5, -170.3, -7.1, -187.8, 92.4, -144, 45, -124.9)
 
 [node name="memory_medicine_cabinet" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
-display_name = "藥櫃"
 mode = 2
+display_name = "藥櫃"
 interaction_radius = 0.0
 hover_margin = 2.0
-use_sprite_feet = false
-require_facing = true
 selection_polygon = PackedVector2Array(-541.2, -161.5, -447.2, -190.9, -420.3, -174.2, -416.4, -27.8, -496.9, 6.4, -530.1, -11.1)
+use_sprite_feet = false
 zone_polygon = PackedVector2Array(-531.7, -11.1, -449.5, 36.6, -363.4, -4.8, -445.6, -45.3)
+require_facing = true
 
 [node name="cabinet_collision" type="StaticBody2D" parent="InteractionZones"]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionZones/cabinet_collision"]
-polygon = PackedVector2Array(-530.1, -11.1, -446.4, -44.6, -415.6, -27.0, -496.9, 6.4)
+polygon = PackedVector2Array(-530.1, -11.1, -446.4, -44.6, -415.6, -27, -496.9, 6.4)
 
 [node name="loot_herb_basket" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
-display_name = "竹籃"
 mode = 2
+display_name = "竹籃"
 interaction_radius = 0.0
 hover_margin = 2.0
+selection_polygon = PackedVector2Array(-571, -57.4, -535, -72.6, -518.7, -64.4, -513.3, 23.1, -556.2, 37.8, -569, 34.1)
 use_sprite_feet = false
+zone_polygon = PackedVector2Array(-571, -36.6, -458.4, 11.1, -457.4, 44.4, -571, 86.2)
 require_facing = true
-selection_polygon = PackedVector2Array(-571.0, -57.4, -535.0, -72.6, -518.7, -64.4, -513.3, 23.1, -556.2, 37.8, -569.0, 34.1)
-zone_polygon = PackedVector2Array(-571.0, -36.6, -458.4, 11.1, -457.4, 44.4, -571.0, 86.2)
 
 [node name="herb_collision" type="StaticBody2D" parent="InteractionZones"]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionZones/herb_collision"]
-polygon = PackedVector2Array(-570.4, -34.8, -485.6, 1.2, -485.6, 16.9, -555.2, 41.8, -569.0, 36.4)
+polygon = PackedVector2Array(-570.4, -34.8, -485.6, 1.2, -485.6, 16.9, -555.2, 41.8, -569, 36.4)
 
 [node name="loot_qi_box" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
-display_name = "書冊後的小木匣"
 mode = 2
+display_name = "書冊後的小木匣"
 interaction_radius = 0.0
 hover_margin = 2.0
-use_sprite_feet = false
-require_facing = true
 selection_polygon = PackedVector2Array(-134.9, -304.2, -37.4, -337.9, -11.6, -325.9, -11.6, -227.8, -107.2, -184.8, -131.7, -196.5)
-zone_polygon = PackedVector2Array(-136.1, -303.4, -37.4, -338.4, 19.2, -314.8, 16.6, -203.1, -107.2, -141.6, -133.0, -157.5)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-136.1, -303.4, -37.4, -338.4, 19.2, -314.8, 16.6, -203.1, -107.2, -141.6, -133, -157.5)
+require_facing = true
 
 [node name="qibox_collision" type="StaticBody2D" parent="InteractionZones"]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionZones/qibox_collision"]
-polygon = PackedVector2Array(-149.3, -178.2, -21.6, -235.3, -1.3, -227.8, -129.6, -170.0)
+polygon = PackedVector2Array(-149.3, -178.2, -21.6, -235.3, -1.3, -227.8, -129.6, -170)
 
 [node name="loot_haste_scroll" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
-display_name = "桌腳旁的符紙"
 mode = 2
+display_name = "桌腳旁的符紙"
 interaction_radius = 0.0
 hover_margin = 2.0
+selection_polygon = PackedVector2Array(44.2, -142, 80.2, -126.7, 45.3, -109.2, 11.7, -126.1)
 use_sprite_feet = false
-require_facing = true
-selection_polygon = PackedVector2Array(44.2, -142.0, 80.2, -126.7, 45.3, -109.2, 11.7, -126.1)
 zone_polygon = PackedVector2Array(43.3, -161.5, 112.4, -127.3, 42.7, -92.3, -24.9, -125.3)
+require_facing = true
 
 [connection signal="body_entered" from="to_yuheng_old_well" to="." method="_on_to_yuheng_old_well_body_entered"]
 [connection signal="body_entered" from="to_yuheng_stalactite_cave" to="." method="_on_to_yuheng_stalactite_cave_body_entered"]

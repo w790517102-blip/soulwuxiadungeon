@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dvukyt3q0opo4"
-path="res://.godot/imported/equip_actor_card_normal_03.png-f83ed5e76d59de5180f4867dedab7a92.ctex"
+uid="uid://br515idxwdcis"
+path="res://.godot/imported/page_flip_filmstrip.png-4fcb34d0e242850e33806dee6da9ae1c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/system_menu/equipment_originals/equip_actor_card_normal_03.png"
-dest_files=["res://.godot/imported/equip_actor_card_normal_03.png-f83ed5e76d59de5180f4867dedab7a92.ctex"]
+source_file="res://docs/system_menu/book_demo/page_flip_filmstrip.png"
+dest_files=["res://.godot/imported/page_flip_filmstrip.png-4fcb34d0e242850e33806dee6da9ae1c.ctex"]
 
 [params]
 

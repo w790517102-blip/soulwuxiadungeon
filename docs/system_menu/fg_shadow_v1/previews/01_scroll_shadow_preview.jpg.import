@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://jb4aok2ykkph"
-path="res://.godot/imported/equip_actor_card_selected.png-c1dd4e8b29000bd5aee2400b4eacd084.ctex"
+uid="uid://28fj2uarqpor"
+path="res://.godot/imported/01_scroll_shadow_preview.jpg-3e2c9c2d7b7ff0f2bee6dd99e342270f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/system_menu/equipment_originals/equip_actor_card_selected.png"
-dest_files=["res://.godot/imported/equip_actor_card_selected.png-c1dd4e8b29000bd5aee2400b4eacd084.ctex"]
+source_file="res://docs/system_menu/fg_shadow_v1/previews/01_scroll_shadow_preview.jpg"
+dest_files=["res://.godot/imported/01_scroll_shadow_preview.jpg-3e2c9c2d7b7ff0f2bee6dd99e342270f.ctex"]
 
 [params]
 
