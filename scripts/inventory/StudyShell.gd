@@ -37,7 +37,7 @@ const PRESETS := {
 	"none": {},   # 無前景（比對用）
 	"cloth_big": {
 		"fg_cloth_sword": {"pos": Vector2(0, 648), "anchor": "bl", "layer": "front", "scale": 0.99},    # 青布上緣蓋住分類欄下緣的框約 8px
-		"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 0.689},
+		"fg_teapot_corner": {"pos": Vector2(1152, 648), "anchor": "br", "layer": "front", "scale": 1.0335},      # 藥丸罐子：原 0.689 的 1.5 倍
 		"fg_candle_corner": {"pos": Vector2(1152, 28), "anchor": "tr", "layer": "front", "scale": 0.689},
 		"fg_tassel_right": {"pos": Vector2(1124, 398), "anchor": "tl", "layer": "front", "scale": 0.689},
 	},
