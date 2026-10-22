@@ -636,7 +636,7 @@ func _open_toc() -> void:
 	var pos := Vector2(336, 104)
 	var size_ := Vector2(480, 440)
 	_lore_image("lore_toc_panel", pos, size_, _overlay)
-	_label("目錄　%s" % _cat, pos + Vector2(140, 6), Vector2(200, 34), 22, INK_COL, HORIZONTAL_ALIGNMENT_CENTER, _overlay)
+	_label("目錄　%s" % _cat, pos + Vector2(140, 6), Vector2(200, 34), 22, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, _overlay).add_theme_constant_override("outline_size", 4)
 	var sc := ScrollContainer.new()
 	sc.position = pos + Vector2(180, 70)
 	sc.size = Vector2(size_.x - 270, size_.y - 150)
@@ -654,7 +654,10 @@ func _open_toc() -> void:
 		b.custom_minimum_size = Vector2(0, 30)
 		b.add_theme_font_override("font", FONT)
 		b.add_theme_font_size_override("font_size", 18)
-		b.add_theme_color_override("font_color", INK_COL if bool(e["unlocked"]) else Color("#9A8A6A"))
+		b.add_theme_color_override("font_color", Color("#F6E7B4") if bool(e["unlocked"]) else Color("#B8AC8C"))
+		b.add_theme_color_override("font_hover_color", Color.WHITE)
+		b.add_theme_color_override("font_outline_color", Color.BLACK)
+		b.add_theme_constant_override("outline_size", 3)
 		b.pressed.connect(func():
 			_overlay.visible = false
 			_go(i))
