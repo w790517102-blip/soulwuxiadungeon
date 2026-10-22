@@ -125,5 +125,24 @@ func _run() -> void:
 		menu._set_actor_value(liu, "hp", 20)
 		page._do_cast(mo, "")
 		_check(int(menu._get_actor_value(liu, "hp", 0)) > 20, "all-ally cast heals the whole party")
+
+	# 分類標籤的左右切換鈕：翻得動，不會被「選中的分類」拉回原頁
+	page._on_actor_pressed("liuyu")
+	page.category = "全部"
+	page._cat_page = 0
+	page._rebuild_categories()
+	if page._cats.size() >= 4:
+		var first_tab: String = ""
+		for c in page._cat_row.get_children():
+			if c is Button:
+				first_tab = c.text
+				break
+		page._cat_page = 1
+		page._rebuild_categories(false)
+		var shown: Array = []
+		for c in page._cat_row.get_children():
+			if c is Button:
+				shown.append(c.text)
+		_check(not shown.has(first_tab), "the category arrow pages to a different set of tabs")
 	print("PASS test_martial_page" if _failures == 0 else "FAILED test_martial_page: %d" % _failures)
 	quit(1 if _failures > 0 else 0)

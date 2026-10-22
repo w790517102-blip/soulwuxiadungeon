@@ -494,15 +494,15 @@ func _refresh_left() -> void:
 		# 暫代：先用屬性徽記；共邊國交「快遲柔剛」單字素材後換成單字
 		_m_image("attribute_%s" % ELEMENT_ICONS[cur_el], Vector2.ZERO, Vector2(48, 48), _force_element_holder)
 
-func _rebuild_categories() -> void:
+func _rebuild_categories(follow_selected := true) -> void:
 	_clear(_cat_row)
 	var tabs: Array = ["全部"] + _cats
 	var per := 4
 	var pages := maxi(1, int(ceil(float(tabs.size()) / float(per))))
 	_cat_page = clampi(_cat_page, 0, pages - 1)
-	# 選中的分類一定要在看得到的那一頁
+	# 換角色、換分類時，選中的分類要在看得到的那一頁；用左右鍵翻頁時不能被拉回去
 	var idx := tabs.find(category)
-	if idx >= 0:
+	if follow_selected and idx >= 0:
 		_cat_page = idx / per
 	var overflow := tabs.size() > per
 	var left_x := 0.0
@@ -512,11 +512,11 @@ func _rebuild_categories() -> void:
 		var prev := _tri_button(Rect2(0, 2, 24, 24), "switch_left_normal", "switch_left_hover", "switch_left_pressed", _cat_row)
 		prev.disabled = _cat_page <= 0
 		prev.modulate = Color(1, 1, 1, 0.4) if prev.disabled else Color.WHITE
-		prev.pressed.connect(func(): _cat_page = maxi(0, _cat_page - 1); _rebuild_categories())
+		prev.pressed.connect(func(): _cat_page = maxi(0, _cat_page - 1); _rebuild_categories(false))
 		var nxt := _tri_button(Rect2(CAT_W - 24.0, 2, 24, 24), "switch_right_normal", "switch_right_hover", "switch_right_pressed", _cat_row)
 		nxt.disabled = _cat_page >= pages - 1
 		nxt.modulate = Color(1, 1, 1, 0.4) if nxt.disabled else Color.WHITE
-		nxt.pressed.connect(func(): _cat_page = mini(pages - 1, _cat_page + 1); _rebuild_categories())
+		nxt.pressed.connect(func(): _cat_page = mini(pages - 1, _cat_page + 1); _rebuild_categories(false))
 	var first := _cat_page * per
 	for i in range(first, mini(first + per, tabs.size())):
 		var name_: String = tabs[i]
