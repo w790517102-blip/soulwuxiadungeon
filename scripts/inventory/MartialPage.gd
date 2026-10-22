@@ -807,7 +807,7 @@ func _build_foreground_overlays() -> void:
 			size_.y = size_.x * tsize.y / tsize.x
 		var anchor: Vector2 = d[3]
 		var r := _m_image(String(d[0]), Vector2(d[1]) - size_ * anchor, size_, self)
-		r.z_index = 5
+		r.z_index = 6 if String(d[0]) == "foreground_right" else 5      # 右下的墨壺要高過右緣燭燈柱
 
 ## 內功心法象徵圖：assets/UI/martial/force_<id>.png（共邊國之後逐門補），沒有就用共通的打坐人像
 func _force_icon(force: Dictionary, pos: Vector2, size_: float, large: bool, parent: Node) -> TextureRect:

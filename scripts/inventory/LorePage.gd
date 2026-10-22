@@ -173,10 +173,13 @@ func _build_scene() -> void:
 	_lore_image("lore_quote_plate", Vector2(30, 442), _tex_half("lore_quote_plate"))
 
 func _build_foreground() -> void:
-	for pair in [["lore_fg_left", Vector2(0, 430)], ["lore_fg_right", Vector2(960, 420)]]:
-		var shadow := _lore_image(pair[0] + "_shadow", pair[1], _tex_half(pair[0]))
+	# 右前景的卷軸原圖被上下拉長了：高度壓成 0.8 倍，貼齊原本的底邊
+	for pair in [["lore_fg_left", Vector2(0, 430), 1.0], ["lore_fg_right", Vector2(960, 420), 0.8]]:
+		var sz: Vector2 = _tex_half(pair[0]) * Vector2(1.0, float(pair[2]))
+		var pos: Vector2 = pair[1] + Vector2(0, _tex_half(pair[0]).y - sz.y)
+		var shadow := _lore_image(pair[0] + "_shadow", pos, sz)
 		shadow.z_index = 6
-		var img := _lore_image(pair[0], pair[1], _tex_half(pair[0]))
+		var img := _lore_image(pair[0], pos, sz)
 		img.z_index = 7
 
 func _build_shelf() -> void:
