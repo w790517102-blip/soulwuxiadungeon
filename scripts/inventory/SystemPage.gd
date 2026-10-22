@@ -1,11 +1,11 @@
 extends "res://scripts/inventory/StudyPageBase.gd"
-# 系統頁：書房卷軸版。三個入口：儲存進度、讀取進度（開《江湖行跡錄》）、回標題畫面。
+# 系統頁：書房卷軸版。四個入口：儲存進度、讀取進度（開《江湖行跡錄》）、選項、回標題畫面。按鈕對齊卷軸板塊的中心，不是畫面中心。
 # 「回標題畫面」舊頁的按鈕本來就沒有接任何功能（回標題會重設遊戲狀態，需要另外設計），這裡先放上同一顆鈕，按下去只提示尚未開放。
 
 const ENTRY_SIZE := Vector2(300, 58)
-const ENTRY_X := 426.0
-const ENTRY_Y0 := 214.0
-const ENTRY_GAP := 22.0
+const ENTRY_X := 494.0                 # 卷軸板塊（x 158–1130）的水平中心 644 − 按鈕寬的一半
+const ENTRY_Y0 := 192.0
+const ENTRY_GAP := 16.0
 
 var _note_btn: Button
 
@@ -19,8 +19,8 @@ func _ready() -> void:
 	z_index = 1100
 	_build_background(true)
 	_build_nav("TabSystem")
-	_label("系統", Vector2(426, 120), Vector2(300, 56), 40, INK, HORIZONTAL_ALIGNMENT_CENTER)
-	var entries := [["儲存進度", "btn_primary"], ["讀取進度", "btn_primary"], ["回標題畫面", "btn"]]
+	_label("系統", Vector2(494, 112), Vector2(300, 56), 40, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	var entries := [["儲存進度", "btn_primary"], ["讀取進度", "btn_primary"], ["選項", "btn"], ["回標題畫面", "btn"]]
 	for i in entries.size():
 		var p: String = entries[i][1]
 		var b := _tex_button(ENTRY_SIZE, Vector2(ENTRY_X, ENTRY_Y0 + i * (ENTRY_SIZE.y + ENTRY_GAP)), p + "_normal", p + "_hover", p + "_pressed", p + "_disabled", 48, 16)
@@ -29,7 +29,8 @@ func _ready() -> void:
 		match i:
 			0: b.pressed.connect(_open_chronicle.bind(ChronicleScreen.Mode.SAVE))
 			1: b.pressed.connect(_open_chronicle.bind(ChronicleScreen.Mode.LOAD))
-			2: b.pressed.connect(func(): show_toast("回標題畫面功能尚未開放"))
+			2: b.pressed.connect(func(): show_toast("選項尚未開放"))      # 主選單的「選項」也還是占位
+			3: b.pressed.connect(func(): show_toast("回標題畫面功能尚未開放"))
 	var back := _tex_button(Vector2(165, 38), Vector2(494, 586), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16)
 	back.text = "返回"
 	back.pressed.connect(func(): close_requested.emit())
