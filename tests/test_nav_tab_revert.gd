@@ -25,8 +25,15 @@ func _run() -> void:
 		var before: StyleBox = status_btn.get_theme_stylebox("normal")
 		equip_btn.button_down.emit()
 		var after: StyleBox = status_btn.get_theme_stylebox("normal")
-		ok = before != after
+		ok = (after as StyleBoxTexture).texture != (before as StyleBoxTexture).texture
 		if not ok:
 			print("FAIL the selected tab did not revert on mouse down")
+		# 切走再回來：自己的紅色標籤要停駐（恢復選中）
+		page.visible = false
+		page.visible = true
+		var back: StyleBox = status_btn.get_theme_stylebox("normal")
+		if (back as StyleBoxTexture).texture != (before as StyleBoxTexture).texture:
+			ok = false
+			print("FAIL the selected tab did not come back when the page was shown again")
 	print("PASS test_nav_tab_revert" if ok else "FAILED test_nav_tab_revert")
 	quit(0 if ok else 1)

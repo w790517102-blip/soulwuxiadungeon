@@ -191,6 +191,12 @@ func _build_nav(selected_tab: String) -> void:
 				if current_btn != null:
 					_nav_set_normal(current_btn))
 		x += 110.0
+	# 頁面是建好後隱藏再顯示的：回到這一頁時，自己的紅色標籤要恢復
+	if current_btn != null:
+		var keep := current_btn
+		visibility_changed.connect(func():
+			if visible:
+				_nav_set_selected(keep))
 
 
 func _build_toast() -> void:
@@ -638,5 +644,11 @@ func fill_vertical_name(box: Control, id: String) -> void:
 ## 把導航標籤立刻換成「一般」的黑底外觀（切頁時，舊頁的紅色標籤先退回）
 func _nav_set_normal(b: Button) -> void:
 	for pair in [["normal", "nav_tab_normal"], ["hover", "nav_tab_normal"], ["pressed", "nav_tab_normal"], ["hover_pressed", "nav_tab_normal"], ["disabled", "nav_tab_normal"]]:
+		var bx := _box(pair[1], 0, 0)
+		b.add_theme_stylebox_override(pair[0], bx if bx != null else StyleBoxEmpty.new())
+
+## 把導航標籤恢復成「選中」（紅底）的外觀
+func _nav_set_selected(b: Button) -> void:
+	for pair in [["normal", "nav_tab_selected"], ["hover", "nav_tab_selected"], ["pressed", "nav_tab_selected"], ["hover_pressed", "nav_tab_selected"], ["disabled", "nav_tab_normal"]]:
 		var bx := _box(pair[1], 0, 0)
 		b.add_theme_stylebox_override(pair[0], bx if bx != null else StyleBoxEmpty.new())
