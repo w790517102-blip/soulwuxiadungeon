@@ -173,13 +173,23 @@ func _build_background(with_scroll_body := true) -> void:
 func _build_nav(selected_tab: String) -> void:
 	_panel("nav_bar", 0, 0, Vector2(138, 28), Vector2(889, 48))
 	var x := 142.0
+	var nav_buttons: Array = []
+	var current_btn: Button = null
 	for t in NAV_TABS:
 		var selected: bool = t["name"] == selected_tab
 		# 導航選中沿用 V1 的朱紅底（V2 的半透明疊層版太淡、選中看不出來，暫不採用）
 		var b := _tex_button(Vector2(110, 48), Vector2(x, 28), "nav_tab_selected" if selected else "nav_tab_normal", "nav_tab_selected" if selected else "nav_tab_hover", "nav_tab_selected", "nav_tab_normal", 0, 0)
 		b.text = t["label"]
 		b.add_theme_font_size_override("font_size", 22)
+		nav_buttons.append(b)
+		if selected:
+			current_btn = b
 		b.pressed.connect(func(): tab_requested.emit(String(t["name"])))
+		# 按下別的標籤的瞬間，目前這頁的紅色標籤就先變回黑色（不會同時兩個紅、也不等頁面切完才變）
+		if not selected:
+			b.button_down.connect(func():
+				if current_btn != null:
+					_nav_set_normal(current_btn))
 		x += 110.0
 
 
@@ -624,3 +634,9 @@ func fill_vertical_name(box: Control, id: String) -> void:
 	for ch in job_text:
 		_label(ch, Vector2(0, y), Vector2(box.size.x, 17), 14, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, box)
 		y += 17.0
+
+## 把導航標籤立刻換成「一般」的黑底外觀（切頁時，舊頁的紅色標籤先退回）
+func _nav_set_normal(b: Button) -> void:
+	for pair in [["normal", "nav_tab_normal"], ["hover", "nav_tab_normal"], ["pressed", "nav_tab_normal"], ["hover_pressed", "nav_tab_normal"], ["disabled", "nav_tab_normal"]]:
+		var bx := _box(pair[1], 0, 0)
+		b.add_theme_stylebox_override(pair[0], bx if bx != null else StyleBoxEmpty.new())
