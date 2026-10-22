@@ -5,7 +5,7 @@ extends Node3D
 ## Same contract as the other entity cards: home_position, home_rotation, card_size,
 ## interaction_priority, set_home(), refresh(entity). Presentation only.
 
-const FONT = preload("res://assets/fonts/UIFontKaiti.tres")
+const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const BurnShader = preload("res://scripts/presentation/shaders/card_burn.gdshader")
 const GhostFire = preload("res://scripts/presentation/CardStageGhostFire.gd")
 const ShardBurst = preload("res://scripts/presentation/CardStageShardBurst.gd")

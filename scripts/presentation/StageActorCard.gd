@@ -3,7 +3,7 @@ extends Node3D
 ## resource values and combat outcomes remain owned by BattleController.
 
 const InnerForceDBScript = preload("res://scripts/battlescripts/InnerForceDB.gd")
-const BODY_FONT = preload("res://assets/fonts/UIFontKaiti.tres")
+const BODY_FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const TITLE_FONT = BODY_FONT
 const CANVAS_SIZE := Vector2i(640, 300)
 const VIEWPORT_SIZE := Vector2i(1280, 600)

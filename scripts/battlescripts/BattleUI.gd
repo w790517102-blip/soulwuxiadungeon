@@ -7,9 +7,9 @@ signal battle_opening_confirmed
 const ToneMap = preload("res://scripts/battlestyles/ToneMap.gd")
 const InnerForceDB = preload("res://scripts/battlescripts/InnerForceDB.gd")
 const ItemDB = preload("res://scripts/db/ItemDB.gd")
-const MenuUIFont = preload("res://assets/fonts/UIFontKaiti.tres")
+const MenuUIFont = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const SkillViewScript = preload("res://scripts/battlescripts/SkillView.gd")
-const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/UIFontKaiti.tres"
+const BATTLE_OPENING_FONT_PATH := "res://assets/fonts/DotGothic16-Regular.ttf"
 const BATTLE_OPENING_OVERLAY_POS := Vector2(-20, -60)
 const BATTLE_OPENING_OVERLAY_SIZE := Vector2(1200, 800)
 const DEBUG_ENEMY_PANEL_LAYOUT := true

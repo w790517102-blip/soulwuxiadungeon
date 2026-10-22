@@ -12,8 +12,8 @@ const OPTIONS_PER_PAGE: int = 6
 const PREVIOUS_PAGE: int = -2
 const NEXT_PAGE: int = -3
 const PAGE_INDICATOR: int = -4
-const STAGE_FONT: Font = preload("res://assets/fonts/UIFontKaiti.tres")
-const OPTION_FONT: Font = preload("res://assets/fonts/UIFontKaiti.tres")
+const STAGE_FONT: Font = preload("res://assets/fonts/DotGothic16-Regular.ttf")
+const OPTION_FONT: Font = preload("res://assets/fonts/DotGothic16-Regular.ttf")
 
 var _buttons: Array[Node3D] = []
 var _labels: Array[Label] = []

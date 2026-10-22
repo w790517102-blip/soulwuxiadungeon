@@ -636,7 +636,7 @@ func _open_toc() -> void:
 	var pos := Vector2(336, 104)
 	var size_ := Vector2(480, 440)
 	_lore_image("lore_toc_panel", pos, size_, _overlay)
-	_label("目錄　%s" % _cat, pos + Vector2(140, 6), Vector2(200, 34), 22, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, _overlay).add_theme_constant_override("outline_size", 4)
+	_label("目錄　%s" % _cat, pos + Vector2(140, 12), Vector2(200, 34), 22, Color("#F6E7B4"), HORIZONTAL_ALIGNMENT_CENTER, _overlay).add_theme_constant_override("outline_size", 4)
 	var sc := ScrollContainer.new()
 	sc.position = pos + Vector2(180, 70)
 	sc.size = Vector2(size_.x - 270, size_.y - 150)
