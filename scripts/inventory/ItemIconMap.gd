@@ -68,9 +68,16 @@ static func group_of(item_id: String, item_def: Dictionary = {}) -> int:
 static func icon_path(item_id: String, item_def: Dictionary = {}) -> String:
 	if DEDICATED.has(item_id):
 		return "res://assets/UI/inventory/dedicated/%s_icon.png" % DEDICATED[item_id]
+	# 專屬圖：assets/UI/inventory/dedicated/<道具id>_icon.png 放進去就自動採用（共邊國分批交，沒有的退回通用圖組）
+	var own := "res://assets/UI/inventory/dedicated/%s_icon.png" % item_id
+	if ResourceLoader.exists(own):
+		return own
 	return "res://assets/UI/inventory/item_icon_%02d.png" % group_of(item_id, item_def)
 
 static func art_path(item_id: String, item_def: Dictionary = {}) -> String:
 	if DEDICATED.has(item_id):
 		return "res://assets/UI/inventory/dedicated/%s_art.png" % DEDICATED[item_id]
+	var own := "res://assets/UI/inventory/dedicated/%s_art.png" % item_id
+	if ResourceLoader.exists(own):
+		return own
 	return "res://assets/UI/inventory/item_art_%02d.png" % group_of(item_id, item_def)
