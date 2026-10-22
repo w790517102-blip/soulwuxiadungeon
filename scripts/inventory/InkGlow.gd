@@ -15,8 +15,8 @@ void fragment() {
 	COLOR = vec4(1.0, 1.0, 1.0, halo * outside);
 }"
 
-## 測試用：環境變數 INK_GLOW_MODE（off／first／outer），沒設就是 outer
-static var mode := "outer"
+## 測試用：環境變數 INK_GLOW_MODE（off／first／outer），沒設就是 first（整圈柔光，老闆選定）
+static var mode := "first"
 static var _cache: Dictionary = {}
 static var _shader: Shader
 

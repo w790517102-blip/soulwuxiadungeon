@@ -31,6 +31,12 @@ const EYE_SHIFT := {
 ## 各角色整體的水平對齊：畫面左眼瞳孔與劉語塵在同一個 X（量測：劉語塵 278.8、書眠 271.3，畫布像素）；連弩與背帶跟著人物一起移，相對位置不變
 const CHAR_SHIFT := {"shumian": Vector2(7.5, 0.0)}
 
+## 書眠的新立繪（老闆自行加寬畫布：一階 700、二階 700、三階 760、四階 800，高度都是 972）：每張圖畫布寬度不同，不能再拉伸成 508 寬。
+## 改成「照原比例、以畫面左眼為準」：FIG_LEFT_EYE ＝ 每階圖裡左眼瞳孔的位置（圖的像素，量測 ±5），貼到 FIG_EYE_TARGET（與劉語塵左眼同一個 X）。
+const FIG_LEFT_EYE := {"shumian": {1: Vector2(365, 170), 2: Vector2(370, 172), 3: Vector2(392, 168), 4: Vector2(432, 175)}}
+const FIG_EYE_TARGET := Vector2(278.8, 171.0)
+const FIG_HEAD_EYE_IN_REGION := Vector2(169.3, 171.0)      # 頭像裁切框（290×313）裡左眼要在的位置（沿用舊版的構圖）
+
 const ORDER_MASTER := ["master", "weapon_back", "weapon_front"]
 ## 劍大方露出來（老闆定案）：衣服不蓋劍，所以劍的兩層都放在所有衣裝層的上面
 const ORDER_TIERED := ["back", "body", "cloak_front", "front", "weapon_back", "weapon_front"]
@@ -184,6 +190,15 @@ static func head_portrait(id: String) -> Texture2D:
 	if pick.is_empty():
 		return null
 	var used := int(pick["rarity"])
+	if FIG_LEFT_EYE.has(id) and String(pick["kind"]) != "tiered":
+		var le: Vector2 = Dictionary(FIG_LEFT_EYE[id]).get(used, Vector2.ZERO)
+		var o := le - FIG_HEAD_EYE_IN_REGION
+		origin = Vector2(maxf(0.0, o.x), maxf(0.0, o.y))
+		path = DIR + ("doll_%s_master.png" % id if String(pick["kind"]) == "master" else "doll_%s_r%d.png" % [id, used])
+		var at := AtlasTexture.new()
+		at.atlas = load(path) as Texture2D
+		at.region = Rect2(origin, region.size)
+		return at
 	match String(pick["kind"]):
 		"tiered":
 			# 分層衣裝：頭部那層（front）只有頭髮與領子，單獨裁會缺一塊，所以把 back、body、cloak_front、front 四層疊起來再裁
@@ -317,6 +332,7 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			order.insert(at, "strap")
 			order.insert(at + 1, "mech")
 	_apply_shift(shift)
+	_layout_figure_by_eye(fig_id, art_r if String(pick["kind"]) == "whole" else 1)
 	# 整張人物圖（一～三階）縮放成第四階的大小：以左眼為支點
 	var fig_layer := _layers["master"] as TextureRect
 	fig_layer.scale = Vector2.ONE * fig_scale
@@ -331,3 +347,21 @@ func show_actor(id: String, master_name: String = "") -> Dictionary:
 			mr2.offset_bottom += mech_shift.y
 	_apply_order(order)
 	return info
+
+## 有 FIG_LEFT_EYE 的角色：整張人物圖照原比例（1 圖像素＝0.5 邏輯 px）貼上，左眼對到 FIG_EYE_TARGET
+func _layout_figure_by_eye(id: String, rarity: int) -> void:
+	if not FIG_LEFT_EYE.has(id):
+		return
+	var r := _layers["master"] as TextureRect
+	if r.texture == null:
+		return
+	var le: Vector2 = Dictionary(FIG_LEFT_EYE[id]).get(rarity, Vector2.ZERO)
+	if le == Vector2.ZERO:
+		return
+	var d := (FIG_EYE_TARGET - le) * 0.5
+	var w := float(r.texture.get_width())
+	var h := float(r.texture.get_height())
+	r.offset_left = d.x
+	r.offset_right = d.x + (w - 508.0) * 0.5
+	r.offset_top = d.y
+	r.offset_bottom = d.y + (h - 972.0) * 0.5
