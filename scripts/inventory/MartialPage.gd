@@ -18,7 +18,6 @@ const CARD_SIZE := Vector2(138, 96)
 const MD := "res://assets/UI/martial/"       # 共邊國武術頁素材（2 倍圖；說明見 docs/system_menu/martial_originals/）
 const WEAPON_ICONS := {"刀": "dao", "劍": "jian", "琴": "qin", "筆": "brush", "棍": "staff", "槍": "spear", "拳": "fist", "掌": "palm", "通用": "universal"}
 const ELEMENT_ICONS := {"快": "fast", "遲": "slow", "柔": "soft", "剛": "hard"}
-const EDGE_RIGHT_X_SCALE := 1.3                 # 右緣前景（立柱卷軸）橫向放大倍數
 const COMPANION_SLOTS := 3                    # 左邊名帖列至少排這麼多格，不足的用空位補滿
 ## 內功面板（紙面 x214–397、y144–599）
 const FORCE_X := 222.0
@@ -806,8 +805,6 @@ func _build_foreground_overlays() -> void:
 			size_.x = size_.y * tsize.x / tsize.y
 		elif size_.y == 0.0:
 			size_.y = size_.x * tsize.y / tsize.x
-		if String(d[0]) == "foreground_edge_right":
-			size_.x *= EDGE_RIGHT_X_SCALE      # 右緣立柱太瘦：只橫向加寬，高度不變，右緣貼齊
 		var anchor: Vector2 = d[3]
 		var r := _m_image(String(d[0]), Vector2(d[1]) - size_ * anchor, size_, self)
 		r.z_index = 6 if String(d[0]) == "foreground_right" else 5      # 右下的墨壺要高過右緣燭燈柱
