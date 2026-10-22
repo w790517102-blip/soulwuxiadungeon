@@ -31,6 +31,7 @@ const FAST_DUR := 0.13
 const FAST_MAX := 6
 const INK_COL := Color("#2B1B0E")
 const GOLD_COL := Color("#E8D49A")
+const BODY_COL := Color("#F6E7B4")           # 內文：淺色字＋黑色外框（標題維持墨色，先混搭看看）
 
 const SHADER := "shader_type canvas_item;
 uniform float t = 0.0;
@@ -400,6 +401,9 @@ func _vlabel(parent: Node, text: String, pos: Vector2, size_: Vector2, fs: int, 
 	l.add_theme_font_override("font", FONT)
 	l.add_theme_font_size_override("font_size", fs)
 	l.add_theme_color_override("font_color", col)
+	if col == BODY_COL:
+		l.add_theme_color_override("font_outline_color", Color.BLACK)
+		l.add_theme_constant_override("outline_size", 2)      # 頁面以 2 倍解析度排版，2 ≈ 實際 4px
 	parent.add_child(l)
 	return l
 
@@ -443,7 +447,7 @@ func _page_tex(idx: int) -> Texture2D:
 				tr.position = Vector2(60, 118)
 				tr.size = Vector2(230, 180)
 				c.add_child(tr)
-			var s := _vlabel(c, String(e["summary"]), Vector2(50, 348), Vector2(248, 78), 15, INK_COL)
+			var s := _vlabel(c, String(e["summary"]), Vector2(50, 348), Vector2(248, 78), 15, BODY_COL)
 			s.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	else:
 		_vlabel(c, "詳細資料", Vector2(28, 26), Vector2(90, 22), 13, GOLD_COL, HORIZONTAL_ALIGNMENT_CENTER, false)
@@ -459,7 +463,7 @@ func _fill_details(c: Control, e: Dictionary) -> void:
 	var prose := String(e.get("prose", ""))
 	if prose != "":
 		_vimage(c, "lore_hero_prose_field", Vector2(30, 112), Vector2(290, 330))
-		var t := _vlabel(c, prose, Vector2(44, 126), Vector2(262, 300), 17, INK_COL)
+		var t := _vlabel(c, prose, Vector2(44, 126), Vector2(262, 300), 17, BODY_COL)
 		t.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		return
 	var y := 112.0
@@ -467,13 +471,13 @@ func _fill_details(c: Control, e: Dictionary) -> void:
 		_vimage(c, "lore_row_label_shared", Vector2(30, y), Vector2(90, 24))
 		_vimage(c, "lore_row_field_shared", Vector2(120, y), Vector2(200, 24))
 		_vlabel(c, String(row[0]), Vector2(34, y), Vector2(82, 24), 13, GOLD_COL, HORIZONTAL_ALIGNMENT_CENTER, false)
-		_vlabel(c, String(row[1]), Vector2(138, y), Vector2(172, 24), 13, INK_COL, HORIZONTAL_ALIGNMENT_LEFT, false)
+		_vlabel(c, String(row[1]), Vector2(138, y), Vector2(172, 24), 13, BODY_COL, HORIZONTAL_ALIGNMENT_LEFT, false)
 		y += 32.0
 	var desc := String(e.get("summary", ""))
 	if String(e.get("art", "")) != "" and desc != "" and (e.get("rows", []) as Array).size() <= 3:
 		_vimage(c, "lore_row_label_shared", Vector2(30, y + 4), Vector2(90, 24))
 		_vlabel(c, "敘述", Vector2(34, y + 4), Vector2(82, 24), 13, GOLD_COL, HORIZONTAL_ALIGNMENT_CENTER, false)
-		var d := _vlabel(c, desc, Vector2(32, y + 36), Vector2(286, 200), 16, INK_COL)
+		var d := _vlabel(c, desc, Vector2(32, y + 36), Vector2(286, 200), 16, BODY_COL)
 		d.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
 func _trim_pages(center: int) -> void:
