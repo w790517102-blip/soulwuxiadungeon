@@ -87,7 +87,6 @@ current_tab = 0
 tabs_visible = false
 
 [node name="狀態" type="VBoxContainer" parent="VBoxContainer"]
-visible = false
 z_index = 1024
 layout_mode = 2
 metadata/_tab_index = 0
@@ -574,6 +573,7 @@ text = "請從左側選擇條目。
 （奇物 / 豪傑 / 神怪 詳細資料預留）"
 
 [node name="系統" type="VBoxContainer" parent="VBoxContainer"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 7
 
