@@ -20,9 +20,9 @@ const HINGE_GAP := 10.0                      # 頁面離書脊的距離
 const SHELF_SIZE := Vector2(260, 338)        # 斜放書（800×1040 ×0.65 ÷2）
 const SHELF_POS := [Vector2(200, 155), Vector2(494, 155), Vector2(788, 155)]
 const SHELF_SCALE := 0.325
-const SHELF_HOOK := Vector2(667.8, 177.5)    # 吊飾在斜放書圖上的掛點（原圖像素）
+const SHELF_HOOK := Vector2(228, 24)        # 吊飾掛點：斜放書右上角（書圖上的邏輯 px，已含縮放）
 const CHARM_PIVOT := Vector2(128, 10)
-const CHARM_SCALE := 0.55
+const CHARM_SCALE := 0.30            # 吊飾大小（貼圖 256×1024 → 約 77×307 邏輯，接近書高）
 const COVER_PROGRESS := Vector2(370, 860)    # 封面進度安全區中心（原圖像素），經投影換到斜放書
 const HOMOGRAPHY := [[0.9045526666038237, -0.06772240680197403, 88.0], [0.05790911421041597, 0.90986710475589, 40.0], [8.55634536982765e-06, -4.1092636561222095e-05, 1.0]]
 const COLS := 64
@@ -205,10 +205,10 @@ func _build_shelf() -> void:
 		_shelf_img[cat] = img
 		_books[cat] = b
 		# 吊飾（獨立貼圖，繩圈固定、下端自然擺動）
-		var cs := CHARM_SCALE * SHELF_SCALE
+		var cs := CHARM_SCALE
 		var charm := _lore_image("lore_charm_" + file, Vector2.ZERO, Vector2(256, 1024) * cs, b)
 		charm.pivot_offset = CHARM_PIVOT * cs
-		charm.position = SHELF_HOOK * SHELF_SCALE - CHARM_PIVOT * cs
+		charm.position = SHELF_HOOK - CHARM_PIVOT * cs
 		_charms[cat] = charm
 		_start_sway(charm, float(i) * 0.7)
 		# 進度（已錄 ○／○）：封面下方安全區中心經投影換到斜放書上
@@ -349,7 +349,7 @@ func _set_t(v: float, opening := false) -> void:
 	_t = v
 	_mat.set_shader_parameter("t", v)
 	if opening:
-		var a := clampf(v * 3.0, 0.0, 1.0)
+		var a := clampf((v - 0.5) * 4.0, 0.0, 1.0)      # 書皮過了一半才放上書底與內頁，不提早出現
 		_shadow.modulate.a = a
 		_base.modulate.a = a
 
@@ -447,7 +447,7 @@ func _page_tex(idx: int) -> Texture2D:
 		if unlocked:
 			_vlabel(c, String(e["name"]), Vector2(58, 56), Vector2(234, 36), 26, INK_COL, HORIZONTAL_ALIGNMENT_LEFT, false)
 			_fill_details(c, e)
-	_vlabel(c, str(idx + 1), Vector2(0, 434), Vector2(PAGE.x, 20), 12, Color("#8A7A5A"), HORIZONTAL_ALIGNMENT_CENTER, false)
+	_vlabel(c, str(idx + 1 + (1 if right else -1)), Vector2(0, 434), Vector2(PAGE.x, 20), 12, Color("#8A7A5A"), HORIZONTAL_ALIGNMENT_CENTER, false)
 	_page_vps[idx] = vp
 	return vp.get_texture()
 
@@ -482,8 +482,8 @@ func _trim_pages(center: int) -> void:
 func _set_idle(k: int) -> void:
 	_spread = k
 	_leaf.visible = false
-	_left.texture = _page_tex(2 * k - 1)
-	_right.texture = _page_tex(2 * k) if 2 * k < _list.size() * 2 else null
+	_left.texture = _page_tex(2 * k + 1)
+	_right.texture = _page_tex(2 * k)
 	_trim_pages(2 * k)
 
 # ------------------------------------------------------------------
@@ -531,7 +531,7 @@ func open_book(cat: String) -> void:
 	_book.visible = true
 	_shadow.modulate.a = 0.0
 	_base.modulate.a = 0.0
-	await _flip(lore_tex("lore_book_%s_cover" % file), _inside_tex, _inside_tex, _page_tex(0), true, 0.8, true)
+	await _flip(lore_tex("lore_book_%s_cover" % file), _page_tex(1), null, _page_tex(0), true, 0.8, true)
 	_set_idle(0)
 	mode = "book"
 	if start > 0:
@@ -551,7 +551,7 @@ func close_book() -> void:
 	_page_vps.clear()
 	var file: String = CAT_FILE[_cat]
 	var i := EntriesScript.CATEGORIES.find(_cat)
-	await _flip(lore_tex("lore_book_%s_cover" % file), _inside_tex, _inside_tex, _page_tex(0), false, 0.7, true)
+	await _flip(lore_tex("lore_book_%s_cover" % file), _page_tex(1), null, _page_tex(0), false, 0.7, true)
 	_book.visible = false
 	_leaf.visible = false
 	_fly = _lore_image("lore_book_%s_cover" % file, RIGHT_POS, PAGE)
@@ -583,20 +583,20 @@ func close_book() -> void:
 func _entry_unlocked(e: int) -> bool:
 	return e >= 0 and e < _list.size() and bool((_list[e] as Dictionary).get("unlocked", false))
 
-## 這一個跨頁有沒有東西可看：左頁（前一筆的詳細資料）或右頁（這一筆的簡述）有一邊已收錄
+## 一個跨頁＝同一筆資料：右頁簡述、左頁詳細資料，所以只看這一筆有沒有收錄
 func _valid_spread(j: int) -> bool:
-	return _entry_unlocked(j - 1) or _entry_unlocked(j)
+	return _entry_unlocked(j)
 
 func _turn(dir: int) -> void:
 	var n := _list.size()
 	if dir > 0:
-		if _spread >= n:
+		if _spread >= n - 1:
 			_notice("後續內容待君發掘……\n\n繼續行走江湖，見聞自會增添。")
 			return
 		var j := _spread + 1
-		while j <= n and not _valid_spread(j):
+		while j < n and not _valid_spread(j):
 			j += 1
-		await _go(mini(j, n))
+		await _go(mini(j, n - 1))
 	else:
 		var j := _spread - 1
 		while j >= 0 and not _valid_spread(j):
@@ -618,9 +618,9 @@ func _go(target: int) -> void:
 	for i in shown:
 		var nxt: int = target if i == shown - 1 else base + int(round(float(steps) * float(i + 1) / float(shown))) * (1 if forward else -1)
 		if forward:
-			await _flip(_page_tex(2 * cur), _page_tex(2 * nxt - 1), _page_tex(2 * cur - 1), _page_tex(2 * nxt), true, FLIP_DUR if steps == 1 else FAST_DUR)
+			await _flip(_page_tex(2 * cur), _page_tex(2 * nxt + 1), _page_tex(2 * cur + 1), _page_tex(2 * nxt), true, FLIP_DUR if steps == 1 else FAST_DUR)
 		else:
-			await _flip(_page_tex(2 * nxt), _page_tex(2 * cur - 1), _page_tex(2 * nxt - 1), _page_tex(2 * cur), false, FLIP_DUR if steps == 1 else FAST_DUR)
+			await _flip(_page_tex(2 * nxt), _page_tex(2 * cur + 1), _page_tex(2 * nxt + 1), _page_tex(2 * cur), false, FLIP_DUR if steps == 1 else FAST_DUR)
 		_set_idle(nxt)
 		cur = nxt
 	_busy = false

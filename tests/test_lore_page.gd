@@ -39,9 +39,9 @@ func _run() -> void:
 	page._turn(1)
 	await create_timer(1.6).timeout
 	_check(page._spread >= s0 and not page._busy, "a forward turn lands on a valid spread or stays")
-	page._go(page._list.size())
+	page._go(page._list.size() - 1)
 	await create_timer(2.5).timeout
-	_check(page._spread == page._list.size(), "jumping to the end works")
+	_check(page._spread == page._list.size() - 1, "jumping to the last entry works")
 	page._turn(1)
 	await create_timer(0.3).timeout
 	_check(page._overlay.visible, "turning past the last page shows the notice")
