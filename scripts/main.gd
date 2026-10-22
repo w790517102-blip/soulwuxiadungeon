@@ -1,6 +1,6 @@
 extends Control
 # 主選單：開始遊戲 → Game.tscn（序章文字 → 新遊戲專屬的 intro_room 開場）。
-# 讀取遊戲 → 共用的《江湖行跡錄》（TITLE_LOAD）。教學模式、選項、離開遊戲尚未開放，按下去只提示。
+# 讀取遊戲 → 共用的《江湖行跡錄》（TITLE_LOAD）。教學模式、離開遊戲尚未開放，按下去只提示。
 
 @onready var _notice: Label = $CanvasLayer/Notice
 
@@ -10,8 +10,13 @@ func _ready():
 	_notice.modulate.a = 0.0
 	$ButtonRow/StartButton.pressed.connect(_on_start_button_pressed)
 	$ButtonRow/LoadButton.pressed.connect(_on_load_button_pressed)
-	for node_name in ["TutorialButton", "OptionButton", "ExitButton"]:
+	for node_name in ["TutorialButton", "ExitButton"]:
 		($ButtonRow.get_node(node_name) as BaseButton).pressed.connect(_on_placeholder_pressed.bind(node_name))
+	$ButtonRow/OptionButton.pressed.connect(_on_option_button_pressed)
+
+## 選項：開啟與系統頁共用的選項視窗（音量、畫面）
+func _on_option_button_pressed() -> void:
+	load("res://scripts/ui/OptionsPanel.gd").open(self)
 
 ## 讀取遊戲：開啟共用的《江湖行跡錄》（TITLE_LOAD：只能讀，返回回到這個畫面）
 func _on_load_button_pressed() -> void:

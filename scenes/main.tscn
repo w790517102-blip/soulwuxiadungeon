@@ -78,7 +78,6 @@ layout_mode = 2
 texture_normal = ExtResource("14_b4")
 script = ExtResource("9_btn")
 glow_texture = ExtResource("24_g4")
-placeholder = true
 
 [node name="ExitButton" type="TextureButton" parent="ButtonRow"]
 custom_minimum_size = Vector2(196, 47)
