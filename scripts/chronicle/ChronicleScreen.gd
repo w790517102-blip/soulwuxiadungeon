@@ -30,6 +30,7 @@ const PARTY_BASELINE := 76.0   # 腳底基準線（相對陣容列上緣）
 const PARTY_CHIBI_H := PARTY_BASELINE
 const PARTY_MAX := 3   # 遊戲中隊伍最多三人
 const PARTY_DIR := "res://assets/UI/chronicle_party/"
+const PIXEL_FONT := preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const CONFIRM_RECT := Rect2(216, 124, 720, 400)
 
 var mode: int = Mode.SAVE
@@ -324,7 +325,9 @@ func _show_party(party: Array, leader_level: int) -> void:
 			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			cell.add_child(tr)
 		# 隊伍名字與等級壓在右下的山水上：白字黑框才看得清楚
-		_outlined(_label(SaveManager.actor_display_name(String(m.get("id", ""))), Vector2(0, PARTY_CHIBI_H + 2), Vector2(cell_w, 20), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, cell))
+		var name_l := _label(SaveManager.actor_display_name(String(m.get("id", ""))), Vector2(0, PARTY_CHIBI_H + 2), Vector2(cell_w, 20), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, cell)
+		name_l.add_theme_font_override("font", PIXEL_FONT)      # 角色名稱用點陣字體
+		_outlined(name_l)
 		var lv := int(m.get("level", 0))
 		_outlined(_label("Lv.%d" % lv if lv > 0 else "Lv.?", Vector2(0, PARTY_CHIBI_H + 20), Vector2(cell_w, 20), 14, Color("#F0C850"), HORIZONTAL_ALIGNMENT_CENTER, cell))
 
