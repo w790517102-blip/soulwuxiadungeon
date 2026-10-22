@@ -83,7 +83,7 @@ offset_top = 68.0
 offset_right = 1113.0
 offset_bottom = 631.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_ymoqc")
-current_tab = 7
+current_tab = 0
 tabs_visible = false
 
 [node name="狀態" type="VBoxContainer" parent="VBoxContainer"]

@@ -274,6 +274,8 @@ func _ready():
 	_update_use_button("")
 	if tabs:
 		_sync_custom_tab_visuals(tabs.current_tab)
+	if tabs:
+		_on_tab_changed(tabs.current_tab)      # 開選單先停在「狀態」：新狀態頁要在這時就建好並顯示
 
 func _on_viewport_size_changed() -> void:
 	_align_to_viewport()
