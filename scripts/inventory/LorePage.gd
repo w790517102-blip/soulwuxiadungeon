@@ -31,7 +31,7 @@ const FAST_DUR := 0.13
 const FAST_MAX := 6
 const INK_COL := Color("#2B1B0E")
 const GOLD_COL := Color("#E8D49A")
-const BODY_COL := Color("#F6E7B4")           # 內文：淺色字＋黑色外框（標題維持墨色，先混搭看看）
+const BODY_COL := Color.WHITE                  # 內文：白字＋黑色外框
 
 const SHADER := "shader_type canvas_item;
 uniform float t = 0.0;
@@ -403,7 +403,7 @@ func _vlabel(parent: Node, text: String, pos: Vector2, size_: Vector2, fs: int, 
 	l.add_theme_color_override("font_color", col)
 	if col == BODY_COL:
 		l.add_theme_color_override("font_outline_color", Color.BLACK)
-		l.add_theme_constant_override("outline_size", 2)      # 頁面以 2 倍解析度排版，2 ≈ 實際 4px
+		l.add_theme_constant_override("outline_size", 4)      # 頁面以 2 倍解析度排版，4 ≈ 實際 8px
 	parent.add_child(l)
 	return l
 
