@@ -329,7 +329,7 @@ func _show_party(party: Array, leader_level: int) -> void:
 		name_l.add_theme_font_override("font", PIXEL_FONT)      # 角色名稱用點陣字體
 		_outlined(name_l)
 		var lv := int(m.get("level", 0))
-		var lv_l := _label("Lv.%d" % lv if lv > 0 else "Lv.?", Vector2(0, PARTY_CHIBI_H + 20), Vector2(cell_w, 20), 14, Color("#F0C850"), HORIZONTAL_ALIGNMENT_CENTER, cell)
+		var lv_l := _label("Lv.%d" % lv if lv > 0 else "Lv.?", Vector2(0, PARTY_CHIBI_H + 20), Vector2(cell_w, 20), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, cell)
 		lv_l.add_theme_font_override("font", PIXEL_FONT)
 		_outlined(lv_l)
 

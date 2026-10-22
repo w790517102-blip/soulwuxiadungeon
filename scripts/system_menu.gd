@@ -61,6 +61,9 @@ var _status_page: Control = null
 ## 新武術頁開關：true = 武術分頁改用 scripts/inventory/MartialPage.gd（雙抽屜式內外功管理）；false = 回到舊的武術頁（舊頁原封不動保留）。
 const USE_NEW_MARTIAL_UI := true
 const USE_NEW_LORE_UI := true
+const USE_NEW_SYSTEM_UI := true
+const SystemPageScript = preload("res://scripts/inventory/SystemPage.gd")
+var _system_page: Control = null
 const LorePageScript = preload("res://scripts/inventory/LorePage.gd")
 var _lore_page: Control = null
 const MartialPageScript = preload("res://scripts/inventory/MartialPage.gd")
@@ -329,6 +332,7 @@ func _on_tab_changed(tab_index: int) -> void:
 	_update_status_page(tab_index == $VBoxContainer/狀態.get_index())
 	_update_martial_page(tab_index == martial_tab_index)
 	_update_lore_page(tab_index == lore_tab_index)
+	_update_system_page(tab_index == $VBoxContainer/系統.get_index())
 	if tab_index == item_tab_index:
 		_refresh_item_tab()
 	elif tab_index == equipment_tab_index:
@@ -360,6 +364,19 @@ func _update_inventory_page(show_it: bool) -> void:
 			_inventory_page._refresh()
 
 ## 新武術頁：停在武術分頁時顯示，離開時隱藏（舊頁節點照常存在，開關關掉就回到舊頁）。
+## 新系統頁（儲存、讀取、回標題）：停在系統分頁時顯示，舊頁節點照常存在。
+func _update_system_page(show_it: bool) -> void:
+	if not USE_NEW_SYSTEM_UI:
+		return
+	if show_it and _system_page == null:
+		_system_page = SystemPageScript.new()
+		_system_page.menu = self
+		_system_page.close_requested.connect(func(): SystemMenu._close_system_menu())
+		_system_page.tab_requested.connect(_on_inventory_nav_requested)
+		add_child(_system_page)
+	if _system_page != null:
+		_system_page.visible = show_it
+
 ## 新見聞頁（三本書）：停在見聞分頁時顯示。舊頁節點照常存在，開關關掉就回到舊頁。
 func _update_lore_page(show_it: bool) -> void:
 	if not USE_NEW_LORE_UI:
