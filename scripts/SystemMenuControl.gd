@@ -78,3 +78,16 @@ func _can_open_menu_now() -> bool:
 	if liu_yu and liu_yu.get("can_move") != null and bool(liu_yu.get("can_move")) == false:
 		return false
 	return true
+
+## 從遊戲內回到主選單：關掉選單、解除暫停、收掉 GameRoot，切到主選單場景。
+## 全域狀態不在這裡重設：主選單「開始遊戲」會還原成新遊戲起始狀態（SaveManager.reset_to_new_game_state），讀檔則整份覆蓋。
+func return_to_title() -> void:
+	_close_system_menu()
+	if GlobalState:
+		GlobalState.set_meta("menu_locked", false)
+		GlobalState.set_meta("menu_open", false)
+	get_tree().paused = false
+	var gr := get_node_or_null(GAME_ROOT_PATH)
+	if gr != null and get_tree().current_scene != gr:
+		gr.queue_free()
+	get_tree().change_scene_to_file("res://scenes/main.tscn")

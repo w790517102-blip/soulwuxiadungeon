@@ -6,6 +6,7 @@ extends Control
 
 func _ready():
 	$CanvasLayer/WhiteFlash.visible = false
+	SaveManager.capture_new_game_snapshot()      # 此時是剛啟動的乾淨狀態（第一次顯示主選單才會真的拍）
 	$CanvasLayer/BlackOverlay.visible = false
 	_notice.modulate.a = 0.0
 	$ButtonRow/StartButton.pressed.connect(_on_start_button_pressed)
@@ -50,4 +51,5 @@ func _on_start_button_pressed() -> void:
 
 	await get_tree().create_timer(2.0).timeout
 
+	SaveManager.reset_to_new_game_state()      # 新遊戲 = 讀取一個沒有任何進度的存檔：不帶上一局的旗標、背包、隊伍、任務
 	get_tree().change_scene_to_file("res://scenes/Game.tscn")

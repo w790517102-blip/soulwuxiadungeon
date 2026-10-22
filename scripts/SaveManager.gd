@@ -529,3 +529,64 @@ func slot_count() -> int:
 
 func page_count() -> int:
 	return int(ceil(float(SLOT_COUNT) / float(SLOTS_PER_PAGE)))
+
+# ------------------------------------------------------------------
+# 新遊戲起始狀態：把「遊戲剛啟動時、還沒有任何進度」的狀態拍成一份快照，開新遊戲（或從遊戲內回標題後再開新遊戲）時
+# 用跟讀檔相同的方式還原，等於「讀取一個沒有任何進度的存檔」，不會帶著上一局的旗標、背包、隊伍、任務。
+# 只動記憶體裡的狀態，不碰存檔檔案；讀檔流程（load_from_slot）完全不受影響。
+# ------------------------------------------------------------------
+var _new_game_snapshot: Dictionary = {}
+
+## 在主選單第一次顯示時呼叫（此時所有自動載入都是剛啟動的乾淨狀態）。已經拍過就不再拍。
+func capture_new_game_snapshot() -> void:
+	if not _new_game_snapshot.is_empty():
+		return
+	_new_game_snapshot = {
+		"flags": GlobalState.flags.duplicate(true),
+		"triggered_flags": GlobalState.triggered_flags.duplicate(true),
+		"relationships": _as_dict(GlobalState.relationship).duplicate(true),
+		"ethics": GlobalState.ethics,
+		"grudge": GlobalState.grudge,
+		"affection": GlobalState.affection,
+		"last_facing_direction": GlobalState.last_facing_direction,
+		"shop_runtime_stock": _as_dict(GlobalState.shop_runtime_stock).duplicate(true),
+		"alchemy_puzzle_state": _as_dict(GlobalState.alchemy_puzzle_state).duplicate(true),
+		"side_quests": SideQuestManager.save_all().duplicate(true) if SideQuestManager else {},
+		"main_quest": QuestManager.get_main_quest_state().duplicate(true) if QuestManager and QuestManager.has_method("get_main_quest_state") else {},
+		"team_data": TeamData.export_team_state().duplicate(true) if TeamData and TeamData.has_method("export_team_state") else {},
+		"inventory_data": InventorySync.export_inventory_state().duplicate(true) if InventorySync and InventorySync.has_method("export_inventory_state") else {},
+	}
+
+func has_new_game_snapshot() -> bool:
+	return not _new_game_snapshot.is_empty()
+
+## 把全域狀態還原成新遊戲的起始狀態。沒有快照（沒經過主選單）就什麼都不做並回傳 false。
+func reset_to_new_game_state() -> bool:
+	if _new_game_snapshot.is_empty():
+		return false
+	var s: Dictionary = _new_game_snapshot.duplicate(true)
+	if GlobalState.has_method("reset_for_load"):
+		GlobalState.reset_for_load()
+	GlobalState.flags = _as_dict(s.get("flags", {}))
+	GlobalState.triggered_flags = _as_dict(s.get("triggered_flags", {}))
+	GlobalState.relationship = _as_dict(s.get("relationships", {}))
+	GlobalState.ethics = int(s.get("ethics", 0))
+	GlobalState.grudge = int(s.get("grudge", 0))
+	GlobalState.affection = int(s.get("affection", 0))
+	GlobalState.last_facing_direction = s.get("last_facing_direction", Vector2(1, 1).normalized())
+	GlobalState.shop_runtime_stock = _as_dict(s.get("shop_runtime_stock", {}))
+	GlobalState.alchemy_puzzle_state = _as_dict(s.get("alchemy_puzzle_state", {}))
+	if SideQuestManager:
+		SideQuestManager.reset_all()
+		SideQuestManager.load_all(_as_dict(s.get("side_quests", {})))
+	if QuestManager:
+		if QuestManager.has_method("reset_main_quest"):
+			QuestManager.reset_main_quest()
+		if QuestManager.has_method("load_main_quest"):
+			QuestManager.load_main_quest(_as_dict(s.get("main_quest", {})))
+	if TeamData and TeamData.has_method("import_team_state"):
+		TeamData.import_team_state(_as_dict(s.get("team_data", {})))
+	if InventorySync and InventorySync.has_method("import_inventory_state"):
+		InventorySync.import_inventory_state(_as_dict(s.get("inventory_data", {})))
+	_summary_cache.clear()
+	return true
