@@ -1,0 +1,183 @@
+{
+  "scale": 2,
+  "logical_viewport": [
+    1152,
+    648
+  ],
+  "actual_preview_canvas": [
+    2304,
+    1296
+  ],
+  "page_canvas": [
+    700,
+    960
+  ],
+  "clean_edge_px": 48,
+  "right": {
+    "category_index": [
+      56,
+      52,
+      588,
+      44
+    ],
+    "name": [
+      56,
+      100,
+      588,
+      92
+    ],
+    "image": [
+      100,
+      216,
+      500,
+      400
+    ],
+    "description_frame": [
+      60,
+      660,
+      580,
+      240
+    ],
+    "description_text_safe": [
+      80,
+      684,
+      540,
+      176
+    ],
+    "page_number_center": [
+      350,
+      888
+    ]
+  },
+  "left": {
+    "category_heading": [
+      56,
+      52,
+      588,
+      44
+    ],
+    "name": [
+      56,
+      100,
+      588,
+      92
+    ],
+    "details": [
+      60,
+      224,
+      580,
+      660
+    ],
+    "rows": {
+      "label_x": 60,
+      "field_x": 240,
+      "first_y": 224,
+      "pitch": 64,
+      "height": 48,
+      "max_rows": 9
+    },
+    "prose": [
+      60,
+      224,
+      580,
+      660
+    ],
+    "page_number_center": [
+      350,
+      888
+    ]
+  },
+  "open_base": {
+    "canvas": [
+      1560,
+      1040
+    ],
+    "left_page_origin": [
+      60,
+      40
+    ],
+    "right_page_origin": [
+      800,
+      40
+    ]
+  },
+  "shelf": {
+    "canvas": [
+      2304,
+      1296
+    ],
+    "scroll_origin": [
+      0,
+      136
+    ],
+    "title_origin": [
+      80,
+      194
+    ],
+    "quote_origin": [
+      60,
+      884
+    ],
+    "book_origins": [
+      [
+        400,
+        310
+      ],
+      [
+        988,
+        310
+      ],
+      [
+        1576,
+        310
+      ]
+    ],
+    "book_scale": 0.65,
+    "foreground_left_origin": [
+      0,
+      860
+    ],
+    "foreground_right_origin": [
+      1920,
+      840
+    ],
+    "button_safe_logical": [
+      400,
+      586,
+      360,
+      42
+    ]
+  },
+  "fields": {
+    "item": [
+      "類型",
+      "效果",
+      "敘述"
+    ],
+    "hero": [
+      "人物誌"
+    ],
+    "monster": [
+      "種族",
+      "經驗",
+      "氣血",
+      "攻擊",
+      "防禦",
+      "速度",
+      "屬性",
+      "掉落物",
+      "技能"
+    ]
+  },
+  "fixed_text": [
+    "奇物",
+    "豪傑",
+    "神怪",
+    "江湖見聞錄",
+    "江湖如逆旅，幸有同路人。",
+    "尚未收錄",
+    "？",
+    "decorative red seal motifs"
+  ],
+  "page_style": "shared warm xuan-paper interior across all three categories; category identities are runtime headings and separate book covers"
+}

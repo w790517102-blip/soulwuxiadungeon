@@ -1,0 +1,95 @@
+{
+  "item": {
+    "texture_px": [
+      256,
+      1024
+    ],
+    "pivot_px": [
+      128,
+      10
+    ],
+    "pivot_uv_top_left": [
+      0.5,
+      0.009765625
+    ],
+    "cover_hook_px": [
+      650,
+      110
+    ],
+    "shelf_hook_px": [
+      667.8142837305321,
+      177.54140801799505
+    ],
+    "scale": 0.55,
+    "rotation_degrees": 0,
+    "bands_v_from_top": [
+      0,
+      0.35,
+      0.6,
+      1
+    ],
+    "material": "double-sided transparent unlit plane; no normal map"
+  },
+  "hero": {
+    "texture_px": [
+      256,
+      1024
+    ],
+    "pivot_px": [
+      128,
+      10
+    ],
+    "pivot_uv_top_left": [
+      0.5,
+      0.009765625
+    ],
+    "cover_hook_px": [
+      650,
+      110
+    ],
+    "shelf_hook_px": [
+      667.8142837305321,
+      177.54140801799505
+    ],
+    "scale": 0.55,
+    "rotation_degrees": 0,
+    "bands_v_from_top": [
+      0,
+      0.35,
+      0.6,
+      1
+    ],
+    "material": "double-sided transparent unlit plane; no normal map"
+  },
+  "monster": {
+    "texture_px": [
+      256,
+      1024
+    ],
+    "pivot_px": [
+      128,
+      10
+    ],
+    "pivot_uv_top_left": [
+      0.5,
+      0.009765625
+    ],
+    "cover_hook_px": [
+      650,
+      110
+    ],
+    "shelf_hook_px": [
+      667.8142837305321,
+      177.54140801799505
+    ],
+    "scale": 0.55,
+    "rotation_degrees": 0,
+    "bands_v_from_top": [
+      0,
+      0.35,
+      0.6,
+      1
+    ],
+    "material": "double-sided transparent unlit plane; no normal map"
+  }
+}

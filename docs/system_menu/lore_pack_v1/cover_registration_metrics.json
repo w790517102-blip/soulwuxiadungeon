@@ -1,0 +1,14 @@
+{
+  "item": {
+    "mean_absolute_rgb_error_0_255": 3.468,
+    "method": "same source; perspective transform then inverse-resample; exclude 20px rim"
+  },
+  "hero": {
+    "mean_absolute_rgb_error_0_255": 3.115,
+    "method": "same source; perspective transform then inverse-resample; exclude 20px rim"
+  },
+  "monster": {
+    "mean_absolute_rgb_error_0_255": 3.604,
+    "method": "same source; perspective transform then inverse-resample; exclude 20px rim"
+  }
+}

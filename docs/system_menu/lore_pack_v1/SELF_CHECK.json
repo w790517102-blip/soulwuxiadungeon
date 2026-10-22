@@ -1,0 +1,36 @@
+[
+  {
+    "check": "Required filenames, dimensions, RGBA",
+    "result": "PASS",
+    "count": 36
+  },
+  {
+    "check": "Full PNG decode and CRC",
+    "result": "PASS",
+    "count": 55
+  },
+  {
+    "check": "Two exact transparent page holes",
+    "result": "PASS"
+  },
+  {
+    "check": "Charm transparent margins, top anchor, colored backdrop QA",
+    "result": "PASS; pixel and visual"
+  },
+  {
+    "check": "48px page edge ornament exclusion / binding shade / variable text blank",
+    "result": "PASS; visual inspection and fixed region assembly"
+  },
+  {
+    "check": "Shelf and flat cover motif registration",
+    "result": "PASS; same-source mapping; metrics in accompanying JSON"
+  },
+  {
+    "check": "1152x648 page previews and PNG decoding",
+    "result": "PASS"
+  },
+  {
+    "check": "Godot runtime, turn animation, text overflow, charm physics",
+    "result": "NOT TESTED; requires Claude integration"
+  }
+]
