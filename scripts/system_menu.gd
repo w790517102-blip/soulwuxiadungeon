@@ -309,6 +309,9 @@ func _apply_menu_font_style(root: Node) -> void:
 ## 右鍵＝Esc。新版頁面（子節點，先收到）自己處理過就不會到這裡；這裡接住還沒改版的頁面（隊伍、任務）
 func _input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT and not _item_use_locked and is_visible_in_tree():
+		for c in get_children():
+			if c is Control and c.visible and c.has_method("_right_click_free"):
+				return   # 新版頁面顯示中：右鍵由它決定（例如裝備格上的右鍵是卸下）
 		SystemMenu._close_system_menu()
 		get_viewport().set_input_as_handled()
 

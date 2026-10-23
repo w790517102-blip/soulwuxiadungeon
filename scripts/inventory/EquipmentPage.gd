@@ -308,12 +308,15 @@ func _on_slot_double_clicked(slot_id: String) -> void:
 	if not _is_locked(slot_id):
 		_on_change_pressed()
 
-## 右鍵點在裝備格上＝卸下，不當成「離開頁面」（有彈窗時右鍵照常取消彈窗）
+## 右鍵點在「有裝備」的格子上＝詢問卸下，不當成「離開頁面」。空格子、格子以外的地方，右鍵照常關閉選單
+## （有彈窗時右鍵照常取消彈窗）
 func _right_click_free(pos: Vector2) -> bool:
 	if _overlay != null and _overlay.visible:
 		return true
-	for b: Control in _slot_buttons.values():
-		if b.get_global_rect().has_point(pos):
+	var equipped: Dictionary = InventorySync.get_equipped(actor_id)
+	for slot_id: String in _slot_buttons.keys():
+		var b: Control = _slot_buttons[slot_id]
+		if b.get_global_rect().has_point(pos) and String(equipped.get(slot_id, "")) != "":
 			return false
 	return true
 
