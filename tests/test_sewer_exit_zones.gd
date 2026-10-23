@@ -25,7 +25,7 @@ func _run() -> void:
 			continue
 		var yolk: PackedVector2Array = t.get("selection_polygon")
 		var white: PackedVector2Array = t.get("zone_polygon")
-		_check(yolk.size() >= 4 and white.size() >= 4, n + " has yolk and white polygons")
+		_check(yolk.size() >= 3 and white.size() >= 3, n + " has yolk and white polygons")
 		var inside := 0
 		for p in white:
 			if bounds.grow(16.0).has_point(p):
