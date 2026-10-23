@@ -17,6 +17,8 @@ const TASSEL_PIVOT_RUN := Vector2(22, 8)
 ## 兩幀圖示：[frame_a, frame_b, 熱點在「左下角起算」的位置（x, 距底部）]
 const ICONS := {
 	"talk": {"a": "cursor_talk_a", "b": "cursor_talk_b", "hot": Vector2(13, 3)},
+	# 想對話、但劉語塵還沒走進蛋白區：靴子往對話框走（兩格走路動畫，比對話框的閃光快）
+	"talk_walk": {"a": "cursor_talk_walk_a", "b": "cursor_talk_walk_b", "hot": Vector2(11, 34), "sec": 0.3},
 	"inspect": {"a": "cursor_inspect_a", "b": "cursor_inspect_b", "hot": Vector2(24, 88)},
 }
 const ICON_FRAME_SEC := 0.6
@@ -66,7 +68,7 @@ var player_screen_override: Variant = null   # 測試用：不是 null 時當作
 func _ready() -> void:
 	layer = 4096
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	for n in ["cursor_idle", "cursor_move", "cursor_run", "tassel_move", "tassel_run", "cursor_talk_a", "cursor_talk_b", "cursor_inspect_a", "cursor_inspect_b"]:
+	for n in ["cursor_idle", "cursor_move", "cursor_run", "tassel_move", "tassel_run", "cursor_talk_a", "cursor_talk_b", "cursor_talk_walk_a", "cursor_talk_walk_b", "cursor_inspect_a", "cursor_inspect_b"]:
 		var p := "%s%s.png" % [DIR, n]
 		if not ResourceLoader.exists(p):
 			push_warning("GameCursor: missing %s — falling back to the system cursor" % p)
@@ -136,7 +138,9 @@ func _process(delta: float) -> void:
 	# 按住且有移動意圖才用移動/奔跑樣式（被鎖定、在選單上按下則維持待機）。
 	# 劉語塵追上滑鼠停下來時樣式不變：矛頭停在最後的方向，等滑鼠再移開又繼續轉（不會像彈珠台那樣彈回待機）。
 	var wanted := "idle"
-	if (_right_down() or _left_down()) and _has_intent():
+	if _hover_kind == "talk_walk":
+		wanted = "icon"   # 朝著可對話的人走過去（含按住追他的途中）：不管有沒有按住，都維持「靴子走向對話框」
+	elif (_right_down() or _left_down()) and _has_intent():
 		wanted = "run" if _right_down() else "move"
 	elif _hover_kind != "" and ICONS.has(_hover_kind):
 		wanted = "icon"
@@ -233,7 +237,7 @@ func _set_arrow(tex_name: String, pivot: Vector2) -> void:
 
 func _update_icon() -> void:
 	var def: Dictionary = ICONS[_hover_kind]
-	var frame_b := int(floor(_t / ICON_FRAME_SEC)) % 2 == 1
+	var frame_b := int(floor(_t / float(def.get("sec", ICON_FRAME_SEC)))) % 2 == 1
 	var tex: Texture2D = _tex[def["b"] if frame_b else def["a"]]
 	icon.texture = tex
 	# 兩幀的畫布大小不同（第二幀多了閃光），所以以「左下角」對齊，熱點用「離底部的距離」
