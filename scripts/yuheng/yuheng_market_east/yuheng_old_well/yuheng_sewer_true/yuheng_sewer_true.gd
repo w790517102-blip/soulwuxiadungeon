@@ -49,6 +49,14 @@ const INTRO_DELAY_AFTER_FADE_SECONDS := 1.5
 ## 已遷移到 InteractionZones 的互動 ID（舊的 Area2D 退役）。
 const MIGRATED_INTERACTION_IDS := ["memory_qin", "memory_writing_desk", "memory_medicine_cabinet", "loot_herb_basket", "loot_qi_box", "loot_haste_scroll"]
 
+## 滑鼠專用的出口（InteractionZones 底下）：點蛋黃區，劉語塵走進蛋白區就切換場景，效果與踩進舊的 to_* Area2D 相同。
+## 舊 Area2D 保留給鍵盤（有的在鏡頭邊界外，滑鼠點不到）。
+const EXIT_TARGETS := {
+	"exit_old_well": "_on_to_yuheng_old_well_body_entered",
+	"exit_stalactite_cave": "_on_to_yuheng_stalactite_cave_body_entered",
+	"exit_sewer_true_room": "_on_to_yuheng_sewer_true_room_body_entered",
+}
+
 const MEMORY_IDS := [
 	"memory_qin",
 	"memory_writing_desk",
@@ -313,6 +321,11 @@ func _bind_interaction_zones() -> void:
 			continue
 		var interaction_id := String(target.name)
 		target.availability = _interaction_available
+		if EXIT_TARGETS.has(interaction_id):
+			var exit_method: String = EXIT_TARGETS[interaction_id]
+			target.handler = func(player: Node2D) -> void:
+				await call(exit_method, player)
+			continue
 		target.handler = func(_player: Node2D) -> void:
 			await _handle_interaction(interaction_id)
 

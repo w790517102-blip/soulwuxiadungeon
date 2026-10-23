@@ -6281,6 +6281,39 @@ use_sprite_feet = false
 zone_polygon = PackedVector2Array(43.3, -161.5, 112.4, -127.3, 42.7, -92.3, -24.9, -125.3)
 require_facing = true
 
+[node name="exit_old_well" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "往老井"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-585.1, 106.5, -533.4, 88.2, -458.7, 140.7, -498.5, 163, -585.1, 204.3)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-585.1, 106.5, -533.4, 88.2, -458.7, 140.7, -498.5, 163, -585.1, 204.3)
+
+[node name="exit_stalactite_cave" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "往鐘乳石洞"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(185.2, -431.7, 353, -431.7, 353, -236.9, 247.2, -186, 209.9, -165.4, 159.8, -178.9, 185.2, -195.6)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(155, -178.1, 203.5, -203.5, 252, -186.8, 209.1, -160.6)
+
+[node name="exit_sewer_true_room" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "往藥師舊室"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(585.1, -154.2, 516.8, -124.8, 513.6, -60.4, 585.1, -30.2)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(585.1, -97, 558.9, -92.2, 505.6, -63.6, 483.4, -31, 547.8, -2.4, 585.1, 18.3)
+
 [connection signal="body_entered" from="to_yuheng_old_well" to="." method="_on_to_yuheng_old_well_body_entered"]
 [connection signal="body_entered" from="to_yuheng_stalactite_cave" to="." method="_on_to_yuheng_stalactite_cave_body_entered"]
 [connection signal="body_entered" from="to_yuheng_sewer_true_room" to="." method="_on_to_yuheng_sewer_true_room_body_entered"]
