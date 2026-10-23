@@ -254,6 +254,10 @@ func _on_space_pressed() -> void:
 ## 蛋白區本身從來不觸發任何事：它只是「已經提出互動命令之後，能不能執行」的距離資格。
 func _on_left_pressed() -> void:
 	_left_held = true
+	_start_mouse_intent()
+
+
+func _start_mouse_intent() -> void:
 	_mouse_down = true
 	_locked_target = null
 	_mouse_move_active = false
@@ -278,12 +282,13 @@ func _on_left_released() -> void:
 		_start_plain_mouse_move()
 
 
-## 右鍵按住 = 往滑鼠方向「跑步」（奔跑速度由 liu_yu 判斷右鍵）。只負責移動：不點選、不鎖定互動目標；左鍵已經按著時維持左鍵原本的意圖。
+## 右鍵按住 = 往滑鼠方向「跑步」（奔跑速度由 liu_yu 判斷右鍵）。意圖的建立與左鍵相同：按在目標的蛋黃區就鎖定它、跑到蛋白區互動；
+## 按在普通地面只移動。左鍵已經按著時維持左鍵原本的意圖。
 func _on_right_pressed() -> void:
 	_right_held = true
 	if _left_held:
 		return
-	_start_plain_mouse_move()
+	_start_mouse_intent()
 
 
 func _on_right_released() -> void:
