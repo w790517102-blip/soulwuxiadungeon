@@ -110,6 +110,11 @@ func change_map_to(path: String):
 		resolver.call("cancel_mouse_intent_for_scene_change")
 	if $CurrentScene.get_child_count() > 0:
 		$CurrentScene.get_child(0).queue_free()
+	# 換場景一律先把操作還給玩家：上一張地圖在出口先鎖了操作時，沒有進場劇情的目的地不會有人替他打開（會動不了）。
+	# 有進場劇情的地圖，自己的 _ready 之後會再鎖一次（新場景建立在這行之後）。
+	# 戰鬥回場、劇情持有 menu_locked 時不動，由原本的流程交還控制。
+	if GlobalState.get_meta("pending_battle_return", false) != true and GlobalState.get_meta("menu_locked", false) != true:
+		$LiuYu.can_move = true
 	var new_scene = load(path).instantiate()
 	$CurrentScene.add_child(new_scene)
 
