@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://d2x0qgjtnp085"
+
+[deps]
+
+files=["res://docs/system_menu/item_art_batches/A01_swords/progress.名稱.translation", "res://docs/system_menu/item_art_batches/A01_swords/progress.批次.translation", "res://docs/system_menu/item_art_batches/A01_swords/progress.美術狀態.translation"]
+
+source_file="res://docs/system_menu/item_art_batches/A01_swords/progress.csv"
+dest_files=["res://docs/system_menu/item_art_batches/A01_swords/progress.名稱.translation", "res://docs/system_menu/item_art_batches/A01_swords/progress.批次.translation", "res://docs/system_menu/item_art_batches/A01_swords/progress.美術狀態.translation"]
+
+[params]
+
+compress=true
+delimiter=0
