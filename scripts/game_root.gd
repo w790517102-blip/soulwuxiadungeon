@@ -97,6 +97,9 @@ func change_map_to(path: String):
 	if not inherited_transition_lock:
 		lock_map_transitions("scene_change")
 	current_map_path = path
+	var resolver := get_node_or_null("/root/InteractionResolver")
+	if resolver != null and resolver.has_method("cancel_mouse_intent_for_scene_change"):
+		resolver.call("cancel_mouse_intent_for_scene_change")
 	if $CurrentScene.get_child_count() > 0:
 		$CurrentScene.get_child(0).queue_free()
 	var new_scene = load(path).instantiate()

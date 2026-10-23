@@ -323,6 +323,16 @@ func _cancel_mouse_intent() -> void:
 	_locked_target = null
 
 
+## 換場景時放掉按住中的滑鼠意圖：按著滑鼠走進出口，到了新場景不會被舊的按住狀態帶著繼續跑（甚至直接衝進下一個出口）。
+## 要繼續移動必須放開再按一次。
+func cancel_mouse_intent_for_scene_change() -> void:
+	_mouse_down = false
+	_cancel_mouse_intent()
+	var player := _player()
+	if player != null:
+		player.set("mouse_move_direction", Vector2.ZERO)
+
+
 # ------------------------------------------------------------
 # 每個物理影格：滑鼠移動、靠近互動；每個畫面影格：Hover 與游標
 # ------------------------------------------------------------

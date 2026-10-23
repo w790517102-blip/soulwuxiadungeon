@@ -103,7 +103,9 @@ func _ready() -> void:
 	_connect_interaction_areas()
 	_bind_interaction_zones()
 
+	# 進場黑幕淡出一結束就把操作還給玩家：離開舊水道時 _change_map 把 can_move 關掉了，這個場景沒有人再打開，進來就動不了。
 	await _play_entry_fade()
+	_set_player_movable(true)
 	await show_map_name()
 
 
