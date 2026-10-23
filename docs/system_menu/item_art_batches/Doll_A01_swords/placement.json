@@ -1,0 +1,52 @@
+{
+  "master_source_px": [
+    907,
+    1735
+  ],
+  "canvas_px": [
+    508,
+    972
+  ],
+  "master_in_screenshot": {
+    "scale_xy": [
+      0.446,
+      0.44400000000000006
+    ],
+    "origin": [
+      707.22,
+      170.44
+    ],
+    "face_match_ncc": 0.66511192973334
+  },
+  "weapon_in_screenshot": {
+    "scale": 0.81,
+    "angle_pil_ccw_deg": 19.5,
+    "translation": [
+      751.8983413432999,
+      268.63468445251556
+    ],
+    "guard_match_ncc": 0.8042405018019976
+  },
+  "weapon_local_to_canvas": [
+    [
+      0.9588554411246101,
+      0.33954852007433967,
+      56.10720159199332
+    ],
+    [
+      -0.34116470183546543,
+      0.9634193976253262,
+      123.90013927336642
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "source_weapon_px": [
+    98,
+    850
+  ],
+  "position_source": "Estimated from screenshot; local98x850 assets can reuse exact existing runtime Transform."
+}
