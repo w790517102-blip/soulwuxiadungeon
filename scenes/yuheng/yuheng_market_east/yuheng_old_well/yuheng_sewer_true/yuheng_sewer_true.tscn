@@ -6288,9 +6288,9 @@ display_name = "往老井"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(-585.1, 106.5, -533.4, 88.2, -458.7, 140.7, -498.5, 163, -585.1, 204.3)
+selection_polygon = PackedVector2Array(-581.9, 108.1, -498.5, 163.0, -581.9, 203.5)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(-585.1, 106.5, -533.4, 88.2, -458.7, 140.7, -498.5, 163, -585.1, 204.3)
+zone_polygon = PackedVector2Array(-575.6, 111.3, -533.4, 88.2, -458.7, 140.7, -498.5, 163.0)
 
 [node name="exit_stalactite_cave" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
