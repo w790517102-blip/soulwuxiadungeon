@@ -1,0 +1,122 @@
+[
+  {
+    "id": "misc_smoke_pellet",
+    "名稱": "煙霧丸",
+    "缺少": "art"
+  },
+  {
+    "id": "misc_smoke_pellet",
+    "名稱": "煙霧丸",
+    "缺少": "icon"
+  },
+  {
+    "id": "tea_refresh_agi",
+    "名稱": "拂霧新芽",
+    "缺少": "art"
+  },
+  {
+    "id": "tea_refresh_agi",
+    "名稱": "拂霧新芽",
+    "缺少": "icon"
+  },
+  {
+    "id": "tea_rich_con",
+    "名稱": "深焙沉香",
+    "缺少": "art"
+  },
+  {
+    "id": "tea_rich_con",
+    "名稱": "深焙沉香",
+    "缺少": "icon"
+  },
+  {
+    "id": "tea_snack_hp",
+    "名稱": "玲瓏酥",
+    "缺少": "art"
+  },
+  {
+    "id": "tea_snack_hp",
+    "名稱": "玲瓏酥",
+    "缺少": "icon"
+  },
+  {
+    "id": "tea_tasting_mp",
+    "名稱": "醉月青魁",
+    "缺少": "art"
+  },
+  {
+    "id": "tea_tasting_mp",
+    "名稱": "醉月青魁",
+    "缺少": "icon"
+  },
+  {
+    "id": "throw_stone_pack",
+    "名稱": "飛石包",
+    "缺少": "art"
+  },
+  {
+    "id": "throw_stone_pack",
+    "名稱": "飛石包",
+    "缺少": "icon"
+  },
+  {
+    "id": "quest_valley_shadow_grass",
+    "名稱": "谷影草",
+    "缺少": "art"
+  },
+  {
+    "id": "quest_valley_shadow_grass",
+    "名稱": "谷影草",
+    "缺少": "icon"
+  },
+  {
+    "id": "quest_letter",
+    "名稱": "密函",
+    "缺少": "art"
+  },
+  {
+    "id": "quest_letter",
+    "名稱": "密函",
+    "缺少": "icon"
+  },
+  {
+    "id": "quest_green_beans_raw",
+    "名稱": "生四季豆",
+    "缺少": "art"
+  },
+  {
+    "id": "quest_green_beans_raw",
+    "名稱": "生四季豆",
+    "缺少": "icon"
+  },
+  {
+    "id": "quest_green_beans_fried",
+    "名稱": "炸熟四季豆",
+    "缺少": "art"
+  },
+  {
+    "id": "quest_green_beans_fried",
+    "名稱": "炸熟四季豆",
+    "缺少": "icon"
+  },
+  {
+    "id": "misc_walnut_cracker",
+    "名稱": "胡桃鉗",
+    "缺少": "art"
+  },
+  {
+    "id": "misc_walnut_cracker",
+    "名稱": "胡桃鉗",
+    "缺少": "icon"
+  },
+  {
+    "id": "misc_tinderbox",
+    "名稱": "火折子",
+    "缺少": "art"
+  },
+  {
+    "id": "misc_tinderbox",
+    "名稱": "火折子",
+    "缺少": "icon"
+  }
+]
