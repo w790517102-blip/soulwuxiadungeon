@@ -375,17 +375,23 @@ func _on_interaction_area_body_exited(body: Node, interaction_id: String) -> voi
 func _on_to_yuheng_old_well_body_entered(body: Node2D) -> void:
 	if not _is_player(body):
 		return
+	if not _map_transition_allowed(body):
+		return
 	await _change_map(yuheng_old_well, old_well_spawn_point)
 
 
 func _on_to_yuheng_stalactite_cave_body_entered(body: Node2D) -> void:
 	if not _is_player(body):
 		return
+	if not _map_transition_allowed(body):
+		return
 	await _change_map(yuheng_stalactite_cave, stalactite_cave_spawn_point)
 
 
 func _on_to_yuheng_sewer_true_room_body_entered(body: Node2D) -> void:
 	if not _is_player(body):
+		return
+	if not _map_transition_allowed(body):
 		return
 	await _change_map(yuheng_sewer_true_room, true_room_spawn_point)
 
@@ -574,3 +580,11 @@ func _get_global_state() -> Node:
 		return global_state
 
 	return null
+
+
+## 與其他場景的出口一致：交給 GameRoot 的出口防呆（剛換場景的冷卻時間、讀檔中、鎖定中都不能換）。
+func _map_transition_allowed(body: Node) -> bool:
+	var game_root := get_node_or_null("/root/GameRoot")
+	if game_root == null or not game_root.has_method("can_use_map_transition"):
+		return true
+	return bool(game_root.call("can_use_map_transition", body, null))

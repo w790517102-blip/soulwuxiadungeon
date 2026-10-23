@@ -14,6 +14,9 @@ var _music_transition_serial := 0
 var _music_tween: Tween = null
 var map_transition_locked := false
 const MAP_EXIT_REQUIRES_EXIT_META := "map_transition_requires_exit"
+## 到達新場景後，出口鎖住這麼多秒（防呆：剛進來就被按住的滑鼠、或出生點附近的出口帶走）。
+const ARRIVAL_EXIT_GRACE_SEC := 1.5
+var _arrival_grace_until_msec := 0
 
 @onready var music_player = $MusicPlayer  # 音樂播放器節點
 
@@ -40,8 +43,13 @@ func is_map_transition_locked() -> bool:
 		return bool(GlobalState.get_meta("map_transition_locked", false))
 	return false
 
+func is_arrival_grace() -> bool:
+	return Time.get_ticks_msec() < _arrival_grace_until_msec
+
 func can_use_map_transition(body: Node, area: Area2D = null) -> bool:
 	if body == null or body.name != "LiuYu":
+		return false
+	if is_arrival_grace():
 		return false
 	if is_map_transition_locked():
 		print("[MapTransitionGuard] blocked while locked. area=", area.name if area else "<unknown>", " pos=", (body as Node2D).global_position if body is Node2D else Vector2.ZERO)
@@ -119,6 +127,7 @@ func change_map_to(path: String):
 	disarm_overlapping_map_exits($LiuYu)
 	if not inherited_transition_lock:
 		unlock_map_transitions("scene_change")
+	_arrival_grace_until_msec = Time.get_ticks_msec() + int(ARRIVAL_EXIT_GRACE_SEC * 1000.0)
 
 	var is_battle_return = GlobalState.get_meta("pending_battle_return", false) == true
 	var loading_save := GlobalState != null and bool(GlobalState.get("is_loading"))
