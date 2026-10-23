@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://c4ncxsf0i75nd"
+
+[deps]
+
+files=["res://docs/system_menu/物品圖示清單.類型.translation", "res://docs/system_menu/物品圖示清單.分類.translation", "res://docs/system_menu/物品圖示清單.id.translation", "res://docs/system_menu/物品圖示清單.名稱.translation", "res://docs/system_menu/物品圖示清單.稀有度.translation", "res://docs/system_menu/物品圖示清單.裝備欄位.translation", "res://docs/system_menu/物品圖示清單.武器類別.translation", "res://docs/system_menu/物品圖示清單.現用通用圖組.translation", "res://docs/system_menu/物品圖示清單.小圖檔名.translation", "res://docs/system_menu/物品圖示清單.大圖檔名.translation", "res://docs/system_menu/物品圖示清單.描述（給畫圖參考）.translation"]
+
+source_file="res://docs/system_menu/物品圖示清單.csv"
+dest_files=["res://docs/system_menu/物品圖示清單.類型.translation", "res://docs/system_menu/物品圖示清單.分類.translation", "res://docs/system_menu/物品圖示清單.id.translation", "res://docs/system_menu/物品圖示清單.名稱.translation", "res://docs/system_menu/物品圖示清單.稀有度.translation", "res://docs/system_menu/物品圖示清單.裝備欄位.translation", "res://docs/system_menu/物品圖示清單.武器類別.translation", "res://docs/system_menu/物品圖示清單.現用通用圖組.translation", "res://docs/system_menu/物品圖示清單.小圖檔名.translation", "res://docs/system_menu/物品圖示清單.大圖檔名.translation", "res://docs/system_menu/物品圖示清單.描述（給畫圖參考）.translation"]
+
+[params]
+
+compress=true
+delimiter=0
