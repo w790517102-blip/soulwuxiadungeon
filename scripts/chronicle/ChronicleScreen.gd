@@ -76,7 +76,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	z_index = 2000   # 系統選單根節點 z_index 是 1024，要壓在它上面
+	z_index = 3000   # 系統選單根 1024 + 頁面 1100 = 2124（z_index 是相對疊加），要壓在它上面
 	_build_ui()
 	_refresh_all()
 
