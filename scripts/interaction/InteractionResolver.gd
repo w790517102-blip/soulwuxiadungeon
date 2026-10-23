@@ -374,11 +374,11 @@ func _process(_delta: float) -> void:
 	# 正在追著鎖定的目標走（INTERACT_APPROACH）：游標跟著鎖定的目標，不管滑鼠這時是否還在它的蛋黃區
 	var shown: InteractionTarget = _locked_target if _mouse_move_active and _locked_target != null else hovered_target
 	var kind: String = shown.cursor_kind if shown != null else ""
-	# 對話目標：劉語塵還沒走進蛋白區（含靠近的途中）顯示「靴子走向對話框」，走進之後才是單純的對話框。
-	# 按在普通地面的移動（MOVE）不算想對話，保持移動游標。
-	if kind == "talk" and shown != null and not shown.in_interaction_range(player):
+	# 對話／出口目標：劉語塵還沒走進蛋白區（含靠近的途中）顯示「走向對方」的游標（靴子走向對話框／走向門），走進之後才是單純的圖示。
+	# 按在普通地面的移動（MOVE）不算想互動，保持移動游標。
+	if (kind == "talk" or kind == "exit") and shown != null and not shown.in_interaction_range(player):
 		if not _mouse_move_active or shown == _locked_target:
-			kind = "talk_walk"
+			kind += "_walk"
 	_show_cursor(kind)
 
 

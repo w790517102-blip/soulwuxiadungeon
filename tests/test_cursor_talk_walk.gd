@@ -43,6 +43,15 @@ func _run() -> void:
 	await process_frame
 	_check(gc._state == "icon" and gc.icon.texture == gc._tex["cursor_talk_a"], "released inside range = plain talk bubble")
 
+	gc.set_hover_kind("exit_walk")
+	await process_frame
+	await process_frame
+	_check(gc._state == "icon" and gc.icon.texture == gc._tex["cursor_exit_walk_a"], "exit not yet reached = boots walking to the door")
+	gc.set_hover_kind("exit")
+	await process_frame
+	await process_frame
+	_check(gc._state == "icon" and gc.icon.texture == gc._tex["cursor_exit_a"], "inside the exit's white zone = arrow into the open door")
+
 	gc.set_hover_kind("")
 	gc.mouse_override = null
 	gc.left_override = null
