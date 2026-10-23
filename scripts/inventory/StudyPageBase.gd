@@ -63,6 +63,49 @@ func _half(name: String) -> Texture2D:
 
 
 ## 九宮格樣式（邊寬單位 = 2 倍素材像素；內部換算成一半）
+## 右鍵＝取消（與 Esc 同義）：先關彈出視窗，沒有彈窗才離開這一頁。用 _input：頁面是滿版 STOP 控制項，
+## 右鍵點下去 _unhandled_input 收不到。子類別要改行為就覆寫 _on_cancel；要讓右鍵留給別的用途就覆寫 _right_click_free。
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		if not _right_click_free(event.position):
+			return
+		get_viewport().set_input_as_handled()
+		_on_cancel()
+
+func _right_click_free(_pos: Vector2) -> bool:
+	return true
+
+func _on_cancel() -> void:
+	if _overlay != null and _overlay.visible:
+		_close_overlay()
+	else:
+		close_requested.emit()
+
+
+## 把寬按鈕縮窄：[左｜中｜右] 裁成 [左｜較短的中｜右]，只拿掉中間的素面，左右兩端的菱形裝飾原樣保留，
+## 紋理完全不被壓縮。寬度比兩端加起來還窄就回傳 null（呼叫端退回一般九宮格拉伸）。
+const NARROW_CAP := 44          # 半尺寸圖左右各保留的寬度（含菱形裝飾）
+func _narrow_texture(name: String, width: int) -> Texture2D:
+	var key := "%s@%d" % [name, width]
+	if _half_cache.has(key):
+		return _half_cache[key]
+	var out: Texture2D = null
+	var t := _half(name)
+	if t != null and width >= NARROW_CAP * 2 + 8 and width < t.get_width():
+		var src := t.get_image()
+		var dst := Image.create(width, src.get_height(), false, src.get_format())
+		dst.blit_rect(src, Rect2i(0, 0, NARROW_CAP, src.get_height()), Vector2i(0, 0))
+		var mid_w := width - NARROW_CAP * 2
+		var mid_x := (src.get_width() - mid_w) / 2
+		dst.blit_rect(src, Rect2i(mid_x, 0, mid_w, src.get_height()), Vector2i(NARROW_CAP, 0))
+		dst.blit_rect(src, Rect2i(src.get_width() - NARROW_CAP, 0, NARROW_CAP, src.get_height()), Vector2i(width - NARROW_CAP, 0))
+		out = ImageTexture.create_from_image(dst)
+	_half_cache[key] = out
+	return out
+
+
 func _box(name: String, mx: int, my: int, content_h: float = 0.0, content_v: float = 0.0) -> StyleBoxTexture:
 	var t := _half(name)
 	if t == null:
@@ -141,6 +184,12 @@ func _tex_button(size: Vector2, pos: Vector2, normal: String, hover: String, pre
 	b.mouse_default_cursor_shape = Control.CURSOR_ARROW
 	for pair in [["normal", normal], ["hover", hover], ["pressed", pressed], ["disabled", disabled], ["hover_pressed", pressed]]:
 		var bx := _box(pair[1], mx, my)
+		if bx != null and mx == 48:
+			var narrow := _narrow_texture(pair[1], int(size.x))
+			if narrow != null:
+				bx.texture = narrow
+				bx.texture_margin_left = NARROW_CAP
+				bx.texture_margin_right = NARROW_CAP
 		b.add_theme_stylebox_override(pair[0], bx if bx != null else StyleBoxEmpty.new())
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	b.add_theme_font_override("font", FONT)

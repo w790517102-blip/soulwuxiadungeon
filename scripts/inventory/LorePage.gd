@@ -1,7 +1,7 @@
 extends "res://scripts/inventory/StudyPageBase.gd"
 # 見聞頁：三本書（奇物、豪傑、神怪）。美術包 v1（assets/UI/lore）已套用。
 # 流程：書架三選一 → 點一本，其他兩本壓暗退場、那本浮到最上層、封面翻開 → 點右頁翻下一筆、點左頁翻上一筆（頁面彎曲翻過去，翻完攤平）
-#   → 末頁再往後點：「後續內容待君發掘」→ 右鍵或「合上」收書回書架。底下有「目錄」可直接跳到某一筆。
+#   → 末頁再往後點：「後續內容待君發掘」→ 右鍵或「闔上」收書回書架。底下有「目錄」可直接跳到某一筆。
 # 一筆資料兩頁：右頁＝名稱、圖、簡述；左頁＝詳細資料（奇物、神怪是「標籤＋欄位」列，豪傑是一整段人物誌）。
 # 未收錄的也佔頁（頁面美術自帶「？」與「尚未收錄」），翻頁時快速翻過去，直接停在下一筆已收錄的。
 # 翻頁是純 2D：每一頁在 SubViewport 裡排版，貼到切成多段的網格上，由頂點 shader 彎曲（見 tools/book_flip_demo.gd）。
@@ -123,7 +123,7 @@ func _ready() -> void:
 	_btn_toc.text = "目錄"
 	_btn_toc.pressed.connect(_open_toc)
 	_btn_close = _tex_button(Vector2(150, 38), Vector2(598, 590), "btn_normal", "btn_hover", "btn_pressed", "btn_disabled", 48, 16)
-	_btn_close.text = "合上"
+	_btn_close.text = "闔上"
 	_btn_close.pressed.connect(close_book)
 	for b in [_btn_toc, _btn_close]:
 		b.z_index = 45
@@ -694,15 +694,17 @@ func _apply_mode_buttons() -> void:
 	_zone_l.visible = reading
 	_zone_r.visible = reading
 
+## 右鍵：書本攤開時闔上書；在書架上離開見聞頁；有彈窗先關彈窗
+func _on_cancel() -> void:
+	if _overlay.visible:
+		_close_overlay()
+	elif mode == "book":
+		close_book()
+	else:
+		close_requested.emit()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
-		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT and mode == "book":
-		get_viewport().set_input_as_handled()
-		if _overlay.visible:
-			_close_overlay()
-		else:
-			close_book()
 		return
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()

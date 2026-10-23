@@ -308,6 +308,15 @@ func _on_slot_double_clicked(slot_id: String) -> void:
 	if not _is_locked(slot_id):
 		_on_change_pressed()
 
+## 右鍵點在裝備格上＝卸下，不當成「離開頁面」（有彈窗時右鍵照常取消彈窗）
+func _right_click_free(pos: Vector2) -> bool:
+	if _overlay != null and _overlay.visible:
+		return true
+	for b: Control in _slot_buttons.values():
+		if b.get_global_rect().has_point(pos):
+			return false
+	return true
+
 ## 格子的滑鼠輸入：左鍵雙擊＝更換、右鍵單擊＝卸下（先問一次，防誤觸）
 func _on_slot_gui_input(event: InputEvent, slot_id: String) -> void:
 	if not (event is InputEventMouseButton) or not event.pressed:

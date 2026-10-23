@@ -592,8 +592,8 @@ func _execute_sell_cart(cart_entries: Dictionary) -> void:
 	_refresh_gold()
 	_refresh_items()
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT):
 		get_viewport().set_input_as_handled()
 		_close_shop()
 
