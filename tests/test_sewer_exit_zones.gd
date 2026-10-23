@@ -33,5 +33,20 @@ func _run() -> void:
 		_check(inside == white.size(), n + " white zone is inside the camera bounds (only the edge overhang past the border)")
 		_check(int(t.get("mode")) == 2, n + " uses ZONE mode")
 	scene.free()
+	var room := (load("res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_true/yuheng_sewer_true_room/yuheng_sewer_true_room.tscn") as PackedScene).instantiate()
+	var room_bounds := Rect2(-611.0, -454.5, 1222.0, 909.0)
+	for n in ["memory_room_qin", "memory_room_writing_desk", "memory_room_medicine_cabinet", "loot_old_herb_pouch", "loot_calm_pill", "fix_wall_talisman", "fix_lion_waterhead", "fix_channel_lamps", "fix_channel_lamps_b", "exit_sewer_true"]:
+		var t := room.get_node_or_null("InteractionZones/" + n)
+		_check(t != null, "room " + n + " exists")
+		if t == null:
+			continue
+		var yolk: PackedVector2Array = t.get("selection_polygon")
+		var white: PackedVector2Array = t.get("zone_polygon")
+		_check(yolk.size() >= 3 and white.size() >= 3, "room " + n + " has yolk and white")
+		for p in white:
+			_check(room_bounds.grow(16.0).has_point(p), "room " + n + " white point inside the camera bounds")
+	for n in ["qin", "desk"]:
+		pass
+	room.free()
 	print("PASS test_sewer_exit_zones" if _failures == 0 else "FAILED test_sewer_exit_zones: %d" % _failures)
 	quit(1 if _failures > 0 else 0)

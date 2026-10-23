@@ -44,6 +44,19 @@ const LAST_TALISMAN_PAUSE_SECONDS := 1.4
 const F_SKILL_CHENGXIN := "shumian_skill_chengxin_luobi_unlocked"
 const F_SKILL_QINGQU := "shumian_skill_qingqu_gongyin_unlocked"
 
+## 已遷移到 InteractionZones（碰撞區／蛋黃區／蛋白區）的互動 ID：舊的 Area2D 退役，避免新舊兩套同時觸發。
+## 兩盞燈是兩組區域（fix_channel_lamps、fix_channel_lamps_b），都對應同一個互動 ID。
+const MIGRATED_INTERACTION_IDS := [
+	"memory_room_qin", "memory_room_writing_desk", "memory_room_medicine_cabinet",
+	"loot_old_herb_pouch", "loot_calm_pill",
+	"fix_wall_talisman", "fix_lion_waterhead", "fix_channel_lamps",
+]
+
+## 滑鼠專用的出口：點蛋黃區，劉語塵走進蛋白區就切換場景，效果與踩進舊的 to_yuheng_sewer_true Area2D 相同（舊 Area2D 保留給鍵盤）。
+const EXIT_TARGETS := {
+	"exit_sewer_true": "_on_to_yuheng_sewer_true_body_entered",
+}
+
 const MEMORY_IDS := [
 	"memory_room_qin",
 	"memory_room_writing_desk",
@@ -88,6 +101,7 @@ func _ready() -> void:
 	YuhengPrologueState.repair_sewer_loot_items()
 	_connect_transition_area()
 	_connect_interaction_areas()
+	_bind_interaction_zones()
 
 	await _play_entry_fade()
 	await show_map_name()
@@ -379,6 +393,31 @@ func _connect_transition_area() -> void:
 		to_yuheng_sewer_true.body_entered.connect(_on_to_yuheng_sewer_true_body_entered)
 
 
+## 新互動系統（見 InteractionTarget）：InteractionZones 底下每個目標的名字就是互動 ID（結尾 _b 的是同一個互動的第二組區域）。
+## 只有空白鍵（臉朝蛋黃區、人在蛋白區裡）或滑鼠點蛋黃區才會互動；走進蛋白區本身不會觸發任何事。
+func _bind_interaction_zones() -> void:
+	var zones := get_node_or_null("InteractionZones")
+	if zones == null:
+		return
+	for child in zones.get_children():
+		var target := child as InteractionTarget
+		if target == null:
+			continue
+		var interaction_id := String(target.name).trim_suffix("_b")
+		target.availability = _interaction_available
+		if EXIT_TARGETS.has(interaction_id):
+			var exit_method: String = EXIT_TARGETS[interaction_id]
+			target.handler = func(player: Node2D) -> void:
+				await call(exit_method, player)
+			continue
+		target.handler = func(_player: Node2D) -> void:
+			await _handle_interaction(interaction_id)
+
+
+func _interaction_available() -> bool:
+	return not interaction_locked and not transition_locked
+
+
 func _connect_interaction_areas() -> void:
 	var containers := [
 		get_node_or_null("InvestigationAreas"),
@@ -391,6 +430,11 @@ func _connect_interaction_areas() -> void:
 			continue
 
 		for child in container.get_children():
+			# 已經遷移到新互動系統的舊 Area2D 退役：不再監聽，也不再偵測。
+			if MIGRATED_INTERACTION_IDS.has(String(child.name)):
+				if child is Area2D:
+					(child as Area2D).set_deferred("monitoring", false)
+				continue
 			if child is Area2D:
 				_connect_interaction_area(child as Area2D, child.name)
 
