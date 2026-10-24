@@ -120,6 +120,8 @@ func change_map_to(path: String):
 
 	# ✅ 移動流語客到指定出生點（如果有）
 	await get_tree().process_frame
+	# 舊式 NPC（空白鍵＋Area2D）套用預設的三層互動；場景或腳本自己放了 InteractionTarget 的不動（見 NpcInteractionAdapter）
+	NpcInteractionAdapter.adopt_scene(new_scene)
 	var spawn_point = new_scene.get_node_or_null("SpawnPoints/%s" % spawn_point_name)
 	if spawn_point:
 		$LiuYu.global_position = spawn_point.global_position
