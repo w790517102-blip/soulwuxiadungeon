@@ -691,21 +691,25 @@ func _resource_pct_from_actor(actor: Dictionary, resource_key: String) -> float:
 	return total
 
 func _sync_actor_weapon_types() -> void:
+	for p in player_party:
+		if typeof(p) == TYPE_DICTIONARY:
+			_sync_one_actor_weapon_types(p)
+
+## 把一個我方角色的 weapon_1／weapon_2 對成「身上實際裝備」的武器類型（沒裝備＝空字串）。
+## 戰鬥中從 TeamData 重新抄長期欄位（例如切換內功）之後也要再呼叫一次，不然會被角色資料裡的預設武器（劍）蓋回去。
+func _sync_one_actor_weapon_types(p: Dictionary) -> void:
 	if InventorySync == null:
 		return
-	for p in player_party:
-		if typeof(p) != TYPE_DICTIONARY:
-			continue
-		var actor_id := str(p.get("id", ""))
-		var equipped := InventorySync.get_equipped(actor_id)
-		p["weapon_1"] = _resolve_equipped_weapon_type_with_fallback(
-			str(equipped.get("weapon_1", "")),
-			str(p.get("weapon_1", ""))
-		)
-		p["weapon_2"] = _resolve_equipped_weapon_type_with_fallback(
-			str(equipped.get("weapon_2", "")),
-			str(p.get("weapon_2", ""))
-		)
+	var actor_id := str(p.get("id", ""))
+	var equipped := InventorySync.get_equipped(actor_id)
+	p["weapon_1"] = _resolve_equipped_weapon_type_with_fallback(
+		str(equipped.get("weapon_1", "")),
+		str(p.get("weapon_1", ""))
+	)
+	p["weapon_2"] = _resolve_equipped_weapon_type_with_fallback(
+		str(equipped.get("weapon_2", "")),
+		str(p.get("weapon_2", ""))
+	)
 
 func _weapon_type_from_item(item_id: String) -> String:
 	if item_id == "":
@@ -1629,6 +1633,13 @@ func _refresh_battle_actor_from_team_data(actor: Dictionary, force: Dictionary) 
 			source["element"] = force["element"]
 
 	_copy_long_term_actor_fields(actor, source)
+	var is_ally := false
+	for ally in player_party:
+		if typeof(ally) == TYPE_DICTIONARY and str(ally.get("id", "")) == actor_id:
+			is_ally = true
+			break
+	if is_ally:
+		_sync_one_actor_weapon_types(actor)
 	_apply_equipment_bonus_to_actor(actor)
 	_snapshot_battle_baseline(actor)
 	actor["status_effects"] = status_effects
