@@ -3,6 +3,24 @@ extends Node
 ## 做法：後面墊兩張模糊圖——外擴光暈（亮）與內部填滿遮罩（較糊，縫隙會被填滿）；shader 只在遮罩低的地方（圖的外面）出光。
 ## 用法：InkGlow.attach(texture_rect)。換圖時光暈自動跟著換。
 
+## 整圈外擴輪廓（老闆選定的「first」）：把原圖的透明度往外擴 OUTLINE_PX 個像素，邊緣漸淡，畫成白色墊在圖後面，圖的外圍就多一圈比實體大的白邊。
+const OUTLINE_PX := 9
+const OUTLINE_SHADER := "shader_type canvas_item;
+void fragment() {
+	vec2 px = TEXTURE_PIXEL_SIZE;
+	float a = texture(TEXTURE, UV).a;
+	for (int i = 0; i < 16; i++) {
+		float ang = float(i) * 0.3926991;
+		vec2 d = vec2(cos(ang), sin(ang));
+		for (int j = 1; j <= 6; j++) {
+			float r = float(j) * 1.5;
+			float w = 1.0 - r / 10.5;
+			a = max(a, texture(TEXTURE, UV + d * r * px).a * w);
+		}
+	}
+	COLOR = vec4(1.0, 1.0, 1.0, clamp(a * 1.6, 0.0, 1.0) * 0.95);
+}"
+
 const SHADER := "shader_type canvas_item;
 uniform sampler2D fill_mask : filter_linear;
 uniform float boost = 3.2;
@@ -19,6 +37,7 @@ void fragment() {
 static var mode := "first"
 static var _cache: Dictionary = {}
 static var _shader: Shader
+static var _outline_shader: Shader
 
 var target: TextureRect
 var glow: TextureRect
@@ -56,9 +75,19 @@ func _process(_dt: float) -> void:
 	if id != _last_id:
 		_last_id = id
 		_apply(tex)
-	var ratio := 1.0 + 2.0 * _pad
-	glow.size = target.size * ratio
-	glow.position = target.position - target.size * _pad
+	if mode == "first" and tex != null and glow.texture != null:
+		# 補了透明邊的圖，依原圖在框內的實際縮放比例畫，輪廓才會剛好貼著實體外圍
+		var src := tex.get_size()
+		var s := Vector2(target.size.x / src.x, target.size.y / src.y)
+		if target.stretch_mode != TextureRect.STRETCH_SCALE:
+			s = Vector2.ONE * minf(s.x, s.y)
+		glow.stretch_mode = TextureRect.STRETCH_SCALE
+		glow.size = glow.texture.get_size() * s
+		glow.position = target.position + (target.size - glow.size) / 2.0
+	else:
+		var ratio := 1.0 + 2.0 * _pad
+		glow.size = target.size * ratio
+		glow.position = target.position - target.size * _pad
 	glow.visible = target.visible and glow.texture != null and mode != "off"
 	glow.z_index = target.z_index
 	glow.modulate.a = target.modulate.a
@@ -68,13 +97,12 @@ func _apply(tex: Texture2D) -> void:
 		glow.texture = null
 		return
 	if mode == "first":
-		_pad = 0.16
-		glow.texture = _blur(tex, 0.16, 7)
-		var m := CanvasItemMaterial.new()
-		var sh := Shader.new()
-		sh.code = "shader_type canvas_item;\nvoid fragment() { COLOR = vec4(1.0, 1.0, 1.0, clamp(texture(TEXTURE, UV).a * 1.7, 0.0, 1.0) * 0.95); }"
+		glow.texture = _padded(tex)
+		if _outline_shader == null:
+			_outline_shader = Shader.new()
+			_outline_shader.code = OUTLINE_SHADER
 		var sm := ShaderMaterial.new()
-		sm.shader = sh
+		sm.shader = _outline_shader
 		glow.material = sm
 		return
 	_pad = 0.22
@@ -102,6 +130,24 @@ static func _blur(tex: Texture2D, pad_frac: float, div: int) -> Texture2D:
 	big.blit_rect(img, Rect2i(0, 0, w, h), Vector2i(pad, pad))
 	big.resize(maxi(4, big.get_width() / div), maxi(4, big.get_height() / div), Image.INTERPOLATE_BILINEAR)
 	big.resize(w + 2 * pad, h + 2 * pad, Image.INTERPOLATE_BILINEAR)
+	var out := ImageTexture.create_from_image(big)
+	_cache[key] = out
+	return out
+
+
+## 原圖四周補上透明邊（讓外擴的輪廓有地方畫）。
+static func _padded(tex: Texture2D) -> Texture2D:
+	var key := "pad_%d" % tex.get_instance_id()
+	if _cache.has(key):
+		return _cache[key]
+	var img := tex.get_image()
+	if img == null:
+		return null
+	img.convert(Image.FORMAT_RGBA8)
+	var w := img.get_width()
+	var h := img.get_height()
+	var big := Image.create(w + 2 * OUTLINE_PX, h + 2 * OUTLINE_PX, false, Image.FORMAT_RGBA8)
+	big.blit_rect(img, Rect2i(0, 0, w, h), Vector2i(OUTLINE_PX, OUTLINE_PX))
 	var out := ImageTexture.create_from_image(big)
 	_cache[key] = out
 	return out
