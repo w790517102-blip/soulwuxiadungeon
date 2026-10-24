@@ -43,6 +43,7 @@ func _ready():
 	if not _intro_done():
 		get_node("/root/GameRoot/LiuYu").can_move = false
 	if _intro_done():
+		is_dialogue_active = false   # 開場已看過、對話框也移除了：出口不能再被「對話中」鎖著（否則滑鼠指到出口不會變游標、點了也沒反應）
 		dialogue_ui.queue_free()
 		fade_overlay_in()
 		show_map_name()
