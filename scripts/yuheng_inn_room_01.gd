@@ -31,6 +31,7 @@ var fade_in_finished = false
 var tween : Tween
 
 func _ready():
+	_bind_exit_zones()
 	
 	# ❗不再實例化流語客，GameRoot 已持有他
 	overlay.visible = true
@@ -172,7 +173,8 @@ func show_map_name():
 
 
 func _on_room_out_body_entered(body: Node2D):
-	if body.name == "LiuYu":
+	if body.name == "LiuYu" and _exit_allowed(body):
+		_leaving = true
 		overlay2.visible = true
 		overlay2.modulate.a = 0.0
 		var tween = overlay2.create_tween()
@@ -184,3 +186,33 @@ func _on_room_out_body_entered(body: Node2D):
 			game_root.change_map_to(yuheng_inn)
 		else:
 			push_warning("[切換場景] GameRoot 尚未載入或不存在！")
+
+
+## 滑鼠專用的出口（InteractionZones 底下）：點蛋黃區，劉語塵走進蛋白區就換場景，效果與踩進舊的 RoomOut 相同（舊 Area2D 保留給鍵盤）。
+## 下方的 RoomExit（通往 yuheng_inn_room_02）是早期測試用的，已停用，之後會做成隱藏彩蛋房。
+const EXIT_TARGETS := {
+	"exit_room_out": "_on_room_out_body_entered",
+}
+var _leaving := false
+
+func _bind_exit_zones() -> void:
+	var zones := get_node_or_null("InteractionZones")
+	if zones == null:
+		return
+	for child in zones.get_children():
+		var target := child as InteractionTarget
+		if target == null or not EXIT_TARGETS.has(String(target.name)):
+			continue
+		var method: String = EXIT_TARGETS[String(target.name)]
+		target.availability = func() -> bool: return not _leaving and not is_dialogue_active
+		target.handler = func(player: Node2D) -> void:
+			await call(method, player)
+
+## 與其他場景的出口一致：交給 GameRoot 的出口防呆（剛換場景的冷卻時間、讀檔中、鎖定中都不能換）。
+func _exit_allowed(body: Node) -> bool:
+	if _leaving:
+		return false
+	var game_root := get_node_or_null("/root/GameRoot")
+	if game_root == null or not game_root.has_method("can_use_map_transition"):
+		return true
+	return bool(game_root.call("can_use_map_transition", body, null))

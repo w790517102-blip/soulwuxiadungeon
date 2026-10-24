@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://crrld1tq64sgy" path="res://assets/sprites/Liu_Yu/LiuYu_headshot.png" id="5_7kjoh"]
 [ext_resource type="FontFile" uid="uid://dpnhv7778sg1k" path="res://assets/fonts/DotGothic16-Regular.ttf" id="5_u4nxo"]
 [ext_resource type="Texture2D" uid="uid://uvw4jitxi6o1" path="res://assets/UI/MissionUpdate.png" id="7_u4nxo"]
+[ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_btp1i"]
 texture = ExtResource("2_u4nxo")
@@ -5002,6 +5003,8 @@ offset_bottom = 1353.0
 color = Color(0, 0, 0, 1)
 
 [node name="RoomExit" type="Area2D" parent="."]
+monitoring = false
+monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RoomExit"]
 position = Vector2(129, 263)
@@ -5068,6 +5071,19 @@ color = Color(0, 0, 0, 1)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
 position = Vector2(-14, 23)
 shape = SubResource("RectangleShape2D_8eu68")
+
+[node name="InteractionZones" type="Node2D" parent="."]
+
+[node name="exit_room_out" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "出房門"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(228.5, -84.7, 327.4, -12.9, 325.1, 165.0, 228.5, 81.2)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(164.7, 68.5, 228.5, 81.2, 345.0, 186.5, 252.5, 209.6, 148.7, 105.2)
 
 [connection signal="body_entered" from="RoomExit" to="." method="_on_room_exit_body_entered"]
 [connection signal="body_entered" from="RoomOut" to="." method="_on_room_out_body_entered"]
