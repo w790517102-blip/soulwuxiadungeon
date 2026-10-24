@@ -18,6 +18,7 @@ var party_inventory: Array = [
 	{"id": "item_pili_single", "count": 3},
 	{"id": "item_pili_aoe", "count": 3},
 	{"id": "item_fire_talisman", "count": 3},
+	{"id": "wep_wood_sword", "count": 1},
 	{"id": "iron_sword", "count": 1},
 	{"id": "bronze_sword", "count": 1},
 	{"id": "ink_brush", "count": 1},
@@ -37,7 +38,7 @@ var equipped_by_actor: Dictionary = {}
 var ever_owned_item_ids: Dictionary = {}
 ## 新遊戲一開始就穿在身上的裝備（照角色、欄位）。存檔讀進來時不會套用（存檔裡的裝備才是準的）。
 const INITIAL_EQUIPMENT := {
-	"liuyu": {"weapon_1": "bronze_sword", "armor_head": "arm_cloth_cap", "armor_body": "arm_cloth", "accessory_1": "jade_pendant"},
+	"liuyu": {"weapon_1": "wep_wood_sword", "armor_head": "arm_cloth_cap", "armor_body": "arm_cloth", "accessory_1": "jade_pendant"},
 	"shumian": {"weapon_1": "ink_brush"},
 }
 const STAT_KEYS := ["atk", "def", "max_hp", "max_mp", "max_hp_pct", "max_mp_pct", "speed", "accuracy", "evasion", "crit_rate_bonus"]

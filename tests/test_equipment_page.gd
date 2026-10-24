@@ -26,6 +26,8 @@ func _run() -> void:
 	root.add_child(page)
 	await process_frame
 	await process_frame
+	# 新遊戲起始武器是木劍；這份測試的數值以青銅劍為基準，所以先換上青銅劍
+	inv.equip_item("bronze_sword", "liuyu")
 	page._refresh()
 
 	_check(page.actor_id == "liuyu", "starts on 劉語塵")
@@ -130,7 +132,7 @@ func _run() -> void:
 	_check(plain_tex.resource_path.contains("/equipment/") and aged_tex.resource_path.contains("equipment_aged"), "default is the original, the backup lives in equipment_aged")
 	# 紙娃娃：身體護具依稀有度換圖，沒有該階的圖退回凡品；武器退回預設；機關沒裝備就不顯示
 	_check(page._doll.has_figure() and page.doll_info.get("mode") == "master", "cloth clothes (common) show the whole master figure")
-	_check(page.doll_info.get("weapon_art") == "default", "the sword uses the default weapon layers (no art of its own)")
+	_check(page.doll_info.get("weapon_art") == "bronze_sword", "the bronze sword uses its own paper-doll layer")
 	_check(page.doll_info.get("body_rarity") == 1, "cloth clothes are common (rarity 1)")
 	page._on_slot_pressed("armor_body")
 	page._apply_equip("arm_rare_clothes")

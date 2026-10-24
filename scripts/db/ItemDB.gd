@@ -40,7 +40,7 @@ const ITEM_DEFS := {
 	"item_half_string_copper_button": {"name": "半弦銅釦", "desc": "一枚只餘半輪的古舊銅釦，表面刻著細密弦紋。紅徽音認為，它能開啟醉月茶坊後巷廢井的機關。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"wep_wood_sword": {"name": "木劍", "desc": "入門木劍。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 1}},
 	"wep_short_blade": {"name": "短刀", "desc": "短柄單刀。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_2", "weapon_type": "刀", "stats": {"atk": 2}},
-	"wep_qingfeng_sword": {"name": "青鋒劍", "desc": "均衡劍器。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 3}},
+	"wep_qingfeng_sword": {"name": "湛鋒劍", "desc": "均衡劍器。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 3}},
 	"wep_bamboo_staff": {"name": "竹槍", "desc": "竹製長槍。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "槍", "stats": {"atk": 2}},
 	"wep_yanjiang_fishbone_spear": {
 		"name": "魘將魚骨槍",
