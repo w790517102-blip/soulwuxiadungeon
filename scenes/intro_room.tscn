@@ -6,7 +6,6 @@
 [ext_resource type="Texture2D" uid="uid://b7wj4n6cgfh1d" path="res://assets/UI/DialogueBox.png" id="4_l33cc"]
 [ext_resource type="Texture2D" uid="uid://crrld1tq64sgy" path="res://assets/sprites/Liu_Yu/LiuYu_headshot.png" id="5_7kjoh"]
 [ext_resource type="FontFile" uid="uid://dpnhv7778sg1k" path="res://assets/fonts/DotGothic16-Regular.ttf" id="5_u4nxo"]
-[ext_resource type="Texture2D" uid="uid://uvw4jitxi6o1" path="res://assets/UI/MissionUpdate.png" id="7_u4nxo"]
 [ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_btp1i"]
@@ -5032,12 +5031,6 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 20
 text = "玉衡客棧客房"
 max_lines_visible = 10
-
-[node name="MissionUpdate" type="Sprite2D" parent="CanvasLayer"]
-modulate = Color(1, 1, 1, 0)
-position = Vector2(610, 50)
-scale = Vector2(0.531944, 0.531944)
-texture = ExtResource("7_u4nxo")
 
 [node name="SpawnPoints" type="Node2D" parent="."]
 

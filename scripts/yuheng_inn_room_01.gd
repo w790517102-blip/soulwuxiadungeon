@@ -19,7 +19,6 @@ var dialogue_lines = [
 @onready var dialogue_box = $DialogueUI/DialogueBox
 @onready var dialogue_label = $DialogueUI/DialogueBox/Label
 @onready var headshot = $DialogueUI/LiuYu_headshot
-@onready var mission_popup = $MissionUpdate
 @onready var overlay = $BlackOverlay
 @onready var overlay2 = $BlackOverlay2
 
@@ -41,10 +40,9 @@ func _ready():
 	tween = create_tween()
 	tween.tween_property(overlay, "modulate:a", 0.0, 1.0)
 
-	if not GlobalState.has_meta("intro_done"):
-		GlobalState.set_meta("intro_done", false)
+	if not _intro_done():
 		get_node("/root/GameRoot/LiuYu").can_move = false
-	if GlobalState.get_meta("intro_done"):
+	if _intro_done():
 		dialogue_ui.queue_free()
 		fade_overlay_in()
 		show_map_name()
@@ -112,36 +110,31 @@ func _input(event):
 		else:
 			_show_next_line()
 
+## 開場對話看過了：存在存檔的旗標裡（以前用 meta，不會存檔，所以讀檔回來會重播一次）。
+## 舊存檔沒有這個旗標，但開場結束時主線目標會被設成「到飲月山莊拜訪左飲」，用它辨認。
+const F_INTRO_DONE := "event_intro_room_done"
+const INTRO_OBJECTIVE := "到飲月山莊拜訪左飲"
+
+func _intro_done() -> bool:
+	if GlobalState.get_flag(F_INTRO_DONE):
+		return true
+	return String(QuestManager.main_quest.get("objective_override", "")) == INTRO_OBJECTIVE
+
 func _end_dialogue():
-	get_node("/root/GameRoot/LiuYu").can_move = true
-	var tween = get_tree().create_tween() 
+	# 對話框完全淡出之後才把主控權還給玩家
+	var tween = get_tree().create_tween()
 	tween.tween_property(dialogue_box, "modulate:a", 0.0, 0.4)
 	tween.tween_property(headshot, "modulate:a", 0.0, 0.4)
 	await tween.finished
 	dialogue_box.visible = false
 	headshot.visible = false
 
-	GlobalState.set_meta("intro_done", true)
-	var mission_popup = get_node_or_null("CanvasLayer/MissionUpdate")
-	# ✅ 推進主線
-	if not GlobalState.get_meta("mission_01_updated"):
-		QuestManager.advance_main_quest(1, "到飲月山莊拜訪左飲")
+	GlobalState.set_flag(F_INTRO_DONE, true)
+	# 推進主線，並用統一的訊息提示（MessageToast）告知玩家
+	QuestManager.advance_main_quest(1, INTRO_OBJECTIVE)
+	MessageToast.push_message("主線更新：" + INTRO_OBJECTIVE)
 
-		mission_popup.visible = true
-	
-		mission_popup.modulate.a = 0.0
-		tween = get_tree().create_tween()
-		tween.tween_property(mission_popup, "modulate:a", 1.0, 0.5)
-		await tween.finished
-
-		await get_tree().create_timer(3.0).timeout
-		tween = get_tree().create_tween()
-		tween.tween_property(mission_popup, "modulate:a", 0.0, 0.5)
-		await tween.finished
-		mission_popup.visible = false
-
-		GlobalState.set_meta("mission_01_updated", true)
-		
+	get_node("/root/GameRoot/LiuYu").can_move = true
 	is_dialogue_active = false
 
 func _on_room_exit_body_entered(body):
