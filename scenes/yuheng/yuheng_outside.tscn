@@ -30,6 +30,7 @@
 [ext_resource type="PackedScene" uid="uid://cktdx1qp1lv3b" path="res://scenes/yuheng/yuheng_outside/walking_shop.tscn" id="24_shm51"]
 [ext_resource type="Script" uid="uid://row2to70rnof" path="res://scripts/yuheng/yuheng_outside/herbpick.gd" id="25_krtow"]
 [ext_resource type="PackedScene" uid="uid://clwlt0ueixd8n" path="res://scenes/yuheng/yuheng_outside/Zhe_yen_won.tscn" id="29_0wgln"]
+[ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_fvgu2"]
 texture = ExtResource("2_ncii6")
@@ -4685,6 +4686,30 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 25
 script = ExtResource("15_er17y")
 stage_rules = Array[ExtResource("16_6rdbe")]([SubResource("Resource_ranm3")])
+
+[node name="InteractionZones" type="Node2D" parent="."]
+
+[node name="exit_market_east" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "往東市"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-280.5, -148.2, -14.5, -148.2, -70.2, 90.8, -280.5, 94.0)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-280.5, -148.2, -14.5, -148.2, -70.2, 162.5, -280.5, 162.5)
+
+[node name="exit_into_inn" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "進客棧"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-540.2, 98.7, -452.6, 73.3, -452.6, 221.4, -537.0, 258.1)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-537.0, 259.7, -431.8, 223.0, -380.9, 251.7, -495.6, 296.3)
 
 [connection signal="body_entered" from="into_room" to="." method="_on_into_room_body_entered"]
 [connection signal="body_entered" from="to_yuheng_market_east" to="." method="_on_to_yuheng_market_east_body_entered"]
