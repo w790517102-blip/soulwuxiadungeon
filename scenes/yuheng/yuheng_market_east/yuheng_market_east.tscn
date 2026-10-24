@@ -42,6 +42,7 @@
 [ext_resource type="PackedScene" uid="uid://cqs6fnsbsp2lh" path="res://scenes/yuheng/yuheng_market_east/store_keeper_e.tscn" id="40_ftxdb"]
 [ext_resource type="Texture2D" uid="uid://bep8hn4yblmrm" path="res://assets/background/Yuheng_Town/yuheng_market_east/pitcher1.png" id="41_js57i"]
 [ext_resource type="Texture2D" uid="uid://dh4ekpqund0ew" path="res://assets/background/Yuheng_Town/yuheng_market_east/wall.png" id="42_8qucu"]
+[ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_js57i"]
 texture = ExtResource("1_05jtj")
@@ -6906,6 +6907,16 @@ position = Vector2(-26, 417.32)
 scale = Vector2(0.775, 0.775)
 script = ExtResource("33_w70uj")
 
+[node name="InteractionTarget" type="Node2D" parent="store_keeper_a"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "店家 A"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-36.0, 22.2, 32.5, 22.2, 32.5, 147.2, -36.0, 147.2)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-49.1, -83.2, 206.3, -9.4, 110.2, 280.2, -120.2, 263.1, -122.9, 111.7)
+
 [node name="store_keeper_b" parent="." instance=ExtResource("33_vhvv8")]
 position = Vector2(-478, 302.15)
 scale = Vector2(0.8, 0.8)
@@ -6950,6 +6961,52 @@ position = Vector2(156.154, -3.10151)
 rotation = 0.37001
 skew = -0.314159
 shape = SubResource("RectangleShape2D_js57i")
+
+[node name="InteractionZones" type="Node2D" parent="."]
+
+[node name="exit_market_west" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "往西市"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-733.5, 47.8, -692.7, 55.9, -682.4, 249.8, -750.8, 258.0)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-735.5, 39.6, -692.7, 50.8, -672.2, 253.9, -756.9, 268.2)
+
+[node name="exit_old_well" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "往廢井"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(193.1, -65.5, 207.3, 126.3, 129.8, 104.9)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(150.2, 49.8, 193.1, 53.9, 225.7, 183.5, 91.0, 159.0)
+
+[node name="exit_zueyue" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "進醉月茶坊"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(292.0, 8.0, 491.0, 40.6, 400.2, 193.7, 294.1, 166.1)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(294.1, 168.2, 478.8, 213.1, 502.2, 305.9, 240.0, 225.3)
+
+[node name="exit_plaza" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "往廣場"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-750.8, 544.7, -598.8, 458.0, -217.1, 617.1)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-750.8, 544.7, -595.7, 449.8, -260.0, 495.7, -216.1, 619.2)
 
 [connection signal="body_entered" from="To_yuheng_outside" to="." method="_on_to_yuheng_outside_body_entered"]
 [connection signal="body_entered" from="ZueYue_entry" to="." method="_on_zue_yue_entry_body_entered"]

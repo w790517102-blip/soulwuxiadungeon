@@ -35,23 +35,30 @@ static func is_legacy_npc(node: Node) -> bool:
 	if not ("can_interact" in node) or not node.has_method("_unhandled_input"):
 		return false
 	for child in node.get_children():
-		if child is InteractionTarget:
-			return false
+		if child is InteractionTarget and (child as InteractionTarget).handler.is_valid():
+			return false   # 場景或腳本自己放了、而且自己接好互動的：不碰
 	return true
 
 
 static func adopt(npc: Node) -> bool:
 	if not is_legacy_npc(npc):
 		return false
-	var target := InteractionTarget.new()
-	target.name = "InteractionTarget"
-	target.mode = InteractionTarget.Mode.RADIUS
-	target.display_name = String(npc.name)
-	target.interaction_radius = DEFAULT_RADIUS
-	target.hover_margin = DEFAULT_HOVER_MARGIN
+	# 場景裡已經手放了一個 InteractionTarget（自訂蛋黃區/蛋白區）但還沒接互動：沿用它的範圍，只幫它接上舊 NPC 的互動
+	var target: InteractionTarget = null
+	for child in npc.get_children():
+		if child is InteractionTarget:
+			target = child
+			break
+	if target == null:
+		target = InteractionTarget.new()
+		target.name = "InteractionTarget"
+		target.mode = InteractionTarget.Mode.RADIUS
+		target.display_name = String(npc.name)
+		target.interaction_radius = DEFAULT_RADIUS
+		target.hover_margin = DEFAULT_HOVER_MARGIN
+		npc.add_child(target)
 	target.handler = func(_player: Node2D) -> void:
 		_press_space_on(npc)
-	npc.add_child(target)
 	# 舊的 Area2D 不再決定誰能互動（否則空白鍵會被新舊兩套各處理一次）
 	for child in npc.get_children():
 		if child is Area2D:
