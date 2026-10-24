@@ -6913,9 +6913,9 @@ mode = 2
 display_name = "店家 A"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(-36.0, 22.2, 32.5, 22.2, 32.5, 147.2, -36.0, 147.2)
+selection_polygon = PackedVector2Array(-36.0, -125.4, 32.5, -125.4, 32.5, -0.3, -36.0, -0.3)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(-49.1, -83.2, 206.3, -9.4, 110.2, 280.2, -120.2, 263.1, -122.9, 111.7)
+zone_polygon = PackedVector2Array(-49.1, -230.7, 206.3, -157.0, 110.2, 132.7, -120.2, 115.5, -122.9, -35.9)
 
 [node name="store_keeper_b" parent="." instance=ExtResource("33_vhvv8")]
 position = Vector2(-478, 302.15)
@@ -6971,9 +6971,9 @@ display_name = "往西市"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(-733.5, 47.8, -692.7, 55.9, -682.4, 249.8, -750.8, 258.0)
+selection_polygon = PackedVector2Array(-733.5, -66.6, -692.7, -58.5, -682.4, 135.4, -750.8, 143.6)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(-735.5, 39.6, -692.7, 50.8, -672.2, 253.9, -756.9, 268.2)
+zone_polygon = PackedVector2Array(-735.5, -74.8, -692.7, -63.6, -672.2, 139.5, -756.9, 153.8)
 
 [node name="exit_old_well" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
@@ -6982,9 +6982,9 @@ display_name = "往廢井"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(193.1, -65.5, 207.3, 126.3, 129.8, 104.9)
+selection_polygon = PackedVector2Array(193.1, -179.9, 207.3, 11.9, 129.8, -9.5)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(150.2, 49.8, 193.1, 53.9, 225.7, 183.5, 91.0, 159.0)
+zone_polygon = PackedVector2Array(150.2, -64.6, 193.1, -60.5, 225.7, 69.1, 91.0, 44.6)
 
 [node name="exit_zueyue" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
@@ -6993,9 +6993,9 @@ display_name = "進醉月茶坊"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(292.0, 8.0, 491.0, 40.6, 400.2, 193.7, 294.1, 166.1)
+selection_polygon = PackedVector2Array(292.0, -106.4, 491.0, -73.8, 400.2, 79.3, 294.1, 51.7)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(294.1, 168.2, 478.8, 213.1, 502.2, 305.9, 240.0, 225.3)
+zone_polygon = PackedVector2Array(294.1, 53.8, 478.8, 98.7, 502.2, 191.5, 240.0, 110.9)
 
 [node name="exit_plaza" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
@@ -7004,9 +7004,9 @@ display_name = "往廣場"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(-750.8, 544.7, -598.8, 458.0, -217.1, 617.1)
+selection_polygon = PackedVector2Array(-750.8, 430.3, -598.8, 343.6, -217.1, 502.7)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(-750.8, 544.7, -595.7, 449.8, -260.0, 495.7, -216.1, 619.2)
+zone_polygon = PackedVector2Array(-750.8, 430.3, -595.7, 335.4, -260.0, 381.3, -216.1, 504.8)
 
 [connection signal="body_entered" from="To_yuheng_outside" to="." method="_on_to_yuheng_outside_body_entered"]
 [connection signal="body_entered" from="ZueYue_entry" to="." method="_on_zue_yue_entry_body_entered"]
