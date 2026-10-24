@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://cmx65u8donqdv" path="res://scenes/yuheng/yuheng_inn/yuheng_inn_man_c.tscn" id="18_d2utk"]
 [ext_resource type="Script" uid="uid://un7bbnrd5su1" path="res://scripts/overhead_label.gd" id="19_pisyg"]
 [ext_resource type="Script" uid="uid://w8e7rv618eva" path="res://scripts/ChatterStageRule.gd" id="20_lddll"]
+[ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qv24i"]
 texture = ExtResource("1_0plib")
@@ -5183,6 +5184,30 @@ shape = SubResource("RectangleShape2D_d2utk")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraBounds"]
 position = Vector2(124.25, 537.75)
 shape = SubResource("RectangleShape2D_pisyg")
+
+[node name="InteractionZones" type="Node2D" parent="."]
+
+[node name="exit_into_room" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "進房間"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-82.2, -91.0, 11.6, -95.7, 10.1, 37.2, -79.1, 48.2)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-82.2, 48.2, 11.6, 37.2, 108.6, 95.1, -88.5, 126.4)
+
+[node name="exit_go_out" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "出客棧"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(17.9, 722.3, 191.5, 683.2, 291.6, 850.6, 72.6, 850.6)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-21.2, 670.7, 204.0, 628.5, 297.9, 881.8, 96.1, 881.8)
 
 [connection signal="body_entered" from="Into_Room" to="." method="_on_into_room_body_entered"]
 [connection signal="body_entered" from="Inn_boss/Area2D" to="Inn_boss" method="_on_area_2d_body_entered"]
