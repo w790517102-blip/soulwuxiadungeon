@@ -29,7 +29,7 @@ func _run() -> void:
 	_check(int(liuyu["max_hp"]) > 150, "five stats raised the maximum above the literal 150 (got %d)" % int(liuyu["max_hp"]))
 
 	var worn: Dictionary = inv.get_equipped("liuyu")
-	_check(worn.get("weapon_1") == "bronze_sword", "劉語塵 wears the bronze sword")
+	_check(worn.get("weapon_1") == "wep_wood_sword", "劉語塵 starts with the wooden sword")
 	_check(worn.get("armor_head") == "arm_cloth_cap", "劉語塵 wears the cloth cap (the opening item)")
 	_check(worn.get("armor_body") == "arm_cloth", "劉語塵 wears the cloth clothes")
 	_check(worn.get("accessory_1") == "jade_pendant", "劉語塵 wears the jade pendant")
