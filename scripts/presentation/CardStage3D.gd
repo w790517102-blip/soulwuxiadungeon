@@ -1801,7 +1801,7 @@ func _present_punch_attack(attacker: Dictionary, target: Dictionary, result: Dic
 	for strike_any: Variant in strikes:
 		var strike: Dictionary = strike_any
 		events.append({"target": target, "hit": bool(strike.get("hit", true)), "crit": bool(strike.get("crit", false))})
-	await present_punch_events(attacker, events)
+	await present_punch_events(attacker, events, false)
 
 
 ## A flurry of punches, one per event ({target, hit, crit}), in order. Like the sword flurry, the
@@ -1815,7 +1815,8 @@ const PUNCH_ANGLES: Array[float] = [0.0, 0.55, -0.5, 0.28, -0.3]
 const PUNCH_GAP: float = 0.10
 
 
-func present_punch_events(attacker: Dictionary, events: Array) -> void:
+## show_popups=false：呼叫端已經先用真正的傷害排好數字（present_attack 的 _show_attack_popups），這裡不再用「沒有傷害值」的事件補一組（會多跳一個 1 點傷害）。
+func present_punch_events(attacker: Dictionary, events: Array, show_popups: bool = true) -> void:
 	var source := card_for(attacker)
 	if source == null or events.is_empty():
 		return
@@ -1842,7 +1843,8 @@ func present_punch_events(attacker: Dictionary, events: Array) -> void:
 			struck.append(struck_card)
 		else:
 			struck_card.dodge_motion()
-	show_area_popups(events, 0.0, PUNCH_GAP)
+	if show_popups:
+		show_area_popups(events, 0.0, PUNCH_GAP)
 	_suppress_card_spark = true
 	var per_target_count: Dictionary = {}
 	for index: int in range(events.size()):

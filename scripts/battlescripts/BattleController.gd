@@ -2734,10 +2734,14 @@ func execute_action(actor: Dictionary, skill_data: Dictionary, target: Dictionar
 	# in between): a stance can forbid a skill (持鞘: both hands are taken), or there is too little MP. A refused skill
 	# costs nothing and does NOT use the actor's turn - the caller sees `last_action_rejection` and goes back to the list.
 	last_action_rejection = ""
-	var verdict: Dictionary = SkillView.check(actor, skill_data)
+	# 我方只能施展「身上裝備的主副武器」對得上的招式（拳／掌／通用／空手招式不需要）：列表本來就不列，這裡再擋一次，
+	# 避免任何路徑（舊選單、快捷、重開技能清單）繞過去。敵人不看裝備。
+	var verdict: Dictionary = SkillView.check(actor, skill_data, player_party.has(actor))
 	if not bool(verdict.ok):
 		last_action_rejection = String(verdict.code)
-		if String(verdict.code) == SkillView.CODE_STANCE:
+		if String(verdict.code) == SkillView.CODE_WEAPON:
+			_log("%s 手上沒有對應的武器，無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
+		elif String(verdict.code) == SkillView.CODE_STANCE:
 			_log("%s 目前的姿態下無法施展「%s」。" % [user_name, str(skill_data.get("name", "???"))])
 		else:
 			_log("%s 真氣不足，無法施展「%s」（需要 %d，目前 %d）。" % [user_name, str(skill_data.get("name", "???")), int(verdict.need), int(verdict.have)])
