@@ -1632,6 +1632,9 @@ func _refresh_battle_actor_from_team_data(actor: Dictionary, force: Dictionary) 
 		if force.has("element"):
 			source["element"] = force["element"]
 
+	# crit_rate_bonus 不在長期欄位清單裡（角色資料通常沒有這個鍵），所以複製不會把它重設；下面套用裝備加成時又會再加一次，
+	# 每換一次內功就多疊一份裝備的暴擊加成。先退回角色資料的值（沒有就是 0），才跟開戰時一樣只加一次。
+	actor["crit_rate_bonus"] = float(source.get("crit_rate_bonus", 0.0))
 	_copy_long_term_actor_fields(actor, source)
 	var is_ally := false
 	for ally in player_party:

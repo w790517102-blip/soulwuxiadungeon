@@ -23,5 +23,7 @@ func _run() -> void:
 	var copy_at := body.find("_copy_long_term_actor_fields(actor, source)")
 	var sync_at := body.find("_sync_one_actor_weapon_types(actor)")
 	_check(copy_at >= 0 and sync_at > copy_at, "the equipped weapon types are re-synced right after the long-term fields are copied")
+	var reset_at := body.find("actor[\"crit_rate_bonus\"] = float(source.get(\"crit_rate_bonus\", 0.0))")
+	_check(reset_at >= 0 and reset_at < copy_at, "crit_rate_bonus is reset before the equipment bonus is applied again (otherwise it stacks on every inner-force switch)")
 	print("PASS test_inner_force_switch_keeps_weapon" if _failures == 0 else "FAILED test_inner_force_switch_keeps_weapon: %d" % _failures)
 	quit(1 if _failures > 0 else 0)
