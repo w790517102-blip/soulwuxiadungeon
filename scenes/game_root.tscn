@@ -92,6 +92,7 @@ position = Vector2(108.35, 102.345)
 scale = Vector2(1.25, 1.25)
 
 [node name="ChoiceBox" type="VBoxContainer" parent="DialogManager"]
+mouse_filter = 2
 z_index = 5
 anchors_preset = 8
 anchor_left = 0.5
