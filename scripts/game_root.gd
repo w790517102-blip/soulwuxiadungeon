@@ -9,8 +9,10 @@ var current_map_path = ""
 var current_music_tag = ""
 var music_folder = "res://assets/BGM/"
 var _world_bgm_paused_for_battle := false
-var _world_bgm_resume_volume_db := -5.0
+const WORLD_BGM_VOLUME_DB := -5.0
+var _world_bgm_resume_volume_db := WORLD_BGM_VOLUME_DB
 var _music_transition_serial := 0
+var _music_transition_pending_track: AudioStream = null
 var _music_tween: Tween = null
 var map_transition_locked := false
 const MAP_EXIT_REQUIRES_EXIT_META := "map_transition_requires_exit"
@@ -251,6 +253,7 @@ func transition_music_by_tag(tag: String, fade_out_time := 0.2, fade_in_time := 
 	var serial := _music_transition_serial
 	_world_bgm_paused_for_battle = false
 	current_music_tag = tag
+	_music_transition_pending_track = track
 	if _music_tween and _music_tween.is_valid():
 		_music_tween.kill()
 
@@ -261,14 +264,16 @@ func transition_music_by_tag(tag: String, fade_out_time := 0.2, fade_in_time := 
 		if serial != _music_transition_serial:
 			return false
 
+	_music_transition_pending_track = null
 	music_player.stop()
 	music_player.stream = track
 	music_player.stream.loop = true
-	music_player.volume_db = -50.0 if fade_in_time > 0.0 else -5.0
+	music_player.stream_paused = false
+	music_player.volume_db = -50.0 if fade_in_time > 0.0 else WORLD_BGM_VOLUME_DB
 	music_player.play()
 	if fade_in_time > 0.0:
 		_music_tween = create_tween()
-		_music_tween.tween_property(music_player, "volume_db", -5.0, fade_in_time)
+		_music_tween.tween_property(music_player, "volume_db", WORLD_BGM_VOLUME_DB, fade_in_time)
 		await _music_tween.finished
 		if serial != _music_transition_serial:
 			return false
@@ -296,9 +301,24 @@ func fade_out_and_in(new_track: AudioStream, fade_time: float):
 func pause_world_bgm_for_battle() -> void:
 	if music_player == null:
 		return
-	if not music_player.playing:
+	# 地圖 BGM 可能正處於換歌淡入淡出途中（剛進場、BlackOverlay 還沒退完就觸發戰鬥）。
+	# 若只是暫停：換歌 coroutine 稍後會把新曲子重新 play() 出來（戰鬥中兩首 BGM 重疊），
+	# 而且記到的「還原音量」會是淡到一半的低音量（戰後 BGM 變小聲）。
+	# 所以先取消進行中的換歌，並把待換的曲子直接定位好，再暫停。
+	var pending_track := _music_transition_pending_track
+	var transition_in_flight := pending_track != null or (_music_tween != null and _music_tween.is_valid())
+	if not music_player.playing and not transition_in_flight:
 		return
-	_world_bgm_resume_volume_db = music_player.volume_db
+	_music_transition_serial += 1
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+	if pending_track != null:
+		_music_transition_pending_track = null
+		music_player.stop()
+		music_player.stream = pending_track
+		music_player.stream.loop = true
+	_world_bgm_resume_volume_db = WORLD_BGM_VOLUME_DB
+	music_player.volume_db = WORLD_BGM_VOLUME_DB
 	music_player.stream_paused = true
 	_world_bgm_paused_for_battle = true
 
@@ -308,6 +328,7 @@ func stop_world_bgm(fade_time: float = 0.2) -> void:
 	# intentional and must not be resumed by the battle-return path.
 	_world_bgm_paused_for_battle = false
 	_music_transition_serial += 1
+	_music_transition_pending_track = null
 	if _music_tween and _music_tween.is_valid():
 		_music_tween.kill()
 	if music_player == null:
@@ -329,8 +350,10 @@ func resume_world_bgm_after_battle(fade_time: float = 0.5) -> void:
 	music_player.stream_paused = false
 	if not music_player.playing:
 		music_player.play()
-	var tween = create_tween()
-	tween.tween_property(music_player, "volume_db", target_volume, max(fade_time, 0.01))
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+	_music_tween = create_tween()
+	_music_tween.tween_property(music_player, "volume_db", target_volume, max(fade_time, 0.01))
 
 func _ready():
 	if go_to_intro_on_start:
