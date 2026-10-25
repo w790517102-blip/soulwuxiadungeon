@@ -160,8 +160,8 @@ func _finalize_richman_event_under_black() -> void:
 
 func _play_after_event_line() -> void:
 	await _play_dialog([
-		_l("劉語塵心想：方才鬧出這麼大動靜……", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("劉語塵心想：得先去看看書眠是否無恙。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("（心想）方才鬧出這麼大動靜……", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("（心想）得先去看看書眠是否無恙。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 	])
 
 
@@ -403,8 +403,8 @@ func _play_forbidden_flow(body: CharacterBody2D, forbidden_area: Area2D, return_
 	body.set("can_move", false)
 	body.velocity = Vector2.ZERO
 	await _play_dialog([
-		_l("(現在不是往這裡去的時候。)", LIUYU_SPEAKER, LIUYU_PORTRAIT),
-		_l("(方才白箋居鬧出那麼大動靜，得先看看書眠是否無恙。)", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("（心想）現在不是往這裡去的時候。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
+		_l("（心想）方才白箋居鬧出那麼大動靜，得先看看書眠是否無恙。", LIUYU_SPEAKER, LIUYU_PORTRAIT),
 	], false)
 	body.set("can_move", false)
 	await _fade_overlay_to(1.0)
@@ -517,7 +517,7 @@ func _build_confrontation_lines() -> Array:
 
 
 func _l(text: String, speaker: int, portrait: String) -> Dictionary:
-	return {"text": "「%s」" % text, "speaker": speaker, "portrait": portrait}
+	return {"text": "劉語塵：「%s」" % text, "speaker": speaker, "portrait": portrait}
 
 
 func _r(text: String) -> Dictionary:

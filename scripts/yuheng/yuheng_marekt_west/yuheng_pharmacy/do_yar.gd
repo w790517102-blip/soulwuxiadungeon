@@ -162,16 +162,19 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	# ❶ 尚未遇過 → 完整雙向版（你要求的來回交流）
 	if not met:
 		return [
-				{ "text": "（小女孩歪著頭打量你）「欸？你是外地來的吧？看起來不像這裡的人呢～」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "一個小女孩歪著頭打量你。", "speaker": 0 },
+				{ "text": "小女孩：「欸？你是外地來的吧？看起來不像這裡的人呢～」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "劉語塵：「唔……算是吧。你怎麼看出來的？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "小女孩：「因為你的眼神充滿熱忱，一種在尋找某種『秘寶』的熱忱。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "劉語塵：「（一愣）……你倒是觀察得仔細。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "你微微一愣。", "speaker": 0 },
+				{ "text": "劉語塵：「……你倒是觀察得仔細。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "豆芽：「哼哼～我可是藥鋪的豆芽，將來要當會看氣色的大夫的！」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "豆芽：「只是最近都沒人來抓藥……師父說，是因為大家的『心病』都被壓著，\n連咳嗽都不好意思咳了。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "劉語塵：「(她指的是琴音壓心的事吧…連『擔憂』身體狀況的\n心情都被壓制啊…)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵：「這件事情很多大人也都不多談，你不怕講話那麼直，\n說錯話惹你師父生氣？。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "豆芽：「只是最近都沒人來抓藥……師父說，是因為大家的『心病』都被壓著，連咳嗽都不好意思咳了。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "劉語塵：「（心想）她指的是琴音壓心的事吧……連『擔憂』身體狀況的心情都被壓制啊……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵：「這件事情很多大人也都不多談，你不怕講話那麼直，說錯話惹你師父生氣？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "豆芽：「我怕呀……可我更怕大家都不敢講話，那樣比病還可怕對吧？」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "劉語塵：「(微微點頭，不多做表情)…嗯。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "你微微點頭，沒有多說什麼。", "speaker": 0 },
+				{ "text": "劉語塵：「……嗯。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			]
 	# ❷ 已遇過 → 依主線進度給短句循環（和苦行僧模板一致）
 	if main_stage <= 2:
@@ -181,16 +184,16 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 			]
 	elif main_stage <= 6:
 		return [
-			{ "text": "大哥哥，最近看你好像跑來跑去,很忙的樣子。", "speaker": 1, "portrait": portrait_path },
-			{ "text": "我相信你是為了讓大家可自由說話才這麼努力的", "speaker": 1, "portrait": portrait_path },
-			{ "text": "加油喔~", "speaker": 1, "portrait": portrait_path },
+			{ "text": "豆芽：「大哥哥，最近看你好像跑來跑去，很忙的樣子。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "豆芽：「我相信你是為了讓大家可自由說話才這麼努力的。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "豆芽：「加油喔～」", "speaker": 1, "portrait": portrait_path },
 		]
 	else:
 		# ≥7（你設定拿到〈白鳶橫天〉之後的口徑）
 		return [
-			{ "text": "最近鎮上的琴聲的曲調聽起來沒有像以前那麼悶了。", "speaker": 1, "portrait": portrait_path },
-			{ "text": "大家身體有哪邊不舒服，也更願意說出來了。", "speaker": 1, "portrait": portrait_path },
-			{ "text": "大哥哥，我知道這都是因為你在默默的努力著，對吧?", "speaker": 1, "portrait": portrait_path },
+			{ "text": "豆芽：「最近鎮上的琴聲的曲調聽起來沒有像以前那麼悶了。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "豆芽：「大家身體有哪邊不舒服，也更願意說出來了。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "豆芽：「大哥哥，我知道這都是因為你在默默的努力著，對吧？」", "speaker": 1, "portrait": portrait_path },
 		]
 
 # ---------------- 小工具（沿用模板） ----------------

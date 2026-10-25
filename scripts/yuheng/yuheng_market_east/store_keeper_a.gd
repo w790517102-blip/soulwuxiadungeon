@@ -38,21 +38,21 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	var event_yuheng_market_melody := GlobalState.get_flag("event_yuheng_market_melody")
 	if event_market_choice_observe and event_yuheng_market_melody and not met:
 		return [
-			{ "text": "「青菜新鮮，今早摘的！少俠要不要瞧一瞧？」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「青菜新鮮，今早摘的！少俠要不要瞧一瞧？」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "劉語塵：「老闆，這街沒有想像中熱鬧，倒是琴聲不小」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「哎呀~拜那琴聲所賜，大家的脾氣都小了些，吵不太起來，清淨的很」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「但那琴聲與其說是清幽，不如說比較像是…把心火壓住，不能說全好…」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「罷了，多想也是煩惱，如何？少俠要不要來點新鮮的青菜？尤其是韭菜，左飲最好這味」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「哎呀~拜那琴聲所賜，大家的脾氣都小了些，吵不太起來，清淨的很」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「但那琴聲與其說是清幽，不如說比較像是…把心火壓住，不能說全好…」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「罷了，多想也是煩惱，如何？少俠要不要來點新鮮的青菜？尤其是韭菜，左飲最好這味」", "speaker": 1, "portrait": portrait_path },
 		]
 	if main_stage <= 2:
 		if event_market_choice_observe and event_yuheng_market_melody and met:
 			return [
-				{ "text": "「少俠，買菜啊？咱家的菜新鮮得很，早上剛挑來的。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「要青菜、蘿蔔、茄子，還是四季豆？別看我攤小，火候跟刀工都有講究！」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "阿茂：「少俠，買菜啊？咱家的菜新鮮得很，早上剛挑來的。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "阿茂：「要青菜、蘿蔔、茄子，還是四季豆？別看我攤小，火候跟刀工都有講究！」", "speaker": 1, "portrait": portrait_path },
 			]
 		return [
-			{ "text": "「咱的菜鮮的很，尤其是韭菜，左飲最好這味」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「韭菜是最不怕剪斷的菜，剪一茬又長一茬，正像我等江湖客之氣節。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「咱的菜鮮的很，尤其是韭菜，左飲最好這味」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「韭菜是最不怕剪斷的菜，剪一茬又長一茬，正像我等江湖客之氣節。」", "speaker": 1, "portrait": portrait_path },
 		]
 	if main_stage <= 6:
 		return [
@@ -149,7 +149,7 @@ func _handle_store_keeper_interact() -> void:
 		return
 	_unlock_on_next_reset = false
 	await _play_sequence_and_wait([
-		{ "text": "「少俠，豆子帶回去給秋嬸了嗎？她剛剛還在廣場邊打轉呢。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "阿茂：「少俠，豆子帶回去給秋嬸了嗎？她剛剛還在廣場邊打轉呢。」", "speaker": 1, "portrait": portrait_path },
 	])
 
 func _show_normal_dialog(with_quest_epilogue: bool) -> void:
@@ -157,7 +157,7 @@ func _show_normal_dialog(with_quest_epilogue: bool) -> void:
 	var lines := dialog_lines.duplicate(true)
 	if with_quest_epilogue:
 		lines.append({
-			"text": "「少俠，又來買菜？生熟要分清啊。菜是如此，人心也是如此。半熟不熟的，最容易吃壞肚子。」",
+			"text": "阿茂：「少俠，又來買菜？生熟要分清啊。菜是如此，人心也是如此。半熟不熟的，最容易吃壞肚子。」",
 			"speaker": 1,
 			"portrait": portrait_path,
 		})
@@ -168,9 +168,9 @@ func _start_green_beans_purchase_flow() -> void:
 	_unlock_on_next_reset = false
 	await _play_sequence_and_wait([
 		{ "text": "劉語塵：「老闆，我想買一把四季豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「唷，少俠識貨！咱家的四季豆脆甜得很，生的拿回去清炒，熟的回去拌蒜鹽，都好吃。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「不過我先說清楚，四季豆這東西可不能馬虎。我這邊也有先炸過一遍的熟豆。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「你要買生的，還是炸過一遍的熟豆？」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "阿茂：「唷，少俠識貨！咱家的四季豆脆甜得很，生的拿回去清炒，熟的回去拌蒜鹽，都好吃。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "阿茂：「不過我先說清楚，四季豆這東西可不能馬虎。我這邊也有先炸過一遍的熟豆。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "阿茂：「你要買生的，還是炸過一遍的熟豆？」", "speaker": 1, "portrait": portrait_path },
 	])
 	dialog_manager.show_choice([
 		{ "text": "買生的四季豆", "callback": Callable(self, "_buy_raw_green_beans") },
@@ -183,7 +183,7 @@ func _buy_raw_green_beans() -> void:
 	_unlock_on_next_reset = false
 	await _play_sequence_and_wait([
 		{ "text": "劉語塵：「給我一把生的四季豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「好嘞！生的最青脆，回去記得煮熟，別貪那一口爽脆。來，少俠拿好。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "阿茂：「好嘞！生的最青脆，回去記得煮熟，別貪那一口爽脆。來，少俠拿好。」", "speaker": 1, "portrait": portrait_path },
 	])
 	if InventorySync:
 		InventorySync.add_item_stack(BEAN_RAW_ITEM_ID, 1)
@@ -196,14 +196,14 @@ func _buy_fried_green_beans() -> void:
 	var talked_melody := GlobalState.get_flag(FLAG_TALKED_MELODY_WITH_AMAO)
 	var lines: Array = [
 		{ "text": "劉語塵：「給我一把炸過一遍的熟豆。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「好選擇！這豆剛炸好沒多久，回去撒點蒜鹽，再滴兩滴醬油，配飯正香。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「來，少俠拿好，別讓琴聲把香味都吹散了。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "阿茂：「好選擇！這豆剛炸好沒多久，回去撒點蒜鹽，再滴兩滴醬油，配飯正香。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "阿茂：「來，少俠拿好，別讓琴聲把香味都吹散了。」", "speaker": 1, "portrait": portrait_path },
 	]
 	if not talked_melody:
 		lines.append_array([
 			{ "text": "劉語塵：「你也察覺琴聲有異？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「嗐，做買賣的人哪能沒察覺？只是察覺歸察覺，日子還是要過。菜要賣，飯要吃，客人問價還得笑。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「不然呢？難道我對著四季豆嘆氣，它就能自己熟啊？」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「嗐，做買賣的人哪能沒察覺？只是察覺歸察覺，日子還是要過。菜要賣，飯要吃，客人問價還得笑。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "阿茂：「不然呢？難道我對著四季豆嘆氣，它就能自己熟啊？」", "speaker": 1, "portrait": portrait_path },
 		])
 		GlobalState.set_flag(FLAG_TALKED_MELODY_WITH_AMAO, true)
 	await _play_sequence_and_wait(lines)

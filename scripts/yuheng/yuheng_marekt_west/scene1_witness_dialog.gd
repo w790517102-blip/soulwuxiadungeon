@@ -84,8 +84,17 @@ func _build_lines() -> Array:
 	return []
 
 
+const WITNESS_NAMES := {
+	"sugar_kid": "小孩",
+	"scholar": "書生",
+	"outlander": "外地客",
+	"blacksmith": "鐵匠",
+}
+
+
 func _l(text: String) -> Dictionary:
-	return {"text": "「%s」" % text, "speaker": speaker_id, "portrait": portrait_path}
+	var who: String = WITNESS_NAMES.get(witness_id, "路人")
+	return {"text": "%s：「%s」" % [who, text], "speaker": speaker_id, "portrait": portrait_path}
 
 
 func _face_towards(target_position: Vector2) -> void:

@@ -51,8 +51,8 @@ func _ready():
 
 func _build_lines_for_stage(_main_stage: int) -> Array:
 	return [
-		{ "text": "「哥哥，等你到井邊的時候，記得看看石頭底下。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「有些話說不出口，只能讓繩子和石頭幫我說。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶：「哥哥，等你到井邊的時候，記得看看石頭底下。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶：「有些話說不出口，只能讓繩子和石頭幫我說。」", "speaker": 1, "portrait": portrait_path },
 	]
 
 func _process(delta):
@@ -141,23 +141,23 @@ func _handle_dabao_interact() -> void:
 		return
 	_unlock_on_next_reset = false
 	await _play_sequence_and_wait([
-		{ "text": "「哥哥，井邊石頭那裡……你到了就會懂。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶：「哥哥，井邊石頭那裡……你到了就會懂。」", "speaker": 1, "portrait": portrait_path },
 	])
 
 func _start_dabao_quest_intro() -> void:
 	_unlock_on_next_reset = false
 	var lines: Array = [
-		{ "text": "劉語塵心想：「這孩子……似乎和其他孩子不同。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵心想：「一個人站在市集邊上若有所思，未免安靜過了頭。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵心想：「還是說，他身體哪裡不舒服？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（心想）這孩子……似乎和其他孩子不同。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（心想）一個人站在市集邊上若有所思，未免安靜過了頭。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（心想）還是說，他身體哪裡不舒服？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "大寶：「大哥哥，你是不是在擔心我？」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "劉語塵：「！」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "大寶：「別怕，我沒事。其他叔叔阿姨也都習慣我這樣了。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "大寶：「對了，我叫大寶。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "一旁經過的路人露出淺淺又略帶歉意的笑，像是在替這個讓外鄉人擔心的孩子說一聲「不好意思」。", "speaker": 1, "portrait": portrait_path },
+		{ "text": "一旁經過的路人露出淺淺又略帶歉意的笑，像是在替這個讓外鄉人擔心的孩子說一聲「不好意思」。", "speaker": 0 },
 		{ "text": "劉語塵：「……原來如此。是我多心了。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「大寶，抱歉啦。既然你沒事，哥哥就先走了。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "男孩在劉語塵離開前，忽然拉住他的袖口。", "speaker": 1, "portrait": portrait_path },
+		{ "text": "你正要離開，男孩忽然拉住了你的袖口。", "speaker": 0 },
 		{ "text": "大寶：「哥哥不要走。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "大寶：「我知道你現在急著想找左飲叔叔。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "劉語塵：「！？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -169,12 +169,12 @@ func _start_dabao_quest_intro() -> void:
 		{ "text": "劉語塵：「朋友？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "大寶：「嗯。可是最近，朋友們都害怕聊天了。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "大寶：「想說話卻說不出口的感覺，很痛苦。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "大寶低下頭，手指捏著衣角。", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶低下頭，手指捏著衣角。", "speaker": 0 },
 		{ "text": "大寶：「尤其是井裡的鯉魚先生。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "大寶：「他一直說……快撐不住了。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "大寶：「他看起來很急。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "劉語塵：「小弟弟，你能不能再說仔細一點？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "大寶張了張嘴，卻像被什麼無形的東西按住喉嚨。", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶張了張嘴，卻像被什麼無形的東西按住了喉嚨。", "speaker": 0 },
 		{ "text": "大寶：「井在……在……呃……」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "大寶：「你有沒有吃過糖葫蘆？糖葫蘆很好吃喔！」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "劉語塵：「……你剛剛想說什麼？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -184,8 +184,8 @@ func _start_dabao_quest_intro() -> void:
 		{ "text": "大寶：「你幫我找一條細繩，我就能把夢裡看到的路排給你看。」", "speaker": 1, "portrait": portrait_path },
 	]
 	if GlobalState.get_flag("event_market_choice_observe"):
-		lines.insert(3, { "text": "劉語塵心想：「這可真糟……玉衡鎮琴聲壓情，難道連孩童身體不適，也哭鬧不出來嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" })
-		lines.insert(4, { "text": "劉語塵心想：「連大人也受琴聲影響，對這樣異狀的小孩不聞不問……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" })
+		lines.insert(3, { "text": "劉語塵：「（心想）這可真糟……玉衡鎮琴聲壓情，難道連孩童身體不適，也哭鬧不出來嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" })
+		lines.insert(4, { "text": "劉語塵：「（心想）連大人也受琴聲影響，對這樣異狀的小孩不聞不問……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" })
 	await _play_sequence_and_wait(lines)
 	_register_dabao_quest()
 
@@ -195,17 +195,17 @@ func _handle_need_thread() -> void:
 			InventorySync.consume_item(ITEM_FINE_THREAD, 1, true)
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-				{ "text": "大寶接過細繩，蹲在地上，小心地把繩子繞成彎彎曲曲的路。", "speaker": 1, "portrait": portrait_path },
+				{ "text": "大寶接過細繩，蹲在地上，小心地把繩子繞成彎彎曲曲的路。", "speaker": 0 },
 				{ "text": "大寶：「這裡是市集……這裡是水聲……這裡是井。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「夢裡的你不是現在下去的。還不到時候。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "劉語塵：「那你為什麼要告訴我這些？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "大寶：「因為你會去。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「而且你會救鯉魚先生。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "大寶指了指繩索旁邊一個小小的結。", "speaker": 1, "portrait": portrait_path },
+				{ "text": "大寶指了指繩索旁邊一個小小的結。", "speaker": 0 },
 				{ "text": "大寶：「井旁邊有塊石頭，下面壓著亮亮的東西。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「夢裡的我覺得，那會幫上你的忙。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "劉語塵：「井旁的石頭……我記下了。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "大寶把細繩收回來，遞還給劉語塵。", "speaker": 1, "portrait": portrait_path },
+				{ "text": "大寶把細繩收回來，遞還給你。", "speaker": 0 },
 				{ "text": "大寶：「繩子說完了，還給你。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "大寶：「剩下的，要哥哥自己去看。」", "speaker": 1, "portrait": portrait_path },
 		])
@@ -216,7 +216,7 @@ func _handle_need_thread() -> void:
 	_unlock_on_next_reset = false
 	await _play_sequence_and_wait([
 		{ "text": "大寶：「哥哥，還差一條細繩。沒有繩子，我就排不出夢裡的路。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「雜貨舖常有賣，帶一條來就好。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "大寶：「雜貨舖常有賣，帶一條來就好。」", "speaker": 1, "portrait": portrait_path },
 	])
 
 func _register_dabao_quest() -> void:

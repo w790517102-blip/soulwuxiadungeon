@@ -198,8 +198,8 @@ func _handle_qiushen_interact() -> void:
 	if stage <= 1:
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「少俠，記得啊，是炸過一遍的熟豆。生的可不能直接拿回來下肚。」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "「唉，明明這句話我在這裡說得清清楚楚，怎麼一到菜鋪前，就像有人把它揉進琴聲裡了呢……」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「少俠，記得啊，是炸過一遍的熟豆。生的可不能直接拿回來下肚。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「唉，明明這句話我在這裡說得清清楚楚，怎麼一到菜鋪前，就像有人把它揉進琴聲裡了呢……」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 		return
 	await _report_green_beans_result(quest)
@@ -207,20 +207,20 @@ func _handle_qiushen_interact() -> void:
 func _start_green_beans_quest_intro() -> void:
 	_unlock_on_next_reset = false
 	await _play_sequence_and_wait([
-		{ "text": "「四季豆……四季豆……炸過的……還是沒炸的……哎唷，不對不對，我到底要買哪一種來著？」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「四季豆……四季豆……炸過的……還是沒炸的……哎唷，不對不對，我到底要買哪一種來著？」", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "劉語塵：「這位大嬸，你已經在這廣場來回走了好幾趟。可是迷了路？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「迷路？那倒不至於。咱在玉衡鎮住了大半輩子，閉著眼都能摸回灶房。」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "「怪就怪在……我一走到市集菜鋪前，耳邊那琴聲一繞，腦子就像被人輕輕拍了一下，什麼都散了。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「迷路？那倒不至於。咱在玉衡鎮住了大半輩子，閉著眼都能摸回灶房。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「怪就怪在……我一走到市集菜鋪前，耳邊那琴聲一繞，腦子就像被人輕輕拍了一下，什麼都散了。」", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "劉語塵：「你的眼睛還好嗎？要不要去藥鋪請大夫看看？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「哎呀，不是眼睛的事。咱眼睛好著呢，連隔壁老王偷夾我醃蘿蔔都看得一清二楚。」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "「可到了菜鋪前就不行。心裡倒是平靜得很，偏偏注意力不在眼前。」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "「別說分得清生的熟的，咱光是記得自己是來買四季豆，就已經很了不起了。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「哎呀，不是眼睛的事。咱眼睛好著呢，連隔壁老王偷夾我醃蘿蔔都看得一清二楚。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「可到了菜鋪前就不行。心裡倒是平靜得很，偏偏注意力不在眼前。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「別說分得清生的熟的，咱光是記得自己是來買四季豆，就已經很了不起了。」", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "劉語塵：「生熟不分可不是小事。四季豆若未熟透，吃下去輕則腹痛嘔吐，重則中毒。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「是啊，所以咱才在這裡繞圈嘛。站在廣場還記得，走到菜鋪又忘了。回到廣場又想起來，走到菜鋪又忘了……」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "「再繞下去，晚飯沒做成，咱倒先把自己繞熟了。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「是啊，所以咱才在這裡繞圈嘛。站在廣場還記得，走到菜鋪又忘了。回到廣場又想起來，走到菜鋪又忘了……」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「再繞下去，晚飯沒做成，咱倒先把自己繞熟了。」", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "劉語塵：「既然如此，我替你走一趟吧。你要買的是炸過的熟豆，對嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「對對對！就是炸過一遍的熟豆，回去拌點蒜鹽就能上桌。」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "「少俠，你可真是好心。菜鋪就在市集那頭，阿茂家的攤，四季豆堆得跟小山似的，很好認。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「對對對！就是炸過一遍的熟豆，回去拌點蒜鹽就能上桌。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "秋嬸：「少俠，你可真是好心。菜鋪就在市集那頭，阿茂家的攤，四季豆堆得跟小山似的，很好認。」", "speaker": speaker_id, "portrait": portrait_path },
 	])
 	_register_green_beans_quest()
 
@@ -245,17 +245,17 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 	if bean_type == "fried":
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 		if InventorySync:
 			InventorySync.consume_item(BEAN_FRIED_ITEM_ID, 1, true)
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「哎呀，就是這個！炸過一遍的熟豆，香氣不會騙人。」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "「年輕人就是有定力。那市集琴聲裊裊的，連我這種老玉衡人都被牽著走，你倒還分得清。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「哎呀，就是這個！炸過一遍的熟豆，香氣不會騙人。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「年輕人就是有定力。那市集琴聲裊裊的，連我這種老玉衡人都被牽著走，你倒還分得清。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「不是我定力好。只是這琴聲的影響，比我想得更深。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「深是深，可日子不能不過啊。飯要煮，菜要買，人再怎麼分神，也得想辦法把晚飯端上桌。」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "「來，這些小意思給你買茶解渴。還有這包草藥，是我在自家後院摘的。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「深是深，可日子不能不過啊。飯要煮，菜要買，人再怎麼分神，也得想辦法把晚飯端上桌。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「來，這些小意思給你買茶解渴。還有這包草藥，是我在自家後院摘的。」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 		if InventorySync:
 			InventorySync.add_gold(30)
@@ -266,18 +266,18 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 	else:
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「少俠，你回來啦！讓我看看……」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 		if InventorySync:
 			InventorySync.consume_item(BEAN_RAW_ITEM_ID, 1, true)
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「哎呀，這是生的四季豆。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「哎呀，這是生的四季豆。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「……生的？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「嗯，還沒炸過。看來那市集前的琴聲，連你這樣的年輕人也能分神。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「嗯，還沒炸過。看來那市集前的琴聲，連你這樣的年輕人也能分神。」", "speaker": speaker_id, "portrait": portrait_path },
 			{ "text": "劉語塵：「抱歉，是我疏忽了。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「別這麼說。至少我站在這廣場，還分得出它是生是熟。」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "「來，這些小錢給你買點涼的喝。路上辛苦啦。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「別這麼說。至少我站在這廣場，還分得出它是生是熟。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「來，這些小錢給你買點涼的喝。路上辛苦啦。」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 		if InventorySync:
 			InventorySync.add_gold(20)
@@ -304,14 +304,14 @@ func _show_post_quest_loop_dialog(quest: Dictionary) -> void:
 	if String(quest.get("ending", "")) == "right":
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「那晚的四季豆拌蒜鹽，可香啦。」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "「多虧少俠幫忙，不然咱家晚飯怕是要從四季豆變成白粥配懊悔了。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「那晚的四季豆拌蒜鹽，可香啦。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「多虧少俠幫忙，不然咱家晚飯怕是要從四季豆變成白粥配懊悔了。」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 	else:
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
-			{ "text": "「後來我把那把四季豆煮得透透的，沒事，放心。」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "「不過少俠啊，你也別太自責。這鎮上的琴聲，連鍋鏟聽久了都會發呆。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「後來我把那把四季豆煮得透透的，沒事，放心。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "秋嬸：「不過少俠啊，你也別太自責。這鎮上的琴聲，連鍋鏟聽久了都會發呆。」", "speaker": speaker_id, "portrait": portrait_path },
 		])
 
 func _begin_interaction_flow() -> void:

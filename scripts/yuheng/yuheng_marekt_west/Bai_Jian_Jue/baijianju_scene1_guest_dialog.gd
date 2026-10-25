@@ -70,4 +70,4 @@ func _build_lines() -> Array:
 
 
 func _l(text: String) -> Dictionary:
-	return {"text": "「%s」" % text, "speaker": speaker_id, "portrait": portrait_path}
+	return {"text": "書客：「%s」" % text, "speaker": speaker_id, "portrait": portrait_path}
