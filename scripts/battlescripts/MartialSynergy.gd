@@ -118,6 +118,18 @@ const RECORDS := [
 ]
 
 
+## 閃卡等級（武學頁搭配框的掃光顏色，所有武學呈現共用同一套）：1 加成＝藍、2 專屬＝橘、3 絕技分支＝紫、4 奧義＝紅。
+## 由搭配的 linkage_kind 決定；武器加成（內功 boost_weapon 與招式武器類型相同）也走這裡，所以每個內功都有自己的閃卡。
+static func shine_tier(linkage_kind: String) -> int:
+	if linkage_kind.contains("奧義"):
+		return 4
+	if linkage_kind.contains("絕技"):
+		return 3
+	if linkage_kind.contains("專屬"):
+		return 2
+	return 1
+
+
 static func all() -> Array:
 	return RECORDS.duplicate(true)
 

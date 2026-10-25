@@ -177,6 +177,54 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 		return "目前無可量化數值加成"
 	return "、".join(parts)
 
+## 內功 × 武術的「武器加成」：內功的 boost_weapon 與招式的 weapon_type 相同就成立（戰鬥的 coupling 詞綴與數值加成都看同一條件）。
+## 成立回 {text_long, text_short}，不成立回 {}。數字全部從內功資料讀；資料裡的特殊敘述用 weapon_boost_note / weapon_boost_note_short 補。
+static func weapon_boost_texts(force: Dictionary, skill_weapon_type: String) -> Dictionary:
+	var weapon := skill_weapon_type.strip_edges()
+	if force.is_empty() or weapon == "" or weapon == "通用":
+		return {}
+	if String(force.get("boost_weapon", "")) != weapon:
+		return {}
+	var force_name := "%s%s" % [String(force.get("prefix", "")), String(force.get("type", ""))]
+	var long_parts: Array[String] = []
+	var short_parts: Array[String] = []
+	var accuracy := int(force.get("weapon_accuracy_flat_bonus", 0))
+	if accuracy != 0:
+		long_parts.append("命中 %+d" % accuracy)
+		short_parts.append("命中%+d" % accuracy)
+	var damage_pct := float(force.get("boost_damage_pct", 0.0))
+	if damage_pct > 0.0:
+		long_parts.append("傷害 +%d%%" % int(round(damage_pct * 100.0)))
+		short_parts.append("傷害+%d%%" % int(round(damage_pct * 100.0)))
+	var by_weapon = force.get("skill_mp_cost_multiplier_by_weapon", {})
+	if typeof(by_weapon) == TYPE_DICTIONARY and (by_weapon as Dictionary).has(weapon):
+		var mul := float((by_weapon as Dictionary)[weapon])
+		if mul < 1.0:
+			long_parts.append("MP 消耗降低 %d%%" % int(round((1.0 - mul) * 100.0)))
+			short_parts.append("MP-%d%%" % int(round((1.0 - mul) * 100.0)))
+		elif mul > 1.0:
+			long_parts.append("MP 消耗增加 %d%%" % int(round((mul - 1.0) * 100.0)))
+			short_parts.append("MP+%d%%" % int(round((mul - 1.0) * 100.0)))
+	var note_long := String(force.get("weapon_boost_note", ""))
+	var note_short := String(force.get("weapon_boost_note_short", ""))
+	var text_long := ""
+	var text_short := ""
+	if long_parts.is_empty() and note_long == "":
+		text_long = "%s強化%s系招式。" % [force_name, weapon]
+		text_short = "%s：強化%s招。" % [force_name, weapon]
+	else:
+		var gap := " " if not long_parts.is_empty() and String(long_parts[0]).begins_with("MP") else ""
+		text_long = "%s下，%s系招式%s%s" % [force_name, weapon, gap, "、".join(long_parts)]
+		if note_long != "":
+			text_long += ("；" if not long_parts.is_empty() else "") + note_long
+		text_long += "。"
+		text_short = "%s：%s招%s" % [force_name, weapon, "、".join(short_parts)]
+		if note_short != "":
+			text_short += ("，" if not short_parts.is_empty() else "") + note_short
+		text_short += "。"
+	return {"text_long": text_long, "text_short": text_short}
+
+
 static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -> String:
 	if force.is_empty():
 		return ""
@@ -254,6 +302,8 @@ const INNER_FORCES := {
 		"boost_damage_pct": 0.12,
 		"description": "伏潮訣，真氣沉厚如潛潮伏岩，平時不顯，出刀時一波壓一波，專破對手氣勢。",
 		"special_effect_desc": "刀類技能命中已破防的敵人時，有機率使其陷入暈眩。\n暈眩機率受智慧與幸運影響。",
+		"weapon_boost_note": "對已破防敵人出刀時，有機率追加暈眩",
+		"weapon_boost_note_short": "打破防目標可追暈",
 		"available": ["liuyu", "lieshao"],
 	},
 	"wuji_zhenjing": {
@@ -320,6 +370,8 @@ const INNER_FORCES := {
 		"str_flat_bonus": 8,
 		"con_flat_bonus": 8,
 		"fist_damage_pct_if_free_hand": 0.10,
+		"weapon_boost_note": "至少空一手時傷害 +10%，雙手皆空時命中 +10",
+		"weapon_boost_note_short": "空手拳勢增幅",
 		"fist_accuracy_flat_if_both_hands_free": 10,
 		"crit_rate_bonus_if_naked": 0.10,
 		"damage_reduction_pct_if_naked": 0.10,
@@ -365,6 +417,8 @@ const INNER_FORCES := {
 		"con_flat_bonus": 10,
 		"boost_damage_pct": 0.10,
 		"sword_crit_bonus_low_hp": 0.10,
+		"weapon_boost_note": "當自身 HP 低於 50% 時，劍系招式暴擊率 +10%",
+		"weapon_boost_note_short": "低血(HP<50%)時劍招暴擊+10%",
 		"description": "天殘訣，逆行血氣、以殘換勢。行功時筋骨如烈火焚身，代價沉重，卻能逼出破局一斬。",
 		"extra_effect_desc": "劍系招式傷害 +10%、自身 HP 低於 50% 時劍系招式暴擊率 +10%、可將「地缺劍」轉為紫色絕技「天殘．地缺劍」",
 		"extra_effect_summary": "劍勢增傷、低血劍招暴擊提升、解鎖地缺劍絕技分支",

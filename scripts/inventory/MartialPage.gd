@@ -659,7 +659,7 @@ func _refresh_synergy() -> void:
 					continue
 				var met := bool(row.get("met", false))
 				if met:
-					tier = maxi(tier, _syn_tier(String(row.get("kind", ""))))
+					tier = maxi(tier, int(row.get("tier", 1)))
 				lines.append("[color=%s]• %s：%s[/color]" % ["#1E4D28" if met else "#3A3428", String(row.get("kind", "聯動")), text])
 	_syn_text.text = "\n".join(lines) if not lines.is_empty() else "目前的內功與這一招沒有特別的相合。"
 	_start_syn_fx(tier)
@@ -1069,15 +1069,6 @@ const SYN_SHINE_COLORS := {1: Color(0.2, 0.5, 1.0), 2: Color(1.0, 0.62, 0.18), 3
 const SYN_ICON_BOX := [Rect2(75, 36, 40, 40), Rect2(227, 36, 40, 40)]      # 兩個圖示在搭配框內的範圍（掃光的裁切框）
 var _syn_fx_tween: Tween
 var _syn_fx_nodes: Array = []
-
-func _syn_tier(kind: String) -> int:
-	if kind.contains("奧義"):
-		return 4
-	if kind.contains("絕技"):
-		return 3
-	if kind.contains("專屬"):
-		return 2
-	return 1
 
 func _stop_syn_fx() -> void:
 	if _syn_fx_tween != null and _syn_fx_tween.is_valid():

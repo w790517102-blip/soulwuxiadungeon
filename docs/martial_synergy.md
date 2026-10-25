@@ -32,3 +32,12 @@ hit_count / status_apply / stat_scaling / target_rule / damage / mp_cost / eleme
 「內功 × 武器類型」（兵器相性／法門加持）這輪不併入。
 
 測試：`tests/test_martial_synergy.gd`（三條規則的 regression、表派生、strike_info、Inspect 相合頁）。
+
+## 閃卡（搭配框掃光）
+武學頁中間的搭配框，只要「目前內功 × 選到的招式」有成立的搭配就掃光。**不分內功、不分招式，全部走同一條資料路徑**：
+`SkillDB.get_inner_force_linkage_entries` 回的每一列都帶 `tier`，頁面取成立列的最高等級：
+1 藍＝武器加成（內功 `boost_weapon` ＝ 招式 `weapon_type`，數字與特殊敘述來自內功資料：`weapon_accuracy_flat_bonus`、`boost_damage_pct`、
+`skill_mp_cost_multiplier_by_weapon`、`weapon_boost_note(_short)`，文字由 `InnerForceDB.weapon_boost_texts` 組）、
+2 橘＝專屬搭配、3 紫＝絕技分支、4 紅＝奧義（後三者來自本表的 `linkage_kind`，對照在 `MartialSynergy.shine_tier`）。
+新增內功只要填 `boost_weapon`、新增搭配只要寫進 `RECORDS`，閃卡自動出現；不要在別處再寫 per-force 的特例。
+測試：`tests/test_martial_shine.gd`。

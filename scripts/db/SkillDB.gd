@@ -1,6 +1,7 @@
 extends Node
 
 const MartialSynergyScript = preload("res://scripts/battlescripts/MartialSynergy.gd")
+const InnerForceDBScript = preload("res://scripts/battlescripts/InnerForceDB.gd")
 
 const ACQUISITION_ROUTE_WEAPON_FAMILY_LEVEL := "weapon_family_level"
 const ACQUISITION_ROUTE_ACTOR_GROWTH := "actor_growth"
@@ -1723,9 +1724,15 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 	var current_force_id := String(inner_force.get("id", ""))
 	var skill_weapon_type := String(skill.get("weapon_type", ""))
 	var out: Array = []
-	var weapon_boost_entry := _build_weapon_boost_entry(current_force_id, skill_weapon_type)
-	if not weapon_boost_entry.is_empty():
-		out.append(weapon_boost_entry)
+	var weapon_boost_texts: Dictionary = InnerForceDBScript.weapon_boost_texts(inner_force, skill_weapon_type)
+	if not weapon_boost_texts.is_empty():
+		out.append({
+			"kind": "武器加成",
+			"text_long": String(weapon_boost_texts.text_long),
+			"text_short": String(weapon_boost_texts.text_short),
+			"met": true,
+			"tier": MartialSynergyScript.shine_tier("武器加成"),
+		})
 	# standard synergies, legendary chains and risk branches all read the one canonical table (MartialSynergy)
 	for record: Dictionary in MartialSynergyScript.for_martial(skill_id):
 		var met: bool = current_force_id == String(record.inner_skill_id)
@@ -1737,51 +1744,9 @@ func get_inner_force_linkage_entries(skill: Dictionary, actor: Dictionary = {}, 
 			"text_long": String(record.display_description),
 			"text_short": String(record.short_description),
 			"met": met,
+			"tier": MartialSynergyScript.shine_tier(String(record.get("linkage_kind", "專屬搭配"))),
 		})
 	return out
-
-func _build_weapon_boost_entry(force_id: String, skill_weapon_type: String) -> Dictionary:
-	if force_id == "" or skill_weapon_type == "" or skill_weapon_type == "通用":
-		return {}
-	match force_id:
-		"liuchen_jue":
-			if skill_weapon_type != "劍":
-				return {}
-			return {
-				"kind": "武器加成",
-				"text_long": "流塵訣下，劍系招式命中 +10、傷害 +10%。",
-				"text_short": "流塵訣：劍招命中+10、傷害+10%。",
-				"met": true,
-			}
-		"fuchao_jue":
-			if skill_weapon_type != "刀":
-				return {}
-			return {
-				"kind": "武器加成",
-				"text_long": "伏潮訣下，刀系招式傷害 +12%；對已破防敵人出刀時，有機率追加暈眩。",
-				"text_short": "伏潮訣：刀傷+12%，打破防目標可追暈。",
-				"met": true,
-			}
-		"tiancan_jue":
-			if skill_weapon_type != "劍":
-				return {}
-			return {
-				"kind": "武器加成",
-				"text_long": "天殘訣下，劍系招式傷害 +10%；當自身 HP 低於 50% 時，劍系招式暴擊率 +10%。",
-				"text_short": "天殘訣：劍傷+10%，低血(HP<50%)時劍招暴擊+10%。",
-				"met": true,
-			}
-		"chenchao_jue":
-			if skill_weapon_type != "槍":
-				return {}
-			return {
-				"kind": "武器加成",
-				"text_long": "沉潮訣下，槍系招式 MP 消耗降低 10%。",
-				"text_short": "沉潮訣：槍招 MP 消耗 -10%。",
-				"met": true,
-			}
-		_:
-			return {}
 
 func _is_actor_fully_unequipped(actor: Dictionary) -> bool:
 	if actor.is_empty():
