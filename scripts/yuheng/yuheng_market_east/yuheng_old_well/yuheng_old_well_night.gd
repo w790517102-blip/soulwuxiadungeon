@@ -5,11 +5,13 @@ extends Node2D
 @onready var overlay := $BlackOverlay
 @onready var sewer_transition: Area2D = get_node_or_null("To_yuheng_sewer_center") as Area2D
 @onready var sewer_transition_collision: CollisionShape2D = get_node_or_null("To_yuheng_sewer_center/CollisionShape2D") as CollisionShape2D
-@onready var well_barrier_collision: CollisionShape2D = get_node_or_null("well_locked/WellBarrier/CollisionShape2D") as CollisionShape2D
-@onready var well_keyhole: Area2D = get_node_or_null("well_locked/well_keyhole") as Area2D
+@onready var well_barrier_collision: CollisionPolygon2D = get_node_or_null("well_locked/WellBarrier/CollisionPolygon2D") as CollisionPolygon2D
 @onready var well_locked_sprite: Sprite2D = get_node_or_null("well_locked/old_well_locked") as Sprite2D
 @export var music_tag := "yuheng_old_well"
 @export var map_display_name: String = "醉月茶坊後巷廢井"
+## 開井動畫的音效，之後在 Inspector 補上：震動（持續整個震動期間）、石塊崩落（封蓋圖消失的瞬間）。
+@export var well_shake_sfx: AudioStream
+@export var well_collapse_sfx: AudioStream
 
 const F_OLD_WELL_UNLOCKED := "event_yuheng_old_well_unlocked"
 const F_GOT_HALF_STRING_BUTTON := "main_yh_got_half_string_copper_button"
@@ -32,18 +34,27 @@ enum KeyholeAction {
 	CLAIM_TREASURE_AND_UNLOCK,
 }
 
-var _player_at_keyhole := false
+## 滑鼠／走近互動（InteractionZones 底下）：出口與下井走原本的 body_entered 流程，扣孔走 _run_keyhole_interaction。
+const ZONE_EXIT_METHODS := {
+	"exit_market_east": "_on_to_yuheng_market_east_night_body_entered",
+	"sewer_entrance": "_on_to_yuheng_sewer_center_body_entered",
+}
+const WELL_OPEN_SHAKE_SECONDS := 1.2
+const WELL_OPEN_SHAKE_PIXELS := 2.5
+## 封蓋圖底部（石階前）揚塵的位置與範圍，場景區域座標。
+const WELL_DUST_CENTER := Vector2(112, 124)
+const WELL_DUST_EXTENTS := Vector2(48, 8)
+
 var _keyhole_busy := false
 var _keyhole_menu_was_locked := false
 var _sewer_transition_busy := false
+var _leaving := false
+var _well_opening := false
 
 
 func _ready():
 	_apply_sewer_route_state()
-	if well_keyhole:
-		well_keyhole.body_entered.connect(_on_well_keyhole_body_entered)
-		well_keyhole.body_exited.connect(_on_well_keyhole_body_exited)
-	set_process_unhandled_input(true)
+	_bind_interaction_zones()
 
 	overlay.modulate.a = 1.5
 	var tween_in = overlay.create_tween()
@@ -81,12 +92,13 @@ func _on_to_yuheng_market_east_body_entered(body: Node2D):
 
 
 func _on_to_yuheng_sewer_center_body_entered(body: Node2D) -> void:
-	if _sewer_transition_busy:
+	if _sewer_transition_busy or _leaving or _well_opening:
 		return
 	if not _is_sewer_route_unlocked():
 		return
 	if MapTransitionGuard.can_transition(body, sewer_transition):
 		_sewer_transition_busy = true
+		_leaving = true
 		_advance_main_quest_to_sewer_mechanisms()
 		overlay.visible = true
 		overlay.modulate.a = 0.0
@@ -114,25 +126,42 @@ func _apply_sewer_route_state() -> void:
 		well_barrier_collision.set_deferred("disabled", unlocked)
 
 
-func _on_well_keyhole_body_entered(body: Node2D) -> void:
-	if body and body.name == "LiuYu":
-		_player_at_keyhole = true
-
-
-func _on_well_keyhole_body_exited(body: Node2D) -> void:
-	if body and body.name == "LiuYu":
-		_player_at_keyhole = false
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if _keyhole_busy or not _player_at_keyhole:
+func _bind_interaction_zones() -> void:
+	var zones := get_node_or_null("InteractionZones")
+	if zones == null:
 		return
-	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-		await _run_keyhole_interaction()
-		get_viewport().set_input_as_handled()
+	for child in zones.get_children():
+		var target := child as InteractionTarget
+		if target == null:
+			continue
+		var zone_name := String(target.name)
+		if ZONE_EXIT_METHODS.has(zone_name):
+			var method: String = ZONE_EXIT_METHODS[zone_name]
+			target.availability = func() -> bool:
+				if _leaving or _well_opening:
+					return false
+				return zone_name != "sewer_entrance" or _is_sewer_route_unlocked()
+			target.handler = func(player: Node2D) -> void:
+				await call(method, player)
+		elif zone_name == "well_keyhole":
+			target.availability = func() -> bool: return not _keyhole_busy and not _leaving
+			target.handler = func(_player: Node2D) -> void:
+				await _run_keyhole_interaction()
+
+
+## 與其他場景的出口一致：交給 GameRoot 的出口防呆（剛換場景的冷卻時間、讀檔中、鎖定中都不能換）。
+func _exit_allowed(body: Node) -> bool:
+	if _leaving:
+		return false
+	var game_root := get_node_or_null("/root/GameRoot")
+	if game_root == null or not game_root.has_method("can_use_map_transition"):
+		return true
+	return bool(game_root.call("can_use_map_transition", body, null))
 
 
 func _run_keyhole_interaction() -> void:
+	if _keyhole_busy:
+		return
 	if _is_sewer_route_unlocked():
 		if _can_claim_dabao_treasure():
 			await _play_keyhole_sequence(
@@ -185,10 +214,10 @@ func _play_keyhole_sequence(lines: Array, action_after_close: int = KeyholeActio
 		KeyholeAction.CLAIM_TREASURE:
 			_claim_dabao_treasure()
 		KeyholeAction.UNLOCK_WELL:
-			_unlock_well_with_button()
+			await _unlock_well_with_button()
 		KeyholeAction.CLAIM_TREASURE_AND_UNLOCK:
 			_claim_dabao_treasure()
-			_unlock_well_with_button()
+			await _unlock_well_with_button()
 
 	player.set("can_move", true)
 	GlobalState.set_meta("menu_locked", _keyhole_menu_was_locked)
@@ -240,9 +269,97 @@ func _unlock_well_with_button() -> bool:
 		return false
 
 	GlobalState.set_flag(F_OLD_WELL_UNLOCKED, true)
-	_apply_sewer_route_state()
 	_set_open_well_objective()
+	await _play_well_open_animation()
+	_apply_sewer_route_state()
 	return true
+
+
+## 開井：封蓋圖震動 WELL_OPEN_SHAKE_SECONDS 秒、地面揚塵，時間到封蓋圖消失（露出打開的井、通路與下井入口同時生效），再補一波崩落的塵土。
+func _play_well_open_animation() -> void:
+	_well_opening = true
+	var dust := _make_dust_emitter(40, false, 14.0, 34.0)
+	add_child(dust)
+	dust.position = WELL_DUST_CENTER
+	dust.emitting = true
+	_play_well_sfx(well_shake_sfx)
+
+	if well_locked_sprite:
+		var rest := well_locked_sprite.position
+		var shake := create_tween()
+		shake.tween_method(func(t: float) -> void:
+			var amp := WELL_OPEN_SHAKE_PIXELS * (0.35 + 0.65 * t)
+			well_locked_sprite.position = rest + Vector2(randf_range(-amp, amp), randf_range(-amp, amp) * 0.5),
+			0.0, 1.0, WELL_OPEN_SHAKE_SECONDS)
+		await shake.finished
+		well_locked_sprite.position = rest
+	else:
+		await get_tree().create_timer(WELL_OPEN_SHAKE_SECONDS).timeout
+
+	_play_well_sfx(well_collapse_sfx)
+	_apply_sewer_route_state()
+	var burst := _make_dust_emitter(36, true, 30.0, 70.0)
+	add_child(burst)
+	burst.position = WELL_DUST_CENTER
+	burst.emitting = true
+	dust.emitting = false
+	await get_tree().create_timer(1.4).timeout
+	dust.queue_free()
+	burst.queue_free()
+	_well_opening = false
+
+
+func _make_dust_emitter(amount: int, one_shot: bool, speed_min: float, speed_max: float) -> CPUParticles2D:
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1, 1, 1, 1))
+	fade.set_color(1, Color(1, 1, 1, 0))
+	var puff := GradientTexture2D.new()
+	puff.gradient = fade
+	puff.fill = GradientTexture2D.FILL_RADIAL
+	puff.fill_from = Vector2(0.5, 0.5)
+	puff.fill_to = Vector2(1.0, 0.5)
+	puff.width = 48
+	puff.height = 48
+
+	var tint := Gradient.new()
+	tint.set_color(0, Color(0.66, 0.6, 0.5, 0.42))
+	tint.set_color(1, Color(0.66, 0.6, 0.5, 0.0))
+	var grow := Curve.new()
+	grow.add_point(Vector2(0.0, 0.5))
+	grow.add_point(Vector2(1.0, 1.6))
+
+	var emitter := CPUParticles2D.new()
+	emitter.z_index = 1
+	emitter.texture = puff
+	emitter.amount = amount
+	emitter.one_shot = one_shot
+	emitter.explosiveness = 0.9 if one_shot else 0.0
+	emitter.lifetime = 1.2
+	emitter.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	emitter.emission_rect_extents = WELL_DUST_EXTENTS
+	emitter.direction = Vector2(0, -1)
+	emitter.spread = 40.0
+	emitter.gravity = Vector2.ZERO
+	emitter.initial_velocity_min = speed_min
+	emitter.initial_velocity_max = speed_max
+	emitter.damping_min = 20.0
+	emitter.damping_max = 40.0
+	emitter.scale_amount_min = 0.5
+	emitter.scale_amount_max = 1.0
+	emitter.scale_amount_curve = grow
+	emitter.color_ramp = tint
+	emitter.emitting = false
+	return emitter
+
+
+func _play_well_sfx(stream: AudioStream) -> void:
+	if stream == null:
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = stream
+	add_child(player)
+	player.finished.connect(player.queue_free)
+	player.play()
 
 
 func _is_main_quest_stage(stage_value: int) -> bool:
@@ -344,7 +461,8 @@ func reset_dialog_state() -> void:
 
 
 func _on_to_yuheng_market_east_night_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if body.name == "LiuYu" and _exit_allowed(body):
+		_leaving = true
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()

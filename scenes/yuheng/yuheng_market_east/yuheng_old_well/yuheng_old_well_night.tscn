@@ -1,11 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://2hq7d7mk4n33"]
+[gd_scene load_steps=9 format=3 uid="uid://2hq7d7mk4n33"]
 
 [ext_resource type="Texture2D" uid="uid://cdxq5k7t1t033" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_old_well_night.jpg" id="1_h8aaa"]
 [ext_resource type="Script" uid="uid://cm8bhn61d84ju" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_old_well_night.gd" id="1_ugo1f"]
 [ext_resource type="Texture2D" uid="uid://c2y1p6tow5lax" path="res://assets/background/Yuheng_Town/yuheng_old_well/well_locked_night.png" id="2_ugo1f"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_cctem"]
-size = Vector2(70.8787, 72.9554)
+[ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7tfld"]
 size = Vector2(75.5, 50)
@@ -26,13 +24,6 @@ texture = ExtResource("1_h8aaa")
 
 [node name="well_locked" type="Node2D" parent="."]
 
-[node name="well_keyhole" type="Area2D" parent="well_locked"]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="well_locked/well_keyhole"]
-position = Vector2(195.004, 110.52)
-rotation = -0.294961
-shape = SubResource("RectangleShape2D_cctem")
-
 [node name="old_well_locked" type="Sprite2D" parent="well_locked"]
 position = Vector2(133, 36)
 scale = Vector2(0.78, 0.78)
@@ -40,10 +31,47 @@ texture = ExtResource("2_ugo1f")
 
 [node name="WellBarrier" type="StaticBody2D" parent="well_locked"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="well_locked/WellBarrier"]
-position = Vector2(120, 98)
-rotation = 0.221657
-shape = SubResource("RectangleShape2D_7tfld")
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="well_locked/WellBarrier"]
+polygon = PackedVector2Array(189.1, 7.7, 108.0, 62.4, 72.8, 84.9, 67.9, 113.3, 124.6, 139.7, 152.0, 125.0)
+
+[node name="WellBody" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="WellBody"]
+polygon = PackedVector2Array(160.8, 94.7, 194.0, 89.8, 232.1, 57.6, 278.1, 60.5, 280.1, 40.0, 237.0, 40.0, 201.8, -8.9, 144.1, -25.6, 89.4, -17.7, 39.5, 15.5, 35.6, 40.9, 72.8, 84.9, 123.6, 50.7)
+
+[node name="InteractionZones" type="Node2D" parent="."]
+
+[node name="exit_market_east" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "離開後巷"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-218.6, 421.3, -167.8, 356.8, -31.9, 358.7, -37.7, 418.4)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-288.0, 407.6, -218.6, 325.5, -106.2, 274.6, -27.9, 275.6, 40.5, 341.1, 49.3, 414.4)
+
+[node name="sewer_entrance" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "下井"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(72.8, 84.9, 123.6, 50.7, 160.8, 94.7, 152.0, 125.0, 124.6, 139.7, 67.9, 113.3)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(58.1, 84.9, 176.4, 102.5, 184.2, 155.3, 107.0, 176.8, 33.7, 130.9)
+
+[node name="well_keyhole" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "井身扣孔"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(154.9, 42.9, 190.1, 42.9, 190.1, 84.9, 154.9, 84.9)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(148.1, 86.9, 236.1, 86.9, 236.1, 155.3, 148.1, 155.3)
 
 [node name="To_yuheng_market_east_night" type="Area2D" parent="."]
 

@@ -5,8 +5,7 @@ extends Node2D
 @onready var overlay := $BlackOverlay
 @onready var sewer_transition: Area2D = get_node_or_null("To_yuheng_sewer_center") as Area2D
 @onready var sewer_transition_collision: CollisionShape2D = get_node_or_null("To_yuheng_sewer_center/CollisionShape2D") as CollisionShape2D
-@onready var well_barrier_collision: CollisionShape2D = get_node_or_null("well_locked/WellBarrier/CollisionShape2D") as CollisionShape2D
-@onready var well_keyhole: Area2D = get_node_or_null("well_locked/well_keyhole") as Area2D
+@onready var well_barrier_collision: CollisionPolygon2D = get_node_or_null("well_locked/WellBarrier/CollisionPolygon2D") as CollisionPolygon2D
 @onready var well_locked_sprite: Sprite2D = get_node_or_null("well_locked/well_locked") as Sprite2D
 @export var music_tag := "yuheng_old_well"
 @export var map_display_name: String = "醉月茶坊後巷廢井"
@@ -22,17 +21,20 @@ const LIUYU_PORTRAIT_PATH := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 const LIUYU_SPEAKER_ID := 2
 const NARRATION_SPEAKER_ID := 0
 
-var _player_at_keyhole := false
+## 滑鼠／走近互動（InteractionZones 底下）：出口與下井走原本的 body_entered 流程，扣孔走 _run_keyhole_interaction。
+const ZONE_EXIT_METHODS := {
+	"exit_market_east": "_on_to_yuheng_market_east_body_entered",
+	"sewer_entrance": "_on_to_yuheng_sewer_center_body_entered",
+}
+
 var _keyhole_busy := false
 var _keyhole_menu_was_locked := false
+var _leaving := false
 
 
 func _ready():
 	_apply_sewer_route_state()
-	if well_keyhole:
-		well_keyhole.body_entered.connect(_on_well_keyhole_body_entered)
-		well_keyhole.body_exited.connect(_on_well_keyhole_body_exited)
-	set_process_unhandled_input(true)
+	_bind_interaction_zones()
 
 	overlay.modulate.a = 1.5
 	var tween_in = overlay.create_tween()
@@ -59,7 +61,8 @@ func show_map_name():
 		push_warning("MapNamePopup 找不到！請確認 CanvasLayer 裡有加 Label")
 
 func _on_to_yuheng_market_east_body_entered(body: Node2D):
-	if body.name == "LiuYu":
+	if body.name == "LiuYu" and _exit_allowed(body):
+		_leaving = true
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -70,12 +73,13 @@ func _on_to_yuheng_market_east_body_entered(body: Node2D):
 
 
 func _on_to_yuheng_sewer_center_body_entered(body: Node2D) -> void:
-	if not _is_sewer_route_unlocked():
+	if _leaving or not _is_sewer_route_unlocked():
 		return
 	if not YuhengPrologueState.can_enter_clean_sewer():
 		await _play_clean_sewer_not_ready_dialog(body)
 		return
 	if MapTransitionGuard.can_transition(body, sewer_transition):
+		_leaving = true
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -123,25 +127,40 @@ func _apply_sewer_route_state() -> void:
 		well_barrier_collision.set_deferred("disabled", unlocked)
 
 
-func _on_well_keyhole_body_entered(body: Node2D) -> void:
-	if body and body.name == "LiuYu":
-		_player_at_keyhole = true
-
-
-func _on_well_keyhole_body_exited(body: Node2D) -> void:
-	if body and body.name == "LiuYu":
-		_player_at_keyhole = false
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if _keyhole_busy or not _player_at_keyhole:
+func _bind_interaction_zones() -> void:
+	var zones := get_node_or_null("InteractionZones")
+	if zones == null:
 		return
-	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-		await _run_keyhole_interaction()
-		get_viewport().set_input_as_handled()
+	for child in zones.get_children():
+		var target := child as InteractionTarget
+		if target == null:
+			continue
+		var zone_name := String(target.name)
+		if ZONE_EXIT_METHODS.has(zone_name):
+			var method: String = ZONE_EXIT_METHODS[zone_name]
+			target.availability = func() -> bool:
+				return not _leaving and (zone_name != "sewer_entrance" or _is_sewer_route_unlocked())
+			target.handler = func(player: Node2D) -> void:
+				await call(method, player)
+		elif zone_name == "well_keyhole":
+			target.availability = func() -> bool: return not _keyhole_busy and not _leaving
+			target.handler = func(_player: Node2D) -> void:
+				await _run_keyhole_interaction()
+
+
+## 與其他場景的出口一致：交給 GameRoot 的出口防呆（剛換場景的冷卻時間、讀檔中、鎖定中都不能換）。
+func _exit_allowed(body: Node) -> bool:
+	if _leaving:
+		return false
+	var game_root := get_node_or_null("/root/GameRoot")
+	if game_root == null or not game_root.has_method("can_use_map_transition"):
+		return true
+	return bool(game_root.call("can_use_map_transition", body, null))
 
 
 func _run_keyhole_interaction() -> void:
+	if _keyhole_busy:
+		return
 	if _is_sewer_route_unlocked():
 		if _can_claim_dabao_treasure():
 			await _play_keyhole_sequence(_build_dabao_treasure_lines(), true)
