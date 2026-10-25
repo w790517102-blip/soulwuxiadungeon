@@ -59,9 +59,9 @@ display_name = "下井"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(67.9, 86.9, 150.5, 123.1, 91.8, 166.1, 39.5, 151.4, 15.1, 121.6)
+selection_polygon = PackedVector2Array(189.1, 7.7, 108.0, 62.4, 72.8, 84.9, 67.9, 113.3, 124.6, 139.7, 152.0, 125.0)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(58.1, 84.9, 176.4, 102.5, 184.2, 155.3, 107.0, 176.8, 33.7, 130.9)
+zone_polygon = PackedVector2Array(67.9, 86.9, 150.5, 123.1, 91.8, 166.1, 39.5, 151.4, 15.1, 121.6)
 
 [node name="well_keyhole" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
