@@ -66,62 +66,53 @@ func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 	if _is_waiting_for_huiyin_first_talk() and TeaHouseNightDialog.is_night_scene(self):
 		return _build_huiyin_call_night_lines()
 
+	# 白天 06（新曲奏響後）／05（舊水道與山莊會談後）：實際完成的世界事件優先於主線 stage。
+	var day_lines := TeaHouseNightDialog.day_lines_for("servant", self, speaker_id, portrait_path)
+	if not day_lines.is_empty():
+		return day_lines
+
 	# 首見：表／裏語氣分支
 	if not met:
 		if observed and heard_qin:
 			return [
-				{ "text": "「客倌裡請!…（他剛開口正準備大聲吆喝，忽地止住）」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「…咳，客倌失禮了，我嗓子這幾日總是卡著似的。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「熱茶馬上來，您先坐。今日上的是『醉月青魁』，回甘不苦澀，提神不擾眠。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「那邊彈琴的姑娘？是新請來的，聽說是左飲爺引薦的高人。」", "speaker": speaker_id },
-				{ "text": "（忽然間，整間茶坊寂靜了下來，只餘琴聲緩緩）", "speaker": speaker_id },
-				{ "text": "「您聽，那琴一響，滿坊都靜了三分。」", "speaker": speaker_id },
-				{ "text": "「咱這坊裡近來靜得很，如果有誰話講重了，都像是被那琴音轉了調，\n給轉平了。」", "speaker": speaker_id },
-				{ "text": "「就像我方才本想大聲招待您，突然滿腦都是這動人的琴聲，」", "speaker": speaker_id },
-				{ "text": "「也不知道是不是分了神，竟給口水嗆著了。」", "speaker": speaker_id },
-				{ "text": "「小的只求月底結帳時能講清楚話，別被當啞巴扣了工錢。」", "speaker": speaker_id }
+				{ "text": "店小二：「客倌裡請！」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "他剛開口準備大聲吆喝，忽地止住了。", "speaker": 0 },
+				{ "text": "店小二：「……咳，客倌失禮了，我嗓子這幾日總是卡著似的。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "店小二：「熱茶馬上來，您先坐。今日上的是『醉月青魁』，回甘不苦澀，提神不擾眠。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "店小二：「那邊彈琴的姑娘？是新請來的，聽說是左飲爺引薦的高人。」", "speaker": speaker_id },
+				{ "text": "忽然間，整間茶坊寂靜了下來，只餘琴聲緩緩。", "speaker": 0 },
+				{ "text": "店小二：「您聽，那琴一響，滿坊都靜了三分。」", "speaker": speaker_id },
+				{ "text": "店小二：「咱這坊裡近來靜得很，如果有誰話講重了，都像是被那琴音轉了調，給轉平了。」", "speaker": speaker_id },
+				{ "text": "店小二：「就像我方才本想大聲招待您，突然滿腦都是這動人的琴聲，也不知道是不是分了神，竟給口水嗆著了。」", "speaker": speaker_id },
+				{ "text": "店小二：「小的只求月底結帳時能講清楚話，別被當啞巴扣了工錢。」", "speaker": speaker_id }
 			]
 		else:
 			return [
-				{ "text": "「熱茶馬上來，您先坐。今日上的是『醉月青魁』，回甘不苦澀，提神不擾眠。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「那邊彈琴的姑娘？是新請來的，聽說是左飲爺引薦的高人。」", "speaker": speaker_id },
-				{ "text": "「您聽，那琴一響，滿坊都靜了三分。」", "speaker": speaker_id }
+				{ "text": "店小二：「熱茶馬上來，您先坐。今日上的是『醉月青魁』，回甘不苦澀，提神不擾眠。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "店小二：「那邊彈琴的姑娘？是新請來的，聽說是左飲爺引薦的高人。」", "speaker": speaker_id },
+				{ "text": "店小二：「您聽，那琴一響，滿坊都靜了三分。」", "speaker": speaker_id }
 			]
 
-	# 循環精簡語（主線未完）
-	if main_stage <= 2:
+	# 循環精簡語（主線 1～6：新曲還沒奏響，琴聲仍在壓情，沿用同一組循環）
+	if main_stage <= 6:
 		if observed and heard_qin:
 			return [
-				{ "text": "「現在我整日跑堂，卻一句話都不能講大聲……」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「嗓子緊得很，連睡覺作夢都怕吵到誰似的。」", "speaker": speaker_id }
+				{ "text": "店小二：「現在我整日跑堂，卻一句話都不能講大聲……」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "店小二：「嗓子緊得很，連睡覺作夢都怕吵到誰似的。」", "speaker": speaker_id }
 			]
 		else:
 			return [
-				{ "text": "「客官來得正巧，茶湯正暖，琴聲正亮。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「要不要來壺回甘不擾夢的『醉月青魁』?」", "speaker": speaker_id, "portrait": portrait_path }
+				{ "text": "店小二：「客官來得正巧，茶湯正暖，琴聲正亮。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "店小二：「要不要來壺回甘不擾夢的『醉月青魁』？」", "speaker": speaker_id, "portrait": portrait_path }
 			]
 
-	# ❸ 主線後段（取得白鳶橫天琴譜）
-	elif main_stage <= 6:
-		return [
-			{ "text": "「(聲音宏亮)客倌!裡面坐喲~想喝甚麼儘管說嘿!」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「女伶換了首曲，聽著聽著嗓子也不啞了呢!」", "speaker": 1, "portrait": portrait_path },
-		]
 	else:
-		# 拿到半弦銅釦以後（主線 7 以後）白天的茶坊：客人的喜好還沒有任何改變。
+		# 【正常流程到不了】銅釦後必定同夜舊水道 → 同夜山莊會談 → 翌日白天（05），所以「銅釦後、會談前的白天」不是設計狀態，也沒有專屬台詞。
+		# 這裡只是壞存檔/測試直接跳關時的保底中性台詞，不列入正式台詞矩陣。
 		return [
-			{ "text": "「客倌!裡面坐喲，今日還是『醉月青魁』，回甘不苦!」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「想喝別的，儘管說嘿!」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "店小二：「客倌！裡面坐喲，今日還是『醉月青魁』，回甘不苦！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "店小二：「想喝別的，儘管說嘿！」", "speaker": 1, "portrait": portrait_path },
 		]
-
-
-## 烈風寨事件解決之後才會有的對白（目前沒有任何流程會呼叫；等那段劇情寫好、有旗標了再接進 _build_lines_for_quest）。
-## 原本錯放在「拿到半弦銅釦以後」，時間線對不上，所以先收在這裡。
-func _build_liefeng_resolved_lines() -> Array:
-	return [
-		{ "text": "「客倌!想喝甚麼儘管說，店內茶品五花八門,不怕你叫!」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「前陣子流行『醉月青魁』,現在無論甚麼濃淡溫涼大家甚麼茶都喝!」", "speaker": 1, "portrait": portrait_path },
-	]
 
 
 func _is_waiting_for_huiyin_first_talk() -> bool:
@@ -133,13 +124,13 @@ func _is_waiting_for_huiyin_first_talk() -> bool:
 
 func _build_huiyin_call_night_lines() -> Array:
 	return [
-		{ "text": "「客倌，您可算來了——」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "「咦？小的怎麼說得像早知道您會來似的。」", "speaker": speaker_id },
-		{ "text": "「今夜添水擺盞時，我總不自覺多留了一副茶具。」", "speaker": speaker_id },
-		{ "text": "「掌櫃問我留給誰，我也答不上來。」", "speaker": speaker_id },
-		{ "text": "「可那琴聲一響，我腦中便晃過您佩劍進門的樣子。」", "speaker": speaker_id },
-		{ "text": "「如今您真站在這兒，倒像是把一件早已發生在心裡的事，等成真的了。」", "speaker": speaker_id },
-		{ "text": "「您別笑我，這話連小的自己都覺得玄。」", "speaker": speaker_id },
+		{ "text": "店小二：「客倌，您可算來了——」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "店小二：「咦？小的怎麼說得像早知道您會來似的。」", "speaker": speaker_id },
+		{ "text": "店小二：「今夜添水擺盞時，我總不自覺多留了一副茶具。」", "speaker": speaker_id },
+		{ "text": "店小二：「掌櫃問我留給誰，我也答不上來。」", "speaker": speaker_id },
+		{ "text": "店小二：「可那琴聲一響，我腦中便晃過您佩劍進門的樣子。」", "speaker": speaker_id },
+		{ "text": "店小二：「如今您真站在這兒，倒像是把一件早已發生在心裡的事，等成真的了。」", "speaker": speaker_id },
+		{ "text": "店小二：「您別笑我，這話連小的自己都覺得玄。」", "speaker": speaker_id },
 	]
 
 

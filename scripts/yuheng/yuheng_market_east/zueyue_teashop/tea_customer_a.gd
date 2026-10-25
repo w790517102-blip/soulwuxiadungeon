@@ -58,7 +58,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		if not GlobalState.get_flag(F_HUIYIN_FIRST_TALK_DONE):
 			return [
 				{
-					"text": "「今晚的琴聲有些奇怪……不像是在留住茶客，倒像是在等什麼人。」",
+					"text": "書生：「今晚的琴聲有些奇怪……不像是在留住茶客，倒像是在等什麼人。」",
 					"speaker": speaker_id,
 					"portrait": portrait_path,
 				},
@@ -66,14 +66,14 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		if GlobalState.get_flag(F_CUSTOMER_A_WAITING_LINE_HEARD):
 			return [
 				{
-					"text": "「你也聽出來了吧？琴音已不像先前那般等待，反倒柔了下來，像是終於把什麼託付出去了。」",
+					"text": "書生：「你也聽出來了吧？琴音已不像先前那般等待，反倒柔了下來，像是終於把什麼託付出去了。」",
 					"speaker": speaker_id,
 					"portrait": portrait_path,
 				},
 			]
 		return [
 			{
-				"text": "「今晚的琴音很特別。它已不再像是在等候，反倒柔了下來，像是把什麼託付給了值得相信的人。」",
+				"text": "書生：「今晚的琴音很特別。它已不再像是在等候，反倒柔了下來，像是把什麼託付給了值得相信的人。」",
 				"speaker": speaker_id,
 				"portrait": portrait_path,
 			},
@@ -82,36 +82,37 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	if not met:
 		if observed and heard_qin:
 			return [
-				{ "text": "「（一名書生靜靜的飲茶品茗…他拈鬚對杯，自語低吟）」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「清茶一盞，宜於靜思。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「方才那曲，入耳不驚，入心自安。這位女伶，來得巧。」", "speaker": speaker_id },
-				{ "text": "劉語塵：「此話怎說?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「在下寫詩一直寫得不甚完美，短短兩句遲遲改不好，氣到舌尖，\n便不耐煩地『嘖』了一聲，忽被這曲調裏的第三絃按住，也就不氣了。」", "speaker": speaker_id },
-				{ "text": "劉語塵：「這麼說，你的詩可完成了?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「(心虛地顫了一下)呃...這...」", "speaker": speaker_id },
-				{ "text": "「雖然氣消了，但筆也頓了——平仄皆在，雅致卻不在。」", "speaker": speaker_id },
-				{ "text": "「（思索）也許我該好好想一下，沒了這琴聲我是否能夠憑己之力\n控制脾氣好好寫詩，而不是一不耐煩就想依賴琴聲來壓」", "speaker": speaker_id },
+				{ "text": "一名書生靜靜地飲茶品茗，拈鬚對杯，自語低吟。", "speaker": 0 },
+				{ "text": "書生：「清茶一盞，宜於靜思。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "書生：「方才那曲，入耳不驚，入心自安。這位女伶，來得巧。」", "speaker": speaker_id },
+				{ "text": "劉語塵：「此話怎說？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "書生：「在下寫詩一直寫得不甚完美，短短兩句遲遲改不好，氣到舌尖，便不耐煩地『嘖』了一聲，忽被這曲調裏的第三絃按住，也就不氣了。」", "speaker": speaker_id },
+				{ "text": "劉語塵：「這麼說，你的詩可完成了？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "書生心虛地顫了一下。", "speaker": 0 },
+				{ "text": "書生：「呃……這……」", "speaker": speaker_id },
+				{ "text": "書生：「雖然氣消了，但筆也頓了——平仄皆在，雅致卻不在。」", "speaker": speaker_id },
+				{ "text": "書生：「也許我該好好想一下，沒了這琴聲我是否能夠憑己之力控制脾氣好好寫詩，而不是一不耐煩就想依賴琴聲來壓制。」", "speaker": speaker_id },
 			]
 		else:
 			return [
-				{ "text": "「（一名書生靜靜的飲茶品茗…他拈鬚對杯，自語低吟）」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「清茶一盞，宜於靜思。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「方才那曲，入耳不驚，入心自安。這位女伶，來得巧。」", "speaker": speaker_id }
+				{ "text": "一名書生靜靜地飲茶品茗，拈鬚對杯，自語低吟。", "speaker": 0 },
+				{ "text": "書生：「清茶一盞，宜於靜思。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "書生：「方才那曲，入耳不驚，入心自安。這位女伶，來得巧。」", "speaker": speaker_id }
 			]
 
 	# 循環簡版（章一內）
 	if main_stage <= 2:
 		if observed and heard_qin:
 			return [
-				{ "text": "「（思索）也許我該好好想一下，沒了這琴聲我是否能夠憑己之力\n控制脾氣好好寫詩，而不是一不耐煩就想依賴琴聲來壓」", "speaker": speaker_id },
+				{ "text": "書生：「也許我該好好想一下，沒了這琴聲我是否能夠憑己之力控制脾氣好好寫詩，而不是一不耐煩就想依賴琴聲來壓制。」", "speaker": speaker_id },
 			]
 		else:
 			return [
-				{ "text": "「來這茶坊不外乎聽琴、靜飲而已，少俠。」", "speaker": speaker_id, "portrait": portrait_path }
+				{ "text": "書生：「來這茶坊不外乎聽琴、靜飲而已，少俠。」", "speaker": speaker_id, "portrait": portrait_path }
 			]
 
 	# 章二以後（預留）
-	return [ { "text": "「今日不擾，改日再論。」", "speaker": speaker_id, "portrait": portrait_path } ]
+	return [ { "text": "書生：「今日不擾，改日再論。」", "speaker": speaker_id, "portrait": portrait_path } ]
 
 
 func _is_huiyin_night_story_window() -> bool:

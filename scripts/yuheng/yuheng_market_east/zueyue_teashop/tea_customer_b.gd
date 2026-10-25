@@ -56,7 +56,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		if not GlobalState.get_flag(F_HUIYIN_FIRST_TALK_DONE):
 			return [
 				{
-					"text": "「你也聽出來了？曲子明明不急，我卻總覺得有一句話，非得在今晚說出口不可。」",
+					"text": "女茶客：「你也聽出來了？曲子明明不急，我卻總覺得有一句話，非得在今晚說出口不可。」",
 					"speaker": speaker_id,
 					"portrait": portrait_path,
 				},
@@ -64,14 +64,14 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		if GlobalState.get_flag(F_CUSTOMER_B_WAITING_LINE_HEARD):
 			return [
 				{
-					"text": "「先前那句非得說出口的話，似乎已經傳到了。如今聽來，倒像終於有人願意替她把那份盼望帶走。」",
+					"text": "女茶客：「先前那句非得說出口的話，似乎已經傳到了。如今聽來，倒像終於有人願意替她把那份盼望帶走。」",
 					"speaker": speaker_id,
 					"portrait": portrait_path,
 				},
 			]
 		return [
 			{
-				"text": "「這曲子聽來不像尋常演奏，倒像有人剛把心裡的話送了出去，也把剩下的盼望交給了願意承接的人。」",
+				"text": "女茶客：「這曲子聽來不像尋常演奏，倒像有人剛把心裡的話送了出去，也把剩下的盼望交給了願意承接的人。」",
 				"speaker": speaker_id,
 				"portrait": portrait_path,
 			},
@@ -80,33 +80,36 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	if not met:
 		if observed and heard_qin:
 			return [
-				{ "text": "「（一名女茶客輕放茶盞）」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「這茶溫恰好，琴也彈得好。（她的聲音不大，但像是讓\n茶館更靜了幾分）」", "speaker": speaker_id },
+				{ "text": "一名女茶客輕放茶盞。", "speaker": 0 },
+				{ "text": "女茶客：「這茶溫恰好，琴也彈得好。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "她的聲音不大，卻像是讓茶館更靜了幾分。", "speaker": 0 },
 				{ "text": "劉語塵：「冒昧叨擾您一問，希望沒有驚動到您用茶。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「無妨，少俠看上去為人正派，有甚麼事想問小女子的呢？」", "speaker": speaker_id },
+				{ "text": "女茶客：「無妨，少俠看上去為人正派，有甚麼事想問小女子的呢？」", "speaker": speaker_id },
 				{ "text": "劉語塵：「那位彈琴女伶似乎已在此店駐彈已久，您可曾與她交談過？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「我喜靜，本就不喜主動與人對談，所以這坊子合我心。\n不過……我也並非無話可說。」", "speaker": speaker_id },
-				{ "text": "「那彈琴的姑娘眉目不俗。只是這琴一響，我心裡要說的話\n像被輕輕縫起，針腳細密，找不到翻口。」", "speaker": speaker_id },
-				{ "text": "（女伶的指腹在琴絃上使出一記滑音，女客乍然靜聲，\n猶如聲音被推回喉間）", "speaker": speaker_id },
-				{ "text": "「咳咳…抱歉少俠…嗓子不知怎地突然有點乾…」", "speaker": speaker_id },
-				{ "text": "「（抿一口茶後）總之，人不爭是好，但倘若不敢愛、不敢氣，未必是好。」", "speaker": speaker_id }
+				{ "text": "女茶客：「我喜靜，本就不喜主動與人對談，所以這坊子合我心。不過……我也並非無話可說。」", "speaker": speaker_id },
+				{ "text": "女茶客：「那彈琴的姑娘眉目不俗。只是這琴一響，我心裡要說的話像被輕輕縫起，針腳細密，找不到翻口。」", "speaker": speaker_id },
+				{ "text": "女伶的指腹在琴絃上使出一記滑音，女客乍然靜聲，猶如聲音被推回喉間。", "speaker": 0 },
+				{ "text": "女茶客：「咳咳…抱歉少俠…嗓子不知怎地突然有點乾…」", "speaker": speaker_id },
+				{ "text": "她抿了一口茶。", "speaker": 0 },
+				{ "text": "女茶客：「總之，人不爭是好，但倘若不敢愛、不敢氣，未必是好。」", "speaker": speaker_id }
 			]
 		else:
 			return [
-				{ "text": "「（一名女茶客輕放茶盞）這茶溫恰好，琴也彈得好。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "（指尖碰杯，像怕驚動誰）", "speaker": speaker_id },
-				{ "text": "「我喜靜，這坊子合我心。」", "speaker": speaker_id }
+				{ "text": "一名女茶客輕放茶盞。", "speaker": 0 },
+				{ "text": "女茶客：「這茶溫恰好，琴也彈得好。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "她指尖碰杯，像怕驚動誰。", "speaker": 0 },
+				{ "text": "女茶客：「我喜靜，這坊子合我心。」", "speaker": speaker_id }
 			]
 
 	if main_stage <= 2:
 		if observed and heard_qin:
 			return [
-				{ "text": "「人不爭是好，但倘若不敢愛、不敢氣，未必是好。」", "speaker": speaker_id }
+				{ "text": "女茶客：「人不爭是好，但倘若不敢愛、不敢氣，未必是好。」", "speaker": speaker_id }
 			]
 		else:
-			return [ { "text": "「茶好。安靜便好。」", "speaker": speaker_id, "portrait": portrait_path } ]
+			return [ { "text": "女茶客：「茶好。安靜便好。」", "speaker": speaker_id, "portrait": portrait_path } ]
 
-	return [ { "text": "「改日再談。」", "speaker": speaker_id, "portrait": portrait_path } ]
+	return [ { "text": "女茶客：「改日再談。」", "speaker": speaker_id, "portrait": portrait_path } ]
 
 
 func _is_huiyin_night_story_window() -> bool:

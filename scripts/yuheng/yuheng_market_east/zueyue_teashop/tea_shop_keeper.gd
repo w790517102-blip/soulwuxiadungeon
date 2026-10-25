@@ -68,66 +68,59 @@ func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 	if _is_waiting_for_huiyin_first_talk() and TeaHouseNightDialog.is_night_scene(self):
 		return _build_huiyin_call_night_lines()
 
+	# 白天 06（新曲奏響後）／05（舊水道與山莊會談後）：實際完成的世界事件優先於主線 stage。
+	var day_lines := TeaHouseNightDialog.day_lines_for("boss", self, speaker_id, portrait_path)
+	if not day_lines.is_empty():
+		return day_lines
+
 	# ❶ 首見｜有觀察琴音者進入「裏」語氣
 	if not met:
 		if observed and heard_qin:
 			return [
-				{ "text": "「客官裡頭請，小店雅座仍有空位。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「近日店內流行淡茶，配這琴的調剛剛好。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "（茶香混著絃音在空氣裡緩緩擴散）", "speaker": 1 },
-				{ "text": "劉語塵：「老闆，這茶坊內的悠悠琴聲有如天籟、餘音繞樑，\n是誰有這般雅致呢?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「啊~你也是被這琴音吸引過來的啊，這琴聲乃出自於店內駐彈的\n那位紅衣女伶之手。」", "speaker": speaker_id },
-				{ "text": "(老闆手指了指右方一位穿紅衣的彈琴女伶，琴聲未停)", "speaker": speaker_id },
-				{ "text": "劉語塵：「好琴!」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵：「但這琴音…雖說讓內心平靜，但聽著聽著…總覺得讓有些\n本來想說出口的話…欲言卻又止。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵：「像是被琴音掐住了喉，說不出口」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵：「敢問這位紅衣女伶的來歷??」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「女伶之事…（語音出口的一瞬，被絃音壓住）…掌櫃的我，\n也只知她是左飲爺引進來的。至於緣由，從未細問。」", "speaker": speaker_id },
-				{ "text": "「至於你說的琴音壓情，自有其妙，大家都有感覺到。不過內心平靜\n未嘗壞事，再加上女伶是左飲引薦的，大家也不深究了。」", "speaker": speaker_id },
-				{ "text": "「只是壓久了，心頭像壓著絨被，雖說暖是暖的，但也悶。」", "speaker": speaker_id },
-				{ "text": "「這世道，有時知太多，不如只知七分。」", "speaker": speaker_id },
-				{ "text": "「客官若有困惑，不妨往市集西街走走。那裡……風聲比琴聲大些。」", "speaker": speaker_id }
+				{ "text": "掌櫃：「客官裡頭請，小店雅座仍有空位。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "掌櫃：「近日店內流行淡茶，配這琴的調剛剛好。」", "speaker": speaker_id },
+				{ "text": "茶香混著弦音，在空氣裡緩緩擴散。", "speaker": 0 },
+				{ "text": "劉語塵：「老闆，這茶坊內的悠悠琴聲有如天籟、餘音繞樑，是誰有這般雅致呢？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "掌櫃：「啊～你也是被這琴音吸引過來的啊，這琴聲乃出自於店內駐彈的那位紅衣女伶之手。」", "speaker": speaker_id },
+				{ "text": "掌櫃抬手指了指右方那位穿紅衣的彈琴女伶，琴聲未停。", "speaker": 0 },
+				{ "text": "劉語塵：「好琴！」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵：「但這琴音……雖說讓內心平靜，但聽著聽著……總覺得讓有些本來想說出口的話……欲言卻又止。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵：「像是被琴音掐住了喉，說不出口。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵：「敢問這位紅衣女伶的來歷？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "掌櫃：「女伶之事……」", "speaker": speaker_id },
+				{ "text": "話到嘴邊，被絃音壓了回去。", "speaker": 0 },
+				{ "text": "掌櫃：「掌櫃的我，也只知她是左飲爺引進來的。至於緣由，從未細問。」", "speaker": speaker_id },
+				{ "text": "掌櫃：「至於你說的琴音壓情，自有其妙，大家都有感覺到。不過內心平靜未嘗壞事，再加上女伶是左飲引薦的，大家也不深究了。」", "speaker": speaker_id },
+				{ "text": "掌櫃：「只是壓久了，心頭像壓著絨被，雖說暖是暖的，但也悶。」", "speaker": speaker_id },
+				{ "text": "掌櫃：「這世道，有時知太多，不如只知七分。」", "speaker": speaker_id },
+				{ "text": "掌櫃：「客官若有困惑，不妨往市集西街走走。那裡……風聲比琴聲大些。」", "speaker": speaker_id }
 			]
 		else:
 			return [
-				{ "text": "「官裡頭請，小店雅座仍有空位。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「本坊請了一位女伶駐彈，是左飲爺親自提的。客人們都說，琴音沉靜養心。」", "speaker": speaker_id },
-				{ "text": "「琴音聽著心就靜，靜心飲茶見真味。」", "speaker": speaker_id }
+				{ "text": "掌櫃：「客官裡頭請，小店雅座仍有空位。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "掌櫃：「本坊請了一位女伶駐彈，是左飲爺親自提的。客人們都說，琴音沉靜養心。」", "speaker": speaker_id },
+				{ "text": "掌櫃：「琴音聽著心就靜，靜心飲茶見真味。」", "speaker": speaker_id }
 			]
 
-	# ❷ 已對話｜循環（簡化）版本
-	if main_stage <= 2:
+	# ❷ 已對話｜循環（簡化）版本（主線 1～6：新曲還沒奏響，琴聲仍在壓情，沿用同一組循環）
+	if main_stage <= 6:
 		if observed and heard_qin:
 			return [
-				{ "text": "「這世道，有時知太多，不如只知七分。」", "speaker": speaker_id },
-				{ "text": "「客官若有困惑，不妨往市集西街走走。那裡……風聲比琴聲大些。」", "speaker": speaker_id }
+				{ "text": "掌櫃：「這世道，有時知太多，不如只知七分。」", "speaker": speaker_id },
+				{ "text": "掌櫃：「客官若有困惑，不妨往市集西街走走。那裡……風聲比琴聲大些。」", "speaker": speaker_id }
 			]
 		else:
 			return [
-				{ "text": "「來杯茶罷，客官。淡茶最適這兩日天氣。」", "speaker": speaker_id, "portrait": portrait_path }
+				{ "text": "掌櫃：「來杯茶罷，客官。淡茶最適這兩日天氣。」", "speaker": speaker_id, "portrait": portrait_path }
 			]
 
-	# ❸ 主線後段（取得白鳶橫天琴譜）
-	elif main_stage <= 6:
-		return [
-			{ "text": "「近日女伶彈奏的曲調似乎有些不同。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「聽得比先前更加通暢、如沐春風。」", "speaker": 1, "portrait": portrait_path },
-		]
 	else:
-		# 拿到半弦銅釦以後（主線 7 以後）白天的茶坊：玉衡鎮的事才剛開始，客人還沒有任何改變。
+		# 【正常流程到不了】銅釦後必定同夜舊水道 → 同夜山莊會談 → 翌日白天（05），所以「銅釦後、會談前的白天」不是設計狀態，也沒有專屬台詞。
+		# 這裡只是壞存檔/測試直接跳關時的保底中性台詞，不列入正式台詞矩陣。
 		return [
-			{ "text": "「客官來了，淡茶備著，想喝甚麼說一聲。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「近來坊裡一切照舊，慢坐便是。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "掌櫃：「客官來了，淡茶備著，想喝甚麼說一聲。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "掌櫃：「近來坊裡一切照舊，慢坐便是。」", "speaker": 1, "portrait": portrait_path },
 		]
-
-
-## 烈風寨事件解決之後才會有的對白（目前沒有任何流程會呼叫；等那段劇情寫好、有旗標了再接進 _build_lines_for_quest）。
-## 原本錯放在「拿到半弦銅釦以後」，時間線對不上，所以先收在這裡。
-func _build_liefeng_resolved_lines() -> Array:
-	return [
-		{ "text": "「女伶近日奏了別的曲，客人也不像從前那樣好同一品淡茶。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「現在所有人都願意嘗試不同茶品了!」", "speaker": 1, "portrait": portrait_path },
-	]
 
 
 func _is_waiting_for_huiyin_first_talk() -> bool:
@@ -139,13 +132,13 @@ func _is_waiting_for_huiyin_first_talk() -> bool:
 
 func _build_huiyin_call_night_lines() -> Array:
 	return [
-		{ "text": "「客倌，我就知道您今夜還會再來。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "掌櫃：「客倌，我就知道您今夜還會再來。」", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "劉語塵：「掌櫃的知道我要來？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「這……說真的，我也不知道自己怎麼會這麼說。」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "「只是今夜聽那位女伶撫琴，腦子裡總不自覺浮出您白日進門的模樣。」", "speaker": speaker_id },
-		{ "text": "「像這坊裡有張桌、有盞燈，原就該替您留著。」", "speaker": speaker_id },
-		{ "text": "「如今真見到您，我反倒莫名鬆了口氣。」", "speaker": speaker_id },
-		{ "text": "「怪事。可這琴聲近來帶來的怪事，也不只一樁了。」", "speaker": speaker_id },
+		{ "text": "掌櫃：「這……說真的，我也不知道自己怎麼會這麼說。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "掌櫃：「只是今夜聽那位女伶撫琴，腦子裡總不自覺浮出您白日進門的模樣。」", "speaker": speaker_id },
+		{ "text": "掌櫃：「像這坊裡有張桌、有盞燈，原就該替您留著。」", "speaker": speaker_id },
+		{ "text": "掌櫃：「如今真見到您，我反倒莫名鬆了口氣。」", "speaker": speaker_id },
+		{ "text": "掌櫃：「怪事。可這琴聲近來帶來的怪事，也不只一樁了。」", "speaker": speaker_id },
 	]
 
 
@@ -187,7 +180,7 @@ func _show_interaction_menu() -> void:
 func _choose_buy() -> void:
 	dialog_manager.choice_box.hide_choices()
 	var lines := [
-		{ "text": "「客倌，既然都來了，要不買包茶？也可買些點心佐茶～」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "掌櫃：「客倌，既然都來了，要不買包茶？也可買些點心佐茶～」", "speaker": speaker_id, "portrait": portrait_path },
 	]
 	dialog_manager.show_dialog_sequence(lines, self)
 	await dialog_manager.dialog_finished

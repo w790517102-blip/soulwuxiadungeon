@@ -50,74 +50,74 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	if not met:
 		if observed and heard_qin:
 			return [
-			{ "text": "（一名鏢師坐於茶坊最深處，長身影落，氣息沉穩。他抬眼望向你）", "speaker": speaker_id,"portrait": "res://assets/sprites/empty.png" },
-			{ "text": "（這名鏢師就這樣默默坐在角落，他看起來不像是本地人）", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "（說不定他也察覺琴聲的異樣……）", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "（正當你準備開口搭話時，鏢師搶先一步出聲。）", "speaker": speaker_id, "portrait": "res://assets/sprites/empty.png" },
-			{ "text": "「那琴聲……不，是內功。你也聽見了，對吧？」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "（!!!）", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「少俠，既來此處，不若共飲一盞。這茶坊人多，話可輕，心難動」。", "speaker": speaker_id,"portrait": portrait_path },
-			{ "text": "（你在他對面坐下，他為你斟了一盞茶，未多言）", "speaker": 1,"portrait": "res://assets/sprites/empty.png" },
-			{ "text": "「這茶不濃，但回甘。然而這鎮子，靜得太深，反倒讓人提不起氣。」", "speaker": speaker_id,"portrait": portrait_path },
-			{ "text": "劉語塵: 「先謝過，敢問閣下尊名？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「行走江湖，姓甚名誰早丟在路上，只有一名號——單步雷。」", "speaker": speaker_id, "portrait": portrait_path },
-			{ "text": "「在下劉語塵。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "單步雷: 「劉少俠，如今世上語魅橫行、邪典四起，\n你千里迢迢來到此地，想必也是有所求？」", "speaker": speaker_id },
-			{ "text": "劉語塵: 「（心頭一震，隨即鎮定）單兄好眼力，\n在下此行乃為尋左飲，想問他一物的下落。」", "speaker": 2 },
-			{ "text": "劉語塵: 「還是說單兄鏢路縱橫、見識廣博，\n或可向您請教？」", "speaker": 2 },
-			{ "text": "單步雷: 「（抿一口茶）我們幹這行的，知道的多，\n不能說的更多。尋物找人之事，問不得。」", "speaker": speaker_id },
-			{ "text": "單步雷: 「許多事無可奉告，還請少俠見諒。」", "speaker": speaker_id },
-			{ "text": "劉語塵: 「（唉，果然鏢局最大的特點就是守口如瓶，\n哪有那麼容易問到情報的）」", "speaker": 2 },
-			{ "text": "劉語塵: 「單兄，敝人一時莽撞，讓您難為了，還望見諒。」", "speaker": 2 },
-			{ "text": "單步雷: 「別見外，江湖上像你這般有禮的人，不多見了。\n哪像我，講話粗、脾氣直。往日遇不平事，向來先亮嗓子，\n再亮拳頭。」", "speaker": speaker_id },
-			{ "text": "單步雷: 「可來這鎮子，一張口就像被誰從喉頭按住。」", "speaker": speaker_id },
-			{ "text": "單步雷: 「（望向遠方，聲音極輕）就像那時候……\n也是這樣的聲音……」", "speaker": speaker_id },
-			{ "text": "劉語塵: 「那時候？」", "speaker": 2 },
-			{ "text": "單步雷: 「（微微一怔，回神一笑）唉，不足掛齒的往事，\n不提也罷。」", "speaker": speaker_id },
-			{ "text": "單步雷: 「（語氣平靜，卻透出一絲難掩的悲意）怒能護人，\n也能傷人。可若連怒都壓著，我還護得了誰？」", "speaker": speaker_id },
-			{ "text": "單步雷: 「抱歉啦劉少俠，我這茶喝多了，提神過了頭，今日便\n先到這。來日有緣，再敘。」", "speaker": speaker_id },
-			{ "text": "劉語塵: 「也是，在這琴聲的影響之下，話說得越多，\n心只會跟茶回沖一樣，越沖越淡。」", "speaker": 2 }
+			{ "text": "一名鏢師坐於茶坊最深處，長身影落，氣息沉穩。他抬眼望向你。", "speaker": 0,"portrait": "res://assets/sprites/empty.png" },
+			{ "text": "劉語塵：「（心想）這名鏢師就這樣默默坐在角落，他看起來不像是本地人。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "劉語塵：「（心想）說不定他也察覺琴聲的異樣……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "正當你準備開口搭話時，鏢師搶先一步出聲。", "speaker": 0, "portrait": "res://assets/sprites/empty.png" },
+			{ "text": "單步雷：「那琴聲……不，是內功。你也聽見了，對吧？」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "你心頭一凜。", "speaker": 0, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "單步雷：「少俠，既來此處，不若共飲一盞。這茶坊人多，話可輕，心難動。」", "speaker": speaker_id,"portrait": portrait_path },
+			{ "text": "你在他對面坐下，他為你斟了一盞茶，未多言。", "speaker": 0,"portrait": "res://assets/sprites/empty.png" },
+			{ "text": "單步雷：「這茶不濃，但回甘。然而這鎮子，靜得太深，反倒讓人提不起氣。」", "speaker": speaker_id,"portrait": portrait_path },
+			{ "text": "劉語塵：「先謝過，敢問閣下尊名？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "單步雷：「行走江湖，姓甚名誰早丟在路上，只有一名號——單步雷。」", "speaker": speaker_id, "portrait": portrait_path },
+			{ "text": "劉語塵：「在下劉語塵。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "單步雷：「劉少俠，如今世上語魅橫行、邪典四起，你千里迢迢來到此地，想必也是有所求？」", "speaker": speaker_id},
+			{ "text": "劉語塵：「（心頭一震，隨即鎮定）單兄好眼力，在下此行乃為尋左飲，想問他一物的下落。」", "speaker": 2},
+			{ "text": "劉語塵：「還是說單兄鏢路縱橫、見識廣博，或可向您請教？」", "speaker": 2},
+			{ "text": "單步雷：「（抿一口茶）我們幹這行的，知道的多，不能說的更多。尋物找人之事，問不得。」", "speaker": speaker_id},
+			{ "text": "單步雷：「許多事無可奉告，還請少俠見諒。」", "speaker": speaker_id},
+			{ "text": "劉語塵：「（心想）唉，果然鏢局最大的特點就是守口如瓶，哪有那麼容易問到情報的。」", "speaker": 2},
+			{ "text": "劉語塵：「單兄，敝人一時莽撞，讓您難為了，還望見諒。」", "speaker": 2},
+			{ "text": "單步雷：「別見外，江湖上像你這般有禮的人，不多見了。哪像我，講話粗、脾氣直。往日遇不平事，向來先亮嗓子，再亮拳頭。」", "speaker": speaker_id},
+			{ "text": "單步雷：「可來這鎮子，一張口就像被誰從喉頭按住。」", "speaker": speaker_id},
+			{ "text": "單步雷：「（望向遠方，聲音極輕）就像那時候……也是這樣的聲音……」", "speaker": speaker_id},
+			{ "text": "劉語塵：「那時候？」", "speaker": 2},
+			{ "text": "單步雷：「（微微一怔，回神一笑）唉，不足掛齒的往事，不提也罷。」", "speaker": speaker_id},
+			{ "text": "單步雷：「（語氣平靜，卻透出一絲難掩的悲意）怒能護人，也能傷人。可若連怒都壓著，我還護得了誰？」", "speaker": speaker_id},
+			{ "text": "單步雷：「抱歉啦劉少俠，我這茶喝多了，提神過了頭，今日便先到這。來日有緣，再敘。」", "speaker": speaker_id},
+			{ "text": "劉語塵：「也是，在這琴聲的影響之下，話說得越多，心只會跟茶回沖一樣，越沖越淡。」", "speaker": 2}
 		
 		]
 		else:
 			return [
-				{ "text": "（一名鏢師坐於茶坊最深處，長身影落，氣息沉穩。他抬眼望向你）", "speaker": speaker_id,"portrait": "res://assets/sprites/empty.png" },
-				{ "text": "（這名鏢師就這樣默默坐在角落，他看起來不像是本地人）", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "（正當你準備開口搭話時，鏢師搶先一步出聲。）", "speaker": speaker_id,"portrait": "res://assets/sprites/empty.png" },
-				{ "text": "「少俠，既來此處，不若共飲一盞。這茶坊人多，話可輕，心難動。」", "speaker": speaker_id,"portrait": portrait_path },
-				{ "text": "（你在他對面坐下，他為你斟了一盞茶，未多言）", "speaker": 1,"portrait": "res://assets/sprites/empty.png" },
-				{ "text": "「這茶不濃，但回甘。然而這鎮子，靜得太深，反倒讓人提不起氣。」", "speaker": speaker_id,"portrait": portrait_path },
-				{ "text": "劉語塵: 「先謝過，敢問閣下尊名？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "「行走江湖，姓甚名誰早丟在路上，只有一名號——單步雷。」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「在下劉語塵。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "單步雷: 「劉少俠，如今世上語魅橫行、邪典四起，\n你千里迢迢來到此地，想必也是有所求？」", "speaker": speaker_id },
-				{ "text": "劉語塵: 「（心頭一震，隨即鎮定）單兄好眼力，\n在下此行乃為尋左飲，想問他一物的下落。」", "speaker": 2 },
-				{ "text": "劉語塵: 「還是說單兄鏢路縱橫、見識廣博，或可向您請教？」", "speaker": 2 },
-				{ "text": "單步雷: 「（抿一口茶）我們幹這行的，知道的多，\n不能說的更多。尋物找人之事，問不得。」", "speaker": speaker_id },
-				{ "text": "單步雷: 「許多事無可奉告，還請少俠見諒。」", "speaker": speaker_id },
-				{ "text": "劉語塵: 「（唉，果然鏢局最大的特點就是守口如瓶，\n哪有那麼容易問到情報的）」", "speaker": 2 },
-				{ "text": "劉語塵: 「單兄，敝人一時莽撞，讓您難為了，還望見諒。」", "speaker": 2 },
-				{ "text": "單步雷: 「別見外，江湖上像你這般有禮的人，不多見了。\n哪像我，講話粗、脾氣直。往日遇不平事，向來先亮嗓子，\n再亮拳頭。」", "speaker": speaker_id },
-				{ "text": "單步雷: 「可來這鎮子，一張口就像被誰從喉頭按住。」", "speaker": speaker_id },
-				{ "text": "單步雷: 「（望向遠方，聲音極輕）就像那時候……\n也是這樣的聲音……」", "speaker": speaker_id },
-				{ "text": "劉語塵: 「那時候？」", "speaker": 2 },
-				{ "text": "單步雷: 「（微微一怔，回神一笑）唉，不足掛齒的往事，\n不提也罷。」", "speaker": speaker_id },
-				{ "text": "單步雷: 「（語氣平靜，卻透出一絲難掩的悲意）怒能護人，\n也能傷人。可若連怒都壓著，我還護得了誰？」", "speaker": speaker_id },
-				{ "text": "單步雷: 「抱歉啦劉少俠，我這茶喝多了，提神過了頭，今日便\n先到這。來日有緣，再敘。」", "speaker": speaker_id },
-				{ "text": "劉語塵: 「(看來單兄果然十分在意這琴聲…)」", "speaker": 2 },
-				{ "text": "劉語塵: 「也好，來日方長。到時若再見面，換我請您一壺酒。」", "speaker": 2 }
+				{ "text": "一名鏢師坐於茶坊最深處，長身影落，氣息沉穩。他抬眼望向你。", "speaker": 0,"portrait": "res://assets/sprites/empty.png" },
+				{ "text": "劉語塵：「（心想）這名鏢師就這樣默默坐在角落，他看起來不像是本地人。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "正當你準備開口搭話時，鏢師搶先一步出聲。", "speaker": 0,"portrait": "res://assets/sprites/empty.png" },
+				{ "text": "單步雷：「少俠，既來此處，不若共飲一盞。這茶坊人多，話可輕，心難動。」", "speaker": speaker_id,"portrait": portrait_path },
+				{ "text": "你在他對面坐下，他為你斟了一盞茶，未多言。", "speaker": 0,"portrait": "res://assets/sprites/empty.png" },
+				{ "text": "單步雷：「這茶不濃，但回甘。然而這鎮子，靜得太深，反倒讓人提不起氣。」", "speaker": speaker_id,"portrait": portrait_path },
+				{ "text": "劉語塵：「先謝過，敢問閣下尊名？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "單步雷：「行走江湖，姓甚名誰早丟在路上，只有一名號——單步雷。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "劉語塵：「在下劉語塵。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "單步雷：「劉少俠，如今世上語魅橫行、邪典四起，你千里迢迢來到此地，想必也是有所求？」", "speaker": speaker_id},
+				{ "text": "劉語塵：「（心頭一震，隨即鎮定）單兄好眼力，在下此行乃為尋左飲，想問他一物的下落。」", "speaker": 2},
+				{ "text": "劉語塵：「還是說單兄鏢路縱橫、見識廣博，或可向您請教？」", "speaker": 2},
+				{ "text": "單步雷：「（抿一口茶）我們幹這行的，知道的多，不能說的更多。尋物找人之事，問不得。」", "speaker": speaker_id},
+				{ "text": "單步雷：「許多事無可奉告，還請少俠見諒。」", "speaker": speaker_id},
+				{ "text": "劉語塵：「（心想）唉，果然鏢局最大的特點就是守口如瓶，哪有那麼容易問到情報的。」", "speaker": 2},
+				{ "text": "劉語塵：「單兄，敝人一時莽撞，讓您難為了，還望見諒。」", "speaker": 2},
+				{ "text": "單步雷：「別見外，江湖上像你這般有禮的人，不多見了。哪像我，講話粗、脾氣直。往日遇不平事，向來先亮嗓子，再亮拳頭。」", "speaker": speaker_id},
+				{ "text": "單步雷：「可來這鎮子，一張口就像被誰從喉頭按住。」", "speaker": speaker_id},
+				{ "text": "單步雷：「（望向遠方，聲音極輕）就像那時候……也是這樣的聲音……」", "speaker": speaker_id},
+				{ "text": "劉語塵：「那時候？」", "speaker": 2},
+				{ "text": "單步雷：「（微微一怔，回神一笑）唉，不足掛齒的往事，不提也罷。」", "speaker": speaker_id},
+				{ "text": "單步雷：「（語氣平靜，卻透出一絲難掩的悲意）怒能護人，也能傷人。可若連怒都壓著，我還護得了誰？」", "speaker": speaker_id},
+				{ "text": "單步雷：「抱歉啦劉少俠，我這茶喝多了，提神過了頭，今日便先到這。來日有緣，再敘。」", "speaker": speaker_id},
+				{ "text": "劉語塵：「（心想）看來單兄果然十分在意這琴聲……」", "speaker": 2},
+				{ "text": "劉語塵：「也好，來日方長。到時若再見面，換我請您一壺酒。」", "speaker": 2}
 		]
 
 	# 循環簡版（章一內）
 	if main_stage <= 2:
 		if observed and heard_qin:
 			return [
-				{ "text": "「少俠來日有緣，再敘。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "單步雷：「少俠來日有緣，再敘。」", "speaker": speaker_id, "portrait": portrait_path },
 			]
 		else:
-			return [ { "text": "「少俠來日有緣，再敘。」", "speaker": speaker_id, "portrait": portrait_path } ]
+			return [ { "text": "單步雷：「少俠來日有緣，再敘。」", "speaker": speaker_id, "portrait": portrait_path } ]
 
-	return [ { "text": "「江湖一路，人各有難言。」", "speaker": speaker_id, "portrait": portrait_path } ]
+	return [ { "text": "單步雷：「江湖一路，人各有難言。」", "speaker": speaker_id, "portrait": portrait_path } ]
 
 func _process(delta):
 	z_index = int(global_position.y + z_index_offset)
@@ -168,7 +168,7 @@ func _choose_chat() -> void:
 func _choose_spar() -> void:
 	dialog_manager.choice_box.hide_choices()
 	var lines := [
-		{ "text": "單步雷: 「劉少俠，若願切磋，單某奉陪到底。點到為止。」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "單步雷：「劉少俠，若願切磋，單某奉陪到底。點到為止。」", "speaker": speaker_id, "portrait": portrait_path },
 	]
 	dialog_manager.show_dialog_sequence(lines, self)
 	await dialog_manager.dialog_finished

@@ -24,7 +24,10 @@ extends CharacterBody2D
 var dialog_manager: Node = null
 var can_interact := false
 var is_talking := false
+const TeaHouseNightDialog = preload("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_house_night_dialog.gd")
+
 var player: Node = null
+var _first_talk_mode := false
 
 # ------------------------------------------------------------
 # Flags
@@ -74,8 +77,6 @@ func _process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not can_interact:
 		return
-	if not _is_first_talk_available():
-		return
 	if dialog_manager == null:
 		return
 	if dialog_manager.dialog_active:
@@ -85,11 +86,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
 		return
 
+	# 首次長劇情做完以後仍可互動：只播短對白，不重發銅釦、不推進主線。
+	_first_talk_mode = _is_first_talk_available()
+	if not _first_talk_mode and not (GlobalState.get_flag(F_HUIYIN_FIRST_TALK_DONE) and GlobalState.get_flag(F_GOT_HALF_STRING_BUTTON)):
+		return
+
 	is_talking = true
 
 	player = get_node_or_null("/root/GameRoot/LiuYu")
 	if player:
 		player.set("can_move", false)
+
+	if not _first_talk_mode:
+		dialog_manager.show_dialog_sequence(_build_revisit_lines(), self)
+		return
 
 
 	_clear_pending_actions()
@@ -109,12 +119,21 @@ func reset_dialog_state() -> void:
 
 
 func _complete_first_talk_after_dialog_closed() -> void:
-	_apply_pending_actions()
-	_clear_pending_actions()
+	# 只有首次長劇情才發銅釦、落旗、推進主線；回訪對話結束只要把互動還給玩家。
+	if _first_talk_mode:
+		_apply_pending_actions()
+		_clear_pending_actions()
+		_first_talk_mode = false
 	is_talking = false
 
-	# 同一個紅徽音角色留在場景中；事件完成後只停用這次一次性主線互動。
-	can_interact = false
+
+## 首次劇情之後的回訪（夜晚只有 04：「拜託你了，少俠。」）。白天 05／06 的回訪在 Hong_huei_yin.gd。
+func _build_revisit_lines() -> Array:
+	# 夜晚只有 04。會談完成後劇情直接切到翌日白天，夜晚不存在 05／06；碰到就當異常狀態，安全處理。
+	if GlobalState.get_flag(TeaHouseNightDialog.F_NIGHT_MEETING_DONE) or TeaHouseNightDialog.is_stage_06():
+		push_warning("[紅徽音] 會談完成後仍在夜晚茶坊（異常旗標或場景直入），改用安全旁白。")
+		return TeaHouseNightDialog.huiyin_revisit_abnormal_night(empty_portrait_path)
+	return TeaHouseNightDialog.huiyin_revisit_04(speaker_id, portrait_path, empty_portrait_path)
 
 
 # ------------------------------------------------------------
@@ -125,11 +144,11 @@ func _build_huiyin_first_talk_lines() -> Array:
 
 	lines.append_array([
 		_n("醉月茶坊內燈火低垂，客人稀少。"),
-		_n("彈琴女伶仍坐於琴旁，琴弦在她指下微微震動。"),
+		_n("紅衣女伶仍坐於琴旁，琴弦在她指下微微震動。"),
 		_n("她沒有立刻抬頭，像是剛剛那段弦外之音耗去了不少心力。"),
 		_l("你來了。", unknown_speaker_id, portrait_path),
 		_l("我聽見你了。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("彈琴女伶指尖仍按在琴弦上。"),
+		_n("紅衣女伶指尖仍按在琴弦上。"),
 		_n("那不像彈奏，更像在壓住一口不能散的氣。"),
 		_l("劉語塵。", unknown_speaker_id, portrait_path),
 		_l("姑娘識得在下？", liuyu_speaker_id, liuyu_portrait_path),
@@ -169,7 +188,7 @@ func _build_huiyin_first_talk_lines() -> Array:
 		_l("嗯。", speaker_id, portrait_path),
 		_l("左飲的刀越走越遠。", speaker_id, portrait_path),
 		_l("而書眠的詩……越來越少得到回聲。", speaker_id, portrait_path),
-		_n("劉語塵想起《銀屏語》的封底空白。"),
+		_n("你想起《銀屏語》的封底空白。"),
 		_n("那片空白不是未完，而是等待回聲。"),
 		_l("我的琴讓語魅無法輕易誕生。", speaker_id, portrait_path),
 		_l("卻也讓大家越來越難真正說出心裡的話。", speaker_id, portrait_path),
@@ -277,7 +296,7 @@ func _build_request_and_key_lines() -> Array:
 		_n("紅徽音從琴旁取出一枚半月形銅釦。"),
 		_n("銅釦邊緣刻著細細弦紋，映著燈火時，像半截未續完的月。"),
 		_n("她沒有立刻遞出。"),
-		_n("那一瞬間，劉語塵看得出來——這不是普通鑰匙。"),
+		_n("那一瞬間，你看得出來——這不是普通鑰匙。"),
 		_l("拿著這個。", speaker_id, portrait_path),
 		_l("這是？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("半弦銅釦。", speaker_id, portrait_path),
@@ -286,7 +305,7 @@ func _build_request_and_key_lines() -> Array:
 		_l("因為今日以前，你只是聽見琴聲。", speaker_id, portrait_path),
 		_l("現在，你聽見了弦外的話。", speaker_id, portrait_path),
 		_n("銅釦落入掌心時，冰涼微震。"),
-		_n("像有一根很細的弦，在他手裡應了一聲。"),
+		_n("像有一根很細的弦，在你手裡應了一聲。"),
 		_l("到茶坊後巷的井旁，找一塊刻著半枚月紋的石磚。", speaker_id, portrait_path),
 		_l("將銅釦按入月紋缺口，井下的路便會開。", speaker_id, portrait_path),
 		_l("機關？", liuyu_speaker_id, liuyu_portrait_path),
@@ -298,8 +317,8 @@ func _build_request_and_key_lines() -> Array:
 		_l("若聽見有人喚你的名字，不要立刻答應。", speaker_id, portrait_path),
 		_l("語魅？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("也可能是你自己。", speaker_id, portrait_path),
-		_n("劉語塵沒有立刻回話。"),
-		_n("他將半弦銅釦收入懷中，忽然想起《銀屏語》最後那片空白。"),
+		_n("你沒有立刻回話。"),
+		_n("你將半弦銅釦收入懷中，忽然想起《銀屏語》最後那片空白。"),
 		_n("地下若真有聲音等著他，未必每一道聲音都該回答。"),
 		_l("語塵。", speaker_id, portrait_path),
 		_l("嗯？", liuyu_speaker_id, liuyu_portrait_path),
@@ -390,9 +409,18 @@ func _advance_main_quest_after_button_grant() -> void:
 # ------------------------------------------------------------
 # Dialog helpers
 # ------------------------------------------------------------
+## 角色發話：把「名稱：「」」直接寫進文字（姓名欄是停用的）。
+## 紅徽音彈琴時不能開口，所有話都是琴音傳心；報出名字前稱「紅衣女伶」，之後才稱「紅徽音」。
 func _l(text: String, speaker: int, portrait: String = "") -> Dictionary:
+	var spoken := text
+	if speaker == liuyu_speaker_id:
+		spoken = "劉語塵：「%s」" % text
+	elif speaker == unknown_speaker_id:
+		spoken = "紅衣女伶：「（琴音）%s」" % text
+	elif speaker == self.speaker_id:
+		spoken = "紅徽音：「（琴音）%s」" % text
 	return {
-		"text": text,
+		"text": spoken,
 		"speaker": speaker,
 		"portrait": portrait if portrait != "" else empty_portrait_path,
 	}

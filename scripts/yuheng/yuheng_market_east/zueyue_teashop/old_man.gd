@@ -36,7 +36,7 @@ func _ready():
 	previous_position = global_position
 
 	dialog_lines = [
-		{ "text": "「別打擾我聽琴」", "speaker": speaker_id, "portrait": portrait_path },
+		{ "text": "老者：「別打擾我聽琴。」", "speaker": speaker_id, "portrait": portrait_path },
 	]
 
 func _process(delta):

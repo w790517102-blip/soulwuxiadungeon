@@ -3,6 +3,8 @@ extends CanvasLayer
 signal dialog_sequence_finished(npc_node)
 signal dialog_finished  # ✅ 新增這行
 
+const DialogTextLayout = preload("res://scripts/DialogTextLayout.gd")
+
 const NARRATION_SPEAKER_ID := 0
 const LIUYU_SPEAKER_ID := 2
 
@@ -134,7 +136,7 @@ func show_synchronized_dialog_pair(lines: Array, npc_node: Node2D = null) -> voi
 ## 文字區：對話框內、頭像以外的範圍，文字自動換行在這裡面，不會超出框，也不會蓋到頭像。
 ## 上方欄（旁白與其他角色）頭像在右邊，文字從左邊起；下方欄（劉語塵）頭像在左邊，文字從頭像右邊起。
 const TEXT_SIDE_PADDING := 61.0
-const TEXT_PORTRAIT_GAP := 24.0
+const TEXT_PORTRAIT_GAP := 10.0
 const TEXT_MIN_WIDTH := 160.0
 var _label_home_x: Dictionary = {}
 
@@ -170,7 +172,7 @@ func _configure_synchronized_dialog_lane(
 	headshot.visible = false
 	var portrait_path: String = str(line_data.get("portrait", ""))
 	if portrait_path != "":
-		headshot.texture = load(portrait_path)
+		headshot.texture = load(portrait_path) if ResourceLoader.exists(portrait_path) else null
 		headshot.visible = headshot.texture != null
 	_fit_label_to_lane(dialog_box as Control, headshot, label, dialog_box == dialog_box_1)
 	dialog_box.visible = true
@@ -197,7 +199,7 @@ func _play_dialog_sequence():
 			var speaker = line_data.get("speaker", 1)
 			var portrait = line_data.get("portrait", "")
 			var speaker_name = line_data.get("speaker_name", "")
-			await _head_dialog(text, portrait, speaker, speaker_name)
+			await _head_dialog(text, portrait, speaker, speaker_name, str(line_data.get("layout", "")) == "raw")
 			await _wait_for_continue()
 		else:
 			await _head_dialog(str(line_data), current_portrait, current_speaker)
@@ -207,7 +209,8 @@ func _head_dialog(
 	text: String,
 	portrait_path: String,
 	speaker: int,
-	speaker_name: String = ""
+	speaker_name: String = "",
+	raw_layout: bool = false
 ) -> void:
 	# speaker 保留角色／旁白語意；UI lane 只由共用規則決定：
 	# 0 = 旁白（上方、無頭像），2 = 劉語塵（下方），其餘對話角色 = 上方。
@@ -229,7 +232,7 @@ func _head_dialog(
 	headshot.texture = null
 	headshot.visible = false
 	if not is_narration and portrait_path != "":
-		headshot.texture = load(portrait_path)
+		headshot.texture = load(portrait_path) if ResourceLoader.exists(portrait_path) else null
 		headshot.visible = headshot.texture != null
 	_fit_label_to_lane(dialog_box as Control, headshot, label, uses_top_lane)
 
@@ -242,19 +245,27 @@ func _head_dialog(
 	tween.tween_property(headshot, "modulate:a", 1.0, 0.1)
 	await tween.finished
 
-	is_typing = true
-	skip_typing = false
+	# 依這一欄實際的文字寬度排版（詩詞／自帶換行的台詞原樣保留）；太長就拆成相鄰頁。
+	var pages: Array = [text]
+	if not raw_layout:
+		var measurer := DialogTextLayout.Measurer.new(label.get_theme_font("font"), label.get_theme_font_size("font_size"))
+		pages = DialogTextLayout.layout_pages(text, measurer, label.custom_minimum_size.x)
 
-	for i in text.length():
-		if skip_typing:
-			label.text = text
-			break
-		label.text += text[i]
-		await get_tree().create_timer(0.03).timeout
-
-	label.text = text
-	is_typing = false
-	waiting_for_close = true
+	for page_index in pages.size():
+		var page: String = pages[page_index]
+		label.text = ""
+		is_typing = true
+		skip_typing = false
+		for i in page.length():
+			if skip_typing:
+				break
+			label.text += page[i]
+			await get_tree().create_timer(0.03).timeout
+		label.text = page
+		is_typing = false
+		waiting_for_close = true
+		if page_index < pages.size() - 1:
+			await _wait_for_continue()
 
 func _wait_for_continue():
 	continue_emitted = false

@@ -23,12 +23,12 @@ func _on_player_entered(body):
 	player.animated_sprite.play(player.get_idle_anim_name(Vector2(1, 1)))
 	await get_tree().create_timer(1.5).timeout
 	dialog_manager.show_dialog_sequence([
-		{ "text": "…", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "這琴聲!果然是從這裡傳出的。", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "鎮上的情緒……被它壓得很穩。", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "不只是音律技藝，而是一種封印——將話、情緒、甚至靈魂……\n壓入音中。", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "這琴功…不,是內功爐火純青,才能讓做到壓制整個玉衡鎮的人,\n心卻絲毫不紊亂的境界", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "但我總覺得有什麼東西，被壓在那旋律裡更深的地方…", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "你駐足聽了片刻，沒有出聲。", "speaker": 0 },
+		{ "text": "劉語塵：「（心想）這琴聲！果然是從這裡傳出的。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（心想）鎮上的情緒……被它壓得很穩。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（心想）不只是音律技藝，而是一種封印——將話、情緒、甚至靈魂……壓入音中。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（心想）這琴功……不，是內功爐火純青，才能做到壓制整個玉衡鎮的人，心卻絲毫不紊亂的境界。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（心想）但我總覺得有什麼東西，被壓在那旋律裡更深的地方……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 	])
 	await dialog_manager.dialog_sequence_finished
 
