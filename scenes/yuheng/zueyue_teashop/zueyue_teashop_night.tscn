@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=4 uid="uid://dv0dube88vlil"]
+[gd_scene load_steps=32 format=4 uid="uid://dv0dube88vlil"]
 
 [ext_resource type="Script" uid="uid://c8axqlwl8cdr6" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/zueyue_tea_shop_night.gd" id="1_fawur"]
 [ext_resource type="Texture2D" uid="uid://bpboo4jtbny1l" path="res://assets/background/Yuheng_Town/yuheng_market_east/zue_yue_teashop/ZueYue_teashop.jpg" id="2_g7ec4"]
@@ -25,6 +25,7 @@
 [ext_resource type="PackedScene" uid="uid://dduaamdu6fajx" path="res://scenes/yuheng/zueyue_teashop/tea_shop_servant.tscn" id="22_y8ffu"]
 [ext_resource type="Script" uid="uid://byugj41smggx3" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_customer_a.gd" id="23_pmca3"]
 [ext_resource type="PackedScene" uid="uid://dfxafo1pvt251" path="res://scenes/yuheng/zueyue_teashop/tea_customer_d.tscn" id="24_a3804"]
+[ext_resource type="Script" uid="uid://cre7ljeujcvm8" path="res://scripts/interaction/InteractionTarget.gd" id="interaction_target_script"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_uklh6"]
 texture = ExtResource("2_g7ec4")
@@ -10336,11 +10337,34 @@ offset_right = 1292.0
 offset_bottom = 896.14
 color = Color(0, 0, 0, 1)
 
+[node name="InteractionZones" type="Node2D" parent="."]
+
+[node name="exit_market_east" type="Node2D" parent="InteractionZones"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "離開茶坊"
+cursor_kind = "exit"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-517.0, -333.4, -382.0, -247.7, -388.9, -13.2, -238.2, -80.2, -238.2, -494.0, -510.1, -494.0)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-388.9, -13.2, -238.2, -80.2, -159.4, -71.3, -364.3, 72.5, -374.2, 26.2)
+
 [node name="Hong_Huei_Yin" parent="." instance=ExtResource("4_pmca3")]
 position = Vector2(306, -43.795)
 rotation = 0.153589
 scale = Vector2(0.8, 0.8)
 script = ExtResource("5_pmca3")
+
+[node name="InteractionTarget" type="Node2D" parent="Hong_Huei_Yin"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "鴻輝胤"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-70.7, -156.1, 66.8, -177.4, 89.8, -28.9, -47.7, -7.6)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(-81.0, -118.4, 224.7, -11.2, 225.4, 114.6, -72.5, 162.0, -177.1, 26.1)
 
 [node name="object" type="Node2D" parent="."]
 
@@ -10414,6 +10438,16 @@ position = Vector2(-8, -224.86)
 scale = Vector2(0.89, 0.89)
 script = ExtResource("21_d5bnf")
 shop_id = "zueyue_teashop"
+
+[node name="InteractionTarget" type="Node2D" parent="tea_shop_keeper"]
+script = ExtResource("interaction_target_script")
+mode = 2
+display_name = "茶坊掌櫃"
+interaction_radius = 0.0
+hover_margin = 2.0
+selection_polygon = PackedVector2Array(-31.7, -53.4, 61.3, -53.4, 61.3, 49.6, -31.7, 49.6)
+use_sprite_feet = false
+zone_polygon = PackedVector2Array(36.9, -68.8, 247.3, 48.5, -21.7, 266.6, -166.8, 170.3)
 
 [node name="tea_shop_servant" parent="." instance=ExtResource("22_y8ffu")]
 position = Vector2(91, -82.945)
