@@ -95,6 +95,7 @@ static func _compute_runtime_effects(force: Dictionary, actor: Dictionary = {}) 
 		"accuracy": int(force.get("accuracy_flat_bonus", 0)),
 		"def": int(force.get("def_flat_bonus", 0)),
 		"max_mp": int(force.get("max_mp_flat_bonus", 0)),
+		"max_mp_pct": float(force.get("max_mp_pct_bonus", 0.0)),
 		"weapon_accuracy_flat_bonus": int(force.get("weapon_accuracy_flat_bonus", 0)),
 		"weapon_damage_pct_bonus": float(force.get("boost_damage_pct", 0.0)),
 		"boost_weapon": String(force.get("boost_weapon", "")),
@@ -149,6 +150,9 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 	var max_mp_bonus := int(effects.get("max_mp", 0))
 	if max_mp_bonus != 0:
 		parts.append("最大 MP %+d" % max_mp_bonus)
+	var max_mp_pct := float(effects.get("max_mp_pct", 0.0))
+	if max_mp_pct != 0.0:
+		parts.append("最大 MP %+d%%" % int(round(max_mp_pct * 100.0)))
 	var boost_weapon := String(effects.get("boost_weapon", ""))
 	var weapon_acc_bonus := int(effects.get("weapon_accuracy_flat_bonus", 0))
 	if boost_weapon != "" and weapon_acc_bonus != 0:
@@ -244,7 +248,7 @@ static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -
 		tokens.append("命中上升")
 	if int(effects.get("def", 0)) != 0:
 		tokens.append("防禦上升")
-	if int(effects.get("max_mp", 0)) != 0:
+	if int(effects.get("max_mp", 0)) != 0 or float(effects.get("max_mp_pct", 0.0)) > 0.0:
 		tokens.append("最大 MP 提升")
 	var boost_weapon := String(effects.get("boost_weapon", ""))
 	if boost_weapon != "" and int(effects.get("weapon_accuracy_flat_bonus", 0)) != 0:
@@ -389,10 +393,10 @@ const INNER_FORCES := {
 		"description": "沉氣如潮伏於深處，不迎其鋒，不逐其退。先定身勢，再循敵勢尋隙而發。",
 		"available": "all",
 		"required_weapon_aptitude": "槍",
-		"str_flat_bonus": 3,
-		"con_flat_bonus": 2,
+		"str_flat_bonus": 6,
+		"con_flat_bonus": 4,
 		"accuracy_flat_bonus": 4,
-		"max_mp_flat_bonus": 6,
+		"max_mp_pct_bonus": 0.10,
 		"skill_mp_cost_multiplier_by_weapon": {"槍": 0.90},
 	},
 	"qingqu_gongyin": {

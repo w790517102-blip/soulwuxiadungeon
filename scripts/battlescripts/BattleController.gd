@@ -1134,6 +1134,9 @@ func _compute_inner_force_runtime_bonus(actor: Dictionary, force: Dictionary) ->
 	var int_ratio := float(force.get("max_mp_from_int_ratio", 0.0))
 	if int_ratio != 0.0:
 		bonus["max_mp"] += int(floor(float(int(actor.get("int", 0))) * int_ratio))
+	var max_mp_pct := float(force.get("max_mp_pct_bonus", 0.0))
+	if max_mp_pct != 0.0:
+		bonus["max_mp"] += int(round(float(_runtime_stat_base(actor, "max_mp", 0)) * max_mp_pct))
 	var force_element := String(force.get("element", ""))
 	var base_speed := _runtime_stat_base(actor, "speed", 0)
 	var base_def := _runtime_stat_base(actor, "def", 0)

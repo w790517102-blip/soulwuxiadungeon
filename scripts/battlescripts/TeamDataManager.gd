@@ -33,6 +33,14 @@ const SHUMIAN_INITIAL_SKILL_IDS := [
 	"skill_zhengxinquan",
 	"skill_substitute_talisman",
 ]
+## 4b55eba 之前的測試版白書眠招式清單（含各種 *_test 招式）。定版後的起始配置以鐘乳石洞 BOSS 戰那張卡為準（SHUMIAN_INITIAL_SKILL_IDS），
+## 這份只用來把舊存檔留下的測試招式清掉：不在起始配置、也不是玩家之後真的學到（acquired_skill_manual_ids）的才會被移除。
+## 這不是「白書眠只能有這幾招」——之後正式學到的招式不受影響。
+const SHUMIAN_LEGACY_TEST_SKILL_IDS := [
+	"skill_bisaoyanxia", "skill_buff_speed_test", "skill_qihui_talisman", "skill_jufu_talisman",
+	"skill_linfu_ranfeng", "skill_linfu_guyuan", "skill_linfu_jiying", "skill_linfu_zhuangli",
+	"skill_debuff_speed_test", "skill_force_element_test", "skill_hawkeye_focus", "skill_inkveil_swiftroute",
+]
 
 # === 所有可用角色（包含未上場） ===
 var all_characters: Dictionary = {
@@ -190,6 +198,12 @@ func ensure_shumian_story_join_level() -> bool:
 		var next_exp_cap := exp_required(int(actor.get("level", 1))) - 1
 		actor["exp"] = clampi(int(actor.get("exp", 0)), 0, next_exp_cap)
 		all_characters[actor_id] = actor
+		changed = true
+	# 舊存檔留下的測試版招式清單：清掉（定版配置以鐘乳石洞那張卡為準）
+	var known_before: Array = get_known_skill_ids(actor_id)
+	var cleaned := _without_shumian_legacy_test_skills(known_before)
+	if cleaned.size() != known_before.size():
+		known_skill_ids_by_actor[actor_id] = cleaned
 		changed = true
 	# 序章就該會的起始武學（只補缺的）
 	var known := get_known_skill_ids(actor_id)
@@ -870,6 +884,8 @@ func _normalize_known_skills() -> void:
 			if not _skill_db.is_available_for_actor(skill_id, String(actor_id)):
 				continue
 			normalized.append(skill_id)
+		if String(actor_id) == "shumian":
+			normalized = _without_shumian_legacy_test_skills(normalized)
 		if String(actor_id) == "liuyu":
 			for innate_id: String in LIUYU_INNATE_SKILL_IDS:
 				if not normalized.has(innate_id):
@@ -877,6 +893,16 @@ func _normalize_known_skills() -> void:
 		if normalized.is_empty():
 			normalized = _get_default_skill_ids_for_actor(String(actor_id))
 		known_skill_ids_by_actor[String(actor_id)] = normalized
+
+func _without_shumian_legacy_test_skills(ids: Array) -> Array:
+	var out: Array = []
+	for raw_id in ids:
+		var skill_id := String(raw_id)
+		var legacy: bool = SHUMIAN_LEGACY_TEST_SKILL_IDS.has(skill_id) and not SHUMIAN_INITIAL_SKILL_IDS.has(skill_id)
+		if legacy and not acquired_skill_manual_ids.has(skill_id):
+			continue
+		out.append(skill_id)
+	return out
 
 func _normalize_manual_knowledge() -> void:
 	var normalized_skills: Array = []
@@ -1202,7 +1228,8 @@ func _apply_inner_force_runtime_stats(actor: Dictionary, force: Dictionary) -> v
 	var effective_luck := int(actor.get("luck", 0))
 
 	actor["max_hp"] = max(1, int(round(float(actor.get("base_max_hp", actor.get("max_hp", 1))) * (1.0 + float(max(0, effective_con)) * 0.01))) + int(runtime_effects.get("max_hp", 0)))
-	actor["max_mp"] = max(0, int(round(float(actor.get("base_max_mp", actor.get("max_mp", 0))) * (1.0 + float(max(0, effective_int)) * 0.01))) + int(runtime_effects.get("max_mp", 0)))
+	var max_mp_multiplier := 1.0 + float(max(0, effective_int)) * 0.01 + float(runtime_effects.get("max_mp_pct", 0.0))
+	actor["max_mp"] = max(0, int(round(float(actor.get("base_max_mp", actor.get("max_mp", 0))) * max_mp_multiplier)) + int(runtime_effects.get("max_mp", 0)))
 	actor["atk"] = max(0, int(actor.get("base_atk", actor.get("atk", 0))) + int(floor(float(effective_str) * 1.2)) + int(runtime_effects.get("atk", 0)))
 	actor["def"] = max(0, int(actor.get("base_def", actor.get("def", 0))) + int(floor(float(effective_con) * 0.8)) + int(runtime_effects.get("def", 0)))
 	actor["speed"] = max(0, int(actor.get("base_speed", actor.get("speed", 0))) + effective_agi + int(runtime_effects.get("speed", 0)))
