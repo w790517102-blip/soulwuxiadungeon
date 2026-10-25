@@ -59,7 +59,7 @@ display_name = "下井"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(72.8, 84.9, 123.6, 50.7, 160.8, 94.7, 152.0, 125.0, 124.6, 139.7, 67.9, 113.3)
+selection_polygon = PackedVector2Array(67.9, 86.9, 150.5, 123.1, 91.8, 166.1, 39.5, 151.4, 15.1, 121.6)
 use_sprite_feet = false
 zone_polygon = PackedVector2Array(58.1, 84.9, 176.4, 102.5, 184.2, 155.3, 107.0, 176.8, 33.7, 130.9)
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=4 uid="uid://dmi8hpwcdcytp"]
+[gd_scene load_steps=10 format=4 uid="uid://dmi8hpwcdcytp"]
 
 [ext_resource type="Texture2D" uid="uid://cl6wfukos84h6" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_old_well.jpg" id="1_l5eqk"]
 [ext_resource type="Script" uid="uid://bsb1cqegj0g5e" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_old_well.gd" id="1_w0bky"]
@@ -6129,12 +6129,12 @@ texture = ExtResource("3_qs0be")
 [node name="WellBarrier" type="StaticBody2D" parent="well_locked"]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="well_locked/WellBarrier"]
-polygon = PackedVector2Array(192.1, 7.7, 111.0, 62.4, 75.8, 84.9, 70.9, 113.3, 127.6, 139.7, 155.0, 125.0)
+polygon = PackedVector2Array(192.1, 7.7, 111, 62.4, 75.8, 84.9, 70.9, 113.3, 127.6, 139.7, 155, 125)
 
 [node name="WellBody" type="StaticBody2D" parent="."]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="WellBody"]
-polygon = PackedVector2Array(163.8, 94.7, 197.0, 89.8, 235.1, 57.6, 281.1, 60.5, 283.1, 40.0, 240.0, 40.0, 204.8, -8.9, 147.1, -25.6, 92.4, -17.7, 42.5, 15.5, 38.6, 40.9, 75.8, 84.9, 126.6, 50.7)
+polygon = PackedVector2Array(163.8, 94.7, 197, 89.8, 235.1, 57.6, 281.1, 60.5, 283.1, 40, 240, 40, 204.8, -8.9, 147.1, -25.6, 92.4, -17.7, 42.5, 15.5, 38.6, 40.9, 75.8, 84.9, 126.6, 50.7)
 
 [node name="InteractionZones" type="Node2D" parent="."]
 
@@ -6147,7 +6147,7 @@ interaction_radius = 0.0
 hover_margin = 2.0
 selection_polygon = PackedVector2Array(-215.6, 421.3, -164.8, 356.8, -28.9, 358.7, -34.7, 418.4)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(-285.0, 407.6, -215.6, 325.5, -103.2, 274.6, -24.9, 275.6, 43.5, 341.1, 52.3, 414.4)
+zone_polygon = PackedVector2Array(-285, 407.6, -215.6, 325.5, -103.2, 274.6, -24.9, 275.6, 43.5, 341.1, 52.3, 414.4)
 
 [node name="sewer_entrance" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
@@ -6156,9 +6156,9 @@ display_name = "下井"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(75.8, 84.9, 126.6, 50.7, 163.8, 94.7, 155.0, 125.0, 127.6, 139.7, 70.9, 113.3)
+selection_polygon = PackedVector2Array(70.9, 86.9, 153.5, 123.1, 94.8, 166.1, 42.5, 151.4, 18.1, 121.6)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(61.1, 84.9, 179.4, 102.5, 187.2, 155.3, 110.0, 176.8, 36.7, 130.9)
+zone_polygon = PackedVector2Array(61.1, 84.9, 179.4, 102.5, 187.2, 155.3, 110, 176.8, 36.7, 130.9)
 
 [node name="well_keyhole" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
