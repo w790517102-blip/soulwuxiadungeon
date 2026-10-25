@@ -107,11 +107,13 @@ func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 		]
 
 
+const NIGHT_TEASHOP_SCENE_PATH := "res://scenes/yuheng/zueyue_teashop/zueyue_teashop_night.tscn"
+
+
+## 夜晚的醉月茶坊用夜晚的對白（由場景決定，不看主線旗標）；白天的茶坊一律用白天的對白。
 func _is_waiting_for_huiyin_first_talk() -> bool:
-	return (
-		GlobalState.get_flag(F_GO_TO_ZUIYUE_HUIYIN)
-		and not GlobalState.get_flag(F_HUIYIN_FIRST_TALK_DONE)
-	)
+	var scene_root := get_parent()
+	return scene_root != null and scene_root.scene_file_path == NIGHT_TEASHOP_SCENE_PATH
 
 
 func _build_huiyin_call_night_lines() -> Array:
