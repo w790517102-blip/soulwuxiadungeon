@@ -82,9 +82,9 @@ func dialog_sequence_start():
 	var liuyu := get_node("/root/GameRoot/LiuYu")
 	liuyu.can_move = false
 	await dialog_manager.show_dialog_sequence([
-		{ "text": "「這篇《臨風寄影》，依舊是好句……只是配著琴聲讀起來，感覺沒有從前\n那樣澎湃了。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「我記得初次讀她的詩，是在家母病榻前……那句『燈影欲語人未歸』，\n真是讓我……」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "（他輕嘆一聲）「只是現在，琴音日日不歇，情緒都平得像水。要落淚……\n反倒難了。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「這篇《臨風寄影》，依舊是好句……只是配著琴聲讀起來，感覺沒有從前那樣澎湃了。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「我記得初次讀她的詩，是在家母病榻前……那句『燈影欲語人未歸』，真是讓我……」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "（他輕嘆一聲）「只是現在，琴音日日不歇，情緒都平得像水。要落淚……反倒難了。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "（他將手上的詩集遞給你）「喏，你看。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "(你接過了詩集，並仔細閱讀…)" , "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 	], self)

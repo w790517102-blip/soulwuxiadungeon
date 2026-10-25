@@ -55,12 +55,12 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 				{ "text": "「只怕這樣下去會適得其反...」", "speaker": 1, "portrait":  portrait_path },
 				{ "text": "「好比肉要滷得透，也得開蓋散氣。一直悶著，腥味出不去。」", "speaker": 1, "portrait":  portrait_path },
 				{ "text": "「琴聲按住心火是好事，但總得有個口子…」", "speaker": 1, "portrait":  portrait_path },
-				{ "text": "「算了~吃飯事要緊，少俠要不要來點東波肉？江湖路長，多吃點熱食，\n別讓胃餓著。」", "speaker": 1, "portrait":  portrait_path },
+				{ "text": "「算了~吃飯事要緊，少俠要不要來點東波肉？江湖路長，多吃點熱食，別讓胃餓著。」", "speaker": 1, "portrait":  portrait_path },
 	]
 	if main_stage <= 2:
 		if event_market_choice_observe and event_yuheng_market_melody and met:
 			return [
-				{ "text": "「少俠要不要來點東波肉？江湖路長，多吃點熱食\n，別讓胃餓著。」", "speaker": 1, "portrait":  portrait_path },
+				{ "text": "「少俠要不要來點東波肉？江湖路長，多吃點熱食，別讓胃餓著。」", "speaker": 1, "portrait":  portrait_path },
 		]
 		else:
 			return [

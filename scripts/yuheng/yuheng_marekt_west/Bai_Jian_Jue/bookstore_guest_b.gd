@@ -60,7 +60,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		{ "text": "劉語塵：「也就是現在的詩明明能夠道出你們的心聲」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「但你們卻覺得『即使沒有道出心聲也無所謂』，這樣?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「唉…正是如此。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "劉語塵：「那這樣看起來比起此地的來客，更感到更難過應是\n書眠姑娘吧…」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「那這樣看起來比起此地的來客，更感到更難過應是書眠姑娘吧…」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「那種嘔心瀝血寫出作品，卻不被人在乎的那種寂寞感…」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "(慌張地將食指放置自己的嘴巴前)「噓!小聲點!」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「講這麼大聲要是傷到人家小姑娘的心就不好了!」", "speaker": 1, "portrait": portrait_path },

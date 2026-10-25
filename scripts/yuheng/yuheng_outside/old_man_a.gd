@@ -252,7 +252,7 @@ func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
 		await _play_sequence_and_wait([
 			{ "text": "「停停停！不打了不打了！」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "劉語塵：「前輩，承讓。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-			{ "text": "「承什麼讓？你一個年輕人，提著兵器跟我這手無寸鐵的老人家較勁，\n這叫什麼本事？」",  "speaker": 1, "portrait": portrait_path },
+			{ "text": "「承什麼讓？你一個年輕人，提著兵器跟我這手無寸鐵的老人家較勁，這叫什麼本事？」",  "speaker": 1, "portrait": portrait_path },
 			{ "text": "「沒有武德！太沒有武德了！」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "劉語塵：「(這老人家……是真的輸不起吧。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "「若真有本事，就卸了兵器，空手與我再比一回！」", "speaker": 1, "portrait": portrait_path },

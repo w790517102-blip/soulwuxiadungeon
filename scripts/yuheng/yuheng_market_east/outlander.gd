@@ -104,7 +104,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 
 				{ "text": "「『語魅』可不講分寸。」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "「它只管把情緒硬塞進你心裡，哪怕把話的本意扭得全非。」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-				{ "text": "「譬如有人被附了魅，偏要罵一句：『相由心生，你這副德行，心也不會\n好到哪去！』」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
+				{ "text": "「譬如有人被附了魅，偏要罵一句：『相由心生，你這副德行，心也不會好到哪去！』」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "「其實『相由心生』本意為眾生看待世間一切事物的樣貌皆發自觀者本身\n的內心，這話本是教人修己觀物，莫被外物牽走心神——」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "「到了語魅嘴裡，便只剩挑唆與鄙夷。」", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
 				{ "text": "「再比如有人訴苦：『我總為愛發瘋。』」","speaker": 1, "portrait": "res://assets/sprites/empty.png" },

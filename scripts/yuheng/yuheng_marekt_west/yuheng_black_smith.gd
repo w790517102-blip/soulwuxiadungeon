@@ -48,9 +48,9 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 				
 		{ "text": "(鐵匠抬頭打量了你一番，隨即繼續低頭幹活，並開口說道)", "speaker": speaker_id, "portrait": portrait_path },
 		{ "text": "「別光看刀刃，握柄才是人心。你這手形，功夫不差啊。」", "speaker": speaker_id, "portrait": portrait_path },
-		{ "text": "劉語塵:「過獎。為了行走江湖，練了幾招花拳繡腿防身，\n不足掛齒。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵:「過獎。為了行走江湖，練了幾招花拳繡腿防身，不足掛齒。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵:「對了，左飲的兵器也是在這兒鑄的嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「左飲啊，他那把……可不是凡鐵能鑄的。我見過一眼，不像是人\n手打出來的。」", "speaker": speaker_id },
+		{ "text": "「左飲啊，他那把……可不是凡鐵能鑄的。我見過一眼，不像是人手打出來的。」", "speaker": speaker_id },
 		{ "text": "劉語塵:「非鑄之劍？此話怎講？」", "speaker": 2 },
 		{ "text": "「有回他醉倒在我這門口，盤纏撒了一地。我好心扶他進屋歇息，\n順手幫他收東西。」", "speaker": speaker_id },
 		{ "text": "「那時我才發現——他那劍，竟只裹了塊舊布。」", "speaker": speaker_id },
@@ -59,7 +59,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		{ "text": "「更怪的是，我這鐵爐連鎮石都能熔，他那劍一靠近，爐溫硬生生\n掉了三成……詭得很。」", "speaker": speaker_id },
 		{ "text": "「後來他醒了，只朝我抱拳致謝，轉身就走。我問他那劍哪來的……」", "speaker": speaker_id },
 		{ "text": "「他只是笑笑，沒說話。然後往白箋居的方向看了一眼，就走回山莊去了。」", "speaker": speaker_id },
-		{ "text": "「說起來——少俠若要挑把趁手兵器，左邊就是咱鋪子，自己進去看看\n不必客氣。」", "speaker": speaker_id }
+		{ "text": "「說起來——少俠若要挑把趁手兵器，左邊就是咱鋪子，自己進去看看不必客氣。」", "speaker": speaker_id }
 			]
 	else:
 		return [

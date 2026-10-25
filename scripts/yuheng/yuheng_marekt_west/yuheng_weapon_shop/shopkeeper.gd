@@ -45,7 +45,7 @@ func _unhandled_input(event):
 
 func show_intro_dialog():
 	dialog_lines = [
-		{ "text": "「兵器齊全，價錢公道，歡迎隨意看看——不強買、不強賣，只賣對得起\n這份工的東西。」", "speaker": speaker_id, "portrait": portrait_path }
+		{ "text": "「兵器齊全，價錢公道，歡迎隨意看看——不強買、不強賣，只賣對得起這份工的東西。」", "speaker": speaker_id, "portrait": portrait_path }
 	]
 	dialog_manager.dialog_sequence_finished.connect(_on_intro_finished)
 	dialog_manager.show_dialog_sequence(dialog_lines, self)

@@ -44,18 +44,18 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	# 首見：表／裏語氣分支
 	if not met:
 			return [
-				{ "text": "「你可曾聽過『白箋居』的名號？那是玉衡鎮最負盛名的書墨坊，坊主名喚\n——書眠。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "「你可曾聽過『白箋居』的名號？那是玉衡鎮最負盛名的書墨坊，坊主名喚——書眠。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "「他寫的詩啊……真是讓人熱血澎湃、淚如雨下、五臟六腑都…」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "(正當講得激動到面紅耳赤之時，耳邊忽傳醉月茶坊的琴聲…)", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "「……咳。總之，有空可以撥冗去看看，嗯。著實不錯，真的……\n（眼神游移）」", "speaker": speaker_id },
-				{ "text": "「(低聲嘟噥)奇怪，讀完白箋居的詩集時，內心明明還是澎湃著，\n怎麼現在卻…」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "「……咳。總之，有空可以撥冗去看看，嗯。著實不錯，真的……（眼神游移）」", "speaker": speaker_id },
+				{ "text": "「(低聲嘟噥)奇怪，讀完白箋居的詩集時，內心明明還是澎湃著，怎麼現在卻…」", "speaker": speaker_id, "portrait": portrait_path },
 			]
 
 	# 循環精簡語（主線未完）
 	if main_stage <= 2:
 			return [
-				{ "text": "「……咳。總之，有空可以撥冗去看看，嗯。著實不錯，真的……\n（眼神游移）」", "speaker": speaker_id },
-				{ "text": "「(低聲嘟噥)奇怪，讀完白箋居的詩集時，內心明明還是澎湃著\n怎麼現在卻…」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "「……咳。總之，有空可以撥冗去看看，嗯。著實不錯，真的……（眼神游移）」", "speaker": speaker_id },
+				{ "text": "「(低聲嘟噥)奇怪，讀完白箋居的詩集時，內心明明還是澎湃著怎麼現在卻…」", "speaker": speaker_id, "portrait": portrait_path },
 			]
 
 	# ❸ 主線後段（取得白鳶橫天琴譜）

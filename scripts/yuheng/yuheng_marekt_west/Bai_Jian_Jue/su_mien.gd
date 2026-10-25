@@ -92,9 +92,9 @@ func _on_interact():
 				{ "text": "書眠：「我曾經相信，詩可以安慰人心——哪怕只是一瞬的共鳴，\n也足夠讓人願意活下去。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "書眠：（語氣低下來）「可現在，每個人都說『你寫得好令人感動，\n真讓人涕淚縱橫』，卻沒有人……真心的笑，真心的哭。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "劉語塵：（沉默片刻）「妳……是因為這樣，才停止寫詩的嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "書眠：「我不是停筆，只是寫出來的東西……連我自己都感覺\n不到了。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "書眠：「我不是停筆，只是寫出來的東西……連我自己都感覺不到了。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "（她望向遠方，彷彿穿過了書架與人群）", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "書眠：「也許，玉衡鎮不是缺詩；而是……沒有人能夠讓自己再次\n動情了。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "書眠：「也許，玉衡鎮不是缺詩；而是……沒有人能夠讓自己再次動情了。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "書眠：「我不知道要怎麼寫出一首能讓人哭的詩……當每個人都\n自認『不該』哭的時候。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "劉語塵：「果然……看樣子這鎮真被那琴聲搞得烏煙瘴氣!」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "劉語塵：「在這節骨眼，也絲毫不見左飲的作為……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -107,7 +107,7 @@ func _on_interact():
 				{ "text": "書眠：「其實左飲他四海皆兄弟，來者不拒。只是為了試探來者的\n真心，他設有一道試煉。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "書眠：「關鍵在於飲月山莊的門衛，如果你能說服得了門衛，那麼\n你就能夠見到左飲。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "書眠：「你可能會想說，這樣豈不是變成要討好門衛而本末倒置了?」", "speaker": speaker_id, "portrait": portrait_path },
-				{ "text": "書眠：「恰恰相反，他反而可以從『你怎麼說服門衛』而得知你是\n怎樣的人。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "書眠：「恰恰相反，他反而可以從『你怎麼說服門衛』而得知你是怎樣的人。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "劉語塵：「…謝謝書眠姑娘的提點。不過為何你要這樣幫我呢?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "書眠：(輕閉上眼，露出微笑)「因為我也想讓左飲認識你。」", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "書眠：「而且，如果是你的話，或許有辦法…」", "speaker": speaker_id, "portrait": portrait_path },
@@ -123,7 +123,7 @@ func _on_interact():
 			dialog_lines = [
 				{ "text": "（櫃台後的女子專心的在書寫）", "speaker": speaker_id, "portrait": portrait_path },
 				{ "text": "劉語塵：「(看樣子他正在忙著。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵：「(一時半刻我也不知道來這裡能做啥，此刻我又不需要\n買書。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵：「(一時半刻我也不知道來這裡能做啥，此刻我又不需要買書。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "劉語塵：「(還是先去找店內的客人聊聊好了。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			]
 			show_dialog_sequence(dialog_lines)
@@ -223,7 +223,7 @@ func _choose_trade() -> void:
 		dialog_manager.choice_box.hide_choices()
 	if not _can_open_shop():
 		var lock_lines := [
-				{ "text": "書眠：（輕聲）「眼下還不是談書的時候…不是不賣。只是，你還沒\n讀到那一頁。」", "speaker": speaker_id, "portrait": portrait_path },
+				{ "text": "書眠：（輕聲）「眼下還不是談書的時候…不是不賣。只是，你還沒讀到那一頁。」", "speaker": speaker_id, "portrait": portrait_path },
 		]
 		show_dialog_sequence(lock_lines)
 		await dialog_manager.dialog_finished

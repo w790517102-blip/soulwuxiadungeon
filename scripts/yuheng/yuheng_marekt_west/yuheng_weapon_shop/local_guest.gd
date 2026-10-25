@@ -21,7 +21,7 @@ func _ready():
 		{ "text": "「說到心靜…」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「唉，最近總覺得聽琴聲聽到心靜過頭了……想拔劍都提不起勁。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「我除了劍，最喜歡的就是跟人對詩句了。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「以前跟書眠姑娘的詩過過招，字裡行間有火。現在嘛……只覺得\n冷靜得像水。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「以前跟書眠姑娘的詩過過招，字裡行間有火。現在嘛……只覺得冷靜得像水。」", "speaker": 1, "portrait": portrait_path },
 	]
 
 func _process(_delta):

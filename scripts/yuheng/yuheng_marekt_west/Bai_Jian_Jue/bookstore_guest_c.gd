@@ -56,7 +56,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		{ "text": "「但那姑娘不知道在跩甚麼」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「說什麼『情不至則詩不生』，真是矯情。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "劉語塵：「這傢伙看上去就只是個庸俗的暴發戶。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵：「買了詩書也只是為了滿足虛榮心，而不是細細品味\n其箇中精妙。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「買了詩書也只是為了滿足虛榮心，而不是細細品味其箇中精妙。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「還是少與這種人深交來得好。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 	]
 

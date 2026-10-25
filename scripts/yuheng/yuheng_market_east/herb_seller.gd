@@ -217,11 +217,11 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 				{ "text": "劉語塵:「(低頭思索)果然如此……但老丈，這樣壓著真的好嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "劉語塵:「心火壓太久，會悶出病來吧？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 
-				{ "text": "「說得對。藥要慢熬，氣要順著走。光靠壓，壓久了，一爆\n就收不回來。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「說得對。藥要慢熬，氣要順著走。光靠壓，壓久了，一爆就收不回來。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「河流本該流海去，你硬是築堤堵它，哪天潰堤了，後果難料。」", "speaker": 1, "portrait": portrait_path },
 
 				{ "text": "劉語塵:「看來，這份太平……其實很不自然。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵:「這琴，是為了壓邪？還是壓人？這道理，恐怕還藏著\n彎彎繞繞。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵:「這琴，是為了壓邪？還是壓人？這道理，恐怕還藏著彎彎繞繞。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 
 				{ "text": "「少俠是個明白人，能聽懂我這些話，我原想送你一帖『安神不滯散』，\n喝了能讓心頭順點，嘴巴也不那麼悶。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「可惜還缺一味藥——叫『谷影草』，得湊齊了，這帖藥才能發得了力。」", "speaker": 1, "portrait": portrait_path },
