@@ -1,6 +1,8 @@
 # res://npc/tea_house_servant.gd
 extends CharacterBody2D
 
+const TeaHouseNightDialog = preload("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_house_night_dialog.gd")
+
 const F_GO_TO_ZUIYUE_HUIYIN := "main_yh_go_to_zuiyue_huiyin"
 const F_HUIYIN_FIRST_TALK_DONE := "event_huiyin_first_talk_done"
 
@@ -55,8 +57,13 @@ func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 	var resolved_quest_state := _resolve_dialog_quest_state(quest_state)
 	var main_stage := int(resolved_quest_state.get("stage", 1))
 
-	# 夜間主線：紅徽音沒有開口吩咐；小二只是被琴音引出一份無來由的預感。
-	if _is_waiting_for_huiyin_first_talk():
+	# 夜晚茶坊：依「白天／夜晚有沒有說過話」「拿銅釦前後」共八種情況（見 TeaHouseNightDialog）。
+	var night_lines := TeaHouseNightDialog.lines_for("servant", self, speaker_id, portrait_path, _build_huiyin_call_night_lines())
+	if not night_lines.is_empty():
+		return night_lines
+
+	# 夜間主線（白天茶坊不會走到這裡）：紅徽音沒有開口吩咐；小二只是被琴音引出一份無來由的預感。
+	if _is_waiting_for_huiyin_first_talk() and TeaHouseNightDialog.is_night_scene(self):
 		return _build_huiyin_call_night_lines()
 
 	# 首見：表／裏語氣分支
@@ -101,10 +108,20 @@ func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 			{ "text": "「女伶換了首曲，聽著聽著嗓子也不啞了呢!」", "speaker": 1, "portrait": portrait_path },
 		]
 	else:
+		# 拿到半弦銅釦以後（主線 7 以後）白天的茶坊：客人的喜好還沒有任何改變。
 		return [
-			{ "text": "「客倌!想喝甚麼儘管說，店內茶品五花八門,不怕你叫!」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「前陣子流行『醉月青魁』,現在無論甚麼濃淡溫涼大家甚麼茶都喝!」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「客倌!裡面坐喲，今日還是『醉月青魁』，回甘不苦!」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「想喝別的，儘管說嘿!」", "speaker": 1, "portrait": portrait_path },
 		]
+
+
+## 烈風寨事件解決之後才會有的對白（目前沒有任何流程會呼叫；等那段劇情寫好、有旗標了再接進 _build_lines_for_quest）。
+## 原本錯放在「拿到半弦銅釦以後」，時間線對不上，所以先收在這裡。
+func _build_liefeng_resolved_lines() -> Array:
+	return [
+		{ "text": "「客倌!想喝甚麼儘管說，店內茶品五花八門,不怕你叫!」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「前陣子流行『醉月青魁』,現在無論甚麼濃淡溫涼大家甚麼茶都喝!」", "speaker": 1, "portrait": portrait_path },
+	]
 
 
 func _is_waiting_for_huiyin_first_talk() -> bool:
@@ -161,6 +178,8 @@ func _unhandled_input(event):
 
 func reset_dialog_state():
 	get_node("/root/GameRoot/LiuYu").can_move = true
+	if is_talking:
+		TeaHouseNightDialog.mark_talked("servant", self)
 	is_talking = false
 	if _mark_flag_after_close:
 		GlobalState.set_flag("met_yuheng_teahouse_servant", true)

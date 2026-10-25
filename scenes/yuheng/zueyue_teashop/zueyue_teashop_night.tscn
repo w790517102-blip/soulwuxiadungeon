@@ -10346,7 +10346,7 @@ display_name = "離開茶坊"
 cursor_kind = "exit"
 interaction_radius = 0.0
 hover_margin = 2.0
-selection_polygon = PackedVector2Array(-517.0, -333.4, -382.0, -247.7, -388.9, -13.2, -238.2, -80.2, -238.2, -494.0, -510.1, -494.0)
+selection_polygon = PackedVector2Array(-517, -333.4, -382, -247.7, -388.9, -13.2, -238.2, -80.2, -238.2, -494, -510.1, -494)
 use_sprite_feet = false
 zone_polygon = PackedVector2Array(-388.9, -13.2, -238.2, -80.2, -159.4, -71.3, -364.3, 72.5, -374.2, 26.2)
 
@@ -10364,7 +10364,7 @@ interaction_radius = 0.0
 hover_margin = 2.0
 selection_polygon = PackedVector2Array(-70.7, -156.1, 66.8, -177.4, 89.8, -28.9, -47.7, -7.6)
 use_sprite_feet = false
-zone_polygon = PackedVector2Array(-81.0, -118.4, 224.7, -11.2, 225.4, 114.6, -72.5, 162.0, -177.1, 26.1)
+zone_polygon = PackedVector2Array(-81, -118.4, 224.7, -11.2, 225.4, 114.6, -72.5, 162, -177.1, 26.1)
 
 [node name="object" type="Node2D" parent="."]
 

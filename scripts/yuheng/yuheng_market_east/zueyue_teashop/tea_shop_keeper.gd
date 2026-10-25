@@ -1,6 +1,8 @@
 # res://npc/tea_house_boss.gd
 extends CharacterBody2D
 
+const TeaHouseNightDialog = preload("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_house_night_dialog.gd")
+
 const ShopUI = preload("res://scripts/ui/ShopUI.gd")
 
 const F_GO_TO_ZUIYUE_HUIYIN := "main_yh_go_to_zuiyue_huiyin"
@@ -57,8 +59,13 @@ func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 	var resolved_quest_state := _resolve_dialog_quest_state(quest_state)
 	var main_stage := int(resolved_quest_state.get("stage", 1))
 
-	# 夜間主線：紅徽音未開口交代任何事；掌櫃只是從琴音裡生出劉語塵將至的預感。
-	if _is_waiting_for_huiyin_first_talk():
+	# 夜晚茶坊：依「白天／夜晚有沒有說過話」「拿銅釦前後」共八種情況（見 TeaHouseNightDialog）。
+	var night_lines := TeaHouseNightDialog.lines_for("boss", self, speaker_id, portrait_path, _build_huiyin_call_night_lines())
+	if not night_lines.is_empty():
+		return night_lines
+
+	# 夜間主線（白天茶坊不會走到這裡）：紅徽音未開口交代任何事；掌櫃只是從琴音裡生出劉語塵將至的預感。
+	if _is_waiting_for_huiyin_first_talk() and TeaHouseNightDialog.is_night_scene(self):
 		return _build_huiyin_call_night_lines()
 
 	# ❶ 首見｜有觀察琴音者進入「裏」語氣
@@ -107,10 +114,20 @@ func _build_lines_for_quest(quest_state: Dictionary) -> Array:
 			{ "text": "「聽得比先前更加通暢、如沐春風。」", "speaker": 1, "portrait": portrait_path },
 		]
 	else:
+		# 拿到半弦銅釦以後（主線 7 以後）白天的茶坊：玉衡鎮的事才剛開始，客人還沒有任何改變。
 		return [
-			{ "text": "「女伶近日奏了別的曲，客人也不像從前那樣好同一品淡茶。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "「現在所有人都願意嘗試不同茶品了!」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「客官來了，淡茶備著，想喝甚麼說一聲。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "「近來坊裡一切照舊，慢坐便是。」", "speaker": 1, "portrait": portrait_path },
 		]
+
+
+## 烈風寨事件解決之後才會有的對白（目前沒有任何流程會呼叫；等那段劇情寫好、有旗標了再接進 _build_lines_for_quest）。
+## 原本錯放在「拿到半弦銅釦以後」，時間線對不上，所以先收在這裡。
+func _build_liefeng_resolved_lines() -> Array:
+	return [
+		{ "text": "「女伶近日奏了別的曲，客人也不像從前那樣好同一品淡茶。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「現在所有人都願意嘗試不同茶品了!」", "speaker": 1, "portrait": portrait_path },
+	]
 
 
 func _is_waiting_for_huiyin_first_talk() -> bool:
@@ -187,6 +204,7 @@ func _show_chat_dialog(mark_met: bool) -> void:
 	dialog_lines = _build_lines_for_quest(quest_state)
 	dialog_manager.show_dialog_sequence(dialog_lines, self)
 	await dialog_manager.dialog_finished
+	TeaHouseNightDialog.mark_talked("boss", self)
 	if mark_met:
 		GlobalState.set_flag("met_yuheng_teahouse_boss", true)
 	var liuyu := get_node_or_null("/root/GameRoot/LiuYu")
