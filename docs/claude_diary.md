@@ -46,3 +46,5 @@
 - 2026-10-26（晚，續）：頭像第二批：紅徽音改成露出整隻手（`make_hs2.py` 特例 0.46/1.38/右移160）；**書眠**（`Su_Mien_headshot.png`／`1`／`2` 三個檔名都換成同一張新圖，表情只有一個）、**單步雷**（`Xan_Bu_Lay_headshot.png`）換新圖。
   老闆指示：**折簷翁與客棧老闆的頭像撤下**（`zhe_yen_won.gd`、`inn_boss.gd` 的 portrait_path 設成空字串）；**豪傑誌拿掉客棧老闆**（`LoreDB.HERO_DEFS` 的 inn_boss 已刪；折簷翁豪傑條目保留，art 仍指向舊檔）。
   還沒做：顧石、列霄（新版）、煙若（後續登場）的頭像；`Zuo_Yin_headshot2.png` 仍舊版；見聞錄怪物圖。
+- 2026-10-26（晚）：顧石頭像已 commit（37dd996，`Gu_Shi_headshot.png`，`make_hs2.py` 的 gushi 用 MINW 略過獨立槍頭）。**任務頁**新版 `scripts/inventory/QuestPage.gd`（開關 `USE_NEW_QUEST_UI`、`_update_quest_page` 在 system_menu.gd）：左分類（主線／支線／已完成，已錯過歸已完成）、中清單、右詳情；資料用 `menu._build_quest_entries()`；全用現成書房素材（狀態章暫用 status_usable／badge_equipped／status_disabled 頂替，分類圖示暫用 cat_icon_quest／book／all）。測試 `tests/test_quest_page.gd`；截圖腳本 scratchpad `quest_shot.gd`。
+  下一步：老闆看過版面後，開精簡素材規格給共邊國（狀態印章三種、分類圖示、空狀態圖、可選新任務標記），素材交來放進資料夾即自動換。
