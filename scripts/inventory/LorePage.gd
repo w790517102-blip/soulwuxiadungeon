@@ -362,6 +362,7 @@ func _set_t(v: float, opening := false) -> void:
 ## 翻一張：front＝正面（原本在右）、back＝翻過去後在左看到的背面。forward＝由右翻到左；反向就是 t 由 1 回到 0
 func _flip(front: Texture2D, back: Texture2D, left_static: Texture2D, right_under: Texture2D, forward: bool, dur: float, opening := false) -> void:
 	_clear_marquee_slots()
+	_clear_bookmarks()
 	_leaf.texture = front
 	_mat.set_shader_parameter("back_tex", back)
 	_left.texture = left_static
@@ -485,9 +486,18 @@ func _page_tex(idx: int) -> Texture2D:
 ## 左頁的詳細資料：奇物、神怪＝「標籤牌＋欄位」逐列（列高 24、間距 32，最多九列）；豪傑＝一整段人物誌
 func _fill_details(c: Control, e: Dictionary) -> void:
 	var prose := String(e.get("prose", ""))
+	var paragraphs: Array = e.get("paragraphs", [])
+	if not paragraphs.is_empty():
+		prose = String(paragraphs[clampi(int(_hero_section.get(String(e.get("id", "")), 0)), 0, paragraphs.size() - 1)])
 	if prose != "":
 		_vimage(c, "lore_hero_prose_field", Vector2(30, 112), Vector2(290, 330))
-		var t := _vlabel(c, prose, Vector2(44, 126), Vector2(262, 300), 17, BODY_COL)
+		# 動態人物誌的段落會隨劇情增加：字太多放不下時把字縮小（最小 12），不會壓到框外。
+		# 用實際排版出來的行數與行高量（不同字型的行高不一樣，不能用字級估）。
+		var fs := 17
+		var t := _vlabel(c, prose, Vector2(44, 126), Vector2(262, 300), fs, BODY_COL)
+		while fs > 12 and float(t.get_line_count()) * float(t.get_line_height()) > 300.0:
+			fs -= 1
+			t.add_theme_font_size_override("font_size", fs)
 		t.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		return
 	var y := 112.0
@@ -517,6 +527,68 @@ func _set_idle(k: int) -> void:
 	_right.texture = _page_tex(2 * k)
 	_trim_pages(2 * k)
 	_build_marquee_slots(k)
+	_build_bookmarks(k)
+
+## 動態人物誌的書籤：書的左邊，每一段人物誌一枚「其一、其二、其三…」，點哪枚左頁就翻到那一段
+## （段落隨劇情解鎖，書籤也跟著增加；選中的書籤往外凸出一點、顏色較亮）。選擇只記在記憶體裡，不存檔。
+var _hero_section: Dictionary = {}          # 人物 id → 目前看的段落索引
+var _bookmark_nodes: Array = []
+const CN_NUM := ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+
+func _clear_bookmarks() -> void:
+	for n in _bookmark_nodes:
+		if is_instance_valid(n):
+			n.queue_free()
+	_bookmark_nodes.clear()
+
+func _build_bookmarks(k: int) -> void:
+	_clear_bookmarks()
+	if _cat != "豪傑" or k < 0 or k >= _list.size():
+		return
+	var e: Dictionary = _list[k]
+	var paragraphs: Array = e.get("paragraphs", [])
+	if not bool(e.get("unlocked", false)) or paragraphs.is_empty():
+		return
+	var id := String(e.get("id", ""))
+	var current := clampi(int(_hero_section.get(id, 0)), 0, paragraphs.size() - 1)
+	for i in paragraphs.size():
+		var on: bool = i == current
+		var b := Button.new()
+		b.position = Vector2(LEFT_POS.x - (30.0 if on else 24.0), 150.0 + i * 50.0)
+		b.size = Vector2(34, 44)
+		b.focus_mode = Control.FOCUS_NONE
+		b.z_index = 4
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color("#8E5A22") if on else Color("#4A3520")
+		bg.border_color = Color("#E8D49A")
+		bg.set_border_width_all(1)
+		bg.set_corner_radius_all(4)
+		bg.corner_radius_top_right = 0
+		bg.corner_radius_bottom_right = 0
+		for st in ["normal", "hover", "pressed", "hover_pressed"]:
+			b.add_theme_stylebox_override(st, bg)
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		b.add_theme_font_override("font", FONT)
+		b.add_theme_font_size_override("font_size", 13)
+		b.add_theme_color_override("font_color", Color("#FFF3D0") if on else Color("#D8C9A8"))
+		b.add_theme_color_override("font_hover_color", Color.WHITE)
+		# 直排：每個字一行
+		var label := "其" + String(CN_NUM[mini(i, CN_NUM.size() - 1)])
+		b.text = label.substr(0, 1) + "\n" + label.substr(1)
+		b.pressed.connect(func():
+			_hero_section[id] = i
+			_refresh_left_page(k))
+		_book.add_child(b)
+		_bookmark_nodes.append(b)
+
+## 重畫目前這頁的左頁（書籤換段落時用）
+func _refresh_left_page(k: int) -> void:
+	var idx := 2 * k + 1
+	if _page_vps.has(idx):
+		(_page_vps[idx] as SubViewport).queue_free()
+		_page_vps.erase(idx)
+	_left.texture = _page_tex(idx)
+	_build_bookmarks(k)
 
 ## 左頁的欄位只有一行：內容放不下的欄位，滑鼠移上去時在欄位上蓋一層「紙底＋跑馬燈」把剩下的字跑出來
 ## （頁面本身是烘成貼圖的，所以用另外的即時節點蓋在上面；翻頁時全部移除）

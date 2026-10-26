@@ -225,7 +225,7 @@ func _choose_spar() -> void:
 func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
 	_unlock_on_next_reset = false
 	if not has_weapon and not has_armor_or_acc:
-		await _play_sequence_and_wait([
+		var win_lines: Array = [
 			{ "text": "老翁：「好..」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "老翁：「好啊！」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "劉語塵：「前輩，承讓。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -247,7 +247,17 @@ func _resolve_spar_result(has_weapon: bool, has_armor_or_acc: bool) -> void:
 			{ "text": "劉語塵：「（心想）我什麼時候拜他為師了？。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "老翁：「不必害羞。江湖傳承，講究一個緣字。」", "speaker": 1, "portrait": portrait_path },
 			{ "text": "老翁：「這兩本祕笈，你拿去。」", "speaker": 1, "portrait": portrait_path },
-		])
+		]
+		# 第一次比武就完全卸裝獲勝（跳級）時，玩家沒有「以兵器勝」「以空手勝」的經歷，老翁不能提到：
+		# 只留下玩家真的做過的那幾句（只動這兩句，其餘台詞照舊）。
+		win_lines = win_lines.filter(func(l):
+			var t := String(l.get("text", ""))
+			if t.contains("你先以兵器勝我") and not GlobalState.get_flag(FLAG_WEAPON_WIN):
+				return false
+			if t.contains("你再以空手勝我") and not GlobalState.get_flag(FLAG_UNARMED_WIN):
+				return false
+			return true)
+		await _play_sequence_and_wait(win_lines)
 		await _complete_oldfighter_quest()
 		return
 	if has_weapon:

@@ -76,7 +76,11 @@ static func _heroes() -> Array:
 			continue
 		var h: Dictionary = LoreDBScript.get_hero_def(id)
 		var bio := String(h.get("bio", "尚無人物誌內容。"))
-		out.append({"id": id, "name": String(h.get("name", id)), "unlocked": true, "art": String(h.get("portrait_path", "")), "summary": _short(bio, 60), "rows": [], "prose": bio})
+		# 有「身分／地點」等簡介的人物，右頁圖下面的框顯示簡介；沒有就顯示人物誌的開頭
+		var meta: Array = h.get("meta", [])
+		var summary := "
+".join(meta) if not meta.is_empty() else _short(bio, 60)
+		out.append({"id": id, "name": String(h.get("name", id)), "unlocked": true, "art": String(h.get("portrait_path", "")), "summary": summary, "rows": [], "prose": bio, "paragraphs": h.get("paragraphs", [])})
 	return out
 
 static func _monsters() -> Array:
