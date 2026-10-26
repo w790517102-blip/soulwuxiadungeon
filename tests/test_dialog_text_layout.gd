@@ -65,7 +65,7 @@ func _run() -> void:
 	# 以句號為單位分頁：不滿兩行補到兩行，超過兩行的一句自己一頁
 	var narr := "你循著熟悉的琴聲走進醉月茶坊。昨夜舊水道中的種種遭遇，至今仍歷歷在目。琴案前，紅徽音依舊一襲紅衣，端坐如故。她眉宇間藏著未曾消散的倦意，十指卻仍穩穩撫過琴弦，曲調不曾錯亂，彷彿昨夜什麼都未曾發生，只有窗外的月色比往日更冷了些，落在案上那一枚半弦銅釦之上，像一彎還沒有圓的月。你沒有開口。"
 	var narr_pages: Array = Layout.layout_pages(narr, m, 966.0)
-	_expect(narr_pages.size() >= 3, "narration is paged by sentence, not crammed into one box")
+	_expect(narr_pages.size() >= 2, "narration is paged by sentence, not crammed into one box")
 	for page in narr_pages:
 		_expect(String(page).split("\n").size() <= 3, "narration page stays within three lines")
 	var long_sentence_page := ""
@@ -75,6 +75,13 @@ func _run() -> void:
 	_expect(long_sentence_page.begins_with("她眉宇間") and not long_sentence_page.contains("琴案前"), "a sentence longer than two lines gets its own page")
 	_expect("".join(narr_pages).replace("\n", "") == narr, "sentence paging keeps every character in order")
 
+	# 一頁塞滿兩行才換頁：第一句不滿兩行時，後面短的句子要接上來，不要急著換頁
+	var packed := "老翁：「不錯不錯！果然英雄出少年。能把我逼到這般境地的，你是第二個。」"
+	var packed_pages: Array = Layout.layout_pages(packed, m, 966.0)
+	_expect(packed_pages.size() == 1, "short sentences that fit in two lines share one page: %s" % str(packed_pages))
+	var overflow := "老翁：「不錯不錯！果然英雄出少年，能把我逼到這般境地的人，你是第二個，也是這幾十年來頭一個讓老夫連退三步的後生。第一個是左飲那小子，他的刀快得像燕子掠水，我到現在都還記得清清楚楚，忘也忘不掉，每次想起來手腕都隱隱作痛，真是個了不得的年輕人。」"
+	var overflow_pages: Array = Layout.layout_pages(overflow, m, 966.0)
+	_expect(overflow_pages.size() == 2 and "".join(overflow_pages).replace(String.chr(10), "") == overflow, "when the next sentence would overflow two lines, the page turns: %s" % str(overflow_pages))
 	var tiny := "劉語塵：「在下劉語塵。」"
 	_expect(Layout.layout_pages(tiny, m, 966.0) == [tiny], "one short sentence stays one page, one line")
 

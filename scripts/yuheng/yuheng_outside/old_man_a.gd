@@ -146,8 +146,10 @@ func _handle_oldfighter_interact() -> void:
 		_unlock_on_next_reset = false
 		await _play_sequence_and_wait([
 			{ "text": "老翁：「少俠，石破心法可練得如何？」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "老翁：「記住，外物越少，拳意越真。當然，像老夫這般境界，即使拿著掃帚，也已是無物之境。」", "speaker": 1, "portrait": portrait_path },
-			{ "text": "劉語塵：「所以掃帚不算外物？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+			{ "text": "老翁：「記住，外物越少，拳意越真。」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "老翁：「你看，老夫拿著這把掃帚，便能讓自己心無外物！」", "speaker": 1, "portrait": portrait_path },
+			{ "text": "你望了望老翁手中的掃帚。", "speaker": 0 },
+			{ "text": "劉語塵：「……所以掃帚不算外物？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			#{ "text": "老翁：「左飲那小子啊，當年出刀快得像燕子掠水。」", "speaker": 1, "portrait": portrait_path },
 			#{ "text": "老翁：「可他真正厲害的，不是刀快，是收刀也快。」", "speaker": 1, "portrait": portrait_path },
 			#{ "text": "老翁：「一個人能傷人不稀奇，能在該停的地方停下來，才叫本事。」", "speaker": 1, "portrait": portrait_path },

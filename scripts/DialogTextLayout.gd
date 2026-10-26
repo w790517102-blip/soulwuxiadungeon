@@ -64,15 +64,16 @@ static func layout_pages(text: String, measurer: Measurer, max_width: float, max
 	var pages: Array = []
 	var current := ""
 	for sentence: String in sentences:
-		var sentence_lines := _fill_lines(sentence, measurer, max_width).size()
-		if current != "" and sentence_lines > 2:
-			pages.append(current)
-			current = ""
+		# 一頁盡量塞滿再換頁：這一頁還沒滿兩行時，下一句接上去（合計不超過三行）就接上去，不急著換頁；
+		# 已經滿兩行，接上去會超過兩行才換頁。單句超過兩行的自己一頁。
+		if current != "":
+			var current_lines := _fill_lines(current, measurer, max_width).size()
+			var sentence_lines := _fill_lines(sentence, measurer, max_width).size()
+			var merged_lines := _fill_lines(current + sentence, measurer, max_width).size()
+			if sentence_lines > 2 or merged_lines > 3 or (merged_lines > 2 and current_lines >= 2):
+				pages.append(current)
+				current = ""
 		current += sentence
-		var current_lines := _fill_lines(current, measurer, max_width).size()
-		if current_lines >= 2:
-			pages.append(current)
-			current = ""
 	if current != "":
 		# 尾巴不滿兩行：能併進上一頁（併完不超過三行）就併，不然自己一頁
 		if not pages.is_empty():
