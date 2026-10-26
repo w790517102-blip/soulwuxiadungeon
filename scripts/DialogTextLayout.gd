@@ -238,7 +238,8 @@ static func _solve(text: String, n: int, prefix: Array, blocked: Dictionary, max
 				if i == n and i - j <= 3:
 					cost += pow(max_width, 2.0)   # 尾行只剩一兩個字：重罰
 				var total: float = best[k - 1][j] + cost
-				if total < best[k][i]:
+				# 成本相同時取較晚的斷點（前面的行排得比較滿，不要第一行反而比第二行短）
+				if total <= best[k][i]:
 					best[k][i] = total
 					from[k][i] = j
 	if best[line_count][n] >= inf:

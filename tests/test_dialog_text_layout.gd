@@ -82,6 +82,10 @@ func _run() -> void:
 	var overflow := "老翁：「不錯不錯！果然英雄出少年，能把我逼到這般境地的人，你是第二個，也是這幾十年來頭一個讓老夫連退三步的後生。第一個是左飲那小子，他的刀快得像燕子掠水，我到現在都還記得清清楚楚，忘也忘不掉，每次想起來手腕都隱隱作痛，真是個了不得的年輕人。」"
 	var overflow_pages: Array = Layout.layout_pages(overflow, m, 966.0)
 	_expect(overflow_pages.size() == 2 and "".join(overflow_pages).replace(String.chr(10), "") == overflow, "when the next sentence would overflow two lines, the page turns: %s" % str(overflow_pages))
+	# 兩行平均斷行時，成本一樣就讓第一行排滿一點（不要第一行比第二行短）
+	var even_text := "老翁：「如今你捨去外物，仍能守住拳意，這才是真正的武人胚子。」"
+	var even_lines: PackedStringArray = String(Layout.layout_pages(even_text, m, 800.0)[0]).split(String.chr(10))
+	_expect(even_lines.size() == 2 and m.width(even_lines[0]) >= m.width(even_lines[1]), "the first line is not shorter than the second: %s" % str(even_lines))
 	var tiny := "劉語塵：「在下劉語塵。」"
 	_expect(Layout.layout_pages(tiny, m, 966.0) == [tiny], "one short sentence stays one page, one line")
 
