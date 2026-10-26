@@ -54,6 +54,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 5
 	_build_background()
+	visibility_changed.connect(_reset_sort_direction)
 	_build_nav("TabItem")
 	_build_categories()
 	_build_gold()
@@ -488,9 +489,18 @@ func _on_use_pressed() -> void:
 		await menu.use_item_by_id(selected_id)
 		_refresh()
 
+## 「整理」每按一次輪流切換裝備的稀有度方向：第一下高的在前、第二下低的在前、第三下又回到高的在前……
+## 只記在這個頁面的記憶體裡：離開道具分頁或關閉選單（頁面被隱藏）就重置，下次第一下一定是高的在前。
+var _sort_rarity_high_first := true
+
 func _on_sort_pressed() -> void:
-	InventorySync.sort_inventory()
-	show_toast("已整理（依種類）")
+	InventorySync.sort_inventory(_sort_rarity_high_first)
+	show_toast("已整理（稀有度%s）" % ("高在前" if _sort_rarity_high_first else "低在前"))
+	_sort_rarity_high_first = not _sort_rarity_high_first
+
+func _reset_sort_direction() -> void:
+	if not is_visible_in_tree():
+		_sort_rarity_high_first = true
 
 func _on_drop_pressed() -> void:
 	var def := _item_def(selected_id)

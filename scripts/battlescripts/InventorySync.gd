@@ -576,13 +576,17 @@ func _notify_gold_delta(delta: int) -> void:
 
 ## 整理背包（道具頁的「整理」按鈕）：
 ##   1. 先依種類（順序同道具頁左邊的分頁：藥物、書籍、裝備、材料、任務、其他）。
-##   2. 裝備再依部位（主武器、副武器、頭、身體、手、腳、飾品、機關），同部位依稀有度（高的在前），
+##   2. 裝備再依部位（主武器、副武器、頭、身體、手、腳、飾品、機關），同部位依稀有度
+##      （rarity_high_first＝true 高的在前、false 低的在前；道具頁的「整理」每按一次輪流切換），
 ##      同稀有度依名稱筆劃（少的在前）。
 ##   3. 其他種類（以及上面都相同時）依道具 id，結果穩定、每次相同。
 const EQUIP_SLOT_ORDER := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2", "mechanism"]
 const StrokeTableScript = preload("res://scripts/items/StrokeTable.gd")
 
-func sort_inventory() -> void:
+var _sort_rarity_high_first := true
+
+func sort_inventory(rarity_high_first := true) -> void:
+	_sort_rarity_high_first = rarity_high_first
 	party_inventory.sort_custom(func(a, b): return _sort_before(a, b))
 	inventory_changed.emit()
 
@@ -607,7 +611,7 @@ func _sort_before(a: Dictionary, b: Dictionary) -> bool:
 		var rarity_a := ItemRarity.rarity_of(da)
 		var rarity_b := ItemRarity.rarity_of(db)
 		if rarity_a != rarity_b:
-			return rarity_a > rarity_b
+			return rarity_a > rarity_b if _sort_rarity_high_first else rarity_a < rarity_b
 		var stroke := StrokeTableScript.compare(String(da.get("name", "")), String(db.get("name", "")))
 		if stroke != 0:
 			return stroke < 0

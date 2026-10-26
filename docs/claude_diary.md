@@ -66,3 +66,4 @@
 - 2026-10-27：列霄新版頭像（覆蓋 `LieShao_headshot2.png`）、煙若頭像 `assets/sprites/NPC/YinHuo/Yan_Ruo_headshot.png`（尚無腳本引用，她登場時指向它）；神怪誌圖再放大 1% 並多出 1px 壓在框下，填滿左右縫隙。仍是舊圖的頭像：折簷翁、娜亞。
 - 2026-10-27：道具「整理」改成先依種類（藥物、書籍、裝備、材料、任務、其他，同道具頁左邊分頁順序），同種類再依 id：`InventorySync.sort_inventory()`（種類看 ItemDB 資料，背包列本身只有 id／數量）、`ItemCategory.sort_rank`；測試 `tests/test_inventory_sort.gd`。舊的 `sort_inventory_by_id()` 保留。
 - 2026-10-27：整理排序加強：裝備在種類內依部位（主武器、副武器、頭、身體、手、腳、飾品、機關）→ 稀有度（高在前）→ 名稱筆劃（少在前）→ id；其他種類仍依 id。筆劃表 `scripts/items/StrokeTable.gd`（老闆同意下載 Unicode Unihan，只抽出 79 個道具名稱用到的 172 字；新道具名稱出現新字要補進表，查不到算 0 筆）。測試 `tests/test_inventory_sort.gd` 用真實裝備驗證。
+- 2026-10-27：「整理」每按一次輪流切換裝備稀有度方向（第一下高在前、第二下低在前…），方向只記在 `InventoryPage._sort_rarity_high_first`（記憶體）：離開道具分頁（頁面隱藏）會重置；關閉選單會釋放整個選單實例，下次一定是高在前。`InventorySync.sort_inventory(rarity_high_first)`。

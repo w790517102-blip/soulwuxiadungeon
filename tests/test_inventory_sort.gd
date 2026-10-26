@@ -70,6 +70,39 @@ func _run() -> void:
 		last_rarity = rarity
 		last_name = nm
 
+	# 2b. 反向：稀有度低的在前（整理第二下）；部位順序不變
+	inv.sort_inventory(false)
+	var prev_slot := -1
+	var prev_rarity := 0
+	for it in inv.party_inventory:
+		var def: Dictionary = DB.get_def(String(it["id"]))
+		var slot := order.find(String(def.get("equip_slot", "")))
+		var rarity := int(def.get("rarity", 1))
+		if slot != prev_slot:
+			_check(slot > prev_slot, "reverse sort keeps the slot order")
+			prev_slot = slot
+			prev_rarity = 0
+		_check(rarity >= prev_rarity, "reverse sort puts low rarity first inside a slot")
+		prev_rarity = rarity
+
+	# 2c. 道具頁：按「整理」輪流切換方向；頁面被隱藏就重置
+	var menu = load("res://scripts/system_menu.gd").new()
+	root.add_child(menu)
+	var page = load("res://scripts/inventory/InventoryPage.gd").new()
+	page.menu = menu
+	root.add_child(page)
+	await process_frame
+	await process_frame
+	_check(page._sort_rarity_high_first, "starts with high rarity first")
+	page._on_sort_pressed()
+	_check(not page._sort_rarity_high_first, "second press is low rarity first")
+	page._on_sort_pressed()
+	_check(page._sort_rarity_high_first, "third press is back to high first")
+	page._on_sort_pressed()
+	_check(not page._sort_rarity_high_first, "next press would be low first")
+	page.visible = false
+	_check(page._sort_rarity_high_first, "leaving the page (hidden) resets to high first")
+
 	# 3. 筆劃比較
 	var table = load("res://scripts/items/StrokeTable.gd")
 	_check(table.compare("刀", "劍") < 0 and table.compare("劍", "刀") > 0 and table.compare("刀", "刀") == 0, "stroke compare: 刀 (2) < 劍 (15)")
