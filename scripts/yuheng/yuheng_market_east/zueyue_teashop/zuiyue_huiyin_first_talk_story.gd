@@ -205,6 +205,17 @@ func _build_huiyin_first_talk_lines() -> Array:
 		_n("紅徽音抬起眼。燈火在她眼底晃了一下，很快又被壓回平靜。"),
 		_l("我一直在道歉。", speaker_id, portrait_path),
 		_l("只是以前，沒有人聽得見。", speaker_id, portrait_path),
+		_n("琴聲未曾稍歇。"),
+		_n("你卻聽得出來，那份歉疚並非只為了這一鎮百姓，也為了那個始終替人留下言語出口的姑娘。"),
+		_l("書眠的詩，近來越寫越少了。", speaker_id, portrait_path),
+		_l("她替旁人留下那麼多話，自己的心事，卻不知還能向誰說。", speaker_id, portrait_path),
+		_n("她指尖輕輕掠過琴弦，神色依舊平靜，琴音深處卻多了一絲難以掩飾的牽掛。"),
+		_l("有些話，我本該親自去對她說的……", speaker_id, portrait_path),
+		_n("她沒有把話說完。"),
+		_n("你望著那雙始終未曾離開琴弦的手，心下已有幾分明白。"),
+		_l("紅姑娘，若有在下幫得上忙的地方，但說無妨。", liuyu_speaker_id, liuyu_portrait_path),
+		_n("紅徽音抬眼望來。"),
+		_n("那一瞬間，她似乎有些意外，片刻後才輕輕點了點頭。"),
 	])
 
 	if GlobalState.get_flag(F_DABAO_MAP_SHOWN):
@@ -218,10 +229,11 @@ func _build_huiyin_first_talk_lines() -> Array:
 
 func _build_dabao_branch_lines() -> Array:
 	return [
+		_n("你想起先前與大寶的交談。"),
 		_l("有個孩子曾告訴我，他夢見井底有魚在哭。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("大寶？", speaker_id, portrait_path),
-		_l("你知道他？", liuyu_speaker_id, liuyu_portrait_path),
-		_l("那孩子的感知比大人乾淨。", speaker_id, portrait_path),
+		_l("紅姑娘也認得他？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("那孩子的感知，比大人乾淨。", speaker_id, portrait_path),
 		_l("有些聲音，大人聽不見，動物聽得見。", speaker_id, portrait_path),
 		_l("有些痛，大人不肯承認，孩子會先夢到。", speaker_id, portrait_path),
 		_l("他用繩索告訴我，有一口井能通往下水道。", liuyu_speaker_id, liuyu_portrait_path),
@@ -235,10 +247,10 @@ func _build_dabao_branch_lines() -> Array:
 
 func _build_no_dabao_branch_lines() -> Array:
 	return [
-		_l("你要我怎麼查？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("既如此，該從何處尋起？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("從地下。", speaker_id, portrait_path),
-		_n("紅徽音望向茶坊後方。那裡隔著一扇小門，門外是後巷，井聲與水氣皆藏在夜裡。"),
-		_l("醉月茶坊後方有一口舊井。", speaker_id, portrait_path),
+		_n("她將目光移向茶坊後方。那裡隔著一扇小門，門外是後巷，井聲與水氣皆藏在夜裡。"),
+		_l("醉月茶坊後方，有一口舊井。", speaker_id, portrait_path),
 		_l("外人只當那是廢井，其實是早年藥師取水與避火用的暗道。", speaker_id, portrait_path),
 		_l("井下連著玉衡鎮早年的舊水道。", speaker_id, portrait_path),
 		_l("至於下面如今變成什麼樣……我不知道。", speaker_id, portrait_path),
