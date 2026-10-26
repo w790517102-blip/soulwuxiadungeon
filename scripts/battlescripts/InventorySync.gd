@@ -574,22 +574,49 @@ func _notify_gold_delta(delta: int) -> void:
 		toast.push_message("失去：%d 文" % amount)
 
 
-## 整理背包（道具頁的「整理」按鈕）：先依種類（順序同道具頁左邊的分頁：藥物、書籍、裝備、材料、任務、其他），
-## 同一種類裡再依道具 id（穩定、每次結果相同）。
+## 整理背包（道具頁的「整理」按鈕）：
+##   1. 先依種類（順序同道具頁左邊的分頁：藥物、書籍、裝備、材料、任務、其他）。
+##   2. 裝備再依部位（主武器、副武器、頭、身體、手、腳、飾品、機關），同部位依稀有度（高的在前），
+##      同稀有度依名稱筆劃（少的在前）。
+##   3. 其他種類（以及上面都相同時）依道具 id，結果穩定、每次相同。
+const EQUIP_SLOT_ORDER := ["weapon_1", "weapon_2", "armor_head", "armor_body", "armor_hands", "armor_feet", "accessory_1", "accessory_2", "mechanism"]
+const StrokeTableScript = preload("res://scripts/items/StrokeTable.gd")
+
 func sort_inventory() -> void:
-	party_inventory.sort_custom(func(a, b):
-		var ra := _sort_rank(a)
-		var rb := _sort_rank(b)
-		if ra != rb:
-			return ra < rb
-		return str(a.get("id", "")) < str(b.get("id", "")))
+	party_inventory.sort_custom(func(a, b): return _sort_before(a, b))
 	inventory_changed.emit()
 
 
-## 背包列只存 id 和數量；種類要看 ItemDB 的道具資料（資料庫沒有這個 id 時，退回看列本身的 type／category）
-func _sort_rank(entry: Dictionary) -> int:
+func _sort_def(entry: Dictionary) -> Dictionary:
 	var def: Dictionary = ItemDB.get_def(str(entry.get("id", "")))
-	return ItemCategory.sort_rank(def if not def.is_empty() else entry)
+	return def if not def.is_empty() else entry
+
+
+func _sort_before(a: Dictionary, b: Dictionary) -> bool:
+	var da := _sort_def(a)
+	var db := _sort_def(b)
+	var ra := ItemCategory.sort_rank(da)
+	var rb := ItemCategory.sort_rank(db)
+	if ra != rb:
+		return ra < rb
+	if ItemCategory.category_of(da) == ItemCategory.EQUIPMENT:
+		var sa := _equip_slot_rank(da)
+		var sb := _equip_slot_rank(db)
+		if sa != sb:
+			return sa < sb
+		var rarity_a := ItemRarity.rarity_of(da)
+		var rarity_b := ItemRarity.rarity_of(db)
+		if rarity_a != rarity_b:
+			return rarity_a > rarity_b
+		var stroke := StrokeTableScript.compare(String(da.get("name", "")), String(db.get("name", "")))
+		if stroke != 0:
+			return stroke < 0
+	return str(a.get("id", "")) < str(b.get("id", ""))
+
+
+func _equip_slot_rank(def: Dictionary) -> int:
+	var i := EQUIP_SLOT_ORDER.find(String(def.get("equip_slot", "")))
+	return i if i >= 0 else EQUIP_SLOT_ORDER.size()
 
 
 ## 整理背包：依道具 id 排序（穩定、每次結果相同）。預設的排列是「取得順序」，只有玩家按「整理」才會改。
