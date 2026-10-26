@@ -32,3 +32,17 @@
   備註：`tests/test_battle_message_and_menus.gd` 的「share window dimensions」會失敗，是戰鬥彈窗，與選單無關（先前就在，沒查）。
   下一步：任務頁（舊頁節點 `VBoxContainer/任務`，邏輯在 system_menu.gd `_refresh_quest_tab`、`_build_quest_entries`）。
   （同日追加）隊伍頁右頁下方加了八格裝備（只顯示）；移入／移出按鈕移到中頁底部。待討論：頭像要怎麼處理（老闆說等等談）。
+- 2026-10-26：**頭像整合（進行中，樣本階段）**。老闆決定：對話立繪自成一套（不併入卡面／紙娃娃）；見聞錄「豪傑」也用文戲立繪；來源原檔在 `assets/Character/`（1024×1536 全身圖，紙紋背景，要去背）。
+  - 已裝 `rembg`（pip）＋ isnet-anime 模型（老闆同意下載，在 `~/.u2net/`）。流程腳本在 scratchpad：`matte.py`（去背）→ `make_headshots.py`（裁頭肩、邊緣收 1px、左右淡出、保留底邊切線、輸出 `*_headshot_v2.png`）。
+  - 書眠用 `Su_mien.jpg`（最新，墨潑風格；`Su_mien1.jpg` 是舊版別用）。**列霄先不做**（只是早期測三人團戰），先做**左飲**。
+  - 新規格：檔案＝實際美術大小（無外圈留白），底邊中心對齊對話框底緣、顯示高度 245（`DialogManager.HEADSHOT_TIGHT_HEIGHT`），肩膀完整；舊 200×280 檔案照舊行為（`_place_headshot` 以尺寸判斷）。
+  - 樣本：劉語塵／書眠／左飲 `_v2.png`，對照圖 `docs/system_menu/headshot_v2_dialog_samples.png`。**尚未替換遊戲內引用，待老闆驗收。**
+  - 後續：驗收後批次處理其他有原檔的角色（紅徽音、顧石、單步雷、折簷翁…）、更新引用（TeamData portrait_path、各 NPC 腳本、intro_room 場景），再處理見聞錄頁面的豪傑／怪物圖。
+- 2026-10-26（晚）：**頭像高清化 第一批**。老闆改提供自己去背好的 8 張圖，已存 `assets/Character/cutout/`（lie_shao、hong_huei_yin、liu_yu、xan_bu_lay、gu_shi、yan_ruo、zuo_yin、shumian；列霄是新版、煙若後續才登場）。
+  - 用 scratchpad `make_hs2.py` 裁成頭肩（高=全身×0.27、寬高比1.15；紅徽音特例 0.46/1.15/右移95），直接覆蓋原路徑：`LiuYu_headshot.png`、`Hong_Huei_Yin_headshot.png`、`Zuo_Yin_headshot.png`（引用都不用改）。舊的 `rembg` 樣本與 `_v2` 檔已刪。
+  - `LiuYu_headshot_legacy.png` ＝舊版 200×280，`intro_room.tscn` 的獨立 Sprite2D 改指向它（那裡自己縮放 1.25）。
+  - `Zuo_Yin_headshot2.png`（鐘乳石洞用的第二表情）還是舊版，等老闆給第二個姿勢再換。
+  - 待做：書眠、顧石、單步雷、折簷翁…批次套用（原檔：cutout 資料夾；舊來源 `assets/Character/*.jpg` 不要用）、見聞錄豪傑／怪物圖。
+- 2026-10-26（晚，續）：頭像第二批：紅徽音改成露出整隻手（`make_hs2.py` 特例 0.46/1.38/右移160）；**書眠**（`Su_Mien_headshot.png`／`1`／`2` 三個檔名都換成同一張新圖，表情只有一個）、**單步雷**（`Xan_Bu_Lay_headshot.png`）換新圖。
+  老闆指示：**折簷翁與客棧老闆的頭像撤下**（`zhe_yen_won.gd`、`inn_boss.gd` 的 portrait_path 設成空字串）；**豪傑誌拿掉客棧老闆**（`LoreDB.HERO_DEFS` 的 inn_boss 已刪；折簷翁豪傑條目保留，art 仍指向舊檔）。
+  還沒做：顧石、列霄（新版）、煙若（後續登場）的頭像；`Zuo_Yin_headshot2.png` 仍舊版；見聞錄怪物圖。

@@ -2,7 +2,7 @@
 extends CharacterBody2D
 
 @export var z_index_offset := 0
-@export var portrait_path := "res://assets/sprites/NPC/Yuheng/Zhe_yen_won_headshot.png"
+@export var portrait_path := ""    # 早期測試用的頭像已撤下（沒有頭像時對話框只顯示文字）
 @export var speaker_id := 1
 @onready var animated_sprite := $AnimatedSprite2D
 

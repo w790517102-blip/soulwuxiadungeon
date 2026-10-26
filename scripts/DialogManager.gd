@@ -141,7 +141,40 @@ const TEXT_MIN_WIDTH := 160.0
 var _label_home_x: Dictionary = {}
 
 
+## 頭像規格：舊檔是 200×280 帶透明留白的畫布（場景裡放大 1.25 倍、置中）；
+## 新檔已裁掉留白（檔案大小＝實際美術），用「底邊中心」對齊對話框底緣、統一顯示高度，頭可以超出框、肩膀完整保留。
+const LEGACY_HEADSHOT_SIZE := Vector2(200, 280)
+const HEADSHOT_BOTTOM_Y := 223.0            # 對話框內座標：頭像底邊
+const HEADSHOT_TIGHT_HEIGHT := 245.0        # 新規格頭像在畫面上的高度（邏輯 px）；再高頭會被畫面上緣切到
+const HEADSHOT_RIGHT_LIMIT := 1111.0        # 上方欄頭像右緣（舊規格的右緣）
+const HEADSHOT_LEFT_LIMIT := -17.0          # 下方欄頭像左緣（舊規格的左緣）
+var _headshot_home: Dictionary = {}
+
+
+func _place_headshot(headshot: Sprite2D, top_lane: bool) -> void:
+	if not _headshot_home.has(headshot):
+		_headshot_home[headshot] = {"position": headshot.position, "scale": headshot.scale}
+	var home: Dictionary = _headshot_home[headshot]
+	headshot.centered = true
+	headshot.offset = Vector2.ZERO
+	headshot.position = home["position"]
+	headshot.scale = home["scale"]
+	var texture := headshot.texture
+	if texture == null or texture.get_size() == LEGACY_HEADSHOT_SIZE:
+		return
+	var size := texture.get_size()
+	var factor := HEADSHOT_TIGHT_HEIGHT / size.y
+	var half := size.x * factor * 0.5
+	var x: float = (home["position"] as Vector2).x
+	x = minf(x, HEADSHOT_RIGHT_LIMIT - half) if top_lane else maxf(x, HEADSHOT_LEFT_LIMIT + half)
+	headshot.centered = false
+	headshot.offset = Vector2(-size.x * 0.5, -size.y)
+	headshot.scale = Vector2(factor, factor)
+	headshot.position = Vector2(x, HEADSHOT_BOTTOM_Y)
+
+
 func _fit_label_to_lane(dialog_box: Control, headshot: Sprite2D, label: Label, top_lane: bool) -> void:
+	_place_headshot(headshot, top_lane)
 	if not _label_home_x.has(label):
 		_label_home_x[label] = label.position.x
 	var left: float = float(_label_home_x[label])
