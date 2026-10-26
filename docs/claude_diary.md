@@ -72,3 +72,4 @@
 - 2026-10-27：老翁美術第三版（降低飽和度，與其他角色畫風一致）：cutout/old_man.png、enemy_old_fighter.webp、Old_Man_headshot.png 已重做。
 - 2026-10-27：老翁對話頭像再 zoom out（裁切高 0.44、寬高比 1.05），露出胸口到腰帶。
 - 2026-10-27：老翁頭像再調：裁切高 0.385、寬高比 1.08，剛好切在腰帶上方（老闆指示）。
+- 2026-10-27：井身扣孔（白天／夜晚 `well_keyhole`）游標改成 `cursor_kind = "inspect"`（白色饅頭手）。**盤點：目前所有物件型互動目標仍是預設 "talk"（對話泡泡框）**：舊水道真實側（`yuheng_sewer_true.tscn`：memory_qin／memory_writing_desk／memory_medicine_cabinet、loot_herb_basket／loot_qi_box／loot_haste_scroll）、記憶室（`yuheng_sewer_true_room.tscn`：memory_room_*、loot_old_herb_pouch／loot_calm_pill、fix_wall_talisman／fix_lion_waterhead／fix_channel_lamps／fix_channel_lamps_b）。人物 NPC 用泡泡框是對的（含舊式 NPC 自動套用的預設）。老闆還沒決定那些要不要一併改成饅頭手。

@@ -6164,6 +6164,7 @@ zone_polygon = PackedVector2Array(70.9, 86.9, 153.5, 123.1, 94.8, 166.1, 42.5, 1
 script = ExtResource("interaction_target_script")
 mode = 2
 display_name = "井身扣孔"
+cursor_kind = "inspect"
 interaction_radius = 0.0
 hover_margin = 2.0
 selection_polygon = PackedVector2Array(157.9, 42.9, 193.1, 42.9, 193.1, 84.9, 157.9, 84.9)

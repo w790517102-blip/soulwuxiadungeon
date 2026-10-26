@@ -66,6 +66,18 @@ func _run() -> void:
 	await process_frame
 	_check(gc._state == "icon", "and the hover icon returns once the menu is closed")
 
+	# 井身扣孔（白天、夜晚）是物件不是人：游標是白色饅頭手（inspect），不是對話泡泡框
+	for path in ["res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_old_well.tscn", "res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_old_well_night.tscn"]:
+		var scene = load(path).instantiate()
+		root.add_child(scene)
+		await process_frame
+		_check(String(scene.get_node("InteractionZones/well_keyhole").cursor_kind) == "inspect", "the well keyhole uses the hand cursor: " + path.get_file())
+		scene.queue_free()
+	gc.set_hover_kind("inspect")
+	await process_frame
+	await process_frame
+	_check(gc._state == "icon" and gc.icon.texture == gc._tex["cursor_inspect_a"], "the inspect kind shows the white hand")
+
 	gc.set_hover_kind("")
 	gc.mouse_override = null
 	gc.left_override = null
