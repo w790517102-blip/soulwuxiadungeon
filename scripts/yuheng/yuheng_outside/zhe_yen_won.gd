@@ -17,20 +17,20 @@ func _ready():
 		push_warning("[客棧路人] DialogManager 沒抓到！")
 		
 	dialog_lines = [
-		{ "text": "「少俠，可曾聽過『邪典』之名？」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "劉語塵:「行走江湖，有所耳聞。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "「那可不是尋常鬼怪妖邪，而是比語魅更難防的東西。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「怎麼說呢……你昨夜讀的詩集，隔日一翻，內容忽地變了\n字句還是熟悉的，但讀著讀著，就覺得心裡哪裡怪怪的。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「再細看，你會發現它開始勸你做些奇怪的事……像是每天吞一片指甲，或是焚香拜影子。 更可怕的是，你會相信那就是對的。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「這便是邪典之厲害——潛進你的思維，改你念頭，奪你人格，\n偏偏它不靠妖氣、不現形，只靠一頁頁文字，一句句語言。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「更棘手的是，讀過的人若轉述給旁人，那偏執的情緒竟能\n感染聽者，讓你沒碰過那本書，也會走火入魔。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「目前還沒什麼有效法子。最保險的，就是少讀書、少與偏執者言語。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「不過話說回來……玉衡鎮這地兒，最出名的便是書。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「理應早就邪典橫行才對，但你看，鎮子安安靜靜，書墨坊\n照開不誤……這其中啊，定有古怪。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「凡安靜得過了頭，十有八九，不是有高人坐鎮，就是……\n怪事正在壓著不動。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "劉語塵:「(震驚)這玉衡鎮外表看似祥和，當真有這麼不平凡?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵:「(思索)嗯…還得處處留心便是。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵:「(拱手作揖)謝前輩告誡。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "折簷翁：「少俠，可曾聽過『邪典』之名？」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「行走江湖，有所耳聞。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "折簷翁：「那可不是尋常鬼怪妖邪，而是比語魅更難防的東西。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「怎麼說呢……你昨夜讀的詩集，隔日一翻，內容忽地變了字句還是熟悉的，但讀著讀著，就覺得心裡哪裡怪怪的。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「再細看，你會發現它開始勸你做些奇怪的事……像是每天吞一片指甲，或是焚香拜影子。 更可怕的是，你會相信那就是對的。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「這便是邪典之厲害——潛進你的思維，改你念頭，奪你人格，偏偏它不靠妖氣、不現形，只靠一頁頁文字，一句句語言。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「更棘手的是，讀過的人若轉述給旁人，那偏執的情緒竟能感染聽者，讓你沒碰過那本書，也會走火入魔。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「目前還沒什麼有效法子。最保險的，就是少讀書、少與偏執者言語。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「不過話說回來……玉衡鎮這地兒，最出名的便是書。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「理應早就邪典橫行才對，但你看，鎮子安安靜靜，書墨坊照開不誤……這其中啊，定有古怪。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "折簷翁：「凡安靜得過了頭，十有八九，不是有高人坐鎮，就是……怪事正在壓著不動。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "劉語塵：「(震驚)這玉衡鎮外表看似祥和，當真有這麼不平凡?」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「(思索)嗯…還得處處留心便是。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「(拱手作揖)謝前輩告誡。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 	]
 
 func _process(_delta):

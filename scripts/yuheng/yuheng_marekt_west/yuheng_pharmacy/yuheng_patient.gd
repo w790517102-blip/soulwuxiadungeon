@@ -48,7 +48,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
   				{ "text": "「嗚……咳……不、不敢咳太大聲，怕被當成……不穩的人。」", "speaker": 1 },
 				{ "text": "劉語塵：「咳嗽只是身體不適，怎麼會被這樣看待？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				
-				{ "text": "「你是外地來的吧……你不知道，這鎮上……最怕的，不是病，是讓別人\n『感覺到你有病』……」", "speaker": 1 },
+				{ "text": "「你是外地來的吧……你不知道，這鎮上……最怕的，不是病，是讓別人『感覺到你有病』……」", "speaker": 1 },
 				{ "text": "（他抿緊嘴唇，搖了搖頭，轉過身去）", "speaker": 1 },
 ]
 	if main_stage <= 2:

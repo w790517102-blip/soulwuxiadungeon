@@ -17,8 +17,8 @@ func _ready():
 		
 	dialog_lines = [
 		
-		{ "text": "女子：「你看那舞台……你說要是能站在上面彈一曲，\n會是什麼樣的感覺呢？」", "speaker": 2, "portrait": portrait_path },
-		{ "text": "男子：「如果妳站上去，我就站在最前面聽。\n其他人怎麼看我不管，我只聽妳彈。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "女子：「你看那舞台……你說要是能站在上面彈一曲，會是什麼樣的感覺呢？」", "speaker": 2, "portrait": portrait_path },
+		{ "text": "男子：「如果妳站上去，我就站在最前面聽。其他人怎麼看我不管，我只聽妳彈。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "（靦腆一笑）：「你這樣說……那我可就真考慮了。」", "speaker": 2, "portrait": portrait_path },
 		{ "text": "(男子看向正在「模擬比劍」的小男孩與舉符的女孩)", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「你看那兩個小娃兒，一個想當劍客、一個要當符仔仙……」", "speaker": 1, "portrait": portrait_path },

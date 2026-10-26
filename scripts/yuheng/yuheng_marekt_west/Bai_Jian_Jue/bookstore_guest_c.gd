@@ -49,7 +49,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 		return [
 		{ "text": "「論詩書就屬玉衡鎮的白箋居最聞名遐邇了!」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「剛好最近做生意路過此地，趕緊給它買了幾綑書回家!」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「你瞧我這幾本—— 一本擺在書房增氣質，一本送客人彰顯品味，還有一本\n放馬桶邊悠哉讀～」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "「你瞧我這幾本—— 一本擺在書房增氣質，一本送客人彰顯品味，還有一本放馬桶邊悠哉讀～」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「氣質直接拉滿啊！」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「只不過聽當地人講，架上這幾本都是老作品了。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "「呿!我甚麼人?當然得要給它弄到最新的詩本才善罷干休啊!」", "speaker": 1, "portrait": portrait_path },

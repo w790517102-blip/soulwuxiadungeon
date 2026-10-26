@@ -50,7 +50,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 				{ "text": "「邪典似瘟疫，即便不讀它，與染者爭辯，亦可能沾染。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「慎言是藥，止語非終。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "(低頭思索)", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵：「原來關鍵在『少爭』而非『不言』——盡量不起衝突，\n卻也不能把話永遠憋著。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵：「原來關鍵在『少爭』而非『不言』——盡量不起衝突，卻也不能把話永遠憋著。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "劉語塵：「情緒久壓易反噬，反而給邪典可趁之機。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "...", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "劉語塵：「那為何這裡的人，情緒被琴聲壓制的如此透徹」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },

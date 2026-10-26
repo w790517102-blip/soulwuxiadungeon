@@ -14,10 +14,12 @@ const MAX_LINES := 4
 const PROTECTED_WORDS := [
 	"劉語塵", "紅徽音", "白書眠", "白鳶橫天", "半弦銅釦", "銀屏語", "飲月山莊", "醉月茶坊", "醉月青魁",
 	"玉衡鎮", "白箋居", "烈風寨", "鐘乳石洞", "舊水道", "（琴音）", "（心想）", "弦外之音", "左飲",
+	"江湖", "情義", "義氣", "琴聲", "琴音", "山莊", "竹林", "山門", "通報", "女伶", "語魅", "邪典", "言靈", "詩稿", "詩集",
+	"書墨坊", "茶坊", "市集", "鎮民", "武學", "內功", "心法", "莊主", "門衛", "阿婆", "家母", "兵器", "琴案", "銅釦",
 ]
 const OPENERS := "「『（《〈【"
 const CLOSERS := "」』）》〉】，。、！？；：…—·,.!?;:)"
-const SOFT_BREAK_AFTER := "，。！？；：、…"
+const SOFT_BREAK_AFTER := "，。！？；：、…,;"
 
 ## 在 Label 的字型下量一段字串的寬度
 class Measurer:
@@ -41,6 +43,8 @@ class Measurer:
 static func layout_pages(text: String, measurer: Measurer, max_width: float, max_lines: int = MAX_LINES) -> Array:
 	if text.contains("\n"):
 		return [text]
+	for gap in ["。 ", "， ", "！ ", "？ ", "。　", "，　"]:
+		text = text.replace(gap, gap.substr(0, 1))
 	var sentences := _split_sentences(text)
 	var pages: Array = []
 	var current := ""
@@ -246,6 +250,11 @@ static func _greedy(text: String, n: int, prefix: Array, blocked: Dictionary, ma
 				last_ok = i
 		if end >= n:
 			last_ok = n
+		elif last_ok > start:
+			for back in range(last_ok, maxi(start + 1, last_ok - 4), -1):
+				if SOFT_BREAK_AFTER.contains(text[back - 1]) and _can_break(text, back, blocked):
+					last_ok = back
+					break
 		var cut := last_ok if last_ok > start else end
 		lines.append(text.substr(start, cut - start))
 		start = cut

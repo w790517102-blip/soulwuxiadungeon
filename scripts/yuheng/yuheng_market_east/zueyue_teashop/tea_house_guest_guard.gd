@@ -138,10 +138,6 @@ func _unhandled_input(event):
 		var liuyu := get_node("/root/GameRoot/LiuYu")
 		liuyu.can_move = false
 		face_towards(liuyu.global_position)
-		if GlobalState.get_flag("met_yuheng_teahouse_guard"):
-			_show_interaction_menu()
-			return
-
 		# ✅ 這行是關鍵：在互動瞬間依目前旗標/主線重新組台詞
 		var main_stage := _get_main_stage_safely()
 		dialog_lines = _build_lines_for_stage(main_stage)
@@ -150,21 +146,8 @@ func _unhandled_input(event):
 		# ✅ 在 reset_dialog_state 裡落旗與重建台詞
 		_mark_flag_after_close = not GlobalState.set_flag("met_yuheng_teahouse_guard", true)
 
-func _show_interaction_menu() -> void:
-	# 單步雷 no longer invites the player to spar: the 比武 option is dropped, while
-	# _choose_spar / _start_training_battle and the EnemyDB entry stay dormant.
-	dialog_manager.show_choice([
-		{ "text": "閒聊", "callback": Callable(self, "_choose_chat") },
-	])
-
-
-func _choose_chat() -> void:
-	dialog_manager.choice_box.hide_choices()
-	var main_stage := _get_main_stage_safely()
-	dialog_lines = _build_lines_for_stage(main_stage)
-	dialog_manager.show_dialog_sequence(dialog_lines, self)
-
-
+## 單步雷不再邀玩家比試：互動直接開口說話，不再跳選項。
+## _choose_spar / _start_training_battle 與 EnemyDB 的資料先保留不用。
 func _choose_spar() -> void:
 	dialog_manager.choice_box.hide_choices()
 	var lines := [

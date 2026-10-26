@@ -29,7 +29,7 @@ func _on_player_entered(body):
 		{ "text": "人多口雜,我應該更能打聽到左飲的情報。", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "(打量四周)...", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "但是,我怎麼覺得這街氣氛有點怪?", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "(你發現鎮上的人表情平靜、口不多言,安靜地在做自己的事情\n只有不遠處輕柔的琴聲薄薄地覆蓋在整條街上)", "speaker": 2, "portrait": "res://assets/sprites/empty.png" },
+		{ "text": "(你發現鎮上的人表情平靜、口不多言,安靜地在做自己的事情只有不遠處輕柔的琴聲薄薄地覆蓋在整條街上)", "speaker": 2, "portrait": "res://assets/sprites/empty.png" },
 	])
 	await dialog_manager.dialog_sequence_finished
 	await _fade_music(-30, 2.0)  # 淡出 BGM
@@ -51,7 +51,7 @@ func _observe_area():
 	await get_tree().create_timer(0.5).timeout
 	dialog_manager.show_dialog_sequence([
 		
-		{ "text": "是我的錯覺嗎?明明市集應該要人聲鼎沸,但為什麼大家如此\n輕聲細語只剩悠悠琴音繚繞整個街道?", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "是我的錯覺嗎?明明市集應該要人聲鼎沸,但為什麼大家如此輕聲細語只剩悠悠琴音繚繞整個街道?", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "不過...這琴音...聽了之後內心的確是平靜不少", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "...不對!這個感覺", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "是內力!有高人將內力注入琴音以壓制人心!", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -76,7 +76,7 @@ func _skip_scene():
 		{ "text": "有空去看看是誰有那般雅致，奏這曲。", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "（遠方微弱的琴聲若有似無，村民喃喃自語）", "speaker": 2, "portrait": "res://assets/sprites/empty.png" },
 		{ "text": "路人甲：……茶坊的那位女伶……總是靜靜地……", "speaker": 1, "portrait": "res://assets/sprites/empty.png" },
-		{ "text": "路人乙：唉，最近雖然脾氣好像變好了，但也不知道\n為什麼有些提不起勁……", "speaker": 1 },
+		{ "text": "路人乙：唉，最近雖然脾氣好像變好了，但也不知道為什麼有些提不起勁……", "speaker": 1 },
 	])
 	await dialog_manager.dialog_sequence_finished
 

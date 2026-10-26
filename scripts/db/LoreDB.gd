@@ -18,7 +18,7 @@ const HERO_DEFS := {
 		"portrait_path": "res://assets/sprites/NPC/Yuheng/inn_boss.png",
 		"bio": "茶坊與消息的掌舵人，善察人心與風向，言語間常藏弦外之音。",
 		"default_unlocked": false,
-		"unlock_flags": ["met_yuheng_inn_boss", "met_yuheng_teahouse_boss"],
+		"unlock_flags": ["met_yuheng_inn_boss"],
 	},
 	"hong_huei_yin": {
 		"name": "紅徽音",

@@ -205,14 +205,14 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 			return [
 				{ "text": "「(關於琴聲，也許他知道些甚麼...)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "「我是從外地來這裡行腳賣藥的，背上一籃，都是山裡風月熬出來的藥。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「不瞞你說，這鎮子氣味兒怪得很——風不動、心不動，大家像是被什麼\n罩住了，臉上都沒個起伏。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「不瞞你說，這鎮子氣味兒怪得很——風不動、心不動，大家像是被什麼罩住了，臉上都沒個起伏。」", "speaker": 1, "portrait": portrait_path },
 
 				{ "text": "劉語塵:「(!!!)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-				{ "text": "劉語塵:「老丈也察覺了？我一路行來，只覺眾人情緒像火\n被捂著，不滅也不燃——悶得很。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+				{ "text": "劉語塵：「老丈也察覺了？我一路行來，只覺眾人情緒像火被捂著，不滅也不燃——悶得很。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 
-				{ "text": "「(賣藥翁瞄了眼四周，食指輕抬至唇前) 嘘，聲音小點。你我都是\n外人，才看得清些，但說話得留點分寸。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「我瞧見的，是一種說不出口的病。不是傷風也不是寒熱，是……\n話卡在心裡，情悶在肚子裡。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「這地方啊，用的是猛藥。只要人一想說心裡話，琴聲就壓下來\n讓你說不出口，火也冒不起來。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「(賣藥翁瞄了眼四周，食指輕抬至唇前) 嘘，聲音小點。你我都是外人，才看得清些，但說話得留點分寸。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「我瞧見的，是一種說不出口的病。不是傷風也不是寒熱，是……話卡在心裡，情悶在肚子裡。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「這地方啊，用的是猛藥。只要人一想說心裡話，琴聲就壓下來讓你說不出口，火也冒不起來。」", "speaker": 1, "portrait": portrait_path },
 
 				{ "text": "劉語塵:「(低頭思索)果然如此……但老丈，這樣壓著真的好嗎？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "劉語塵:「心火壓太久，會悶出病來吧？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
@@ -223,7 +223,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 				{ "text": "劉語塵:「看來，這份太平……其實很不自然。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 				{ "text": "劉語塵:「這琴，是為了壓邪？還是壓人？這道理，恐怕還藏著彎彎繞繞。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 
-				{ "text": "「少俠是個明白人，能聽懂我這些話，我原想送你一帖『安神不滯散』，\n喝了能讓心頭順點，嘴巴也不那麼悶。」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「少俠是個明白人，能聽懂我這些話，我原想送你一帖『安神不滯散』，喝了能讓心頭順點，嘴巴也不那麼悶。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「可惜還缺一味藥——叫『谷影草』，得湊齊了，這帖藥才能發得了力。」", "speaker": 1, "portrait": portrait_path },
 
 				{ "text": "劉語塵:「(如今局勢詭譎，身邊若有良方，總不是壞事。)」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },

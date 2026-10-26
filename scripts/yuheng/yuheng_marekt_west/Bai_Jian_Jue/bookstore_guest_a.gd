@@ -69,7 +69,7 @@ func _unhandled_input(event):
 			await dialog_manager.show_dialog_sequence([
 				{ "text": "「書眠又繼續寫詩了!」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「而且街上的琴聲也換了個調，聽著也沒再覺得悶了。」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「你還記得那天我念著《燈影欲語》，結果整個人突然\n什麼都說不出來嗎？」", "speaker": 1, "portrait": portrait_path },
+				{ "text": "「你還記得那天我念著《燈影欲語》，結果整個人突然什麼都說不出來嗎？」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「那種…明明心裡很想哭，但眼淚就是被什麼壓住的感覺…」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "（他低頭摩挲著詩集的封面）「好像忽然之間，整座鎮都靜下來，只剩琴音。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「但最近…我好像可以再度聽見她的句子了。」", "speaker": 1, "portrait": portrait_path },
@@ -107,7 +107,7 @@ func dialog_sequence_poetry():
 		{ "text": "(將詩讀完之後，你沉默了一會…)" , "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「…」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「這詩句，如同月光穿透紙窗，朦朧卻明亮…」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵：「有種『想把內心的感受寫出來，卻窮盡千字萬言\n也無法真實道出』的那種酸楚」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「有種『想把內心的感受寫出來，卻窮盡千字萬言也無法真實道出』的那種酸楚」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "(正當你沉浸在感動的氛圍時)", "speaker": 1, "portrait": portrait_path },
 		{ "text": "(話還沒說完，你便自覺注意力漸漸地被屋外街上琴聲吸引過去…)", "speaker": 1, "portrait": portrait_path },
 	], self)
@@ -121,7 +121,7 @@ func dialog_sequence_poetry():
 func dialog_sequence_qin():
 	await dialog_manager.show_dialog_sequence([
 		{ "text": "(琴音逐漸覆蓋了你剛剛讀完詩句之後，殘留在內心的感動餘韻…)", "speaker": 1, "portrait": portrait_path },
-		{ "text": "劉語塵：「唔!太詭異了!本來街上的琴音應當是柔和的，\n怎麼突然聽起來像是浪濤一樣」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「唔!太詭異了!本來街上的琴音應當是柔和的，怎麼突然聽起來像是浪濤一樣」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「正在…一點一滴的…把剛剛讀完詩集的感受給…」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "(你的心跳被旋律壓制而不再悸動，剛剛的感動彷彿不存在似的)", "speaker": 1, "portrait": portrait_path },
 	], self)
@@ -133,7 +133,7 @@ func dialog_sequence_qin():
 func dialog_sequence_final():
 	await dialog_manager.show_dialog_sequence([
 		{ "text": "(你望著手上的詩集，頓時覺得它不過是普通的書本而已)", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵：「怎麼回事?這就是琴音壓制內心的狀況嗎?人還在，\n但感情突然被消除，頓時對剛剛還在為詩句感動的自己十分陌生」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「怎麼回事?這就是琴音壓制內心的狀況嗎?人還在，但感情突然被消除，頓時對剛剛還在為詩句感動的自己十分陌生」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵：「像是人格被抽離一樣…」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "(你抬頭看著面前剛剛遞詩集給你的詩人。)", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "「…」", "speaker": 1, "portrait": portrait_path },

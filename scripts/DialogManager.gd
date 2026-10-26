@@ -197,13 +197,30 @@ func _play_dialog_sequence():
 
 			var text = line_data.get("text", "")
 			var speaker = line_data.get("speaker", 1)
-			var portrait = line_data.get("portrait", "")
+			var portrait = _resolve_portrait(str(text), speaker, str(line_data.get("portrait", "")))
 			var speaker_name = line_data.get("speaker_name", "")
 			await _head_dialog(text, portrait, speaker, speaker_name, str(line_data.get("layout", "")) == "raw")
 			await _wait_for_continue()
 		else:
 			await _head_dialog(str(line_data), current_portrait, current_speaker)
 			await _wait_for_continue()
+
+## 同一個人的對白，只有第一句寫了頭像時，後面幾句沿用同一張頭像（依「名稱：「」開頭記住）。
+var _portrait_by_name: Dictionary = {}
+
+
+func _resolve_portrait(text: String, speaker: int, portrait: String) -> String:
+	if speaker == NARRATION_SPEAKER_ID:
+		return portrait
+	var cut := text.find("：「")
+	if cut < 1 or cut > 8:
+		return portrait
+	var who := text.substr(0, cut)
+	if portrait != "":
+		_portrait_by_name[who] = portrait
+		return portrait
+	return str(_portrait_by_name.get(who, ""))
+
 
 func _head_dialog(
 	text: String,

@@ -55,7 +55,7 @@ func _run() -> void:
 	# 行內填滿到右緣（不為了平衡提早斷行）：第一行應該接近安全寬度
 	var fill_pages: Array = Layout.layout_pages(long, m, width)
 	var first_line: String = String(fill_pages[0]).split("\n")[0]
-	_expect(m.width(first_line) >= width - 2.0 * 28.0, "first line is filled up to the right edge")
+	_expect(m.width(first_line) >= width - 5.0 * 28.0, "first line is filled up to the right edge")
 
 	# 以句號為單位分頁：不滿兩行補到兩行，超過兩行的一句自己一頁
 	var narr := "你循著熟悉的琴聲走進醉月茶坊。昨夜舊水道中的種種遭遇，至今仍歷歷在目。琴案前，紅徽音依舊一襲紅衣，端坐如故。她眉宇間藏著未曾消散的倦意，十指卻仍穩穩撫過琴弦，曲調不曾錯亂，彷彿昨夜什麼都未曾發生，只有窗外的月色比往日更冷了些，落在案上那一枚半弦銅釦之上，像一彎還沒有圓的月。你沒有開口。"

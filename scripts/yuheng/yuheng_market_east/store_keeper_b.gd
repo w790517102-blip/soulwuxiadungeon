@@ -49,7 +49,7 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 				
 				{ "text": "「少俠要不要看看今早剛宰的新豬，筋理清、沒有腥。」", "speaker": 1, "portrait": portrait_path },
 				{ "text": "「我這攤主打刀子口利，肉入口鮮。你要前腿還是五花？」", "speaker": 1, "portrait": portrait_path },
-				{ "text": "「你說這琴聲？放著倒也不錯，以前的客人都常常來殺價\n現在都安靜地買完肉就走人」", "speaker": 1, "portrait":  portrait_path },
+				{ "text": "「你說這琴聲？放著倒也不錯，以前的客人都常常來殺價現在都安靜地買完肉就走人」", "speaker": 1, "portrait":  portrait_path },
 				{ "text": "「曲調美、人清淨，客人也有禮許多，何壞之有?」", "speaker": 1, "portrait":  portrait_path },
 			]
 		else:

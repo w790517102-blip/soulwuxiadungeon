@@ -17,7 +17,7 @@ func _ready():
 		
 	dialog_lines = [
 		{ "text": "「我說啊，這客棧老闆——以前可不是簡單人。」", "speaker": 1, "portrait": "res://assets/sprites/NPC/Yuheng/outsider_3.png" },
-		{ "text": "「傳言他以前也是混江湖的，特別跟飲月山莊的左飲十分要好\n 他們年輕時可是常一起喝酒的夥伴。」", "speaker": 1, "portrait": "res://assets/sprites/NPC/Yuheng/outsider_3.png" },
+		{ "text": "「傳言他以前也是混江湖的，特別跟飲月山莊的左飲十分要好 他們年輕時可是常一起喝酒的夥伴。」", "speaker": 1, "portrait": "res://assets/sprites/NPC/Yuheng/outsider_3.png" },
 		{ "text": "「只是…如果向他打聽有關左飲的消息，他常常一副欲言又止的樣子…」", "speaker": 1, "portrait": "res://assets/sprites/NPC/Yuheng/outsider_3.png" },
 		{ "text": "「所以你最好要推敲一下，他的話語中背後到底透露出甚麼資訊來著」", "speaker": 1, "portrait": "res://assets/sprites/NPC/Yuheng/outsider_3.png" }
 	]

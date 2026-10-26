@@ -119,6 +119,25 @@ func _check_after_button_witness() -> void:
 				_expect(not t.contains(banned), "%s day=%s after button must not say %s" % [key, day, banned])
 
 
+## 調查琴音後第一次跟掌櫃說話：要走「劉語塵問女伶來歷」的初見台詞，不能被別人設的旗標吃掉變成循環台詞。
+func _check_keeper_first_meeting() -> void:
+	var gs = root.get_node("GlobalState")
+	_set_state(false, false, false, false)
+	for f in ["event_market_choice_observe", "event_yuheng_market_melody", "met_yuheng_inn_boss"]:
+		gs.set_flag(f, true)
+	var keeper = load("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_shop_keeper.gd").new()
+	var parent := Node.new()
+	parent.scene_file_path = "res://scenes/yuheng/zueyue_teashop/zue_yue_teashop.tscn"
+	parent.add_child(keeper)
+	var t := _texts(keeper._build_lines_for_quest({"id": "main_001", "stage": 1}))
+	_expect(t.contains("紅衣女伶的來歷"), "first chat after investigating the qin has Liu Yu asking about the singer")
+	_expect(not t.begins_with("掌櫃：「這世道"), "first chat is not the repeat loop")
+	var inn_src := FileAccess.get_file_as_string("res://scripts/yuheng/yuheng_inn/inn_boss.gd")
+	_expect(not inn_src.contains('set_flag("met_yuheng_teahouse_boss"'), "talking to the inn keeper must not mark the tea house keeper as met")
+	for f in ["event_market_choice_observe", "event_yuheng_market_melody", "met_yuheng_inn_boss"]:
+		gs.set_flag(f, false)
+
+
 func _run() -> void:
 	Dialog = load("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_house_night_dialog.gd")
 	var reunion := [{"text": "REUNION"}]
@@ -150,6 +169,7 @@ func _run() -> void:
 	_set_state(false, false, false, false)
 	_expect(Dialog.lines_for("boss", _npc(true), 1, "p", reunion).is_empty(), "night scene before the story window is left to the old logic")
 	_check_after_button_witness()
+	_check_keeper_first_meeting()
 	_check_day_stages()
 	_check_huiyin_revisit()
 	_set_state(false, false, false, false)

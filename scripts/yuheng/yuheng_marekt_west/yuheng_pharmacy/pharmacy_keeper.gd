@@ -76,21 +76,21 @@ func _chat():
 	dialog_manager.choice_box.hide_choices()
 	is_talking = true
 	dialog_lines = [
-		{ "text": "劉語塵:「最近在鎮上聽人提起邪典，本以為會有不少人急著來\n把個脈、問個藥……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「最近在鎮上聽人提起邪典，本以為會有不少人急著來把個脈、問個藥……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 		{ "text": "劉語塵:「怎地這藥鋪反倒冷清，半個人影也沒見著？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 
 		{ "text": "藥翁：「哼，這你就不懂了。邪典不是風寒發熱那路，它是從心底滲出來的東西。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "藥翁：「可現在醉月茶坊的琴壓著全鎮的情緒，人人表面平靜如水，\n心裡怎麼樣也說不上來。」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "藥翁：「本來人哪裡不舒服，知道該來看病；但現在連『不舒服』\n這感覺都沒了，還會想來醫館嗎？」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "藥翁：「可現在醉月茶坊的琴壓著全鎮的情緒，人人表面平靜如水，心裡怎麼樣也說不上來。」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "藥翁：「本來人哪裡不舒服，知道該來看病；但現在連『不舒服』這感覺都沒了，還會想來醫館嗎？」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "藥翁：「情緒悶著，病灶藏著，心也懶得動——這病啊，就越養越深了。」", "speaker": 1, "portrait": portrait_path },
 
-		{ "text": "(一名小孩端著藥盤走過，低聲自言自語）「簡單說啦～大家現在連哪裡痛\n都不想知道，還怎麼吃藥咧～」", "speaker": 1, "portrait": portrait_path },
+		{ "text": "(一名小孩端著藥盤走過，低聲自言自語）「簡單說啦～大家現在連哪裡痛都不想知道，還怎麼吃藥咧～」", "speaker": 1, "portrait": portrait_path },
 
 		{ "text": "藥翁：「豆芽！沒大沒小……你當這是在講相聲、唱雙簧麼！」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "藥翁：「（轉向你）唉……讓客倌見笑了，這是我那不成材的小徒兒。」", "speaker": 1, "portrait": portrait_path },
 
 		{ "text": "劉語塵：「無妨，小孩子話直倒是點得透。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		{ "text": "劉語塵：「（輕聲）不過……要是有哪個人的情緒真冒出頭來了，\n反倒容易被當成異樣……那時候才真正麻煩吧？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
+		{ "text": "劉語塵：「（輕聲）不過……要是有哪個人的情緒真冒出頭來了，反倒容易被當成異樣……那時候才真正麻煩吧？」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 
 		{ "text": "藥翁：「（沉聲）正是這道理。氣順了、情卻悶，病難診，藥難開。」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "藥翁：「到時不是藥醫病，而是病拖心，人還沒發熱，先被困在自己裡頭了。」", "speaker": 1, "portrait": portrait_path },

@@ -27,7 +27,7 @@ func _ready():
 		{ "text": "「我的符咒不只語魅，連邪典都能封印呢！」", "speaker": 2, "portrait": portrait_path },
 		{ "text": "「你現在被我的符咒定住了身!!動了的話就算犯規！」", "speaker": 2, "portrait": portrait_path },
 		{ "text": "「欸欸欸！？哪有這樣的啦！你作弊——」", "speaker": 1, "portrait": portrait_path },
-		{ "text": "「這就是書眠姐姐筆武流的厲害喔～不只是寫詩畫畫，\n還能打敗壞人呢！」", "speaker": 2, "portrait": portrait_path },
+		{ "text": "「這就是書眠姐姐筆武流的厲害喔～不只是寫詩畫畫，還能打敗壞人呢！」", "speaker": 2, "portrait": portrait_path },
 		{ "text": "「哼，下次我也要學會劍氣破符！你等著瞧！」", "speaker": 1, "portrait": portrait_path },
 		
 	]
