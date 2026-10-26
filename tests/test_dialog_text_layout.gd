@@ -20,6 +20,11 @@ func _run() -> void:
 	var m = Layout.Measurer.new(font, 28)
 	var width := 776.0
 
+	for t in ["你想起先前與大寶的交談。", "此時，你忽然察覺異樣。", "但你知道，有些事情已經不同了。", "不是聲音變小，而是你的心神被詩意牽住。", "只是望著她的手，你漸漸明白。"]:
+		_expect(Layout.is_second_person_narration(t), "second-person narration: " + t)
+	for t in ["顧石看了你一眼。", "阿婆遞到你手中。", "紅徽音輕輕頷首。", "劉語塵：「你來了。」", "她向你微微頷首。"]:
+		_expect(not Layout.is_second_person_narration(t), "not second-person narration: " + t)
+
 	var short := "白書眠：「劉少俠，今日來得好早。」"
 	_expect(Layout.layout_pages(short, m, width) == [short], "short line stays on one line")
 

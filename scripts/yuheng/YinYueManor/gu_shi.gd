@@ -302,7 +302,7 @@ func _build_evidence_detail_lines() -> Array:
 			_l("我只問你一句。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("問。", speaker_id, portrait_path),
 			_l("你守的是山門，還是這座鎮假裝無事的樣子？", liuyu_speaker_id, liuyu_portrait_path),
-			_n("顧石抬眼看他，眼神第一次不只是戒備。"),
+			_n("顧石抬眼看你，眼神第一次不只是戒備。"),
 			_l("少俠，這話很重。", speaker_id, portrait_path),
 			_l("我知道。", liuyu_speaker_id, liuyu_portrait_path),
 			_l("你是故意說給我聽的。", speaker_id, portrait_path),

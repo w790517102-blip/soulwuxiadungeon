@@ -411,13 +411,13 @@ func _build_dabao_treasure_lines() -> Array:
 	return [
 		_n("井旁的土石有些鬆動，正是大寶以細線指出的位置。"),
 		_l("……亮光就在這下面。"),
-		_n("劉語塵移開石塊，從泥土中取出一小串銅錢。"),
+		_n("你移開石塊，從泥土中取出一小串銅錢。"),
 	]
 
 
 func _build_unlock_well_lines() -> Array:
 	return [
-		_n("劉語塵取出半弦銅釦，將它嵌入井沿的扣孔。"),
+		_n("你取出半弦銅釦，將它嵌入井沿的扣孔。"),
 		_n("銅釦與扣孔嚴絲合縫。下一瞬，井身傳來一陣細微震動。"),
 		_n("封住入口的磚石依次下沉，露出一段通往地下的石階。"),
 		_l("……果然是它。"),
@@ -426,14 +426,14 @@ func _build_unlock_well_lines() -> Array:
 
 func _build_treasure_and_unlock_lines() -> Array:
 	var lines := _build_dabao_treasure_lines()
-	lines.append(_n("收好銅錢後，劉語塵重新看向井沿那道奇異扣孔。"))
+	lines.append(_n("收好銅錢後，你重新看向井沿那道奇異扣孔。"))
 	lines.append_array(_build_unlock_well_lines())
 	return lines
 
 
 func _build_unlocked_keyhole_lines() -> Array:
 	return [
-		_n("劉語塵看著嵌在井身上的半弦銅釦。銅釦與扣孔嚴絲合縫。"),
+		_n("你看著嵌在井身上的半弦銅釦。銅釦與扣孔嚴絲合縫。"),
 		_l("沒想到這口看似尋常的廢井，竟藏著如此精巧的機關。"),
 	]
 

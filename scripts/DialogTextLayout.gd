@@ -40,6 +40,21 @@ class Measurer:
 ##  - 一句超過兩行：這一句自己一頁。
 ##  - 單句超過頁面行數上限：在行界拆成相鄰頁。
 ## 行內盡量填滿到文字區右緣（有立繪時就是快碰到立繪），不為了平衡而提早斷行。
+## 旁白是不是「以玩家（你）為主語」：你覺得／你發現／你想起……這類句子走劉語塵同側（下方）的對話框。
+## 描寫別人的動作或環境（含「顧石看了你一眼」這種把你當受詞的句子）仍走上方旁白框。
+const SECOND_PERSON_LEAD := "，。；、：！？…但而是便才卻又也仍竟更還"
+
+static func is_second_person_narration(text: String) -> bool:
+	if text.contains("：「"):
+		return false
+	var at := text.find("你")
+	while at != -1:
+		if at == 0 or SECOND_PERSON_LEAD.contains(text.substr(at - 1, 1)):
+			return true
+		at = text.find("你", at + 1)
+	return false
+
+
 static func layout_pages(text: String, measurer: Measurer, max_width: float, max_lines: int = MAX_LINES) -> Array:
 	if text.contains("\n"):
 		return [text]

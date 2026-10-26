@@ -456,7 +456,7 @@ func _build_intro_fallback_lines() -> Array:
 		_l("書眠姑娘，當心！", liuyu_speaker_id, liuyu_portrait_path),
 		_l("劉少俠，我沒問題。", shumian_speaker_id, shumian_portrait_path),
 		_n("她袖中筆鋒一轉，衣袂微揚，竟已擺出迎敵架勢。"),
-		_n("劉語塵微微一怔，隨即握劍。"),
+		_n("你微微一怔，隨即握劍。"),
 		_l("嗯。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("一起上。", liuyu_speaker_id, liuyu_portrait_path),
 	]
@@ -813,7 +813,7 @@ func _play_phase_transition_and_start_phase2() -> void:
 		_l("!!", liuyu_speaker_id, liuyu_portrait_path),
 		_l("……原來，你就是飲月山莊的左大俠。", liuyu_speaker_id, liuyu_portrait_path),
 	])
-	await _show_dialog([_n("左飲短暫看過白書眠、劉語塵與墨鱗魘將，隨即辨明了眼前的戰況。")])
+	await _show_dialog([_n("左飲短暫看過白書眠、你與墨鱗魘將，隨即辨明了眼前的戰況。")])
 	await _show_dialog([
 		_l("……", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),
 		_l("原來如此。", zuoyin_speaker_id, zuoyin_portrait_path, "左飲"),

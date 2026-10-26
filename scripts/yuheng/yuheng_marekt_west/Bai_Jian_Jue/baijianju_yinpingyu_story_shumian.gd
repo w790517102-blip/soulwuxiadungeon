@@ -392,7 +392,7 @@ func _build_yinpingyu_reading_lines() -> Array:
 		_n("《銀屏語》第一首"),
 		_n("銀屏不語月先明，\n一寸清光照舊城。\n人倚窗前聽遠曲，\n不知心事已無聲。"),
 		_n("你原本只是翻閱。"),
-		_n("可『遠曲』二字落入眼中時，他忽然覺得那道一直浮在鎮上的琴聲，也像從紙背後傳來。"),
+		_n("可『遠曲』二字落入眼中時，你忽然覺得那道一直浮在鎮上的琴聲，也像從紙背後傳來。"),
 		_n("《銀屏語》第二首"),
 		_n("簾外風過竹影斜，\n杯中茶冷未歸家。\n欲問故人何處去，\n半句吞回作落花。"),
 		_n("你的指尖停在『半句吞回』四字上。"),
@@ -406,7 +406,7 @@ func _build_yinpingyu_reading_lines() -> Array:
 		])
 	else:
 		lines.append_array([
-			_n("那些字像落在水面上，明明輕，卻把心底某處壓得很深。"),
+			_y("那些字像落在水面上，明明輕，卻把心底某處壓得很深。"),
 			_n("你說不出自己想起了誰，只覺得這半句吞回，像玉衡鎮裡太多人說到一半便消失的聲音。"),
 		])
 
@@ -424,7 +424,7 @@ func _build_yinpingyu_reading_lines() -> Array:
 		_l("但那不是封底。", liuyu_speaker_id, liuyu_portrait_path),
 		_n("須臾之後，你的目光慢慢定住。"),
 		_n("你想起前三首裡那些欲言又止、心事無聲、墨盡無痕的句子。"),
-		_n("若最後仍落成字，反而太滿。"),
+		_y("若最後仍落成字，反而太滿。"),
 		_l("這就是第四首詩。", liuyu_speaker_id, liuyu_portrait_path),
 		_n("書眠抬眼看向你，神色微動。"),
 		_l("你看見了？", speaker_id, portrait_path),
@@ -459,7 +459,7 @@ func _build_resonance_lines() -> Array:
 		_n("你曾在讀《臨風寄影》時被這樣的琴聲壓住過。"),
 		_n("心裡剛要浮起的感動，會先變得遲緩；接著，那些酸楚、不甘、憐惜，都像被一隻溫柔卻不容抗拒的手按回水底。"),
 		_n("這一次，你知道預兆。"),
-		_n("也知道自己不願再讓它發生。"),
+		_y("也知道自己不願再讓它發生。"),
 		_l("……不行。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("語塵？", speaker_id, portrait_path),
 		_l("這份感動不是多餘的。", liuyu_speaker_id, liuyu_portrait_path),
@@ -640,5 +640,14 @@ func _n(text: String) -> Dictionary:
 	return {
 		"text": text,
 		"speaker": narration_speaker_id,
+		"portrait": empty_portrait_path,
+	}
+
+
+## 第二人稱／劉語塵內心的旁白：用下方、劉語塵同側的對話框，不帶頭像。
+func _y(text: String) -> Dictionary:
+	return {
+		"text": text,
+		"speaker": liuyu_speaker_id,
 		"portrait": empty_portrait_path,
 	}

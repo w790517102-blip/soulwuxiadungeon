@@ -198,6 +198,10 @@ func _play_dialog_sequence():
 			var text = line_data.get("text", "")
 			var speaker = line_data.get("speaker", 1)
 			var portrait = _resolve_portrait(str(text), speaker, str(line_data.get("portrait", "")))
+			# 第二人稱旁白（你覺得／你發現）改用下方、劉語塵同側的框，不帶頭像。
+			if speaker == NARRATION_SPEAKER_ID and DialogTextLayout.is_second_person_narration(str(text)):
+				speaker = LIUYU_SPEAKER_ID
+				portrait = ""
 			var speaker_name = line_data.get("speaker_name", "")
 			await _head_dialog(text, portrait, speaker, speaker_name, str(line_data.get("layout", "")) == "raw")
 			await _wait_for_continue()

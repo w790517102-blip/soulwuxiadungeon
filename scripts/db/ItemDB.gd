@@ -37,7 +37,7 @@ const ITEM_DEFS := {
 	"quest_valley_shadow_grass": {"name": "谷影草", "desc": "生於谷邊陰影與濕氣交界的藥草。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"item_gushi_lunchbox": {"name": "阿婆的便當", "desc": "竹林郊外的阿婆託你送給飲月山莊門衛顧石的便當。飯菜仍帶著一點溫度。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"item_yinpingyu_scroll": {"name": "《銀屏語》", "desc": "書眠交給劉語塵的薄詩卷。前三首寫欲言又止，封底的留白則像一首等待讀者接住的無字之詩。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
-	"item_half_string_copper_button": {"name": "半弦銅釦", "desc": "一枚只餘半輪的古舊銅釦，表面刻著細密弦紋。紅徽音認為，它能開啟醉月茶坊後巷廢井的機關。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
+	"item_half_string_copper_button": {"name": "半弦銅釦", "desc": "書眠早年交給紅徽音的信物，形似半枚月。邊緣刻有細弦紋，靠近井旁月紋石磚時，似乎會微微震動。紅徽音說，它能開啟醉月茶坊後巷舊井的機關。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"wep_wood_sword": {"name": "木劍", "desc": "入門木劍。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 1}},
 	"wep_short_blade": {"name": "短刀", "desc": "短柄單刀。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_2", "weapon_type": "刀", "stats": {"atk": 2}},
 	"wep_qingfeng_sword": {"name": "湛鋒劍", "desc": "均衡劍器。", "type": "equipment", "rarity": 1, "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 3}},

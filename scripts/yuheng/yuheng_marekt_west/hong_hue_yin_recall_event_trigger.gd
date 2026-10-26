@@ -168,19 +168,19 @@ func _release_entry_lock_if_no_event() -> void:
 
 func _build_huiyin_voice_lines() -> Array:
 	return [
-		_n("劉語塵走出白箋居。"),
+		_n("你走出白箋居。"),
 		_n("天色漸暗，市集聲音變得稀薄。遠處琴聲仍在。"),
 		_n("白箋居的門在身後合上，聲音很輕，卻像又一扇門關了。"),
 		_l("左飲閉了山門。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("書眠也關上了筆墨。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("茶坊女伶的琴聲……卻偏偏在這時候纏住了我。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("他站在階下，一語不發。"),
-		_n("左飲的線索中斷，鎮上的琴音難解，現在連書眠也將話收回了空白裡。"),
-		_n("香包的氣味仍在衣襟旁，混著白箋居裡帶出的墨香。"),
+		_n("你站在階下，一語不發。"),
+		_y("左飲的線索中斷，鎮上的琴音難解，現在連書眠也將話收回了空白裡。"),
+		_y("香包的氣味仍在衣襟旁，混著白箋居裡帶出的墨香。"),
 		_l("我是不是……還是太晚了？", liuyu_speaker_id, liuyu_portrait_path),
 		_n("微弱琴音與女性耳語混合浮現。"),
 		_l("少俠……", huiyin_speaker_id, huiyin_portrait_path),
-		_n("劉語塵驚愕抬頭。"),
+		_n("你驚愕抬頭。"),
 		_l("誰？", liuyu_speaker_id, liuyu_portrait_path),
 		_l("你終於能聽見我的弦外之音了。", huiyin_speaker_id, huiyin_portrait_path),
 		_l("醉月茶坊的彈琴女伶？", liuyu_speaker_id, liuyu_portrait_path),
@@ -219,5 +219,14 @@ func _n(text: String) -> Dictionary:
 	return {
 		"text": text,
 		"speaker": narration_speaker_id,
+		"portrait": empty_portrait_path,
+	}
+
+
+## 第二人稱／劉語塵內心的旁白：用下方、劉語塵同側的對話框，不帶頭像。
+func _y(text: String) -> Dictionary:
+	return {
+		"text": text,
+		"speaker": liuyu_speaker_id,
 		"portrait": empty_portrait_path,
 	}
