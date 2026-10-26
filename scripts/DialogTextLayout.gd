@@ -268,7 +268,7 @@ static func _greedy(text: String, n: int, prefix: Array, blocked: Dictionary, ma
 		if end >= n:
 			last_ok = n
 		elif last_ok > start:
-			for back in range(last_ok, maxi(start + 1, last_ok - 4), -1):
+			for back in range(last_ok, maxi(start + 1, last_ok - 5), -1):
 				if SOFT_BREAK_AFTER.contains(text[back - 1]) and _can_break(text, back, blocked):
 					last_ok = back
 					break
@@ -295,7 +295,7 @@ static func _fill_pair(text: String, measurer: Measurer, max_width: float) -> Ar
 			break
 	if best <= 0:
 		return []
-	for back in range(best, maxi(1, best - 4), -1):
+	for back in range(best, maxi(1, best - 6), -1):
 		if SOFT_BREAK_AFTER.contains(text[back - 1]) and _can_break(text, back, blocked):
 			best = back
 			break
