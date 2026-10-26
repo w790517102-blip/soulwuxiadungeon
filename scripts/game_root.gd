@@ -124,6 +124,8 @@ func change_map_to(path: String):
 	await get_tree().process_frame
 	# 舊式 NPC（空白鍵＋Area2D）套用預設的三層互動；場景或腳本自己放了 InteractionTarget 的不動（見 NpcInteractionAdapter）
 	NpcInteractionAdapter.adopt_scene(new_scene)
+	# 舊式物件（調香室、琴室、符咒室）：Area2D 當蛋黃區、往外擴張當蛋白區、游標是饅頭手（見 ObjectInteractionAdapter）
+	ObjectInteractionAdapter.adopt_scene(new_scene)
 	var spawn_point = new_scene.get_node_or_null("SpawnPoints/%s" % spawn_point_name)
 	if spawn_point:
 		$LiuYu.global_position = spawn_point.global_position
