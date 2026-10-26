@@ -21,6 +21,44 @@ const STAT_NAMES := {
 	"accuracy_flat_bonus": "命中", "max_mp_flat_bonus": "內力上限", "max_hp_flat_bonus": "氣血上限",
 }
 
+## ------------------------------------------------------------------
+## 大地圖施展：「暫時不能施展」的原因（提示用 HOOK，不是寫死的內力判斷）
+## 每個攔截條件是一個 Callable(skill: Dictionary, caster, menu: Node) -> String：
+##   回傳 "" ＝ 這個條件沒問題；回傳短句（例如「內力不足」）＝ 暫時不能施展，畫面會把招式的圖章換成紅色並寫上這句話。
+## 依序檢查，第一個有回傳文字的就是原因；條件一滿足（例如內力回復），圖章自動變回綠色「可施展」。
+## 內建一個資源條件：招式資料 cost_resource（預設 "mp"）指定消耗哪種資源，消耗量讀 <資源>_cost（mp_cost、hp_cost…）。
+## 之後的魂體轉換（把氣血換成內力）只要寫 "cost_resource": "hp"、"hp_cost": N，就會顯示「氣血不足」；
+## 其他條件（冷卻中、被封印、要特定裝備…）用 register_cast_blocker(Callable) 加進來，不必改畫面程式。
+## ------------------------------------------------------------------
+const RESOURCE_BLOCK_TEXT := {"mp": "內力不足", "hp": "氣血不足"}
+static var _cast_blockers: Array = []
+
+static func register_cast_blocker(blocker: Callable) -> void:
+	if blocker.is_valid() and not _cast_blockers.has(blocker):
+		_cast_blockers.append(blocker)
+
+static func clear_cast_blockers() -> void:
+	_cast_blockers.clear()
+
+static func cast_block_reason(skill: Dictionary, caster, menu: Node) -> String:
+	var reason := _resource_blocker(skill, caster, menu)
+	if reason != "":
+		return reason
+	for blocker in _cast_blockers:
+		if (blocker as Callable).is_valid():
+			reason = String((blocker as Callable).call(skill, caster, menu))
+			if reason != "":
+				return reason
+	return ""
+
+static func _resource_blocker(skill: Dictionary, caster, menu: Node) -> String:
+	var resource := String(skill.get("cost_resource", "mp"))
+	var cost := int(skill.get("%s_cost" % resource, 0))
+	if cost <= 0 or caster == null or menu == null:
+		return ""
+	var have := int(menu._get_actor_value(caster, resource, 0))
+	return String(RESOURCE_BLOCK_TEXT.get(resource, "資源不足")) if have < cost else ""
+
 ## 這位角色已習得的外功依武器類別分出來有哪些類別（照固定順序；沒有的不出現）
 static func categories(skills: Array) -> Array:
 	var have := {}

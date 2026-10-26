@@ -109,6 +109,10 @@ func is_active() -> bool:
 func set_hover_kind(kind: String) -> void:
 	_hover_kind = kind
 
+func _menu_open() -> bool:
+	var global_state := get_node_or_null("/root/GlobalState")
+	return global_state != null and bool(global_state.get_meta("menu_open", false))
+
 func _has_intent() -> bool:
 	if intent_override != null:
 		return bool(intent_override)
@@ -141,7 +145,9 @@ func _process(delta: float) -> void:
 	# 按住且有移動意圖才用移動/奔跑樣式（被鎖定、在選單上按下則維持待機）。
 	# 劉語塵追上滑鼠停下來時樣式不變：矛頭停在最後的方向，等滑鼠再移開又繼續轉（不會像彈珠台那樣彈回待機）。
 	var wanted := "idle"
-	if _hover_kind.ends_with("_walk") and ICONS.has(_hover_kind):
+	if _menu_open():
+		pass   # 系統選單開著：一律待機樣式（不要讓選單裡的滑鼠還掛著互動圖示或移動、奔跑樣式）
+	elif _hover_kind.ends_with("_walk") and ICONS.has(_hover_kind):
 		wanted = "icon"   # 朝著可對話的人走過去（含按住追他的途中）：不管有沒有按住，都維持「靴子走向對話框」
 	elif (_right_down() or _left_down()) and _has_intent():
 		wanted = "run" if _right_down() else "move"

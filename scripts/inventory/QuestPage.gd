@@ -13,6 +13,7 @@ const CATEGORIES := [
 const STATUS_ART := {"進行中": "status_usable", "已完成": "badge_equipped", "已錯過": "status_disabled"}
 const STATUS_TEXT_COLOR := {"進行中": Color("#F6EEDC"), "已完成": Color.WHITE, "已錯過": Color("#D8CDB4")}
 
+const MarqueeScript = preload("res://scripts/ui/MarqueeLabel.gd")
 const ROW_H := 56
 const LIST_POS := Vector2(200, 176)
 const LIST_SIZE := Vector2(393, 384)
@@ -156,7 +157,7 @@ func _section(title: String) -> RichTextLabel:
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.add_theme_font_override("normal_font", FONT)
 	t.add_theme_font_size_override("normal_font_size", 16)
-	t.add_theme_color_override("default_color", INK)
+	_white_outline_rich(t)
 	_detail_box.add_child(t)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(1, 8)
@@ -246,17 +247,30 @@ func _rebuild_rows() -> void:
 		if not on:
 			b.mouse_entered.connect(func(): glow.modulate.a = 0.6)
 			b.mouse_exited.connect(func(): glow.modulate.a = 0.0)
-		_label(String(e.get("title", id)), Vector2(14, 4), Vector2(300, 28), 18, INK, HORIZONTAL_ALIGNMENT_LEFT, b)
+		# 欄位只有一行：放不下時平常顯示「…」，滑鼠移到這一列就用跑馬燈把剩下的字跑出來
+		var title_m := _marquee(String(e.get("title", id)), Vector2(14, 4), Vector2(300, 28), 18, INK, b)
 		var step := int(e.get("stage", 0))
 		var sub := String(e.get("objective", ""))
 		if step > 0:
 			sub = "第 %d 步　%s" % [step, sub]
-		var sl := _label(sub, Vector2(14, 31), Vector2(310, 20), 13, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, b)
-		sl.clip_text = true
+		var sub_m := _marquee(sub, Vector2(14, 31), Vector2(310, 20), 13, INK_DIM, b)
+		b.mouse_entered.connect(func():
+			title_m.start()
+			sub_m.start())
+		b.mouse_exited.connect(func():
+			title_m.stop()
+			sub_m.stop())
 		_status_chip(String(e.get("status", "進行中")), Vector2(LIST_SIZE.x - 10 - 72, 16), Vector2(60, 24), b)
 		b.pressed.connect(_on_row_pressed.bind(id))
 		_list_box.add_child(b)
 		_row_buttons[id] = b
+
+func _marquee(text: String, pos: Vector2, area: Vector2, font_size: int, color: Color, parent: Node) -> Control:
+	var m: Control = MarqueeScript.new()
+	m.position = pos
+	m.setup(text, area, FONT, font_size, color)
+	parent.add_child(m)
+	return m
 
 func _status_chip(status: String, pos: Vector2, size: Vector2, parent: Node) -> void:
 	_image(String(STATUS_ART.get(status, "status_usable")), pos, size, parent)

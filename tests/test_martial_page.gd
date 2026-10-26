@@ -121,6 +121,20 @@ func _run() -> void:
 	menu._set_actor_value(liu, "mp", 0)
 	page._cast_skill(qi)
 	_check(int(menu._get_actor_value(liu, "hp", 0)) == 20 and not page._overlay.visible, "not enough MP: nothing happens")
+	# 暫時不能施展的原因（HOOK）：內力不足 → 「內力不足」；內力回復 → 空字串（圖章變回綠色）；資源可以換成氣血；也可以再掛別的條件
+	_check(info.cast_block_reason(qi, liu, menu) == "內力不足", "no MP: the reason is 內力不足")
+	menu._set_actor_value(liu, "mp", 50)
+	_check(info.cast_block_reason(qi, liu, menu) == "", "MP recovered: no reason (the stamp is green again)")
+	var soul: Dictionary = qi.duplicate()
+	soul["cost_resource"] = "hp"
+	soul["hp_cost"] = 9999
+	_check(info.cast_block_reason(soul, liu, menu) == "氣血不足", "an HP-cost skill reports 氣血不足 (soul-body conversion hook)")
+	var blocker := func(_s, _c, _m): return "冷卻中"
+	info.register_cast_blocker(blocker)
+	_check(info.cast_block_reason(qi, liu, menu) == "冷卻中", "a registered blocker explains why a skill is unavailable")
+	info.clear_cast_blockers()
+	_check(info.cast_block_reason(qi, liu, menu) == "", "clearing the blockers restores the default")
+	menu._set_actor_value(liu, "mp", 0)
 	if not mo.is_empty():
 		menu._set_actor_value(liu, "hp", 20)
 		page._do_cast(mo, "")

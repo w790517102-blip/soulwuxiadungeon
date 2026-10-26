@@ -52,6 +52,20 @@ func _run() -> void:
 	await process_frame
 	_check(gc._state == "icon" and gc.icon.texture == gc._tex["cursor_exit_a"], "inside the exit's white zone = arrow into the open door")
 
+	# 系統選單打開時：不管剛才是互動圖示還是移動、奔跑，一律回到待機樣式（選單裡不要掛著饅頭手或對話框）
+	var global_state = root.get_node("GlobalState")
+	gc.set_hover_kind("talk")
+	gc.left_override = true
+	global_state.set_meta("menu_open", true)
+	await process_frame
+	await process_frame
+	_check(gc._state == "idle", "the cursor goes back to idle while the system menu is open")
+	global_state.set_meta("menu_open", false)
+	gc.left_override = false
+	await process_frame
+	await process_frame
+	_check(gc._state == "icon", "and the hover icon returns once the menu is closed")
+
 	gc.set_hover_kind("")
 	gc.mouse_override = null
 	gc.left_override = null

@@ -167,6 +167,13 @@ func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Co
 ## 深色字的白色柔邊（紙面上的墨字更清楚，不被紙紋與山水吃掉）。武術頁不用（soft_halo = false）
 var soft_halo := false
 
+## 說明文字（效果、使用條件、描述、筆記）用白字黑邊：放在水墨底圖上不會被背景吃掉。小標題用 RICH_HEAD_COLOR。
+const RICH_HEAD_COLOR := "#F2D98D"
+func _white_outline_rich(t: RichTextLabel, outline := 3) -> void:
+	t.add_theme_color_override("default_color", Color.WHITE)
+	t.add_theme_color_override("font_outline_color", Color.BLACK)
+	t.add_theme_constant_override("outline_size", outline)
+
 func _halo(l: Control) -> void:
 	l.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.85))
 	l.add_theme_constant_override("shadow_offset_x", 0)

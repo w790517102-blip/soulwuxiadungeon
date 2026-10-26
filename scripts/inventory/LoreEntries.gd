@@ -8,6 +8,7 @@ const ItemDBScript = preload("res://scripts/db/ItemDB.gd")
 const EnemyDBScript = preload("res://scripts/db/EnemyDB.gd")
 const ItemIconMapScript = preload("res://scripts/inventory/ItemIconMap.gd")
 const SkillDBScript = preload("res://scripts/db/SkillDB.gd")
+const CardStageArtScript = preload("res://scripts/presentation/CardStageArt.gd")
 
 const CATEGORIES := ["奇物", "豪傑", "神怪"]
 const UNKNOWN := "？？？"
@@ -118,7 +119,10 @@ static func _monsters() -> Array:
 			["掉落物", "無" if drops.is_empty() else "、".join(drops)],
 			["技能", "無" if skill_names.is_empty() else "、".join(skill_names)],
 		]
-		out.append({"id": id, "name": String(e.get("name", id)), "unlocked": true, "art": String(e.get("portrait_path", "")), "summary": "%s。氣血 %d，攻擊 %d。" % [species, int(e.get("max_hp", e.get("hp", 0))), int(e.get("atk", 0))], "rows": rows, "prose": ""})
+		# 神怪的圖統一用戰鬥卡面的插畫（沒有卡面的才退回舊立繪）
+		var card_art: Dictionary = CardStageArtScript.entry_for({"id": id, "portrait_path": String(e.get("portrait_path", ""))})
+		var monster_art := String(card_art.get("path", e.get("portrait_path", "")))
+		out.append({"id": id, "name": String(e.get("name", id)), "unlocked": true, "art": monster_art, "summary": "%s。氣血 %d，攻擊 %d。" % [species, int(e.get("max_hp", e.get("hp", 0))), int(e.get("atk", 0))], "rows": rows, "prose": ""})
 	return out
 
 static var _skill_db_inst = null

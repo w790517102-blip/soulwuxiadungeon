@@ -48,3 +48,11 @@
   還沒做：顧石、列霄（新版）、煙若（後續登場）的頭像；`Zuo_Yin_headshot2.png` 仍舊版；見聞錄怪物圖。
 - 2026-10-26（晚）：顧石頭像已 commit（37dd996，`Gu_Shi_headshot.png`，`make_hs2.py` 的 gushi 用 MINW 略過獨立槍頭）。**任務頁**新版 `scripts/inventory/QuestPage.gd`（開關 `USE_NEW_QUEST_UI`、`_update_quest_page` 在 system_menu.gd）：左分類（主線／支線／已完成，已錯過歸已完成）、中清單、右詳情；資料用 `menu._build_quest_entries()`；全用現成書房素材（狀態章暫用 status_usable／badge_equipped／status_disabled 頂替，分類圖示暫用 cat_icon_quest／book／all）。測試 `tests/test_quest_page.gd`；截圖腳本 scratchpad `quest_shot.gd`。
   下一步：老闆看過版面後，開精簡素材規格給共邊國（狀態印章三種、分類圖示、空狀態圖、可選新任務標記），素材交來放進資料夾即自動換。
+- 2026-10-26（深夜）：老闆的一批雕琢：
+  - 游標：系統選單開著時 `GameCursor` 一律待機樣式（`_menu_open()` 看 GlobalState meta menu_open）。
+  - 見聞錄：豪傑圖貼齊畫框底邊（框內緣約 x57~293、y114~302）；神怪的圖改用戰鬥卡面（`CardStageArt.entry_for`）；欄位文字放不下時用跑馬燈（`scripts/ui/MarqueeLabel.gd`；左頁欄位用即時覆蓋節點 `_build_marquee_slots`，任務頁清單列用 `_marquee`）。
+  - 說明文字改白字黑邊：`StudyPageBase._white_outline_rich`，用在道具頁（效果／使用條件／描述）、武術頁（內功心法、更換內功、技能詳情）、任務頁（描述／目標／筆記）。
+  - 老翁頭像：寫了給共邊國的簡介 `docs/gongbian_old_man_headshot_brief.md`（腳本 `scripts/yuheng/yuheng_outside/old_man_a.gd`）。
+  - **老闆要我提醒他的事**：①豪傑誌要加入**左飲**的條目（劇情上先解鎖他的人物誌）；②老翁頭像尚未有圖；③列霄新版／煙若頭像尚未做；④`Zuo_Yin_headshot2.png` 仍舊版；⑤任務頁專屬素材（狀態章、分類圖示、空狀態圖）要開規格給共邊國。
+- 2026-10-27：老闆追加：①`Zuo_Yin_headshot2.png` 已刪、鐘乳石洞改用 `Zuo_Yin_headshot.png`；②見聞錄神怪卡面放大塞滿畫框（置中裁切），豪傑仍貼底；③大地圖招式內力不足 → 紅色圖章「內力不足」（用 badge_quest 頂替紅章），回復後變綠；做成 HOOK：`MartialInfo.cast_block_reason`／`register_cast_blocker`（招式資料 `cost_resource`："hp" ＋ `hp_cost` 會顯示「氣血不足」，給之後的魂體轉換）；④白字黑邊只留在「更換內功」彈出頁、道具頁說明、任務頁；**武術頁本身與招式詳情維持原本墨色**（老闆更正）。
+  整理按鈕：`InventorySync.sort_inventory_by_id()` ＝ 依道具 id 字串順序排（不是名稱、不是類別）。

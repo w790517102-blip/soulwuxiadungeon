@@ -11,6 +11,7 @@ const EntriesScript = preload("res://scripts/inventory/LoreEntries.gd")
 
 const LD := "res://assets/UI/lore/"
 const CAT_FILE := {"奇物": "item", "豪傑": "hero", "神怪": "monster"}
+const MarqueeScript = preload("res://scripts/ui/MarqueeLabel.gd")
 const PAGE := Vector2(350, 480)
 const BASE_POS := Vector2(186, 62)           # 書底（780×520）左上；兩個頁面孔洞在 (30,20) 與 (400,20)
 const LEFT_POS := Vector2(216, 82)
@@ -360,6 +361,7 @@ func _set_t(v: float, opening := false) -> void:
 
 ## 翻一張：front＝正面（原本在右）、back＝翻過去後在左看到的背面。forward＝由右翻到左；反向就是 t 由 1 回到 0
 func _flip(front: Texture2D, back: Texture2D, left_static: Texture2D, right_under: Texture2D, forward: bool, dur: float, opening := false) -> void:
+	_clear_marquee_slots()
 	_leaf.texture = front
 	_mat.set_shader_parameter("back_tex", back)
 	_left.texture = left_static
@@ -440,14 +442,31 @@ func _page_tex(idx: int) -> Texture2D:
 		if unlocked:
 			var art_path := String(e.get("art", ""))
 			if art_path != "" and ResourceLoader.exists(art_path):
+				var tex := load(art_path) as Texture2D
 				var tr := TextureRect.new()
-				tr.texture = load(art_path) as Texture2D
+				tr.texture = tex
 				tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-				tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				tr.stretch_mode = TextureRect.STRETCH_SCALE
 				tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-				tr.position = Vector2(60, 118)
-				tr.size = Vector2(230, 180)
-				c.add_child(tr)
+				# 圖貼齊畫框的底邊（頭像、卡面都一樣）：畫框內緣約 x 55~295、y 114~302
+				var box := Rect2(57, 114, 236, 188)
+				if _cat == "神怪":
+					# 神怪的卡面插畫：放大到塞滿整個畫框，超出的部分裁掉（置中）
+					var cover := maxf(box.size.x / tex.get_width(), box.size.y / tex.get_height())
+					tr.size = tex.get_size() * cover
+					tr.position = (box.size - tr.size) * 0.5
+					var clip := Control.new()
+					clip.position = box.position
+					clip.size = box.size
+					clip.clip_contents = true
+					clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+					c.add_child(clip)
+					clip.add_child(tr)
+				else:
+					var fit := minf(box.size.x / tex.get_width(), box.size.y / tex.get_height())
+					tr.size = tex.get_size() * fit
+					tr.position = Vector2(box.position.x + (box.size.x - tr.size.x) * 0.5, box.end.y - tr.size.y)
+					c.add_child(tr)
 			var s := _vlabel(c, String(e["summary"]), Vector2(50, 348), Vector2(248, 78), 15, BODY_COL)
 			s.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	else:
@@ -493,6 +512,52 @@ func _set_idle(k: int) -> void:
 	_left.texture = _page_tex(2 * k + 1)
 	_right.texture = _page_tex(2 * k)
 	_trim_pages(2 * k)
+	_build_marquee_slots(k)
+
+## 左頁的欄位只有一行：內容放不下的欄位，滑鼠移上去時在欄位上蓋一層「紙底＋跑馬燈」把剩下的字跑出來
+## （頁面本身是烘成貼圖的，所以用另外的即時節點蓋在上面；翻頁時全部移除）
+var _marquee_slots: Array = []
+
+func _clear_marquee_slots() -> void:
+	for n in _marquee_slots:
+		if is_instance_valid(n):
+			n.queue_free()
+	_marquee_slots.clear()
+
+func _build_marquee_slots(k: int) -> void:
+	_clear_marquee_slots()
+	if k < 0 or k >= _list.size():
+		return
+	var e: Dictionary = _list[k]
+	if not bool(e.get("unlocked", false)) or String(e.get("prose", "")) != "":
+		return
+	var y := 112.0
+	for row in e.get("rows", []):
+		var text := String(row[1])
+		if FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x > 172.0:
+			var slot := Control.new()
+			slot.position = LEFT_POS + Vector2(120, y)
+			slot.size = Vector2(200, 24)
+			slot.mouse_filter = Control.MOUSE_FILTER_STOP
+			slot.z_index = 3
+			_book.add_child(slot)
+			var cover := Control.new()
+			cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cover.visible = false
+			slot.add_child(cover)
+			_vimage(cover, "lore_row_field_shared", Vector2.ZERO, Vector2(200, 24))
+			var m: Control = MarqueeScript.new()
+			m.position = Vector2(18, 0)
+			m.setup(text, Vector2(172, 24), FONT, 13, BODY_COL, 2)
+			cover.add_child(m)
+			slot.mouse_entered.connect(func():
+				cover.visible = true
+				m.start())
+			slot.mouse_exited.connect(func():
+				cover.visible = false
+				m.stop())
+			_marquee_slots.append(slot)
+		y += 32.0
 
 # ------------------------------------------------------------------
 # 開書、翻頁、收書

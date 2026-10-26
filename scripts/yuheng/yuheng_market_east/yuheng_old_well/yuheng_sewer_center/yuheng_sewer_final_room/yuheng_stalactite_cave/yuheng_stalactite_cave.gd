@@ -29,7 +29,7 @@ const MolinPhase2ParryTexture: Texture2D = preload("res://assets/sprites/NPC/Yuh
 @export var empty_portrait_path := "res://assets/sprites/empty.png"
 @export var liuyu_portrait_path := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 @export var shumian_portrait_path := "res://assets/sprites/NPC/Yuheng/Su_Mien_headshot2.png"
-@export var zuoyin_portrait_path := "res://assets/sprites/NPC/Yuheng/Zuo_Yin_headshot2.png"
+@export var zuoyin_portrait_path := "res://assets/sprites/NPC/Yuheng/Zuo_Yin_headshot.png"
 @export var boss_phase1_portrait_path := "res://assets/Enemy/molingyanjiang_phase1.png"
 @export var boss_phase2_portrait_path := "res://assets/Enemy/molingyanjiang_phase2.png"
 

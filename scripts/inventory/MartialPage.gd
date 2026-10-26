@@ -577,7 +577,11 @@ func _rebuild_skill_rows() -> void:
 		_label(wt, Vector2(62, 25), Vector2(90, 14), 10, INK_DIM, HORIZONTAL_ALIGNMENT_LEFT, row)
 		# 「可施展」只標在大地圖能用的招式（menu_usable）；其他招式只能在戰鬥中用，不標。雙擊施展
 		if _world_usable(s):
-			_stamp("可施展", Rect2(ROW_SIZE.x - 60, 12, 56, 22), row, 12)
+			var why := _cast_block_reason(s)
+			if why == "":
+				_stamp("可施展", Rect2(ROW_SIZE.x - 60, 12, 56, 22), row, 12)
+			else:
+				_stamp(why, Rect2(ROW_SIZE.x - 74, 12, 66, 22), row, 12, "badge_quest")      # 暫時不能施展：紅色圖章寫原因，條件滿足就變回綠色
 		row.pressed.connect(_on_skill_pressed.bind(s))
 		row.gui_input.connect(_on_row_gui_input.bind(s))
 
@@ -604,7 +608,11 @@ func _open_skill_detail() -> void:
 	_label(String(selected_skill.get("name", "???")), pos + Vector2(124, 126), Vector2(220, 34), 26, INK, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	_label("%s・%s" % [String(selected_skill.get("weapon_type", "")), String(selected_skill.get("category", ""))], pos + Vector2(124, 160), Vector2(220, 22), 14, PAPER_ACCENT, HORIZONTAL_ALIGNMENT_LEFT, _overlay)
 	if _world_usable(selected_skill):
-		_stamp("可施展（雙擊招式列）", Rect2(pos.x + 124, pos.y + 188, 150, 28), _overlay, 13)
+		var why_now := _cast_block_reason(selected_skill)
+		if why_now == "":
+			_stamp("可施展（雙擊招式列）", Rect2(pos.x + 124, pos.y + 188, 150, 28), _overlay, 13)
+		else:
+			_stamp(why_now, Rect2(pos.x + 124, pos.y + 188, 110, 28), _overlay, 13, "badge_quest")
 	var mp := int(selected_skill.get("mp_cost", 0))
 	var rows := [["消耗", ("內力 %d" % mp) if mp > 0 else "無"], ["目標", MartialInfoScript.target_text(selected_skill)]]
 	for i in rows.size():
@@ -752,9 +760,9 @@ func _show_force_picker() -> void:
 		detail.bbcode_enabled = true
 		detail.add_theme_font_override("normal_font", FONT)
 		detail.add_theme_font_size_override("normal_font_size", 13)
-		_outline_rich(detail)
+		_white_outline_rich(detail)      # 更換內功頁面：白字黑邊（武術頁本身與招式詳情維持原本的墨色）
 		var eff: Array = MartialInfoScript.force_effect_lines(chosen, _actor_dict())
-		detail.text = "%s\n\n[color=#5A3208]效果[/color]\n%s" % [String(chosen.get("description", "")), "\n".join(eff.map(func(l): return "• " + String(l)))]
+		detail.text = "%s\n\n[color=#F2D98D]效果[/color]\n%s" % [String(chosen.get("description", "")), "\n".join(eff.map(func(l): return "• " + String(l)))]
 		_overlay.add_child(detail)
 	var ok := _tex_button(Vector2(160, 40), pos + Vector2(150, size.y - 76), "btn_primary_normal", "btn_primary_hover", "btn_primary_pressed", "btn_primary_disabled", 48, 16, _overlay)
 	ok.text = "更換"
@@ -843,6 +851,12 @@ func _outline_rich(t: RichTextLabel) -> void:
 # 大地圖施展：只有 menu_usable 的招式（氣療掌、墨筆舒心、澄心落筆…）可施展；雙擊招式列。
 # 單體 → 選對象；全體 → 直接施展。扣內力、套用效果沿用 system_menu._apply_world_skill（與舊武學頁同一套）
 # ------------------------------------------------------------------
+## 目前暫時不能施展的原因（"" ＝ 可以）。內力不足、氣血不足與之後的其他條件都走 MartialInfo.cast_block_reason 這個 HOOK
+func _cast_block_reason(s: Dictionary) -> String:
+	if menu == null:
+		return ""
+	return MartialInfoScript.cast_block_reason(s, menu._get_actor_by_id(actor_id), menu)
+
 func _world_usable(s: Dictionary) -> bool:
 	return bool(s.get("menu_usable", false)) and (menu == null or menu._can_use_skill_now(s, actor_id))
 
@@ -873,8 +887,9 @@ func _cast_skill(s: Dictionary) -> void:
 	var caster = menu._get_actor_by_id(actor_id)
 	if caster == null:
 		return
-	if int(menu._get_actor_value(caster, "mp", 0)) < int(s.get("mp_cost", 0)):
-		show_toast("內力不足")
+	var why := MartialInfoScript.cast_block_reason(s, caster, menu)
+	if why != "":
+		show_toast(why)
 		return
 	if String(s.get("target_scope", "single")) == "ally_all":
 		_do_cast(s, "")
@@ -1053,8 +1068,8 @@ func _play_heal_fx(id: String, healed: bool) -> void:
 		tw.tween_callback(fx.queue_free)
 
 ## 毛筆痕跡的綠色圖章（道具頁用的使用類型章 status_usable），字壓在上面
-func _stamp(text: String, rect: Rect2, parent: Node, font_size: int) -> TextureRect:
-	var r := _image("status_usable", rect.position, rect.size, parent)
+func _stamp(text: String, rect: Rect2, parent: Node, font_size: int, art := "status_usable") -> TextureRect:
+	var r := _image(art, rect.position, rect.size, parent)
 	var l := _label(text, Vector2.ZERO, rect.size, font_size, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, r)
 	l.add_theme_color_override("font_color", Color.WHITE)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
