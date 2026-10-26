@@ -64,3 +64,4 @@
   排版：尾行太短重排最後兩行時改用 `_fill_pair`（第一行盡量排滿、第二行至少 6 字、優先逗號後斷），不再平均成兩行一樣長（老翁「外物盡去…」那句）。
 - 2026-10-27：老翁美術換成第二版（水墨加工筆風：`cutout/old_man.png`、`enemy_old_fighter.webp`、`Old_Man_headshot.png` 已重做）。斷行：逗號優先斷點的視窗放寬到最後 5 字（貪婪斷行與 `_fill_pair`），避免「觸／及」被拆開；寫死 4→5 要留意 `test_dialog_text_layout` 的「第一行至少填到右緣前 5 字」。
 - 2026-10-27：列霄新版頭像（覆蓋 `LieShao_headshot2.png`）、煙若頭像 `assets/sprites/NPC/YinHuo/Yan_Ruo_headshot.png`（尚無腳本引用，她登場時指向它）；神怪誌圖再放大 1% 並多出 1px 壓在框下，填滿左右縫隙。仍是舊圖的頭像：折簷翁、娜亞。
+- 2026-10-27：道具「整理」改成先依種類（藥物、書籍、裝備、材料、任務、其他，同道具頁左邊分頁順序），同種類再依 id：`InventorySync.sort_inventory()`（種類看 ItemDB 資料，背包列本身只有 id／數量）、`ItemCategory.sort_rank`；測試 `tests/test_inventory_sort.gd`。舊的 `sort_inventory_by_id()` 保留。

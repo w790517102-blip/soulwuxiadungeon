@@ -574,6 +574,24 @@ func _notify_gold_delta(delta: int) -> void:
 		toast.push_message("失去：%d 文" % amount)
 
 
+## 整理背包（道具頁的「整理」按鈕）：先依種類（順序同道具頁左邊的分頁：藥物、書籍、裝備、材料、任務、其他），
+## 同一種類裡再依道具 id（穩定、每次結果相同）。
+func sort_inventory() -> void:
+	party_inventory.sort_custom(func(a, b):
+		var ra := _sort_rank(a)
+		var rb := _sort_rank(b)
+		if ra != rb:
+			return ra < rb
+		return str(a.get("id", "")) < str(b.get("id", "")))
+	inventory_changed.emit()
+
+
+## 背包列只存 id 和數量；種類要看 ItemDB 的道具資料（資料庫沒有這個 id 時，退回看列本身的 type／category）
+func _sort_rank(entry: Dictionary) -> int:
+	var def: Dictionary = ItemDB.get_def(str(entry.get("id", "")))
+	return ItemCategory.sort_rank(def if not def.is_empty() else entry)
+
+
 ## 整理背包：依道具 id 排序（穩定、每次結果相同）。預設的排列是「取得順序」，只有玩家按「整理」才會改。
 func sort_inventory_by_id() -> void:
 	party_inventory.sort_custom(func(a, b): return str(a.get("id", "")) < str(b.get("id", "")))

@@ -39,6 +39,10 @@ static func category_of(item: Dictionary) -> String:
 		"quest": return QUEST
 	return OTHER
 
+## 整理用的排序名次：依左邊分頁的順序（藥物、書籍、裝備、材料、任務、其他）；「全部」不是道具自己的分類，不算
+static func sort_rank(item: Dictionary) -> int:
+	return maxi(0, _ITEM_CATEGORIES.find(category_of(item)))
+
 ## 這個道具在指定的篩選標籤下要不要顯示（"all" = 全部都顯示）
 static func matches(item: Dictionary, tab_id: String) -> bool:
 	return tab_id == ALL or category_of(item) == tab_id

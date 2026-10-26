@@ -489,8 +489,8 @@ func _on_use_pressed() -> void:
 		_refresh()
 
 func _on_sort_pressed() -> void:
-	InventorySync.sort_inventory_by_id()
-	show_toast("已整理")
+	InventorySync.sort_inventory()
+	show_toast("已整理（依種類）")
 
 func _on_drop_pressed() -> void:
 	var def := _item_def(selected_id)
