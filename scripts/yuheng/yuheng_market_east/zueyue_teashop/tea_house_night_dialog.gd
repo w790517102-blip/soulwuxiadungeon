@@ -146,7 +146,7 @@ static func _repeat_before_button(key: String, s: int, p: String) -> Array:
 		], s, p)
 	return _say(key, [
 		"茶還熱著，小的再添半盞？",
-		"噓……話說大聲了，又卡嗓子。",
+		"咳……話說大聲了，又卡嗓子。",
 	], s, p)
 
 
