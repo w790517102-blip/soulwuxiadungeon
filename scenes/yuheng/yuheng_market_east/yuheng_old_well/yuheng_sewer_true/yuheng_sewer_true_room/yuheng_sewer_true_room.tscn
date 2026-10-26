@@ -6193,6 +6193,7 @@ shape = SubResource("RectangleShape2D_room_wide")
 
 [node name="memory_room_qin" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "舊琴"
 interaction_radius = 0.0
@@ -6209,6 +6210,7 @@ polygon = PackedVector2Array(-147.9, -138.5, -101.1, -162.3, 47.6, -85.8, -1.7, 
 
 [node name="memory_room_writing_desk" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "寫字檯"
 interaction_radius = 0.0
@@ -6225,6 +6227,7 @@ polygon = PackedVector2Array(153.8, 167.4, 319.6, 75.6, 404.6, 121.5, 247.3, 215
 
 [node name="memory_room_medicine_cabinet" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "藥櫃抽屜"
 interaction_radius = 0.0
@@ -6236,6 +6239,7 @@ require_facing = true
 
 [node name="loot_old_herb_pouch" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "藥櫃下層的布包"
 interaction_radius = 0.0
@@ -6247,6 +6251,7 @@ require_facing = true
 
 [node name="loot_calm_pill" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "琴案旁的小匣"
 interaction_radius = 0.0
@@ -6258,6 +6263,7 @@ require_facing = true
 
 [node name="fix_wall_talisman" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "牆上的舊符"
 interaction_radius = 0.0
@@ -6269,6 +6275,7 @@ require_facing = true
 
 [node name="fix_lion_waterhead" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "獅頭水口"
 interaction_radius = 0.0
@@ -6280,6 +6287,7 @@ require_facing = true
 
 [node name="fix_channel_lamps" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "渠道旁的舊燈（左）"
 interaction_radius = 0.0
@@ -6296,6 +6304,7 @@ polygon = PackedVector2Array(-392.7, 154.7, -343.4, 135.2, -306.8, 158.9, -351.9
 
 [node name="fix_channel_lamps_b" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "渠道旁的舊燈（右）"
 interaction_radius = 0.0

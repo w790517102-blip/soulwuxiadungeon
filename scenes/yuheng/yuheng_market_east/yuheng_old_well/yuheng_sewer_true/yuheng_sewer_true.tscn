@@ -6192,6 +6192,7 @@ shape = SubResource("RectangleShape2D_qd_medium")
 
 [node name="memory_qin" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "水邊舊琴"
 interaction_radius = 0.0
@@ -6208,6 +6209,7 @@ polygon = PackedVector2Array(127.2, 281.6, 244.1, 228.3, 323.1, 270.5, 306.5, 28
 
 [node name="memory_writing_desk" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "書案"
 interaction_radius = 0.0
@@ -6224,6 +6226,7 @@ polygon = PackedVector2Array(-58.5, -170.3, -7.1, -187.8, 92.4, -144, 45, -124.9
 
 [node name="memory_medicine_cabinet" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "藥櫃"
 interaction_radius = 0.0
@@ -6240,6 +6243,7 @@ polygon = PackedVector2Array(-530.1, -11.1, -446.4, -44.6, -415.6, -27, -496.9, 
 
 [node name="loot_herb_basket" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "竹籃"
 interaction_radius = 0.0
@@ -6256,6 +6260,7 @@ polygon = PackedVector2Array(-570.4, -34.8, -485.6, 1.2, -485.6, 16.9, -555.2, 4
 
 [node name="loot_qi_box" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "書冊後的小木匣"
 interaction_radius = 0.0
@@ -6272,6 +6277,7 @@ polygon = PackedVector2Array(-149.3, -178.2, -21.6, -235.3, -1.3, -227.8, -129.6
 
 [node name="loot_haste_scroll" type="Node2D" parent="InteractionZones"]
 script = ExtResource("interaction_target_script")
+cursor_kind = "inspect"
 mode = 2
 display_name = "桌腳旁的符紙"
 interaction_radius = 0.0

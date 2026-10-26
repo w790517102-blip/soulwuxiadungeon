@@ -73,3 +73,4 @@
 - 2026-10-27：老翁對話頭像再 zoom out（裁切高 0.44、寬高比 1.05），露出胸口到腰帶。
 - 2026-10-27：老翁頭像再調：裁切高 0.385、寬高比 1.08，剛好切在腰帶上方（老闆指示）。
 - 2026-10-27：井身扣孔（白天／夜晚 `well_keyhole`）游標改成 `cursor_kind = "inspect"`（白色饅頭手）。**盤點：目前所有物件型互動目標仍是預設 "talk"（對話泡泡框）**：舊水道真實側（`yuheng_sewer_true.tscn`：memory_qin／memory_writing_desk／memory_medicine_cabinet、loot_herb_basket／loot_qi_box／loot_haste_scroll）、記憶室（`yuheng_sewer_true_room.tscn`：memory_room_*、loot_old_herb_pouch／loot_calm_pill、fix_wall_talisman／fix_lion_waterhead／fix_channel_lamps／fix_channel_lamps_b）。人物 NPC 用泡泡框是對的（含舊式 NPC 自動套用的預設）。老闆還沒決定那些要不要一併改成饅頭手。
+- 2026-10-27：舊水道真實側＋記憶室共 15 個物件目標改 `cursor_kind = "inspect"`（饅頭手）。**語魅汙染舊水道**（`yuheng_sewer_center` 一帶）的物件（調香室 alchemy_table／medicine_cabinet／alchemy_recipe、琴室 guqin／Music_Plate 發聲石板、符咒室三張符 heart／mouth／water talisman 等）**還是舊式 Space＋Area2D，沒有 InteractionTarget，所以沒有滑鼠游標與點選**——要改成饅頭手得先替它們補蛋黃／蛋白區（屬於「蛋白蛋黃區補完」工作），待老闆決定做法（等他手畫，或先由程式用現有 Area2D 形狀自動產生預設區）。
