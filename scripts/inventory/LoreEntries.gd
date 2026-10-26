@@ -122,7 +122,8 @@ static func _monsters() -> Array:
 		# 神怪的圖統一用戰鬥卡面的插畫（沒有卡面的才退回舊立繪）
 		var card_art: Dictionary = CardStageArtScript.entry_for({"id": id, "portrait_path": String(e.get("portrait_path", ""))})
 		var monster_art := String(card_art.get("path", e.get("portrait_path", "")))
-		out.append({"id": id, "name": String(e.get("name", id)), "unlocked": true, "art": monster_art, "summary": "%s。氣血 %d，攻擊 %d。" % [species, int(e.get("max_hp", e.get("hp", 0))), int(e.get("atk", 0))], "rows": rows, "prose": ""})
+		var monster_focus: Vector2 = card_art.get("focus", Vector2(0.5, 0.5))
+		out.append({"id": id, "name": String(e.get("name", id)), "unlocked": true, "art": monster_art, "art_focus": monster_focus, "summary": "%s。氣血 %d，攻擊 %d。" % [species, int(e.get("max_hp", e.get("hp", 0))), int(e.get("atk", 0))], "rows": rows, "prose": ""})
 	return out
 
 static var _skill_db_inst = null

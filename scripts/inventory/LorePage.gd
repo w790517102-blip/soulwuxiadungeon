@@ -454,7 +454,10 @@ func _page_tex(idx: int) -> Texture2D:
 					# 神怪的卡面插畫：放大到塞滿整個畫框，超出的部分裁掉（置中）
 					var cover := maxf(box.size.x / tex.get_width(), box.size.y / tex.get_height())
 					tr.size = tex.get_size() * cover
-					tr.position = (box.size - tr.size) * 0.5
+					# 焦點（臉或主體）盡量放在畫框中央；超出的部分裁掉，但圖一定蓋滿整個框
+					var focus: Vector2 = e.get("art_focus", Vector2(0.5, 0.5))
+					var want := box.size * 0.5 - tr.size * focus
+					tr.position = Vector2(clampf(want.x, box.size.x - tr.size.x, 0.0), clampf(want.y, box.size.y - tr.size.y, 0.0))
 					var clip := Control.new()
 					clip.position = box.position
 					clip.size = box.size

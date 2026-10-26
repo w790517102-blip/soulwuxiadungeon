@@ -3,7 +3,7 @@ extends CharacterBody2D
 const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 
 @export var z_index_offset := 0
-@export var portrait_path := "res://assets/sprites/empty.png"
+@export var portrait_path := "res://assets/sprites/NPC/Yuheng/Old_Man_headshot.png"
 @export var speaker_id := 1
 @export var gossip_flag := "heard_oldman_zuoyin" # 例："heard_oldman_leftyin"
 @export var trigger_topic := "zuoyin" # 例："leftyin"

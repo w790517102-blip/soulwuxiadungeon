@@ -59,3 +59,6 @@
 - 2026-10-27：老翁台詞（問「石破心法可練得如何」那組）改成老闆給的新版（掃帚吐槽）。對話分頁規則調整（`DialogTextLayout.layout_pages`）：一頁沒滿兩行時，下一句只要合計不超過三行就接上去，不急著換頁；已滿兩行、接上去會超過兩行才換頁；單句超過兩行自己一頁。測試 `tests/test_dialog_text_layout.gd` 已更新。
 - 2026-10-27：**更正**：開場房間（`scenes/intro_room.tscn` 的獨立 Sprite2D）之前我為了「不變形」指向舊版備份，結果老闆在遊戲裡看到劉語塵頭像「換回舊的」。已改回新圖（縮放 0.729、底邊對齊原位），並刪掉 `LiuYu_headshot_legacy.png`。教訓：換圖時要找出所有獨立顯示頭像的地方（不只 DialogManager），不要留舊圖備份。
 - 2026-10-27：老闆澄清「斷句太快」＝**同一頁兩行時第一行比第二行短**（老翁稱讚「武人胚子」那句）。原因：兩行平均斷行（`_solve`）成本相同時取了較早的斷點。已改成成本相同取較晚斷點（第一行排滿一點）；測試 `even_text` 涵蓋。僅剩的例外：在句號後斷行（自然的句尾斷點）在很窄的欄位可能第一行較短。
+- 2026-10-27：**老翁美術**到了：去背版 `assets/Character/cutout/old_man.png`（→ 對話頭像 `Old_Man_headshot.png`，zoom-out 0.34，`old_man_a.gd` 的 portrait_path 已指向）；有背版 `assets/sprites/battle_cards/enemy_old_fighter.webp`（→ `CardStageArt` 條目 `yuheng_old_fighter`，focus 0.44/0.17；神怪誌「演武老翁」已顯示）。EnemyDB 早就有 `yuheng_old_fighter`（演武老翁），打過比試後（`lore_enemy_<id>` 旗標）出現在神怪誌。**豪傑誌的老翁條目還沒做**（老闆在討論要不要；我建議要，解鎖點＝第一次對話後）。
+  見聞錄神怪圖現在支援 `art_focus`（卡面條目的 focus），直式插畫會以焦點（臉）置中裁切。
+  排版：尾行太短重排最後兩行時改用 `_fill_pair`（第一行盡量排滿、第二行至少 6 字、優先逗號後斷），不再平均成兩行一樣長（老翁「外物盡去…」那句）。

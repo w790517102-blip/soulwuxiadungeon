@@ -86,6 +86,10 @@ func _run() -> void:
 	var even_text := "老翁：「如今你捨去外物，仍能守住拳意，這才是真正的武人胚子。」"
 	var even_lines: PackedStringArray = String(Layout.layout_pages(even_text, m, 800.0)[0]).split(String.chr(10))
 	_expect(even_lines.size() == 2 and m.width(even_lines[0]) >= m.width(even_lines[1]), "the first line is not shorter than the second: %s" % str(even_lines))
+	# 尾行太短要重排時，第一行盡量排滿（不平均成兩行一樣長而提早換行）
+	var fuller := "老翁：「若你能再進一步，外物盡去，拳意純然，或許能觸及真正的——」"
+	var fuller_lines: PackedStringArray = String(Layout.layout_pages(fuller, m, 880.0)[0]).split(String.chr(10))
+	_expect(fuller_lines.size() == 2 and fuller_lines[0].contains("拳意純然") and fuller_lines[1].length() >= 4, "orphan fix keeps the first line full: %s" % str(fuller_lines))
 	var tiny := "劉語塵：「在下劉語塵。」"
 	_expect(Layout.layout_pages(tiny, m, 966.0) == [tiny], "one short sentence stays one page, one line")
 

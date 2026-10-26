@@ -31,6 +31,7 @@ const ENTRIES: Dictionary = {
 	"bamboo_bobcat": {"path": DIR + "enemy_bobcat.webp", "mode": "cover", "focus": Vector2(0.40, 0.42)},
 	"bamboo_macaque": {"path": DIR + "enemy_macaque.webp", "mode": "cover", "focus": Vector2(0.50, 0.50)},
 	"bamboo_poison_snake": {"path": DIR + "enemy_snake.webp", "mode": "cover", "focus": Vector2(0.55, 0.45)},
+	"yuheng_old_fighter": {"path": DIR + "enemy_old_fighter.webp", "mode": "cover", "focus": Vector2(0.44, 0.17)},   # 演武老翁：直式插畫，焦點在臉
 }
 const ALIASES: Dictionary = {
 	"liu_yu": "liuyu", "su_mien": "shumian", "zuo_yin": "zuoyin",

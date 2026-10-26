@@ -278,6 +278,34 @@ static func _greedy(text: String, n: int, prefix: Array, blocked: Dictionary, ma
 	return lines
 
 
+## 尾行太短時重排最後兩行：第一行盡量排滿，只要讓第二行不再是孤字（至少 MIN_TAIL_CHARS 個字）就好，
+## 不為了兩行一樣長而提早換行；斷點優先落在逗號之後。排不出來回傳空陣列（呼叫處退回平均斷行）。
+const MIN_TAIL_CHARS := 6
+
+static func _fill_pair(text: String, measurer: Measurer, max_width: float) -> Array:
+	var n := text.length()
+	var blocked := _forbidden(text)
+	var prefix: Array = [0.0]
+	for i in n:
+		prefix.append(measurer.width(text.substr(0, i + 1)))
+	var best := -1
+	for cut in range(n - MIN_TAIL_CHARS, 0, -1):
+		if prefix[cut] <= max_width and _can_break(text, cut, blocked):
+			best = cut
+			break
+	if best <= 0:
+		return []
+	for back in range(best, maxi(1, best - 4), -1):
+		if SOFT_BREAK_AFTER.contains(text[back - 1]) and _can_break(text, back, blocked):
+			best = back
+			break
+	var first := text.substr(0, best)
+	var second := text.substr(best)
+	if measurer.width(second) > max_width:
+		return []
+	return [first, second]
+
+
 ## 貪婪填滿：每行盡量排到右緣；尾行太短（孤字）就和上一行重新平均
 static func _fill_lines(text: String, measurer: Measurer, max_width: float) -> Array:
 	if measurer.width(text) <= max_width:
@@ -292,7 +320,9 @@ static func _fill_lines(text: String, measurer: Measurer, max_width: float) -> A
 		var last_line: String = lines[-1]
 		if measurer.width(last_line) < max_width * 0.2 or last_line.length() <= 3:
 			var tail := String(lines[-2]) + last_line
-			var pair := _balanced_lines(tail, measurer, max_width)
+			var pair := _fill_pair(tail, measurer, max_width)
+			if pair.is_empty():
+				pair = _balanced_lines(tail, measurer, max_width)
 			if pair.size() == 2:
 				lines.resize(lines.size() - 2)
 				lines.append_array(pair)
