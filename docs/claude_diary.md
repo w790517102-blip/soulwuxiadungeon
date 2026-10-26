@@ -57,3 +57,4 @@
 - 2026-10-27：老闆追加：①`Zuo_Yin_headshot2.png` 已刪、鐘乳石洞改用 `Zuo_Yin_headshot.png`；②見聞錄神怪卡面放大塞滿畫框（置中裁切），豪傑仍貼底；③大地圖招式內力不足 → 紅色圖章「內力不足」（用 badge_quest 頂替紅章），回復後變綠；做成 HOOK：`MartialInfo.cast_block_reason`／`register_cast_blocker`（招式資料 `cost_resource`："hp" ＋ `hp_cost` 會顯示「氣血不足」，給之後的魂體轉換）；④白字黑邊只留在「更換內功」彈出頁、道具頁說明、任務頁；**武術頁本身與招式詳情維持原本墨色**（老闆更正）。
   整理按鈕：`InventorySync.sort_inventory_by_id()` ＝ 依道具 id 字串順序排（不是名稱、不是類別）。
 - 2026-10-27：老翁台詞（問「石破心法可練得如何」那組）改成老闆給的新版（掃帚吐槽）。對話分頁規則調整（`DialogTextLayout.layout_pages`）：一頁沒滿兩行時，下一句只要合計不超過三行就接上去，不急著換頁；已滿兩行、接上去會超過兩行才換頁；單句超過兩行自己一頁。測試 `tests/test_dialog_text_layout.gd` 已更新。
+- 2026-10-27：**更正**：開場房間（`scenes/intro_room.tscn` 的獨立 Sprite2D）之前我為了「不變形」指向舊版備份，結果老闆在遊戲裡看到劉語塵頭像「換回舊的」。已改回新圖（縮放 0.729、底邊對齊原位），並刪掉 `LiuYu_headshot_legacy.png`。教訓：換圖時要找出所有獨立顯示頭像的地方（不只 DialogManager），不要留舊圖備份。
