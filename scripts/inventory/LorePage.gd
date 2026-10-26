@@ -451,8 +451,9 @@ func _page_tex(idx: int) -> Texture2D:
 				# 圖貼齊畫框的底邊（頭像、卡面都一樣）：畫框內緣約 x 55~295、y 114~302
 				var box := Rect2(57, 114, 236, 188)
 				if _cat == "神怪":
-					# 神怪的卡面插畫：放大到塞滿整個畫框，超出的部分裁掉（置中）
-					var cover := maxf(box.size.x / tex.get_width(), box.size.y / tex.get_height())
+					# 神怪的卡面插畫：放大到塞滿整個畫框（連框內緣的縫隙也蓋住，多出 1px 壓在邊框下），超出的部分裁掉
+					box = Rect2(54.5, 113.0, 241.0, 190.0)
+					var cover := maxf(box.size.x / tex.get_width(), box.size.y / tex.get_height()) * 1.01
 					tr.size = tex.get_size() * cover
 					# 焦點（臉或主體）盡量放在畫框中央；超出的部分裁掉，但圖一定蓋滿整個框
 					var focus: Vector2 = e.get("art_focus", Vector2(0.5, 0.5))
