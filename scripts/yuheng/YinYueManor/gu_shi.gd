@@ -1,7 +1,7 @@
 extends CharacterBody2D
 
 @export var z_index_offset := 0
-@export var portrait_path := "res://assets/sprites/empty.png"
+@export var portrait_path := "res://assets/sprites/NPC/Yuheng/Gu_Shi_headshot.png"
 @export var liuyu_portrait_path := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 @export var speaker_id := 1
 @export var liuyu_speaker_id := 2
