@@ -81,3 +81,7 @@
 - 2026-10-27：調音室只換古琴的手畫蛋黃／蛋白（metadata 在 guqin 節點，圖→物件座標：x-718、y-547）；五塊石板照舊用 Area2D 擴張 40px 的預設。蛋黃＝兩條長琴身併上左下圓凳，蛋白＝琴前一塊平行四邊形。未 commit。
 - 2026-10-27：**顏色約定更正**：老闆的圖上「亮紅＝蛋黃、深紅＝碰撞區、粉紅＝蛋白」。調香室改成：藥櫃蛋黃＝亮紅六邊形、蛋白＝櫃前地板；配方櫃檯蛋黃＝亮紅長條、蛋白＝粉色；煉藥桌圖上只有深紅（碰撞）和粉色，沒有亮紅蛋黃 → 暫只放蛋白、蛋黃用 Area2D 外框（待老闆補畫）。古琴蛋黃改成亮紅的上方長條（深紅的琴身＋圓凳是碰撞區，尚未實作碰撞）。符咒間（三張符咒＋出口）的紅線是亮紅，不變。`ObjectInteractionAdapter` 的 zone_yolk／zone_white 現在可單獨提供，沒提供的那個用預設。未 commit。
 - 2026-10-27：深紅範圍做成碰撞區（StaticBody2D＋CollisionPolygon2D，放在場景根節點底下，預設碰撞層與 sewer_true 的 *_collision 一致）：調香室 `counter_collision`／`table_top_collision`／`table_body_collision`，調音室 `qin_body_collision`（琴身＋圓凳）。符咒間沒有深紅。測試 `tests/test_sewer_collision_zones.gd`（物理查詢點得到）；另用劉語塵實際的膠囊碰撞形狀取樣，各蛋白區都有站得到的位置（煉藥桌蛋白約一半被碰撞佔掉，仍可站）。未 commit。
+- 2026-10-27：調香室更正：煉藥桌蛋黃＝內縮的亮紅六邊梯形（原本被我當成碰撞區，已移除 `table_top_collision`，只剩 `table_body_collision`）；右上拱門補了出口「往舊水道」（根節點 metadata exit_*，走進蛋白區呼叫 `_on_to_yuheng_sewer_center_body_entered`）。未 commit。
+- 2026-10-27：調音室左側拱門補了出口「往舊水道」（根節點 metadata exit_*；注意此場景根節點位置 x=1.69，根節點區域座標＝場景座標−1.69，圖→區域座標 x−721.38、y−544）。調香室煉藥桌蛋黃更正與右上出口也在同批。未 commit。
+- 2026-10-27：汙染舊水道中央（yuheng_sewer_center）六個出入口手畫蛋黃／蛋白：老井、調香室、終端室、符咒間、密室、調音室（根節點 metadata：`exit_ids` 加每個 id 一組 `exit_<id>_yolk／_white／_method／_name`；圖→根節點區域座標 x=-1080+1.5px、y=-816+1.5py，此場景根節點位置 (-500,-1000) 不影響）。`ObjectInteractionAdapter` 支援多出口，出口觸發一次後不重複（`exit_busy`），也能呼叫 body_shape_entered 版本的出口函式（調香室出口）。終端室門上的符咒（`Door_sealed` 節點＋ talisman Area2D，腳本沒引用）已移除，圖檔 Door_sealed.png 留在 assets。密室與調音室出口的蛋黃被圖邊截斷。未 commit。
+- 2026-10-27：汙染舊水道中央：符咒間（左邊緣）與密室（下方中間）出口依老闆新圖改大（蛋黃延伸出圖邊的部分仍被截斷在圖邊）；其餘四個不變。未 commit。

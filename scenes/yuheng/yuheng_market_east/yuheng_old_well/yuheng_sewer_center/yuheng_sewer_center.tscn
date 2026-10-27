@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://i62a6vu0jp7g" path="res://scripts/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_center.gd" id="1_ecbg6"]
 [ext_resource type="Texture2D" uid="uid://da86g74t32c42" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_center.jpg" id="2_g64vl"]
 [ext_resource type="Script" uid="uid://b748hmcmlnnot" path="res://scripts/encounter/DangerZone.gd" id="3_g64vl"]
-[ext_resource type="Texture2D" uid="uid://rv1d2j4k228w" path="res://assets/background/Yuheng_Town/yuheng_old_well/yuheng_sewer_center/Door_sealed.png" id="4_3sxth"]
 [ext_resource type="PackedScene" uid="uid://ci6hw80gyicai" path="res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_secret_room/bitterness_tone_phantom.tscn" id="5_ixxeg"]
 [ext_resource type="PackedScene" uid="uid://b8hjveka0gg6r" path="res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_secret_room/turbid_tone_phatom.tscn" id="6_40cs3"]
 
@@ -6088,6 +6087,31 @@ size = Vector2(182, 127)
 [node name="yuheng_sewer_center" type="Node2D"]
 position = Vector2(-500, -1000)
 script = ExtResource("1_ecbg6")
+metadata/exit_ids = PackedStringArray("old_well", "alchemy_room", "final_room", "talisman_room", "secret_room", "music_room")
+metadata/exit_old_well_yolk = PackedVector2Array(-687, -715.5, -682.5, -543, -777, -498, -780, -576, -771, -633, -738, -684)
+metadata/exit_old_well_white = PackedVector2Array(-777, -498, -682.5, -543, -639, -498, -783, -432)
+metadata/exit_old_well_method = "_on_to_yuheng_old_well_body_entered"
+metadata/exit_old_well_name = "往老井"
+metadata/exit_alchemy_room_yolk = PackedVector2Array(157.5, -735, 177, -729, 207, -688.5, 222, -658.5, 217.5, -573, 136.5, -618, 136.5, -714)
+metadata/exit_alchemy_room_white = PackedVector2Array(22.5, -586.5, 75, -610.5, 97.5, -597, 136.5, -618, 217.5, -573, 214.5, -531, 166.5, -505.5)
+metadata/exit_alchemy_room_method = "_on_to_yuheng_sewer_alchemy_room_body_shape_entered"
+metadata/exit_alchemy_room_name = "往調香室"
+metadata/exit_final_room_yolk = PackedVector2Array(972, -501, 1005, -468, 1023, -420, 1027.5, -255, 958.5, -298.5, 954, -471)
+metadata/exit_final_room_white = PackedVector2Array(814.5, -256.5, 876, -286.5, 903, -273, 958.5, -298.5, 1027.5, -255, 1015.5, -201, 1030.5, -189, 990, -159)
+metadata/exit_final_room_method = "_on_to_yuheng_sewer_final_room_body_entered"
+metadata/exit_final_room_name = "往終端室"
+metadata/exit_talisman_room_yolk = PackedVector2Array(-1080, 346.5, -969, 291, -867, 355.5, -1080, 462)
+metadata/exit_talisman_room_white = PackedVector2Array(-969, 291, -891, 252, -777, 321, -867, 355.5)
+metadata/exit_talisman_room_method = "_on_to_yuheng_sewer_talisman_room_body_entered"
+metadata/exit_talisman_room_name = "往符咒間"
+metadata/exit_secret_room_yolk = PackedVector2Array(259.5, 685.5, 378, 753, 289.5, 813, 64.5, 813)
+metadata/exit_secret_room_white = PackedVector2Array(48, 813, 324, 627, 469.5, 705, 300, 813)
+metadata/exit_secret_room_method = "_on_to_yuheng_sewer_secrect_room_body_entered"
+metadata/exit_secret_room_name = "往密室"
+metadata/exit_music_room_yolk = PackedVector2Array(1029, 694.5, 1092, 724.5, 1092, 813, 975, 813, 919.5, 762)
+metadata/exit_music_room_white = PackedVector2Array(828, 729, 928.5, 646.5, 1027.5, 636, 1092, 669, 1092, 813, 972, 813)
+metadata/exit_music_room_method = "_on_to_yuheng_sewer_music_room_body_entered"
+metadata/exit_music_room_name = "往調音室"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999
@@ -6196,21 +6220,6 @@ position = Vector2(250, -657)
 rotation = 0.516617
 skew = 0.55327
 shape = SubResource("RectangleShape2D_7ddi6")
-
-[node name="Door_sealed" type="Node2D" parent="."]
-
-[node name="Door_sealed" type="Sprite2D" parent="Door_sealed"]
-position = Vector2(981.05, -364.46)
-scale = Vector2(1.5, 1.5)
-texture = ExtResource("4_3sxth")
-
-[node name="talisman" type="Area2D" parent="Door_sealed"]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Door_sealed/talisman"]
-position = Vector2(945.997, -239.729)
-rotation = 0.516617
-skew = 0.589921
-shape = SubResource("RectangleShape2D_qlxna")
 
 [node name="To_yuheng_sewer_final_room" type="Area2D" parent="."]
 

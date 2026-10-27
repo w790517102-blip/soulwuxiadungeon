@@ -34,7 +34,7 @@ func _blocked(space: PhysicsDirectSpaceState2D, at: Vector2) -> bool:
 func _run() -> void:
 	await process_frame
 	var cases := {
-		"yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.tscn": ["counter_collision", "table_top_collision", "table_body_collision"],
+		"yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.tscn": ["counter_collision", "table_body_collision"],
 		"yuheng_sewer_music_room/yuheng_sewer_music_room.tscn": ["qin_body_collision"],
 	}
 	for path in cases.keys():

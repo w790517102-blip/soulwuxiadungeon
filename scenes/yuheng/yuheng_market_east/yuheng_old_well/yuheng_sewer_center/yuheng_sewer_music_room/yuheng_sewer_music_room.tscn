@@ -6078,6 +6078,10 @@ size = Vector2(137.231, 140.241)
 [node name="yuheng_sewer_music_room" type="Node2D"]
 position = Vector2(1.69, 0)
 script = ExtResource("1_room")
+metadata/exit_yolk = PackedVector2Array(-599.4, -244, -579.4, -226, -580.4, -158, -632.4, -138, -631.4, -194, -617.4, -224)
+metadata/exit_white = PackedVector2Array(-633.4, -139, -579.4, -159, -534.4, -129, -560.4, -95, -627.4, -87)
+metadata/exit_method = "_on_to_yuheng_sewer_center_body_entered"
+metadata/exit_name = "往舊水道"
 music_manager_path = NodePath("MusicRoomManager")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]

@@ -6066,6 +6066,10 @@ size = Vector2(102.806, 50.3571)
 
 [node name="yuheng_sewer_alchemy_room" type="Node2D"]
 script = ExtResource("1_1sjo8")
+metadata/exit_yolk = PackedVector2Array(618.7, -438.2, 645.1, -415.2, 665.8, -364.6, 667, -276, 601.4, -310.5, 599.1, -411.7)
+metadata/exit_white = PackedVector2Array(601.4, -310.5, 542.8, -225.4, 664.7, -169.1, 667, -276)
+metadata/exit_method = "_on_to_yuheng_sewer_center_body_entered"
+metadata/exit_name = "往舊水道"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999
@@ -6141,6 +6145,7 @@ shape = SubResource("RectangleShape2D_pffi7")
 
 [node name="alchemy_table" type="Node2D" parent="."]
 script = ExtResource("4_amf5x")
+metadata/zone_yolk = PackedVector2Array(-155.2, 218.5, -101.2, 180.5, 146, 184, 198.9, 232.3, 196.6, 255.3, -154.1, 249.5)
 metadata/zone_white = PackedVector2Array(-232.3, 218.5, -161, 146, 203.5, 146, 262.2, 207, 264.5, 312.8, 218.5, 272.5, -233.5, 276)
 
 [node name="Area2D" type="Area2D" parent="alchemy_table"]
@@ -6183,11 +6188,6 @@ shape = SubResource("RectangleShape2D_l67a3")
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="counter_collision"]
 polygon = PackedVector2Array(-80.5, -144.9, -17.3, -112.7, -77.1, -80.5, -184, -136.9, -230, -101.2, -256.5, -87.4, -281.8, -110.4, -166.8, -195.5)
-
-[node name="table_top_collision" type="StaticBody2D" parent="."]
-
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="table_top_collision"]
-polygon = PackedVector2Array(-155.2, 218.5, -101.2, 180.5, 146, 184, 198.9, 232.3, 196.6, 255.3, -154.1, 249.5)
 
 [node name="table_body_collision" type="StaticBody2D" parent="."]
 

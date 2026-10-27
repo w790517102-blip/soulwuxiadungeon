@@ -23,6 +23,8 @@ const EXIT_WHITE_META := "exit_white"
 const EXIT_METHOD_META := "exit_method"
 const EXIT_NAME_META := "exit_name"
 const EXIT_NODE_NAME := "ExitInteractionTarget"
+const EXIT_IDS_META := "exit_ids"
+const EXIT_BUSY_META := "exit_busy"
 const CIRCLE_SEGMENTS := 20
 
 ## 物件腳本（檔名）→ 互動函式名稱
@@ -45,8 +47,7 @@ static func adopt_scene(scene_root: Node) -> int:
 			count += 1
 	if _script_file(scene_root) == TALISMAN_ROOM_SCRIPT:
 		count += _adopt_talisman_room(scene_root)
-	if _adopt_room_exit(scene_root):
-		count += 1
+	count += _adopt_room_exits(scene_root)
 	return count
 
 
@@ -114,19 +115,41 @@ static func _adopt_talisman_room(room: Node) -> int:
 
 
 ## 場景根節點上手畫的出口（游標是出口箭頭）。出口原本的 Area2D 照舊（走進去一樣會離開），這裡只多一層滑鼠點擊＋走到蛋白區才離開。
-static func _adopt_room_exit(room: Node) -> bool:
-	if not room.has_meta(EXIT_YOLK_META) or room.has_node(EXIT_NODE_NAME):
+## 一個出口：exit_yolk／exit_white／exit_method／exit_name。多個出口：exit_ids（PackedStringArray）＋每個 id 一組 exit_<id>_yolk／_white／_method／_name。
+static func _adopt_room_exits(room: Node) -> int:
+	var ids: Array = [""]
+	if room.has_meta(EXIT_IDS_META):
+		ids = Array(room.get_meta(EXIT_IDS_META))
+	var count := 0
+	for id in ids:
+		if _adopt_room_exit(room, String(id)):
+			count += 1
+	return count
+
+
+static func _exit_key(base: String, id: String) -> String:
+	return base if id == "" else base.replace("exit_", "exit_%s_" % id)
+
+
+static func _adopt_room_exit(room: Node, id: String) -> bool:
+	var node_name := EXIT_NODE_NAME if id == "" else "%s_%s" % [EXIT_NODE_NAME, id]
+	if not room.has_meta(_exit_key(EXIT_YOLK_META, id)) or room.has_node(node_name):
 		return false
-	var method := String(room.get_meta(EXIT_METHOD_META, ""))
+	var method := String(room.get_meta(_exit_key(EXIT_METHOD_META, id), ""))
 	if method == "" or not room.has_method(method):
 		return false
 	var handler := func(player: Node2D) -> void:
-		if is_instance_valid(room) and not bool(room.get("interaction_locked")):
+		if not is_instance_valid(room) or bool(room.get("interaction_locked")) or bool(room.get_meta(EXIT_BUSY_META, false)):
+			return
+		room.set_meta(EXIT_BUSY_META, true)      # 出口一旦觸發就不再重複（淡出途中再點、或又走進原本的出口 Area2D）
+		if Callable(room, method).get_argument_count() == 4:
+			await room.call(method, RID(), player, 0, 0)      # body_shape_entered 版本
+		else:
 			await room.call(method, player)
-	var target := _make_target(room, room.get_meta(EXIT_YOLK_META), room.get_meta(EXIT_WHITE_META, PackedVector2Array()), handler, String(room.get_meta(EXIT_NAME_META, "出口")), "exit")
+	var target := _make_target(room, room.get_meta(_exit_key(EXIT_YOLK_META, id)), room.get_meta(_exit_key(EXIT_WHITE_META, id), PackedVector2Array()), handler, String(room.get_meta(_exit_key(EXIT_NAME_META, id), "出口")), "exit")
 	if target == null:
 		return false
-	target.name = EXIT_NODE_NAME
+	target.name = node_name
 	return true
 
 

@@ -27,8 +27,8 @@ func _bounds(p: PackedVector2Array) -> Rect2:
 func _run() -> void:
 	await process_frame
 	var cases := {
-		"yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.tscn": 3,
-		"yuheng_sewer_music_room/yuheng_sewer_music_room.tscn": 6,
+		"yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.tscn": 4,      # 三個物件＋一個出口
+		"yuheng_sewer_music_room/yuheng_sewer_music_room.tscn": 7,      # 古琴＋五塊石板＋出口
 		"yuheng_sewer_talisman_room/yuheng_sewer_talisman_room.tscn": 4,      # 三張符咒＋一個出口
 	}
 	for path in cases.keys():
@@ -62,6 +62,18 @@ func _run() -> void:
 		_check(again == 0, "a second pass changes nothing (already adopted or hand-drawn)")
 		scene.queue_free()
 		await process_frame
+
+	# 汙染舊水道中央：六個出入口都是手畫的出口目標；終端室門上的符咒（Door_sealed）已拿掉
+	var center = load("res://scenes/yuheng/yuheng_market_east/yuheng_old_well/yuheng_sewer_center/yuheng_sewer_center.tscn").instantiate()
+	root.add_child(center)
+	await process_frame
+	_check(ObjectInteractionAdapter.adopt_scene(center) == 6, "the sewer hub adopts its six hand-drawn exits")
+	for id in ["old_well", "alchemy_room", "final_room", "talisman_room", "secret_room", "music_room"]:
+		var exit_node := center.get_node_or_null("%s_%s" % [ObjectInteractionAdapter.EXIT_NODE_NAME, id]) as InteractionTarget
+		_check(exit_node != null and exit_node.cursor_kind == "exit" and exit_node.selection_polygon.size() >= 3 and exit_node.zone_polygon.size() >= 3, "hub exit %s is a zone target with the exit cursor" % id)
+	_check(center.get_node_or_null("Door_sealed") == null, "the talisman sticker on the final-room door is gone")
+	center.queue_free()
+	await process_frame
 
 	# 多邊形工具：矩形擴張後每邊多 distance
 	var rect := PackedVector2Array([Vector2(0, 0), Vector2(100, 0), Vector2(100, 50), Vector2(0, 50)])
