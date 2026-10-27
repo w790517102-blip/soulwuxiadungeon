@@ -141,11 +141,14 @@ static func _adopt_room_exit(room: Node, id: String) -> bool:
 	var handler := func(player: Node2D) -> void:
 		if not is_instance_valid(room) or bool(room.get("interaction_locked")) or bool(room.get_meta(EXIT_BUSY_META, false)):
 			return
-		room.set_meta(EXIT_BUSY_META, true)      # 出口一旦觸發就不再重複（淡出途中再點、或又走進原本的出口 Area2D）
+		room.set_meta(EXIT_BUSY_META, true)      # 淡出途中再點不重複觸發
 		if Callable(room, method).get_argument_count() == 4:
 			await room.call(method, RID(), player, 0, 0)      # body_shape_entered 版本
 		else:
 			await room.call(method, player)
+		# 出口函式有時只是擋下來（例如終端室的封印提示），之後還要能再點；真的換場景的話這個房間很快就被換掉了
+		if is_instance_valid(room):
+			room.set_meta(EXIT_BUSY_META, false)
 	var target := _make_target(room, room.get_meta(_exit_key(EXIT_YOLK_META, id)), room.get_meta(_exit_key(EXIT_WHITE_META, id), PackedVector2Array()), handler, String(room.get_meta(_exit_key(EXIT_NAME_META, id), "出口")), "exit")
 	if target == null:
 		return false

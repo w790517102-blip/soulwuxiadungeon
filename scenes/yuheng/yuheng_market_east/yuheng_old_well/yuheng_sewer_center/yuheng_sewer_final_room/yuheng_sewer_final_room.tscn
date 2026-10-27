@@ -6070,6 +6070,15 @@ point_count = 2
 
 [node name="yuheng_sewer_final_room" type="Node2D"]
 script = ExtResource("1_qi2bj")
+metadata/exit_yolk = PackedVector2Array(948, -469.5, 966, -469.5, 993, -441, 1020, -423, 1035, -381, 1041, -351, 1038, -195, 948, -232.5)
+metadata/exit_white = PackedVector2Array(946.5, -232.5, 909, -204, 906, -172.5, 1026, -147, 1033.5, -168, 1036.5, -195)
+metadata/exit_method = "_on_to_yuheng_stalactite_cave_body_entered"
+metadata/exit_name = "往鐘乳石洞"
+metadata/exit_ids = PackedStringArray("", "center")
+metadata/exit_center_yolk = PackedVector2Array(-573, 813, -453, 694.5, -270, 727.5, -307.5, 813)
+metadata/exit_center_white = PackedVector2Array(-760.5, 813, -409.5, 607.5, -231, 637.5, -307.5, 813)
+metadata/exit_center_method = "_on_to_yuheng_sewer_center_body_entered"
+metadata/exit_center_name = "往中央水道"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999

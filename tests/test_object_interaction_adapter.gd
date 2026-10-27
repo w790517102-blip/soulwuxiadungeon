@@ -30,6 +30,9 @@ func _run() -> void:
 		"yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.tscn": 4,      # 三個物件＋一個出口
 		"yuheng_sewer_music_room/yuheng_sewer_music_room.tscn": 7,      # 古琴＋五塊石板＋出口
 		"yuheng_sewer_talisman_room/yuheng_sewer_talisman_room.tscn": 4,      # 三張符咒＋一個出口
+		"yuheng_sewer_secret_room/yuheng_sewer_secret_room.tscn": 1,      # 只有一個出口
+		"yuheng_sewer_final_room/yuheng_sewer_final_room.tscn": 2,      # 往鐘乳石洞（封印邏輯在出口函式裡）＋往中央水道
+		"yuheng_sewer_final_room/yuheng_stalactite_cave/yuheng_stalactite_cave.tscn": 1,      # 離開鐘乳石洞
 	}
 	for path in cases.keys():
 		var scene = load(BASE + path).instantiate()

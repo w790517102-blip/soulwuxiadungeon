@@ -6119,6 +6119,10 @@ point_count = 2
 
 [node name="yuheng_Stalactite_Cave" type="Node2D"]
 script = ExtResource("1_keorb")
+metadata/exit_yolk = PackedVector2Array(-622, 263, -608, 263, -592, 284, -586, 298, -586, 381, -592, 398, -645, 424, -644, 386, -640, 346, -638, 306, -632, 281)
+metadata/exit_white = PackedVector2Array(-646, 425, -592, 392, -548, 399, -542, 444, -604, 471)
+metadata/exit_method = "_on_to_yuheng_sewer_final_room_body_entered"
+metadata/exit_name = "離開鐘乳石洞"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999
