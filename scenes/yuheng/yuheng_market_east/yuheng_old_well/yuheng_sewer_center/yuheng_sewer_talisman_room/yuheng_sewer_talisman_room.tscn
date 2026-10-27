@@ -6061,6 +6061,10 @@ size = Vector2(232.27, 132.814)
 
 [node name="yuheng_sewer_talisman_room" type="Node2D"]
 script = ExtResource("1_h3yhg")
+metadata/exit_yolk = PackedVector2Array(-934.5, 510, -880.5, 541.5, -1080, 723, -1080, 555)
+metadata/exit_white = PackedVector2Array(-931.5, 511.5, -862.5, 435, -753, 501, -873, 544.5)
+metadata/exit_method = "_on_to_yuheng_sewer_center_body_entered"
+metadata/exit_name = "往舊水道"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1900
@@ -6132,6 +6136,8 @@ skew = -0.633555
 shape = SubResource("RectangleShape2D_helij")
 
 [node name="heart_talisman" type="Node2D" parent="."]
+metadata/zone_yolk = PackedVector2Array(-693, -507, -525, -582, -525, -334.5, -690, -249)
+metadata/zone_white = PackedVector2Array(-685.5, -195, -534, -280.5, -391.5, -243, -628.5, -99)
 
 [node name="Area2D" type="Area2D" parent="heart_talisman"]
 
@@ -6142,6 +6148,8 @@ skew = -0.645772
 shape = SubResource("RectangleShape2D_ju3jn")
 
 [node name="mouth_talisman" type="Node2D" parent="."]
+metadata/zone_yolk = PackedVector2Array(-63, -721.5, 196.5, -721.5, 196.5, -502.5, -63, -502.5)
+metadata/zone_white = PackedVector2Array(-78, -459, 196.5, -456, 220.5, -367.5, -76.5, -373.5)
 
 [node name="Area2D" type="Area2D" parent="mouth_talisman"]
 
@@ -6150,6 +6158,8 @@ position = Vector2(72, -416)
 shape = SubResource("RectangleShape2D_w45a6")
 
 [node name="water_talisman" type="Node2D" parent="."]
+metadata/zone_yolk = PackedVector2Array(537, -513, 678, -444, 676.5, -225, 525, -297)
+metadata/zone_white = PackedVector2Array(382.5, -225, 466.5, -273, 684, -168, 598.5, -111)
 
 [node name="Area2D" type="Area2D" parent="water_talisman"]
 

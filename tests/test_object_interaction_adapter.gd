@@ -29,7 +29,7 @@ func _run() -> void:
 	var cases := {
 		"yuheng_sewer_alchemy_room/yuheng_sewer_alchemy_room.tscn": 3,
 		"yuheng_sewer_music_room/yuheng_sewer_music_room.tscn": 6,
-		"yuheng_sewer_talisman_room/yuheng_sewer_talisman_room.tscn": 3,
+		"yuheng_sewer_talisman_room/yuheng_sewer_talisman_room.tscn": 4,      # 三張符咒＋一個出口
 	}
 	for path in cases.keys():
 		var scene = load(BASE + path).instantiate()
@@ -45,10 +45,18 @@ func _run() -> void:
 			_check(target.mode == InteractionTarget.Mode.ZONE and target.interaction_radius == 0.0, "%s is a zone target" % target.get_parent().name)
 			var yolk := _bounds(target.selection_polygon)
 			var white := _bounds(target.zone_polygon)
-			_check(white.encloses(yolk) and white.size.x >= yolk.size.x + 2.0 * ObjectInteractionAdapter.DEFAULT_EXPAND - 2.0, "%s: the interaction range is the Area2D grown outward" % target.get_parent().name)
+			var owner_node := target.get_parent()
+			if owner_node.has_meta(ObjectInteractionAdapter.WHITE_META):
+				# 場景手畫的蛋黃／蛋白：照畫的用（蛋白不一定包住蛋黃，例如蛋黃在牆上、蛋白在牆前地板）
+				_check(target.zone_polygon == owner_node.get_meta(ObjectInteractionAdapter.WHITE_META) and (not owner_node.has_meta(ObjectInteractionAdapter.YOLK_META) or target.selection_polygon == owner_node.get_meta(ObjectInteractionAdapter.YOLK_META)), "%s: uses the hand-drawn yolk and white" % owner_node.name)
+			else:
+				_check(white.encloses(yolk) and white.size.x >= yolk.size.x + 2.0 * ObjectInteractionAdapter.DEFAULT_EXPAND - 2.0, "%s: the interaction range is the Area2D grown outward" % owner_node.name)
 			var area := target.get_parent().get_node_or_null("Area2D") as Area2D
 			if area != null:
 				_check(not area.monitoring, "%s: the old Area2D no longer triggers (no double interaction)" % target.get_parent().name)
+		var exit_target := scene.get_node_or_null(ObjectInteractionAdapter.EXIT_NODE_NAME) as InteractionTarget
+		if scene.has_meta(ObjectInteractionAdapter.EXIT_YOLK_META):
+			_check(exit_target != null and exit_target.cursor_kind == "exit" and exit_target.selection_polygon.size() >= 3 and exit_target.zone_polygon.size() >= 3, "%s: the hand-drawn exit is a zone target with the exit cursor" % path.get_file())
 		# 已經手畫過的物件不會被覆蓋
 		var again: int = ObjectInteractionAdapter.adopt_scene(scene)
 		_check(again == 0, "a second pass changes nothing (already adopted or hand-drawn)")

@@ -15,6 +15,14 @@ extends RefCounted
 const DEFAULT_EXPAND := 40.0
 const EXPAND_META := "interaction_expand"
 const OPT_OUT_META := "custom_interaction_zone"
+const YOLK_META := "zone_yolk"        # 手畫蛋黃（PackedVector2Array，物件區域座標）；沒畫就用 Area2D 外框
+const WHITE_META := "zone_white"      # 手畫蛋白；沒有就把蛋黃往外擴張
+# 場景根節點上手畫的出口：exit_yolk／exit_white 多邊形、exit_method（走進蛋白區時呼叫的出口函式，參數是玩家）、exit_name（游標提示）
+const EXIT_YOLK_META := "exit_yolk"
+const EXIT_WHITE_META := "exit_white"
+const EXIT_METHOD_META := "exit_method"
+const EXIT_NAME_META := "exit_name"
+const EXIT_NODE_NAME := "ExitInteractionTarget"
 const CIRCLE_SEGMENTS := 20
 
 ## 物件腳本（檔名）→ 互動函式名稱
@@ -37,6 +45,8 @@ static func adopt_scene(scene_root: Node) -> int:
 			count += 1
 	if _script_file(scene_root) == TALISMAN_ROOM_SCRIPT:
 		count += _adopt_talisman_room(scene_root)
+	if _adopt_room_exit(scene_root):
+		count += 1
 	return count
 
 
@@ -103,17 +113,51 @@ static func _adopt_talisman_room(room: Node) -> int:
 	return count
 
 
-static func _attach(owner_node: Node, area: Area2D, handler: Callable, display_name: String) -> bool:
-	var yolk := yolk_polygon(owner_node, area)
-	if yolk.size() < 3:
+## 場景根節點上手畫的出口（游標是出口箭頭）。出口原本的 Area2D 照舊（走進去一樣會離開），這裡只多一層滑鼠點擊＋走到蛋白區才離開。
+static func _adopt_room_exit(room: Node) -> bool:
+	if not room.has_meta(EXIT_YOLK_META) or room.has_node(EXIT_NODE_NAME):
 		return false
-	var expand := float(owner_node.get_meta(EXPAND_META, DEFAULT_EXPAND))
-	var white := expanded(yolk, expand)
+	var method := String(room.get_meta(EXIT_METHOD_META, ""))
+	if method == "" or not room.has_method(method):
+		return false
+	var handler := func(player: Node2D) -> void:
+		if is_instance_valid(room) and not bool(room.get("interaction_locked")):
+			await room.call(method, player)
+	var target := _make_target(room, room.get_meta(EXIT_YOLK_META), room.get_meta(EXIT_WHITE_META, PackedVector2Array()), handler, String(room.get_meta(EXIT_NAME_META, "出口")), "exit")
+	if target == null:
+		return false
+	target.name = EXIT_NODE_NAME
+	return true
+
+
+static func _attach(owner_node: Node, area: Area2D, handler: Callable, display_name: String) -> bool:
+	var yolk := PackedVector2Array()
+	var white := PackedVector2Array()
+	# 場景裡手畫的蛋黃／蛋白（物件節點的 metadata，座標是物件的區域座標）；各自沒畫的就用預設：
+	# 蛋黃＝Area2D 外框、蛋白＝蛋黃往外擴張
+	if owner_node.has_meta(YOLK_META):
+		yolk = owner_node.get_meta(YOLK_META)
+	else:
+		yolk = yolk_polygon(owner_node, area)
+	if owner_node.has_meta(WHITE_META):
+		white = owner_node.get_meta(WHITE_META)
+	if _make_target(owner_node, yolk, white, handler, display_name, "inspect", float(owner_node.get_meta(EXPAND_META, DEFAULT_EXPAND))) == null:
+		return false
+	area.set_deferred("monitoring", false)
+	return true
+
+
+## 沒給蛋白（少於 3 點）就把蛋黃往外擴張 expand 像素。
+static func _make_target(owner_node: Node, yolk: PackedVector2Array, white: PackedVector2Array, handler: Callable, display_name: String, cursor_kind: String, expand: float = DEFAULT_EXPAND) -> InteractionTarget:
+	if yolk.size() < 3:
+		return null
+	if white.size() < 3:
+		white = expanded(yolk, expand)
 	var target := InteractionTarget.new()
 	target.name = "InteractionTarget"
 	target.mode = InteractionTarget.Mode.ZONE
 	target.display_name = display_name
-	target.cursor_kind = "inspect"
+	target.cursor_kind = cursor_kind
 	target.selection_polygon = yolk
 	target.zone_polygon = white
 	target.interaction_radius = 0.0
@@ -121,8 +165,7 @@ static func _attach(owner_node: Node, area: Area2D, handler: Callable, display_n
 	target.use_sprite_feet = false
 	target.handler = handler
 	owner_node.add_child(target)
-	area.set_deferred("monitoring", false)
-	return true
+	return target
 
 
 ## 物件自己的 Area2D 形狀（所有 CollisionShape2D／CollisionPolygon2D 合起來的外框），座標是 owner_node 的區域座標。

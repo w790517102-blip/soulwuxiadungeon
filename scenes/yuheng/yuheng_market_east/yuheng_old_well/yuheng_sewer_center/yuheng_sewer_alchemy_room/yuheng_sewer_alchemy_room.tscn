@@ -6141,6 +6141,7 @@ shape = SubResource("RectangleShape2D_pffi7")
 
 [node name="alchemy_table" type="Node2D" parent="."]
 script = ExtResource("4_amf5x")
+metadata/zone_white = PackedVector2Array(-232.3, 218.5, -161, 146, 203.5, 146, 262.2, 207, 264.5, 312.8, 218.5, 272.5, -233.5, 276)
 
 [node name="Area2D" type="Area2D" parent="alchemy_table"]
 
@@ -6151,6 +6152,8 @@ shape = SubResource("RectangleShape2D_lukrt")
 [node name="alchemy_recipe" type="Node2D" parent="."]
 position = Vector2(-180, -180)
 script = ExtResource("5_recipe")
+metadata/zone_yolk = PackedVector2Array(-138.6, -101.8, -84.5, -130.5, 157, 0.6, 99.5, 35.1)
+metadata/zone_white = PackedVector2Array(-55.8, 78.8, -4, 43.1, 102.9, 99.5, 162.7, 67.3, 214.5, 107.5, 102.9, 173.1)
 
 [node name="Area2D" type="Area2D" parent="alchemy_recipe"]
 
@@ -6159,6 +6162,8 @@ shape = SubResource("RectangleShape2D_recipe")
 
 [node name="medicine_cabinet" type="Node2D" parent="."]
 script = ExtResource("4_56vsb")
+metadata/zone_yolk = PackedVector2Array(-128.8, -429, 83.9, -533.6, 295.5, -417.5, 293.2, -250.7, 88.5, -348.5, -131.1, -245)
+metadata/zone_white = PackedVector2Array(-131.1, -245, -11.5, -173.7, 89.7, -231.2, 177.1, -181.7, 293.2, -250.7, 88.5, -348.5)
 
 [node name="Area2D" type="Area2D" parent="medicine_cabinet"]
 
@@ -6173,5 +6178,20 @@ position = Vector2(15.9052, -279.38)
 rotation = -0.443314
 skew = -0.535816
 shape = SubResource("RectangleShape2D_l67a3")
+
+[node name="counter_collision" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="counter_collision"]
+polygon = PackedVector2Array(-80.5, -144.9, -17.3, -112.7, -77.1, -80.5, -184, -136.9, -230, -101.2, -256.5, -87.4, -281.8, -110.4, -166.8, -195.5)
+
+[node name="table_top_collision" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="table_top_collision"]
+polygon = PackedVector2Array(-155.2, 218.5, -101.2, 180.5, 146, 184, 198.9, 232.3, 196.6, 255.3, -154.1, 249.5)
+
+[node name="table_body_collision" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="table_body_collision"]
+polygon = PackedVector2Array(-233.5, 276, 218.5, 272.5, 264.5, 312.8, 264.5, 338.1, 201.2, 356.5, 189.7, 370.3, 172.5, 370.3, 163.3, 358.8, -184, 358.8, -193.2, 370.3, -220.8, 370.3, -233.5, 361.1)
 
 [connection signal="body_entered" from="To_yuheng_sewer_center" to="." method="_on_to_yuheng_sewer_center_body_entered"]

@@ -549,9 +549,25 @@ func _process(delta):
 	# 角色的 z_index 隨 y 座標更新（整數避免浮點亂序）
 	z_index = int(global_position.y + z_index_offset)
 
+## 戰鬥轉場一開始就把大地圖定住：劉語塵不能再走（含滑鼠點擊的自動走路）、地圖上的 NPC／動畫／事件一起停，
+## 不然轉場這一兩秒裡人還會往前走、踩到出口或觸發劇情，路人也還在走來走去。地圖之後會被戰鬥場景換掉。
+func _freeze_world_for_battle(game_root: Node) -> void:
+	lock_for_battle()
+	mouse_move_direction = Vector2.ZERO
+	var resolver := get_node_or_null("/root/InteractionResolver")
+	if resolver != null and resolver.has_method("cancel_mouse_intent_for_scene_change"):
+		resolver.call("cancel_mouse_intent_for_scene_change")
+	if game_root == null:
+		return
+	var holder := game_root.get_node_or_null("CurrentScene")
+	if holder != null and holder.get_child_count() > 0:
+		holder.get_child(0).process_mode = Node.PROCESS_MODE_DISABLED
+
+
 func _play_encounter_transition(style: Dictionary = {}) -> void:
 	_encounter_transition_playing = true
 	var game_root = get_node_or_null("/root/GameRoot")
+	_freeze_world_for_battle(game_root)
 	var cam: Camera2D = null
 	var base_zoom := Vector2.ONE
 	if game_root:
