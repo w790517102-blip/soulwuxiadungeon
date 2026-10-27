@@ -112,6 +112,9 @@ func change_map_to(path: String):
 		resolver.call("cancel_mouse_intent_for_scene_change")
 	if $CurrentScene.get_child_count() > 0:
 		$CurrentScene.get_child(0).queue_free()
+	# 進戰鬥場景一律藏起大地圖的劉語塵（隨機遭遇與下水道各自會藏；劇情戰鬥如老翁比武、茶樓護衛沒藏，會在戰鬥畫面中央留下 chibi）。回場時 battle_restore 會讓他重新顯示
+	if path.ends_with("battle_scene.tscn"):
+		$LiuYu.visible = false
 	# 換場景一律先把操作還給玩家：上一張地圖在出口先鎖了操作時，沒有進場劇情的目的地不會有人替他打開（會動不了）。
 	# 有進場劇情的地圖，自己的 _ready 之後會再鎖一次（新場景建立在這行之後）。
 	# 戰鬥回場、劇情持有 menu_locked 時不動，由原本的流程交還控制。
