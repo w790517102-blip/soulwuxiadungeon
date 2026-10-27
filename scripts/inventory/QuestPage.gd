@@ -5,6 +5,7 @@ class_name QuestPage
 # 資料沿用系統選單的 _build_quest_entries()（主線來自 QuestManager、支線來自 SideQuestManager），這裡只負責畫面。
 # 座標一律是邏輯 px（1152×648）。素材全部沿用已驗收的書房套件；專屬的狀態印章、分類圖示等等共邊國交件後再換。
 
+const StudyForegrounds = preload("res://scripts/inventory/StudyForegrounds.gd")
 const CATEGORIES := [
 	{"id": "主線", "icon": "quest", "empty": "目前沒有進行中的主線任務。"},
 	{"id": "支線", "icon": "book", "empty": "目前沒有進行中的支線任務。"},
@@ -19,6 +20,9 @@ const LIST_POS := Vector2(200, 176)
 const LIST_SIZE := Vector2(393, 384)
 const BUTTON_Y := 586
 const DETAIL_X := 632.0
+const SEAL_POS := Vector2(1032, 146)       # 右上角的紅色類型章（主線／支線），字上下排
+const SEAL_SIZE := Vector2(40, 74)
+const SEAL_FONT := 22
 
 var category := "主線"
 var selected_id := ""
@@ -42,6 +46,10 @@ var _empty_label: Label
 var _detail_root: Control
 var _btn_back: Button
 
+## 前景用武術頁的（見 _ready），不用共用前景
+func _foreground_preset() -> String:
+	return "none"
+
 func _ready() -> void:
 	name = "QuestPage"
 	set_meta("skip_menu_skin", true)
@@ -50,6 +58,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 1100      # 舊任務分頁節點的 z_index 比其他分頁高，新頁要蓋在上面
 	_build_background()
+	StudyForegrounds.add_martial(self)      # 前景沿用武術頁的（念珠、墨壺、燭燈柱）
 	_build_nav("TabQuest")
 	_build_categories()
 	_build_list()
@@ -118,8 +127,9 @@ func _build_detail() -> void:
 	_detail_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_detail_root)
 	_title_label = _label("", Vector2(DETAIL_X, 154), Vector2(400, 44), 28, INK, HORIZONTAL_ALIGNMENT_LEFT, _detail_root)
-	_image("seal_type", Vector2(1040, 150), Vector2(30, 56), _detail_root)
-	_seal_label = _label("", Vector2(1040, 150), Vector2(30, 56), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, _detail_root)
+	_image("seal_type", SEAL_POS, SEAL_SIZE, _detail_root)
+	_seal_label = _label("", SEAL_POS, SEAL_SIZE, SEAL_FONT, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, _detail_root)
+	_seal_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_seal_label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	_seal_label.add_theme_constant_override("line_spacing", -2)
 	_image("label_ink_s", Vector2(DETAIL_X, 206), Vector2(80, 26), _detail_root)
@@ -299,7 +309,7 @@ func _refresh_detail() -> void:
 		_empty_label.text = _category_empty_text()
 		return
 	_title_label.text = String(e.get("title", "未命名任務"))
-	_seal_label.text = String(e.get("type", "支線"))
+	_seal_label.text = "\n".join(Array(String(e.get("type", "支線")).split("")))      # 章是直的：一個字一行，上下排
 	var status := String(e.get("status", "進行中"))
 	_status_stamp.texture = _tex(String(STATUS_ART.get(status, "status_usable")))
 	_status_label.text = status

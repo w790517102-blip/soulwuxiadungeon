@@ -6,6 +6,7 @@ extends "res://scripts/inventory/StudyPageBase.gd"
 # 版面座標為邏輯 px（1152×648），依 V3 底圖（assets/UI/martial/martial_page_v3.png）的框體量得。
 
 const MartialInfoScript = preload("res://scripts/inventory/MartialInfo.gd")
+const StudyForegrounds = preload("res://scripts/inventory/StudyForegrounds.gd")
 
 const BUTTON_Y := 586
 const FIGURE_POS := Vector2(486, 70)
@@ -796,26 +797,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			close_requested.emit()
 
-## 武術頁專用前景（共邊國 martial_final_overlays）：左下、右下、右緣。圖已裁到內容邊界，依概念圖位置貼邊；全部不吃滑鼠
+## 武術頁專用前景（共邊國 martial_final_overlays）：左下、右下、右緣；實作在 StudyForegrounds（任務頁也用同一套）
 func _build_foreground_overlays() -> void:
-	var defs := [
-		["foreground_left", Vector2(0, 648), Vector2(365, 0), Vector2(0, 1)],        # 左下：寬 365，底貼畫布底、左貼畫布左
-		["foreground_right", Vector2(1152, 648), Vector2(332, 0), Vector2(1, 1)],    # 右下：寬 332，右下角貼齊
-		["foreground_edge_right", Vector2(1152, 0), Vector2(0, 561), Vector2(1, 0)], # 右緣：高 561，右上角貼齊
-	]
-	for d in defs:
-		var tex := mart(String(d[0]))
-		if tex == null:
-			continue
-		var tsize := tex.get_size()
-		var size_: Vector2 = d[2]
-		if size_.x == 0.0:
-			size_.x = size_.y * tsize.x / tsize.y
-		elif size_.y == 0.0:
-			size_.y = size_.x * tsize.y / tsize.x
-		var anchor: Vector2 = d[3]
-		var r := _m_image(String(d[0]), Vector2(d[1]) - size_ * anchor, size_, self)
-		r.z_index = 6 if String(d[0]) == "foreground_right" else 5      # 右下的墨壺要高過右緣燭燈柱
+	StudyForegrounds.add_martial(self)
 
 ## 內功心法象徵圖：assets/UI/martial/force_<id>.png（共邊國之後逐門補），沒有就用共通的打坐人像
 func _force_icon(force: Dictionary, pos: Vector2, size_: float, large: bool, parent: Node) -> TextureRect:

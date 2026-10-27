@@ -29,6 +29,10 @@ const PARTY_LIUYU_WORLD_H := 108.9
 const PARTY_BASELINE := 76.0   # 腳底基準線（相對陣容列上緣）
 const PARTY_CHIBI_H := PARTY_BASELINE
 const PARTY_MAX := 3   # 遊戲中隊伍最多三人
+const NAME_STAMP_RARITY := 1                    # 名稱底下墊的墨章：道具頁稀有度章的第一款（凡品，最深的墨色）
+const NAME_STAMP_H := 42.0
+const NAME_STAMP_TINT := Color(0.6, 0.6, 0.6)   # 再壓深一點，接近黑色墨章
+const NAME_STAMP_TEXT := Color("#F6EEDC")
 const PARTY_DIR := "res://assets/UI/chronicle_party/"
 const PIXEL_FONT := preload("res://assets/fonts/DotGothic16-Regular.ttf")
 const CONFIRM_RECT := Rect2(216, 124, 720, 400)
@@ -324,14 +328,15 @@ func _show_party(party: Array, leader_level: int) -> void:
 			tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			cell.add_child(tr)
-		# 隊伍名字與等級壓在右下的山水上：白字黑框才看得清楚
-		var name_l := _label(SaveManager.actor_display_name(String(m.get("id", ""))), Vector2(0, PARTY_CHIBI_H + 2), Vector2(cell_w, 20), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, cell)
+		# 隊伍名字與等級壓在右下的山水上：底下墊黑色墨筆圖章（跟道具頁名稱旁的稀有度章同一套素材），字用米色
+		var stamp := _image_from(ItemRarity.badge_path(NAME_STAMP_RARITY), Vector2(2, PARTY_CHIBI_H - 1), Vector2(cell_w - 4.0, NAME_STAMP_H), cell)
+		stamp.stretch_mode = TextureRect.STRETCH_SCALE
+		stamp.modulate = NAME_STAMP_TINT
+		var name_l := _label(SaveManager.actor_display_name(String(m.get("id", ""))), Vector2(-2, PARTY_CHIBI_H + 2), Vector2(cell_w, 20), 14, NAME_STAMP_TEXT, HORIZONTAL_ALIGNMENT_CENTER, cell)
 		name_l.add_theme_font_override("font", PIXEL_FONT)      # 角色名稱用點陣字體
-		_outlined(name_l)
 		var lv := int(m.get("level", 0))
-		var lv_l := _label("Lv.%d" % lv if lv > 0 else "Lv.?", Vector2(0, PARTY_CHIBI_H + 20), Vector2(cell_w, 20), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, cell)
+		var lv_l := _label("Lv.%d" % lv if lv > 0 else "Lv.?", Vector2(-2, PARTY_CHIBI_H + 20), Vector2(cell_w, 20), 14, NAME_STAMP_TEXT, HORIZONTAL_ALIGNMENT_CENTER, cell)
 		lv_l.add_theme_font_override("font", PIXEL_FONT)
-		_outlined(lv_l)
 
 func _update_action_button(status: String) -> void:
 	if mode == Mode.SAVE:

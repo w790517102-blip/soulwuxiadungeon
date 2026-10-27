@@ -2,6 +2,7 @@ extends "res://scripts/inventory/StudyPageBase.gd"
 # 系統頁：書房卷軸版。四個入口：儲存進度、讀取進度（開《江湖行跡錄》）、選項、回標題畫面。按鈕對齊卷軸板塊的中心，不是畫面中心。
 # 「回標題畫面」會先跳出確認視窗（提醒未存進度會遺失），確認後回到主選單（SystemMenu.return_to_title）。
 
+const StudyForegrounds = preload("res://scripts/inventory/StudyForegrounds.gd")
 const OptionsPanelScript = preload("res://scripts/ui/OptionsPanel.gd")
 const ENTRY_SIZE := Vector2(300, 58)
 const ENTRY_X := 494.0                 # 卷軸板塊（x 158–1130）的水平中心 644 − 按鈕寬的一半
@@ -19,6 +20,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 1100
 	_build_background(true)
+	StudyForegrounds.add_lore(self)      # 前景沿用見聞頁的（墨筆、詩集）
 	_build_nav("TabSystem")
 	_label("系統", Vector2(494, 112), Vector2(300, 56), 40, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	var entries := [["儲存進度", "btn_primary"], ["讀取進度", "btn_primary"], ["選項", "btn"], ["回標題畫面", "btn"]]
@@ -39,7 +41,7 @@ func _ready() -> void:
 	_build_overlay()
 
 func _foreground_preset() -> String:
-	return "demo"
+	return "none"      # 前景用見聞頁的（見 _ready）
 
 func _open_chronicle(open_mode: int) -> void:
 	# 掛在系統選單的上一層（UIRoot）：系統選單被關閉時（讀檔成功）由《江湖行跡錄》自己收掉

@@ -8,6 +8,7 @@ extends "res://scripts/inventory/StudyPageBase.gd"
 # 座標依 docs/system_menu/lore_pack_v1/layout.json（2 倍像素 ÷ 2 ＝ 邏輯 px）。
 
 const EntriesScript = preload("res://scripts/inventory/LoreEntries.gd")
+const StudyForegrounds = preload("res://scripts/inventory/StudyForegrounds.gd")
 
 const LD := "res://assets/UI/lore/"
 const CAT_FILE := {"奇物": "item", "豪傑": "hero", "神怪": "monster"}
@@ -175,15 +176,7 @@ func _build_scene() -> void:
 	_lore_image("lore_quote_plate", Vector2(30, 442), _tex_half("lore_quote_plate"))
 
 func _build_foreground() -> void:
-	# 右前景的卷軸原圖被上下拉長了：高度壓成 0.8 倍，貼齊原本的底邊
-	# 右前景的卷軸：高度壓成 0.8 倍、橫向加寬 1.3 倍，右下角貼齊原本的位置
-	for pair in [["lore_fg_left", Vector2(0, 430), Vector2(1.0, 1.0)], ["lore_fg_right", Vector2(960, 420), Vector2(1.3, 0.8)]]:
-		var sz: Vector2 = _tex_half(pair[0]) * (pair[2] as Vector2)
-		var pos: Vector2 = pair[1] + _tex_half(pair[0]) - sz
-		var shadow := _lore_image(pair[0] + "_shadow", pos, sz)
-		shadow.z_index = 6
-		var img := _lore_image(pair[0], pos, sz)
-		img.z_index = 7
+	StudyForegrounds.add_lore(self)      # 左右前景（墨筆、詩集）；實作在 StudyForegrounds（系統頁也用同一套）
 
 func _build_shelf() -> void:
 	for i in EntriesScript.CATEGORIES.size():

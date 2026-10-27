@@ -43,7 +43,7 @@ func _run() -> void:
 	page._on_category_pressed("已完成")
 	_check(page._shown.size() == 2, "finished category holds the finished and the missed quest")
 	page._on_row_pressed("tq_missed")
-	_check(page._status_label.text == "已錯過" and page._seal_label.text == "支線", "missed quest shows its status and type")
+	_check(page._status_label.text == "已錯過" and page._seal_label.text.replace("\n", "") == "支線", "missed quest shows its status and type")
 	page._on_category_pressed("支線")
 	_check(page._shown.size() == 1, "missed quests are not listed under side quests")
 	sq.side_quests.clear()
