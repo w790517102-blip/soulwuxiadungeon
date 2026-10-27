@@ -133,7 +133,7 @@ func _build_detail() -> void:
 	_seal_label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	_seal_label.add_theme_constant_override("line_spacing", -2)
 	_image("label_ink_s", Vector2(DETAIL_X, 206), Vector2(80, 26), _detail_root)
-	_label("狀態", Vector2(DETAIL_X + 6, 206), Vector2(74, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, _detail_root)
+	_label("狀態", Vector2(DETAIL_X + 5, 206), Vector2(66, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, _detail_root)
 	_status_stamp = _image("status_usable", Vector2(DETAIL_X + 92, 208), Vector2(64, 24), _detail_root)
 	_status_label = _label("", Vector2(DETAIL_X + 92, 208), Vector2(64, 24), 13, Color("#F6EEDC"), HORIZONTAL_ALIGNMENT_CENTER, _detail_root)
 	_image("divider_h", Vector2(DETAIL_X, 240), Vector2(490, 6), _detail_root)
@@ -158,7 +158,7 @@ func _section(title: String) -> RichTextLabel:
 	head.custom_minimum_size = Vector2(110, 26)
 	_detail_box.add_child(head)
 	_image("label_ink_m", Vector2.ZERO, Vector2(110, 26), head)
-	_label(title, Vector2(8, 0), Vector2(100, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, head)
+	_label(title, Vector2(7, 0), Vector2(90, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, head)
 	var t := RichTextLabel.new()
 	t.fit_content = true
 	t.bbcode_enabled = true

@@ -90,3 +90,5 @@
 - 2026-10-27：江湖行跡錄右下的隊伍名稱與等級底下墊黑色墨筆圖章（沿用道具頁稀有度章第一款 rarity_1.png，壓深 0.6、字改米色 #F6EEDC、拿掉黑框；常數 NAME_STAMP_* 在 ChronicleScreen.gd 開頭）。未 commit。
 - 2026-10-27：選單前景對調：任務頁改用武術頁的前景（念珠、墨壺、燭燈柱），系統頁改用見聞頁的前景（墨筆、詩集、花）。兩套前景抽成共用的 `scripts/inventory/StudyForegrounds.gd`（`add_martial`／`add_lore`，無 class_name，用 preload 引用）；武術頁、見聞頁改呼叫它，行為不變。任務頁、系統頁的 `_foreground_preset` 改 "none"。未 commit。
 - 2026-10-28：任務頁右上紅色類型章（主線／支線）字放大到 22、一字一行上下排（SEAL_* 常數在 QuestPage.gd 開頭）。
+- 2026-10-28：任務頁、道具頁的黑色墨章標題字改成跟裝備頁一樣「置中＋整體偏左 2~3px」（墨章圖片不動）。未 commit。
+- 2026-10-28：道具頁區塊標題兩個字（效果）改用窄的 label_ink_s 墨章（80 寬），四個字的仍用 label_ink_m（100 寬）。未 commit。

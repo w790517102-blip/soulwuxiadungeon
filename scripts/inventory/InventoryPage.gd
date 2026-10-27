@@ -145,7 +145,7 @@ func _build_detail() -> void:
 	var info_titles := ["類別", "持有數量", "使用類型"]
 	for i in 3:
 		_image("label_ink_s", Vector2(844, 208 + 30 * i), Vector2(80, 26))
-		_label(info_titles[i], Vector2(850, 208 + 30 * i), Vector2(74, 26), 14, Color.WHITE)
+		_label(info_titles[i], Vector2(849, 208 + 30 * i), Vector2(66, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		var v := _label("", Vector2(932, 208 + 30 * i), Vector2(190, 26), 16, INK)
 		_info_vals.append(v)
 	_rarity_holder = Control.new()
@@ -183,10 +183,12 @@ func _build_detail() -> void:
 
 func _section(title: String) -> RichTextLabel:
 	var head := Control.new()
-	head.custom_minimum_size = Vector2(100, 26)
+	var short_title := title.length() <= 2      # 兩個字（效果）用窄的墨章，跟上面「類別」那一格同一款
+	var stamp_w := 80.0 if short_title else 100.0
+	head.custom_minimum_size = Vector2(stamp_w, 26)
 	_detail_box.add_child(head)
-	_image("label_ink_m", Vector2.ZERO, Vector2(100, 26), head)
-	_label(title, Vector2(8, 0), Vector2(92, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT, head)
+	_image("label_ink_s" if short_title else "label_ink_m", Vector2.ZERO, Vector2(stamp_w, 26), head)
+	_label(title, Vector2(5.0 if short_title else 7.0, 0), Vector2(66.0 if short_title else 80.0, 26), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, head)
 	var t := RichTextLabel.new()
 	t.fit_content = true
 	t.bbcode_enabled = true
