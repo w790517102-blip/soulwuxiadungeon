@@ -1,6 +1,7 @@
 [gd_scene load_steps=23 format=4 uid="uid://ltd58jpr8wcw"]
 
 [ext_resource type="Script" uid="uid://be5bt3udkyppu" path="res://scripts/yuheng/Bamboo_Grove_Suburb/bamboo_grove_suburb.gd" id="1_3e38x"]
+[ext_resource type="Script" path="res://scripts/map/WalkBounds.gd" id="walkbounds_gd"]
 [ext_resource type="Texture2D" uid="uid://eynsq8e2u21j" path="res://assets/background/Yuheng_Town/Bamboo_Grove_Suburb/Bamboo_Grove_Suburb.jpg" id="2_a2bpa"]
 [ext_resource type="PackedScene" uid="uid://b07w42x7gu0q7" path="res://scenes/yuheng/Bamboo_Grove_Suburb/yuheng_grand_ma.tscn" id="3_a2bpa"]
 [ext_resource type="Texture2D" uid="uid://bo6bqy1fmeie2" path="res://assets/background/Yuheng_Town/Bamboo_Grove_Suburb/Bush_1.png" id="4_eod8o"]
@@ -6321,3 +6322,22 @@ shape = SubResource("RectangleShape2D_i8jri")
 
 [connection signal="body_entered" from="to_yuheng_market_west" to="." method="_on_to_yuheng_market_west_body_entered"]
 [connection signal="body_entered" from="to_yuheng_bamboo_jungle" to="." method="_on_to_yuheng_bamboo_jungle_body_entered"]
+
+[node name="WalkBounds" type="StaticBody2D" parent="."]
+script = ExtResource("walkbounds_gd")
+
+[node name="walk_0" type="CollisionPolygon2D" parent="WalkBounds"]
+build_mode = 1
+polygon = PackedVector2Array(-846, 225, -666, 210, -456, 190, -296, 190, -236, 185, -176, 185, -116, 155, -56, 105, 24, 35, 64, -15, 99, -65, 104, -90, 234, -80, 219, 75, 174, 125, 149, 185, 124, 245, 164, 310, 264, 325, 494, 350, 559, 380, 549, 410, 464, 420, 344, 430, 264, 475, 249, 515, 229, 585, 209, 675, 164, 725, 64, 775, 34, 835, -586, 835, -586, 709, -636, 645, -706, 565, -776, 485, -846, 470)
+
+[node name="stone_1" type="CollisionPolygon2D" parent="WalkBounds"]
+build_mode = 1
+polygon = PackedVector2Array(-283, 535, -294.13, 551.971, -321, 559, -347.87, 551.971, -359, 535, -347.87, 518.029, -321, 511, -294.13, 518.029)
+
+[node name="stone_2" type="CollisionPolygon2D" parent="WalkBounds"]
+build_mode = 1
+polygon = PackedVector2Array(100, 620, 87.6985, 644.042, 58, 654, 28.3015, 644.042, 16, 620, 28.3015, 595.958, 58, 586, 87.6985, 595.958)
+
+[node name="stone_3" type="CollisionPolygon2D" parent="WalkBounds"]
+build_mode = 1
+polygon = PackedVector2Array(100, 650, 87.6985, 668.385, 58, 676, 28.3015, 668.385, 16, 650, 28.3015, 631.615, 58, 624, 87.6985, 631.615)

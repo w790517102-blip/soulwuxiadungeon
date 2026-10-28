@@ -138,17 +138,21 @@ static func _adopt_room_exit(room: Node, id: String) -> bool:
 	var method := String(room.get_meta(_exit_key(EXIT_METHOD_META, id), ""))
 	if method == "" or not room.has_method(method):
 		return false
+	# 用 WeakRef 抓房間：換場景後房間被釋放，直接抓著節點的 lambda 再被呼叫就會報「capture was freed」
+	var room_ref: WeakRef = weakref(room)
 	var handler := func(player: Node2D) -> void:
-		if not is_instance_valid(room) or bool(room.get("interaction_locked")) or bool(room.get_meta(EXIT_BUSY_META, false)):
+		var r: Node = room_ref.get_ref()
+		if r == null or bool(r.get("interaction_locked")) or bool(r.get_meta(EXIT_BUSY_META, false)):
 			return
-		room.set_meta(EXIT_BUSY_META, true)      # 淡出途中再點不重複觸發
-		if Callable(room, method).get_argument_count() == 4:
-			await room.call(method, RID(), player, 0, 0)      # body_shape_entered 版本
+		r.set_meta(EXIT_BUSY_META, true)      # 淡出途中再點不重複觸發
+		if Callable(r, method).get_argument_count() == 4:
+			await r.call(method, RID(), player, 0, 0)      # body_shape_entered 版本
 		else:
-			await room.call(method, player)
+			await r.call(method, player)
 		# 出口函式有時只是擋下來（例如終端室的封印提示），之後還要能再點；真的換場景的話這個房間很快就被換掉了
-		if is_instance_valid(room):
-			room.set_meta(EXIT_BUSY_META, false)
+		r = room_ref.get_ref()
+		if r != null:
+			r.set_meta(EXIT_BUSY_META, false)
 	var target := _make_target(room, room.get_meta(_exit_key(EXIT_YOLK_META, id)), room.get_meta(_exit_key(EXIT_WHITE_META, id), PackedVector2Array()), handler, String(room.get_meta(_exit_key(EXIT_NAME_META, id), "出口")), "exit")
 	if target == null:
 		return false
