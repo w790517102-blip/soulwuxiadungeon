@@ -6050,6 +6050,10 @@ size = Vector2(221.946, 73.713)
 
 [node name="Yin_yue_manor_room(day)" type="Node2D"]
 script = ExtResource("1_d51pn")
+metadata/exit_yolk = PackedVector2Array(-527.7, 465.9, -428.4, 379.9, -309, 465.9)
+metadata/exit_white = PackedVector2Array(-544.4, 465.9, -460.9, 362.4, -390.8, 340.7, -268.9, 427.5, -260.5, 465.9)
+metadata/exit_method = "_on_to_yin_yue_manor_body_entered"
+metadata/exit_name = "離開屋子"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999

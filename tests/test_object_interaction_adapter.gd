@@ -78,6 +78,24 @@ func _run() -> void:
 	center.queue_free()
 	await process_frame
 
+	# 飲月山莊：外部兩個出口（進屋、往竹林郊區），內部白天一個出口；夜晚沒有出口（劇情鎖定），不套用
+	var manor := {
+		"res://scenes/yuheng/YinYueManor/yin_yue_manor.tscn": ["door", "bamboo"],
+		"res://scenes/yuheng/YinYueManor/yin_yue_manor_room/yin_yue_manor_room(day).tscn": [""],
+	}
+	for mp in manor.keys():
+		var ms = load(mp).instantiate()
+		root.add_child(ms)
+		await process_frame
+		var exits: Array = manor[mp]
+		_check(ObjectInteractionAdapter.adopt_scene(ms) >= exits.size(), "%s adopts its hand-drawn exits" % mp.get_file())
+		for id in exits:
+			var nm: String = ObjectInteractionAdapter.EXIT_NODE_NAME if id == "" else "%s_%s" % [ObjectInteractionAdapter.EXIT_NODE_NAME, id]
+			var et := ms.get_node_or_null(nm) as InteractionTarget
+			_check(et != null and et.cursor_kind == "exit" and et.selection_polygon.size() >= 3 and et.zone_polygon.size() >= 3, "%s exit %s is a zone target with the exit cursor" % [mp.get_file(), id])
+		ms.queue_free()
+		await process_frame
+
 	# 多邊形工具：矩形擴張後每邊多 distance
 	var rect := PackedVector2Array([Vector2(0, 0), Vector2(100, 0), Vector2(100, 50), Vector2(0, 50)])
 	var grown := _bounds(ObjectInteractionAdapter.expanded(rect, 30.0))

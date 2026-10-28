@@ -6179,6 +6179,15 @@ size = Vector2(89.4214, 59.4937)
 [node name="YinYueManor" type="Node2D"]
 position = Vector2(500, -1000)
 script = ExtResource("1_knade")
+metadata/exit_ids = PackedStringArray("door", "bamboo")
+metadata/exit_door_yolk = PackedVector2Array(720.5, -862.5, 824, -841.5, 821, -688.5, 720.5, -712.5)
+metadata/exit_door_white = PackedVector2Array(722, -712.5, 669.5, -711, 617, -660, 776, -606, 836, -660, 821, -687)
+metadata/exit_door_method = "_on_to_yin_yue_manor_roomday_body_entered"
+metadata/exit_door_name = "進屋"
+metadata/exit_bamboo_yolk = PackedVector2Array(-118, 228, 173, 142.5, 461, 228)
+metadata/exit_bamboo_white = PackedVector2Array(-127, 237, 173, 90, 473, 237)
+metadata/exit_bamboo_method = "_on_to_yuheng_bamboo_jungle_body_entered"
+metadata/exit_bamboo_name = "往竹林郊區"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 z_index = -1999
