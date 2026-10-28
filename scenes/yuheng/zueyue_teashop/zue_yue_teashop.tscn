@@ -1,6 +1,7 @@
 [gd_scene load_steps=38 format=4 uid="uid://daki8cma7saq7"]
 
 [ext_resource type="Script" uid="uid://2702n5p4y7bs" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/zue_yue_teashop.gd" id="1_778kk"]
+[ext_resource type="Script" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_house_qin_suppress_entry.gd" id="qin_suppress_entry"]
 [ext_resource type="Texture2D" uid="uid://bpboo4jtbny1l" path="res://assets/background/Yuheng_Town/yuheng_market_east/zue_yue_teashop/ZueYue_teashop.jpg" id="2_y5iix"]
 [ext_resource type="Script" uid="uid://1ocagg3v8b87" path="res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_house_melody_recall.gd" id="3_y5iix"]
 [ext_resource type="PackedScene" uid="uid://c7a6rqxnldo7s" path="res://scenes/yuheng/zueyue_teashop/Hong_Huei_Yin.tscn" id="4_bowu5"]
@@ -4278,6 +4279,15 @@ script = ExtResource("3_y5iix")
 [node name="Area2D" type="Area2D" parent="tea_house_melody_recall"]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="tea_house_melody_recall/Area2D"]
+position = Vector2(-300, -39.86)
+shape = SubResource("RectangleShape2D_m3t3a")
+
+[node name="tea_house_qin_suppress_entry" type="Node2D" parent="."]
+script = ExtResource("qin_suppress_entry")
+
+[node name="Area2D" type="Area2D" parent="tea_house_qin_suppress_entry"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="tea_house_qin_suppress_entry/Area2D"]
 position = Vector2(-300, -39.86)
 shape = SubResource("RectangleShape2D_m3t3a")
 

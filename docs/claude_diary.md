@@ -96,3 +96,7 @@
 - 2026-10-28：飲月山莊內部（白天、夜晚）背景換成降解析的像素風新版（1448×1086，跟舊圖同尺寸、同位置，沒有前景遮擋圖，場景不需改）。第三張白天圖左下角有老闆畫了一半的出口紅線（往山莊外），等老闆畫完再做。未 commit。
 - 2026-10-28：淨化後水道兩張背景換新版（降解析像素風）：yuheng_sewer_true.jpg（洞窟河道）與 yuheng_sewer_true_room.jpg（藥師舊室，獅頭噴泉）；尺寸、擺設位置跟舊圖相同，場景不需改。未 commit。
 - 2026-10-28：飲月山莊出口手畫蛋黃／蛋白：外部「進屋」（呼叫 _on_to_yin_yue_manor_roomday_body_entered，仍受 _can_enter_manor_room 閘門）與下緣「往竹林郊區」（_on_to_yuheng_bamboo_jungle_body_entered）；內部白天「離開屋子」。外部座標：local = (-676+1.5px, -1308+1.5py)（根節點位置 (500,-1000)）；內部白天：(-601.2+0.835px, -440.88+0.835py)。夜晚內部沒有出口（劇情鎖定、無出口函式），沒套用。外部下緣出口兩條折線顏色相同，內側當蛋黃、外側當蛋白（依內部那張的規則推的）。未 commit。
+- 2026-10-29：竹林兩張圖（yuheng_bamboo_outskirts、Bamboo_Grove_Suburb）加地圖邊界：場景根下新增 `WalkBounds`（StaticBody2D，腳本 scripts/map/WalkBounds.gd），子節點 `walk_N` 是 CollisionPolygon2D（Segments 模式）畫出的封閉圈＝牆的中心線，編輯器裡直接拖頂點修改；執行時腳本把每條邊加粗成半徑 14 的圓頭實心牆（單薄的線會被斜著滑的角色從尖角鑽出去）。竹林郊外由底圖顏色分割出土黃小徑＋石階，再依老闆標記補被竹冠蓋住的路（補了六處）並放寬；老婆婆那張手畫外框（泥地、石板路、屋前空地）＋三顆石頭小碰撞。尚未做：竹子／灌木個別碰撞、蛋白蛋黃（兩張都還沒有）。未 commit。
+- 2026-10-29：《臨風寄影》壓情後、白書眠解釋前先去醉月茶坊的特殊階段（劇情補完）：白箋居詩人 bookstore_guest_a 壓情演出結束落旗 `event_linfeng_qin_suppressed`；階段＝該旗標已落、`met_Su_Mien` 沒落、主線 stage≤1。
+  階段內還沒跟紅徽音說過話（`event_tea_house_first_met` 沒落）者進白天茶坊：門口 `tea_house_qin_suppress_entry` 播一次特殊演出（兩聲琴音壓平怒氣與驚訝），完成落 `event_tea_house_qin_suppress_entry_done`，並補 `event_tea_house_melody_recall`（舊的「循聲而來」演出讓位）。已說過話者不播門口演出。
+  階段內找紅徽音：循環播 A（說過話）／B（沒說過）短對白，不落 first_met（真正的初次交談階段結束後照播）。階段在白書眠談話後（met_Su_Mien）結束。資料與條件集中在 `scripts/yuheng/yuheng_market_east/zueyue_teashop/TeaHouseQinSuppress.gd`，測試 `tests/test_tea_house_qin_suppress.gd`。未做：書眠談話裡的「想起茶坊」旁白（等老闆確認位置）。未 commit。

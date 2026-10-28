@@ -2,6 +2,7 @@
 extends CharacterBody2D
 
 const TeaHouseNightDialog = preload("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/tea_house_night_dialog.gd")
+const TeaHouseQinSuppress = preload("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/TeaHouseQinSuppress.gd")
 
 var _revisit_full_playing := false
 
@@ -90,6 +91,11 @@ func _compose_lines() -> Array:
 	var inn_stage := int(SideQuestManager.get_quest("talk_to_yuheng_inn_boss").get("stage", 0))
 	var has_inn_info := inn_stage >= 1
 	var already_met := GlobalState.get_flag("event_tea_house_first_met")
+
+	# 《臨風寄影》壓情後、白書眠解釋前，玩家先來質問：循環播放特殊短對白。
+	# 這裡只讀 already_met，不落 event_tea_house_first_met——真正的「初次正式交談」沒有發生，階段結束後還要播。
+	if TeaHouseQinSuppress.huiyin_special_active():
+		return TeaHouseQinSuppress.huiyin_loop(already_met)
 
 	# 06（新曲奏響後）：不退回 05／04
 	if TeaHouseNightDialog.is_stage_06() and GlobalState.get_flag(TeaHouseNightDialog.F_GOT_HALF_STRING_BUTTON):

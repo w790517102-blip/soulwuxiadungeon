@@ -141,6 +141,7 @@ func dialog_sequence_final():
 		{ "text": "(他將你手中的詩集拿回去)「總之，少俠，有空在聊吧」", "speaker": 1, "portrait": portrait_path },
 		{ "text": "(他的頭別了過去，只留下錯愕的你)」", "speaker": 1, "portrait": portrait_path },
 	], self)
+	GlobalState.set_flag("event_linfeng_qin_suppressed", true)   # 親身被琴音壓情了（醉月茶坊的特殊階段由此開始）
 	var liuyu := get_node("/root/GameRoot/LiuYu")
 	liuyu.can_move = true  # ✅ 解鎖
 	is_talking = false

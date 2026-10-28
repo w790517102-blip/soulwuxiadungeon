@@ -2,6 +2,8 @@
 # 掛在醉月茶坊地圖的某個 Area2D 下
 extends Node2D
 
+const TeaHouseQinSuppress = preload("res://scripts/yuheng/yuheng_market_east/zueyue_teashop/TeaHouseQinSuppress.gd")
+
 @onready var dialog_manager := get_node("/root/GameRoot/DialogManager")
 @onready var player := get_node("/root/GameRoot/LiuYu")
 @onready var area := $Area2D
@@ -11,6 +13,10 @@ var triggered := false
 func _ready():
 	# 若市集未選擇「觀察」，或事件已觸發過，則不執行
 	if not GlobalState.get_flag("event_market_choice_observe") or GlobalState.get_flag("event_tea_house_melody_recall"):
+		queue_free()
+		return
+	# 《臨風寄影》壓情後先來茶坊：門口改播特殊演出（tea_house_qin_suppress_entry），這段「循聲而來」讓位
+	if TeaHouseQinSuppress.entry_pending():
 		queue_free()
 		return
 	area.body_entered.connect(_on_player_entered)
