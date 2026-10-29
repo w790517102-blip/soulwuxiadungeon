@@ -10359,7 +10359,7 @@ script = ExtResource("5_pmca3")
 [node name="InteractionTarget" type="Node2D" parent="Hong_Huei_Yin"]
 script = ExtResource("interaction_target_script")
 mode = 2
-display_name = "鴻輝胤"
+display_name = "紅徽音"
 interaction_radius = 0.0
 hover_margin = 2.0
 selection_polygon = PackedVector2Array(-70.7, -156.1, 66.8, -177.4, 89.8, -28.9, -47.7, -7.6)
