@@ -334,9 +334,11 @@ func _show_party(party: Array, leader_level: int) -> void:
 		stamp.modulate = NAME_STAMP_TINT
 		var name_l := _label(SaveManager.actor_display_name(String(m.get("id", ""))), Vector2(-2, PARTY_CHIBI_H + 2), Vector2(cell_w, 20), 14, NAME_STAMP_TEXT, HORIZONTAL_ALIGNMENT_CENTER, cell)
 		name_l.add_theme_font_override("font", PIXEL_FONT)      # 角色名稱用點陣字體
+		_outlined(name_l)
 		var lv := int(m.get("level", 0))
 		var lv_l := _label("Lv.%d" % lv if lv > 0 else "Lv.?", Vector2(-2, PARTY_CHIBI_H + 20), Vector2(cell_w, 20), 14, NAME_STAMP_TEXT, HORIZONTAL_ALIGNMENT_CENTER, cell)
 		lv_l.add_theme_font_override("font", PIXEL_FONT)
+		_outlined(lv_l)
 
 func _update_action_button(status: String) -> void:
 	if mode == Mode.SAVE:
