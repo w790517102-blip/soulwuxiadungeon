@@ -100,3 +100,4 @@
 - 2026-10-29：《臨風寄影》壓情後、白書眠解釋前先去醉月茶坊的特殊階段（劇情補完）：白箋居詩人 bookstore_guest_a 壓情演出結束落旗 `event_linfeng_qin_suppressed`；階段＝該旗標已落、`met_Su_Mien` 沒落、主線 stage≤1。
   階段內還沒跟紅徽音說過話（`event_tea_house_first_met` 沒落）者進白天茶坊：門口 `tea_house_qin_suppress_entry` 播一次特殊演出（兩聲琴音壓平怒氣與驚訝），完成落 `event_tea_house_qin_suppress_entry_done`，並補 `event_tea_house_melody_recall`（舊的「循聲而來」演出讓位）。已說過話者不播門口演出。
   階段內找紅徽音：循環播 A（說過話）／B（沒說過）短對白，不落 first_met（真正的初次交談階段結束後照播）。階段在白書眠談話後（met_Su_Mien）結束。資料與條件集中在 `scripts/yuheng/yuheng_market_east/zueyue_teashop/TeaHouseQinSuppress.gd`，測試 `tests/test_tea_house_qin_suppress.gd`。未做：書眠談話裡的「想起茶坊」旁白（等老闆確認位置）。未 commit。
+- 2026-10-29：竹林兩張圖出入口手畫蛋黃／蛋白（老闆畫的紅／粉框，多邊形超出圖邊的部分延伸到圖外）：郊區（老婆婆那張）北邊「往郊外竹林」與南邊「往西市」，郊外竹林叢上方「往飲月山莊」與下方「往竹林郊區」，用房間根節點 metadata（exit_ids／exit_<id>_yolk／_white／_method／_name），沿用 ObjectInteractionAdapter。老婆婆維持預設蛋白蛋黃。測試 test_object_interaction_adapter 加入這兩張圖。未 commit。

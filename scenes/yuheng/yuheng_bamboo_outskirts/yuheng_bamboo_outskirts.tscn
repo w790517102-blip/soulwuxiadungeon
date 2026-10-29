@@ -4148,6 +4148,15 @@ size = Vector2(103.187, 44.8708)
 [node name="yuheng_bamboo_outskirts" type="Node2D"]
 position = Vector2(-788, 367)
 script = ExtResource("1_alk87")
+metadata/exit_ids = PackedStringArray("manor", "suburb")
+metadata/exit_manor_yolk = PackedVector2Array(-899.4, -429.2, -897.1, -303.2, -730.6, -307.7, -723.9, -429.2)
+metadata/exit_manor_white = PackedVector2Array(-908.4, -429.2, -935.4, -244.7, -831.9, -228.9, -694.6, -233.4, -719.4, -429.2)
+metadata/exit_manor_method = "_on_to_yin_yue_manor_body_entered"
+metadata/exit_manor_name = "往飲月山莊"
+metadata/exit_suburb_yolk = PackedVector2Array(815.1, 1915.3, 882.6, 1915.3, 893.9, 2023.3, 806.1, 2023.3)
+metadata/exit_suburb_white = PackedVector2Array(779.1, 1890.6, 853.4, 1850.1, 920.9, 1877.1, 927.6, 2023.3, 788.1, 2023.3)
+metadata/exit_suburb_method = "_on_to_bamboo_grove_suburb_body_entered"
+metadata/exit_suburb_name = "往竹林郊區"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(-19.635, 430.315)

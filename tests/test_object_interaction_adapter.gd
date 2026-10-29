@@ -82,6 +82,8 @@ func _run() -> void:
 	var manor := {
 		"res://scenes/yuheng/YinYueManor/yin_yue_manor.tscn": ["door", "bamboo"],
 		"res://scenes/yuheng/YinYueManor/yin_yue_manor_room/yin_yue_manor_room(day).tscn": [""],
+		"res://scenes/yuheng/Bamboo_Grove_Suburb/Bamboo_Grove_Suburb.tscn": ["jungle", "west"],
+		"res://scenes/yuheng/yuheng_bamboo_outskirts/yuheng_bamboo_outskirts.tscn": ["manor", "suburb"],
 	}
 	for mp in manor.keys():
 		var ms = load(mp).instantiate()

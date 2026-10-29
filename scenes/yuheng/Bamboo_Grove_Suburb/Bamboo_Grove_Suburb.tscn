@@ -6181,6 +6181,15 @@ size = Vector2(167, 127.53)
 [node name="Bamboo_Grove_Suburb" type="Node2D"]
 position = Vector2(814, 972)
 script = ExtResource("1_3e38x")
+metadata/exit_ids = PackedStringArray("jungle", "west")
+metadata/exit_jungle_yolk = PackedVector2Array(230, -143, 102, -63, 248, 41, 368, -49)
+metadata/exit_jungle_white = PackedVector2Array(49, -57, 226, -150, 409, -65, 249, 45, 139, 41, 34, -1)
+metadata/exit_jungle_method = "_on_to_yuheng_bamboo_jungle_body_entered"
+metadata/exit_jungle_name = "往郊外竹林"
+metadata/exit_west_yolk = PackedVector2Array(-391, 655, -242, 643, -169, 709, -156, 745, -391, 745)
+metadata/exit_west_white = PackedVector2Array(-516, 650, -401, 562, -271, 585, -84, 677, -84, 745, -496, 745)
+metadata/exit_west_method = "_on_to_yuheng_market_west_body_entered"
+metadata/exit_west_name = "往西市"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(-52, 197)
