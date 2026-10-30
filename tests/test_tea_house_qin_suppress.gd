@@ -35,7 +35,7 @@ func _run() -> void:
 	qm = root.get_node("QuestManager")
 	var flags_backup: Dictionary = gs.flags.duplicate(true)
 	var main_backup: Dictionary = qm.main_quest.duplicate(true)
-	for f in [Suppress.F_SUPPRESSED, Suppress.F_ENTRY_DONE, Suppress.F_FIRST_MET, Suppress.F_MELODY_RECALL, Suppress.F_MET_SHUMIAN]:
+	for f in [Suppress.F_SUPPRESSED, Suppress.F_ENTRY_DONE, Suppress.F_FIRST_MET, Suppress.F_MELODY_RECALL, Suppress.F_YINPINGYU_DONE]:
 		gs.set_flag(f, false)
 	qm.main_quest["stage"] = 1
 
@@ -55,29 +55,28 @@ func _run() -> void:
 	_check(Suppress.huiyin_special_active(), "after the entry scene: special talk active")
 	_check(not gs.get_flag(Suppress.F_FIRST_MET), "the entry scene does not mark the first real conversation as done")
 
-	# ---- 白書眠解釋之後：階段結束，旗標保留 ----
-	gs.set_flag(Suppress.F_MET_SHUMIAN, true)
-	_check(not Suppress.is_window_open() and not Suppress.huiyin_special_active(), "after Shumian explains: special talk ends")
+	# ---- 白書眠談完但《銀屏語》還沒完成：階段仍在 ----
+	gs.set_flag("met_Su_Mien", true)
+	_check(Suppress.is_window_open() and Suppress.huiyin_special_active(), "after the first Shumian talk: still open until Yinpingyu is done")
+	gs.set_flag("met_Su_Mien", false)
+
+	# ---- 《銀屏語》完成之後：階段結束，旗標保留 ----
+	gs.set_flag(Suppress.F_YINPINGYU_DONE, true)
+	_check(not Suppress.is_window_open() and not Suppress.huiyin_special_active(), "after Yinpingyu done: special talk ends")
 	_check(gs.get_flag(Suppress.F_ENTRY_DONE), "entry flag stays set after the window closes")
 
 	# ---- 已經跟紅徽音說過話：不播門口演出，只有找她時的特殊對白 ----
-	gs.set_flag(Suppress.F_MET_SHUMIAN, false)
+	gs.set_flag(Suppress.F_YINPINGYU_DONE, false)
 	gs.set_flag(Suppress.F_ENTRY_DONE, false)
 	gs.set_flag(Suppress.F_FIRST_MET, true)
 	_check(not Suppress.entry_pending(), "already talked to her: no entry scene")
 	_check(Suppress.huiyin_special_active(), "already talked to her: special talk still active")
 	gs.set_flag(Suppress.F_FIRST_MET, false)
-	gs.set_flag(Suppress.F_MET_SHUMIAN, true)
+	gs.set_flag(Suppress.F_YINPINGYU_DONE, true)
 
-	# ---- 先去找白書眠的玩家：階段在進茶坊前就結束，門口不播 ----
+	# ---- 先完成《銀屏語》的玩家：階段在進茶坊前就結束，門口不播 ----
 	gs.set_flag(Suppress.F_ENTRY_DONE, false)
-	_check(not Suppress.entry_pending(), "went to Shumian first: no entry scene")
-
-	# ---- 主線離開第 1 階段也算結束 ----
-	gs.set_flag(Suppress.F_MET_SHUMIAN, false)
-	qm.main_quest["stage"] = 2
-	_check(not Suppress.is_window_open(), "main stage 2: window closed")
-	qm.main_quest["stage"] = 1
+	_check(not Suppress.entry_pending(), "finished Yinpingyu first: no entry scene")
 
 	# ---- 台詞 ----
 	var entry := _text_of(Suppress.entry_part1()) + "\n" + _text_of(Suppress.entry_part2())

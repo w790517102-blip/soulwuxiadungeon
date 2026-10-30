@@ -1,12 +1,12 @@
 extends RefCounted
 ## 《臨風寄影》壓情事件之後、白書眠還沒解釋之前，玩家先跑來醉月茶坊質問紅徽音的那段「特殊階段」。
 ##
-## 階段：從白箋居的詩人（bookstore_guest_a）讓玩家實際被琴音壓情開始（F_SUPPRESSED），到白書眠的對話完成（met_Su_Mien／主線 stage 離開 1）為止。
+## 階段：從白箋居的詩人（bookstore_guest_a）讓玩家實際被琴音壓情開始（F_SUPPRESSED），到《銀屏語》事件完成（event_yinpingyu_done）為止。
 ##   - 階段內、還沒跟紅徽音說過話（F_FIRST_MET 沒落）的玩家：進白天的醉月茶坊時，門口強制播一次特殊演出（tea_house_qin_suppress_entry.gd），
 ##     不論以前有沒有踏進過茶坊、有沒有調查過琴音。
 ##   - 已經跟她說過話（F_FIRST_MET 已落）的玩家：不播門口演出，只有找她時的特殊對白（A）。
 ##   - 階段內找紅徽音（沒說過話的要先看完門口演出）：循環播放短對白，A＝以前跟她說過話、B＝從沒說過。
-##   - 先去找白書眠的玩家，階段在進茶坊前就結束了：不播門口演出，茶坊照原本的初見／重訪流程。
+##   - 先完成《銀屏語》的玩家，階段在進茶坊前就結束了：不播門口演出，茶坊照原本的初見／重訪流程。
 ## 旗標：
 ##   F_SUPPRESSED  白箋居詩人那段壓情演出結束時落旗（bookstore_guest_a.gd）。
 ##   F_ENTRY_DONE  門口特殊演出播完時落旗（同時補上 event_tea_house_melody_recall：琴音這件事已經親耳聽過）。
@@ -17,17 +17,15 @@ const F_SUPPRESSED := "event_linfeng_qin_suppressed"
 const F_ENTRY_DONE := "event_tea_house_qin_suppress_entry_done"
 const F_FIRST_MET := "event_tea_house_first_met"
 const F_MELODY_RECALL := "event_tea_house_melody_recall"
-const F_MET_SHUMIAN := "met_Su_Mien"
+const F_YINPINGYU_DONE := "event_yinpingyu_done"
 
 const LIU_PORTRAIT := "res://assets/sprites/Liu_Yu/LiuYu_headshot.png"
 const EMPTY_PORTRAIT := "res://assets/sprites/empty.png"
 
 
-## 階段還沒結束：已經被壓情、白書眠還沒解釋，而且主線還在第 1 階段。
+## 階段還沒結束：已經被壓情，而且《銀屏語》事件還沒完成。
 static func is_window_open() -> bool:
-	if not GlobalState.get_flag(F_SUPPRESSED) or GlobalState.get_flag(F_MET_SHUMIAN):
-		return false
-	return int(QuestManager.get_main_quest_state().get("stage", 1)) <= 1
+	return GlobalState.get_flag(F_SUPPRESSED) and not GlobalState.get_flag(F_YINPINGYU_DONE)
 
 
 ## 門口演出還沒播、且現在該播：階段內、還沒跟紅徽音說過話、演出沒播過。

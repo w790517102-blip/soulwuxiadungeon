@@ -70,11 +70,6 @@ func _unhandled_input(event):
 			GlobalState.set_flag(TeaHouseNightDialog.F_HUIYIN_REVISIT_05_SEEN, true)
 			_revisit_full_playing = false
 
-		# 若剛才為 stage==2 的琴音委託，對話結束後把主線推進到 3
-		var main_stage := _get_main_stage_safely()
-		if main_stage == 4:
-			_advance_main_quest_to_5()
-
 		liuyu.can_move = true
 		is_talking = false
 
@@ -179,15 +174,6 @@ func _get_main_stage_safely() -> int:
 
 	push_warning("[TeaGirl] 找不到 QuestManager，主線階段以 1 代替。")
 	return 1
-
-func _advance_main_quest_to_5():
-	var qm := get_node_or_null("/root/QuestManager")
-	if qm == null:
-		qm = get_node_or_null("/root/GameRoot/QuestManager")
-	if qm and qm.has_method("advance_main_quest"):
-		qm.advance_main_quest(5, "承女伶之託，尋線追查")
-	else:
-		push_warning("[TeaGirl] QuestManager 不存在或缺 advance_main_quest()，無法推進主線。")
 
 # ---------- 小工具 ----------
 const _HONG_PORTRAIT := "res://assets/sprites/NPC/Yuheng/Hong_Huei_Yin_headshot.png"
