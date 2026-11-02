@@ -122,12 +122,12 @@ func _check_gossip_topic():
 
 		# 🎯 關鍵：等對話完後再播獨白！
 		await get_tree().process_frame
-		dialog_manager.show_dialog_sequence([
+		await _play_sequence_and_wait([
 			{ "text": "劉語塵：「（心想）看來在鎮民的眼裡，左飲本來是位古道熱腸的俠義之士...」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "劉語塵：「（心想）只是最近出於某些原因鮮少露面了」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "劉語塵：「（心想）嗯……」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
 			{ "text": "劉語塵：「（心想）再繼續跟更多人打聽些左飲的消息好了。」", "speaker": 2, "portrait": "res://assets/sprites/Liu_Yu/LiuYu_headshot.png" },
-		], self)
+		])
 
 
 func reset_dialog_state():
@@ -179,6 +179,7 @@ func _start_oldfighter_intro_and_offer() -> void:
 		{ "text": "老翁：「放心，老夫只是活動筋骨，不會欺負後輩。」", "speaker": 1, "portrait": portrait_path },
 	])
 	GlobalState.set_flag(gossip_flag, true)
+	await _check_gossip_topic()
 	if not SideQuestManager.get_quest(QUEST_ID).has("quest_id"):
 		SideQuestManager.register_quest(QUEST_ID, {"quest_id": QUEST_ID, "title": QUEST_TITLE})
 	var quest := SideQuestManager.get_quest(QUEST_ID)
