@@ -24,7 +24,7 @@ const DB := {
 		"base_stats": {"str": 5, "agi": 5, "int": 5, "con": 5, "luck": 5},
 	},
 	"lieshao": {
-		"display_name": "列肖",
+		"display_name": "列霄",
 		"portrait_path": "res://assets/sprites/NPC/LieFong/LieShao_battle.png",
 		"job": "樂師",
 		"subclass": "琴手",

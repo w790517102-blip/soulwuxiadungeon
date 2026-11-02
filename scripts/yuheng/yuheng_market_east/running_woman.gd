@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+signal overhead_chatter_version_changed(version_id: int)
+
 @export var z_index_offset := 0
 @export var portrait_path := "res://assets/sprites/empty.png"
 @export var speaker_id := 1
@@ -25,11 +27,18 @@ var previous_position: Vector2 = Vector2.ZERO
 var _interaction_flow_active := false
 var _unlock_on_next_reset := false
 
+enum ChatterVersion {
+	BEFORE_BEANS_COMPLETED = 1,
+	BEANS_COMPLETED = 2,
+	BAIYUAN_HENGTIAN_COMPLETED = 3,
+}
+
 const QUEST_ID := "yuheng_green_beans"
 const QUEST_TITLE := "一把四季豆"
 const QUEST_STAGE_1_DESC := "前往市集菜鋪，替秋嬸買回炸過的熟豆。"
 const QUEST_STAGE_2_DESC := "將四季豆帶回給秋嬸。"
 const QUEST_GET_FLAG := "got_yuheng_green_beans_quest"
+const BEANS_COMPLETED_FLAG := "yh_side_beans_completed"
 const BEAN_RAW_ITEM_ID := "quest_green_beans_raw"
 const BEAN_FRIED_ITEM_ID := "quest_green_beans_fried"
 
@@ -48,6 +57,7 @@ func _ready():
 	dialog_lines = [
 		{ "text": "「趁今天天氣好，趕快把衣服洗乾淨曬起來。」", "speaker": speaker_id, "portrait": portrait_path },
 	]
+	call_deferred("_sync_overhead_chatter")
 
 func _process(delta):
 	z_index = int(global_position.y + z_index_offset)
@@ -89,6 +99,25 @@ func _process(delta):
 			animated_sprite.play(idle_anim)
 
 	move_and_slide()
+
+func _has_completed_baiyuan_hengtian() -> bool:
+	# TODO: 待白鳶橫天事件的正式完成旗標命名後，
+	# 在此讀取 GlobalState.get_flag("正式旗標名稱")。
+	#
+	# 這裡應代表白鳶橫天對玉衡鎮的效果已正式成立，
+	# 不一定只是取得琴譜道具。
+	return false
+
+func _resolve_overhead_chatter_version() -> int:
+	if _has_completed_baiyuan_hengtian():
+		return ChatterVersion.BAIYUAN_HENGTIAN_COMPLETED
+	if GlobalState and GlobalState.has_method("get_flag") and GlobalState.get_flag(BEANS_COMPLETED_FLAG):
+		return ChatterVersion.BEANS_COMPLETED
+	return ChatterVersion.BEFORE_BEANS_COMPLETED
+
+func _sync_overhead_chatter() -> void:
+	var version_id := _resolve_overhead_chatter_version()
+	overhead_chatter_version_changed.emit(version_id)
 
 func _play_directional_anim(dir: Vector2):
 	if dir.length() < 0.1:
@@ -257,6 +286,9 @@ func _report_green_beans_result(quest: Dictionary) -> void:
 		quest["note"] = "豆子買成生的了，但秋嬸仍笑著收下這份好意。"
 
 	SideQuestManager.complete_quest(QUEST_ID)
+	if GlobalState and GlobalState.has_method("set_flag"):
+		GlobalState.set_flag(BEANS_COMPLETED_FLAG, true)
+	_sync_overhead_chatter()
 	quest["description"] = "已完成：一把四季豆"
 	quest["objective"] = "把日常過下去，本身就是一種定力。"
 	quest["current_objective"] = quest["objective"]

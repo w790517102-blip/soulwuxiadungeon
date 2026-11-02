@@ -13,12 +13,6 @@ var can_move := true
 @export var random_encounter_enabled := true
 const EnemyDB = preload("res://scripts/db/EnemyDB.gd")
 const ZONE_CONFIG := {
-	"yuheng_bamboo_outskirts": {
-		"distance_threshold": 540.0,
-		"chance": 0.25,
-		"cooldown_distance": 320.0,
-		"intro_key": "yuheng_bamboo_outskirts_random"
-	},
 	"yuheng_sewer": {
 		"distance_threshold": 240.0,
 		"chance": 0.30,
@@ -28,13 +22,6 @@ const ZONE_CONFIG := {
 }
 
 const ENCOUNTER_POOLS := {
-	"yuheng_bamboo_outskirts": [
-		{"w": 35, "enemies": ["bamboo_macaque", "bamboo_macaque"]},
-		{"w": 30, "enemies": ["bamboo_macaque", "bamboo_bobcat"]},
-		{"w": 20, "enemies": ["bamboo_wild_boar"]},
-		{"w": 10, "enemies": ["bamboo_poison_snake", "bamboo_poison_snake"]},
-		{"w": 5, "enemies": ["bamboo_bobcat", "bamboo_poison_snake"]}
-	],
 	"yuheng_sewer": [
 		{"w": 35, "enemies": ["sewer_rat_swarm"]},
 		{"w": 30, "enemies": ["sewer_thug", "sewer_thug"]},
@@ -106,6 +93,8 @@ const ENCOUNTER_STYLE_PROFILES := {
 var in_danger_zone := false
 var current_zone_id := ""
 var _zone_overrides := {}
+var _current_zone_config := {}
+var _current_encounter_table: Array = []
 var _encounter_distance_accum := 0.0
 var _encounter_cooldown_distance := 0.0
 var _encounter_rng := RandomNumberGenerator.new()
@@ -214,7 +203,7 @@ func _update_random_encounter(delta: float) -> void:
 	if direction == Vector2.ZERO:
 		return
 
-	var config = ZONE_CONFIG.get(current_zone_id, {})
+	var config = _get_current_zone_config()
 	var distance_threshold = _resolve_zone_value(config, "distance_threshold", 0.0)
 	var cooldown_distance = _resolve_zone_value(config, "cooldown_distance", 0.0)
 	var chance = _resolve_zone_value(config, "chance", 0.0)
@@ -264,7 +253,7 @@ func _trigger_random_battle() -> void:
 			if bgm_any != null and str(bgm_any) != "":
 				battle_bgm_path = str(bgm_any)
 
-	var enemies = _build_enemies_from_zone(current_zone_id, ENCOUNTER_POOLS)
+	var enemies = _build_enemies_from_zone(current_zone_id)
 	var transition_style := _resolve_encounter_transition_style(enemies)
 
 	var context = {
@@ -298,7 +287,7 @@ func _trigger_random_battle() -> void:
 		await _play_encounter_transition(context.get("encounter_transition_style", {}))
 		visible = false
 		var cooldown_distance = _resolve_zone_value(
-			ZONE_CONFIG.get(current_zone_id, {}),
+			_get_current_zone_config(),
 			"cooldown_distance",
 			0.0
 		)
@@ -307,7 +296,7 @@ func _trigger_random_battle() -> void:
 	else:
 		push_warning("❗ 找不到 GameRoot，無法切換到戰鬥場景。")
 	_encounter_cooldown_distance = _resolve_zone_value(
-		ZONE_CONFIG.get(current_zone_id, {}),
+		_get_current_zone_config(),
 		"cooldown_distance",
 		0.0
 	)
@@ -315,23 +304,24 @@ func _trigger_random_battle() -> void:
 func _weighted_pick(pool: Array) -> Dictionary:
 	var total := 0
 	for e in pool:
-		total += int(e.get("w", 0))
+		total += int(e.get("w", e.get("weight", 0)))
 	if total <= 0:
 		return {}
 
 	var r = _encounter_rng.randi_range(1, total)
 	var acc := 0
 	for e in pool:
-		acc += int(e.get("w", 0))
+		acc += int(e.get("w", e.get("weight", 0)))
 		if r <= acc:
 			return e
 	return pool[-1] if pool.size() > 0 else {}
 
 func _build_enemies_from_zone(
-	zone_id: String,
-	encounter_pools: Dictionary
+	zone_id: String
 ) -> Array:
-	var pool: Array = encounter_pools.get(zone_id, [])
+	var pool: Array = _current_encounter_table
+	if pool.is_empty():
+		pool = ENCOUNTER_POOLS.get(zone_id, [])
 	if pool.is_empty():
 		push_warning("Encounter pool empty for zone_id=%s" % zone_id)
 		return []
@@ -351,9 +341,16 @@ func _build_enemies_from_zone(
 
 	return enemies
 
-func enter_danger_zone(zone_id: String, overrides: Dictionary = {}) -> void:
+func enter_danger_zone(
+	zone_id: String,
+	overrides: Dictionary = {},
+	encounter_table: Array = [],
+	zone_config: Dictionary = {}
+) -> void:
 	current_zone_id = zone_id
 	_zone_overrides = overrides
+	_current_encounter_table = encounter_table.duplicate(true)
+	_current_zone_config = zone_config.duplicate(true)
 	in_danger_zone = true
 
 func exit_danger_zone(zone_id: String) -> void:
@@ -361,12 +358,16 @@ func exit_danger_zone(zone_id: String) -> void:
 		in_danger_zone = false
 		current_zone_id = ""
 		_zone_overrides = {}
+		_current_encounter_table = []
+		_current_zone_config = {}
 		_encounter_distance_accum = 0.0
 
 func reset_encounter_state() -> void:
 	in_danger_zone = false
 	current_zone_id = ""
 	_zone_overrides = {}
+	_current_encounter_table = []
+	_current_zone_config = {}
 	_encounter_distance_accum = 0.0
 	_encounter_cooldown_distance = 0.0
 	_encounter_paused = false
@@ -422,15 +423,23 @@ func refresh_danger_zone_from_position(start_delay_sec: float = 0.7) -> void:
 			overrides["cooldown_distance"] = cooldown_override
 		if intro_override != "":
 			overrides["intro_key"] = intro_override
-		enter_danger_zone(zone_id, overrides)
+		var map_config := _get_danger_zone_map_config(matched_zone, zone_id)
+		enter_danger_zone(
+			zone_id,
+			overrides,
+			map_config.get("encounter_table", []),
+			map_config.get("zone_config", {})
+		)
 		_encounter_distance_accum = 0.0
-		var config = ZONE_CONFIG.get(zone_id, {})
+		var config = _get_current_zone_config()
 		var soft_cooldown = _resolve_zone_value(config, "distance_threshold", 0.0) * 0.35
 		_encounter_cooldown_distance = max(_encounter_cooldown_distance, soft_cooldown)
 	else:
 		in_danger_zone = false
 		current_zone_id = ""
 		_zone_overrides = {}
+		_current_encounter_table = []
+		_current_zone_config = {}
 		_encounter_distance_accum = 0.0
 
 	_encounter_paused = was_paused
@@ -440,6 +449,37 @@ func _zone_prop_or(area: Object, prop: String, fallback):
 		return fallback
 	var value = area.get(prop)
 	return fallback if value == null else value
+
+func _get_current_zone_config() -> Dictionary:
+	if not _current_zone_config.is_empty():
+		return _current_zone_config
+	return ZONE_CONFIG.get(current_zone_id, {})
+
+func _get_danger_zone_map_config(area: Area2D, zone_id: String) -> Dictionary:
+	var map_node := _find_map_config_provider(area)
+	var encounter_table: Array = []
+	var zone_config := {}
+	if map_node != null:
+		if map_node.has_method("get_encounter_table"):
+			var table_any = map_node.call("get_encounter_table", zone_id)
+			if typeof(table_any) == TYPE_ARRAY:
+				encounter_table = table_any
+		if map_node.has_method("get_encounter_zone_config"):
+			var config_any = map_node.call("get_encounter_zone_config", zone_id)
+			if typeof(config_any) == TYPE_DICTIONARY:
+				zone_config = config_any
+	return {
+		"encounter_table": encounter_table,
+		"zone_config": zone_config
+	}
+
+func _find_map_config_provider(start: Node) -> Node:
+	var node := start.get_parent()
+	while node != null:
+		if node.has_method("get_encounter_table") or node.has_method("get_encounter_zone_config"):
+			return node
+		node = node.get_parent()
+	return null
 
 func _pause_for_battle() -> void:
 	lock_for_battle()
@@ -481,7 +521,7 @@ func _resolve_zone_value(config: Dictionary, key: String, fallback: float) -> fl
 func _resolve_zone_intro_key() -> String:
 	if _zone_overrides.has("intro_key"):
 		return str(_zone_overrides["intro_key"])
-	var config = ZONE_CONFIG.get(current_zone_id, {})
+	var config = _get_current_zone_config()
 	return str(config.get("intro_key", "default"))
 
 func _process(delta):

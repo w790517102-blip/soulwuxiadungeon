@@ -7,6 +7,8 @@ static func _compute_runtime_effects(force: Dictionary, actor: Dictionary = {}) 
 		"str": int(force.get("str_flat_bonus", 0)),
 		"con": int(force.get("con_flat_bonus", 0)),
 		"agi": int(force.get("agi_flat_bonus", 0)),
+		"int": int(force.get("int_flat_bonus", 0)),
+		"luck": int(force.get("luck_flat_bonus", 0)),
 		"accuracy": int(force.get("accuracy_flat_bonus", 0)),
 		"def": int(force.get("def_flat_bonus", 0)),
 		"max_mp": int(force.get("max_mp_flat_bonus", 0)),
@@ -49,6 +51,12 @@ static func get_effect_description_line(force: Dictionary, actor: Dictionary = {
 	var agi_bonus := int(effects.get("agi", 0))
 	if agi_bonus != 0:
 		parts.append("敏捷 %+d" % agi_bonus)
+	var int_bonus := int(effects.get("int", 0))
+	if int_bonus != 0:
+		parts.append("智慧 %+d" % int_bonus)
+	var luck_bonus := int(effects.get("luck", 0))
+	if luck_bonus != 0:
+		parts.append("幸運 %+d" % luck_bonus)
 	var accuracy_bonus := int(effects.get("accuracy", 0))
 	if accuracy_bonus != 0:
 		parts.append("命中 %+d" % accuracy_bonus)
@@ -97,6 +105,10 @@ static func get_effect_summary_line(force: Dictionary, actor: Dictionary = {}) -
 		tokens.append("體能上升")
 	if int(effects.get("agi", 0)) != 0:
 		tokens.append("敏捷上升")
+	if int(effects.get("int", 0)) != 0:
+		tokens.append("智慧上升")
+	if int(effects.get("luck", 0)) != 0:
+		tokens.append("幸運上升")
 	if int(effects.get("accuracy", 0)) != 0:
 		tokens.append("命中上升")
 	if int(effects.get("def", 0)) != 0:

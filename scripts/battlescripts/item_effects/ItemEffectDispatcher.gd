@@ -57,7 +57,7 @@ func _handle_heal_hp(controller, user: Dictionary, item: Dictionary, target: Dic
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")
-	var user_id: String = user.get("id", "")
+	var target_id: String = target.get("id", "")
 
 	var before_hp: int = target.get("hp", 0)
 	var max_hp: int = target.get("max_hp", before_hp)
@@ -82,7 +82,7 @@ func _handle_heal_hp(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log(line_no_effect)
 	else:
 		if controller.tone_map != null:
-			var extra_hp = controller.tone_map.get_tone_text("item_use", "heal", user_id)
+			var extra_hp = controller.tone_map.get_tone_text("item_use", "heal", target_id)
 			if extra_hp != "":
 				controller._log(extra_hp)
 
@@ -122,7 +122,7 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 	var user_name: String = user.get("name", "???")
 	var target_name: String = target.get("name", "???")
 	var item_name: String = item.get("name", "???")
-	var user_id: String = user.get("id", "")
+	var target_id: String = target.get("id", "")
 
 	var before_mp: int = target.get("mp", 0)
 	var max_mp: int = target.get("max_mp", before_mp)
@@ -147,7 +147,7 @@ func _handle_mp_heal(controller, user: Dictionary, item: Dictionary, target: Dic
 		controller._log(line_no_mp)
 	else:
 		if controller.tone_map != null:
-			var extra_mp = controller.tone_map.get_tone_text("item_use", "mp_heal", user_id)
+			var extra_mp = controller.tone_map.get_tone_text("item_use", "mp_heal", target_id)
 			if extra_mp != "":
 				controller._log(extra_mp)
 
@@ -482,7 +482,7 @@ func _handle_cure_status(controller, user: Dictionary, item: Dictionary, target:
 		if controller.has_method("_log_narration"):
 			controller._log_narration(_cure_status_narration(status_id))
 		controller._log("%s 對 %s 使用了 %s。" % [user_name, target_name, item_name])
-		controller._log("%s解除。" % status_name)
+		controller._log("%s 的%s解除。" % [target_name, status_name])
 	else:
 		controller._log("%s 對 %s 使用了 %s，但對方並未處於「%s」。" % [user_name, target_name, item_name, status_name])
 	return true
@@ -707,13 +707,21 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 
 	if target in controller.player_party:
 		var amount_atk: int = int(item.get("amount", 0))
+		var turns := int(item.get("turns", 3))
 		if amount_atk <= 0:
 			controller._log("WARN: item missing amount: %s" % item.get("id", ""))
 			return false
+		if turns <= 0:
+			controller._log("WARN: item missing turns: %s" % item.get("id", ""))
+			return false
+		if controller.status_manager == null:
+			return false
 
-		var amount_atk_str = "[color=#ff8080]%d[/color]" % amount_atk
-
-		target["atk"] = target.get("atk", 0) + amount_atk
+		var ok = controller.status_manager.apply_effect(target, "atk_up", {"atk_delta": amount_atk}, turns)
+		if not ok:
+			return false
+		if controller.has_method("_update_ui_for_actor"):
+			controller._update_ui_for_actor(target)
 
 		if controller.tone_map != null:
 			var use_line = controller.tone_map.get_tone_text("item_use", "fire_talisman_ally", user_id)
@@ -724,11 +732,21 @@ func _handle_fire_talisman(controller, user: Dictionary, item: Dictionary, targe
 			if suffer_line != "":
 				controller._log(suffer_line)
 
-		controller._log("%s 身上貼上%s，攻擊力提升 %s。" % [
-				target_name,
-				item_name,
-				amount_atk_str
-		])
+		var apply_log := String(item.get("apply_log", "")).strip_edges()
+		if apply_log != "":
+			if controller.has_method("_log_narration"):
+				controller._log_narration(apply_log)
+			else:
+				controller._log(apply_log)
+		elif controller.tone_map != null:
+			var generic_apply_line = controller.tone_map.get_tone_text("status_apply", "atk_up", target_id)
+			if generic_apply_line != "":
+				controller._log(generic_apply_line)
+
+		var effect_record: Dictionary = target.get("status_effects", {}).get("atk_up", {}) if typeof(target.get("status_effects", {})) == TYPE_DICTIONARY else {}
+		var desc = controller.status_manager.describe_effect("atk_up", target, effect_record)
+		if desc != "":
+			controller._log(desc)
 	elif target in controller.enemy_party:
 		var enemy_damage = int(item.get("enemy_damage", 0))
 		if enemy_damage <= 0:

@@ -30,6 +30,7 @@ var previous_position: Vector2 = Vector2.ZERO
 # 對話結束時才落旗，避免玩家還在讀對話時流程已被推進。
 var _pending_flags_after_close: Array = []
 var _pending_objective_after_close := ""
+var _pending_main_stage_after_close := 0
 var _pending_remove_item_id := ""
 var _pending_remove_item_amount := 0
 
@@ -38,6 +39,7 @@ var _pending_remove_item_amount := 0
 # ------------------------------------------------------------
 const ITEM_LUNCHBOX := "item_gushi_lunchbox"
 
+const F_MET_GUSHI := "met_gushi"
 const F_LUNCHBOX_RECEIVED := "main_yh_lunchbox_received"
 const F_LUNCHBOX_DELIVERED := "main_yh_lunchbox_delivered"
 
@@ -77,17 +79,23 @@ func _ready():
 func _build_lines_for_stage(main_stage: int) -> Array:
 	_clear_pending_actions()
 
-	# ❶ 尚未取得阿婆便當：普通擋門
+	# ❶ 尚未取得阿婆便當：第一次正式互通姓名，或已相識後短版擋門。
 	if not GlobalState.get_flag(F_LUNCHBOX_RECEIVED) and not _has_item_safely(ITEM_LUNCHBOX):
-		return _build_before_lunchbox_lines()
+		if not GlobalState.get_flag(F_MET_GUSHI):
+			_queue_flag(F_MET_GUSHI)
+			_queue_stage_3_if_needed("回到竹林郊外，尋找能與顧石交涉的契機。")
+			return _build_first_meeting_without_lunchbox_lines()
+		return _build_repeat_before_lunchbox_lines()
 
-	# ❷ 已取得便當，但尚未交給顧石：送便當 + 第一層攻防
+	# ❷ 已取得便當，但尚未交給顧石：依是否已正式相識切換開場，然後接第一層攻防。
 	if not GlobalState.get_flag(F_LUNCHBOX_DELIVERED):
+		var already_met := GlobalState.get_flag(F_MET_GUSHI)
+		_queue_flag(F_MET_GUSHI)
 		_queue_remove_item(ITEM_LUNCHBOX, 1)
 		_queue_flag(F_LUNCHBOX_DELIVERED)
 		_queue_flag(F_GUSHI_STAGE_1_DONE)
-		_queue_objective("再次與顧石交談。")
-		return _build_deliver_lunchbox_stage_1_lines()
+		_queue_stage_3_if_needed("再次與顧石交談。")
+		return _build_deliver_lunchbox_stage_1_lines(already_met)
 
 	# ❸ 第二層攻防：求見理由 + 支線證據
 	if not GlobalState.get_flag(F_GUSHI_STAGE_2_DONE):
@@ -125,26 +133,48 @@ func _build_lines_for_stage(main_stage: int) -> Array:
 	return _build_after_manor_closed_lines()
 
 
-func _build_before_lunchbox_lines() -> Array:
+func _build_first_meeting_without_lunchbox_lines() -> Array:
 	return [
-		_l("止步。飲月山莊不接無帖訪客。", speaker_id, portrait_path),
-		_l("我想求見左飲。", liuyu_speaker_id, liuyu_portrait_path),
-		_l("求見莊主者，須有莊主允准，或山莊信物。", speaker_id, portrait_path),
-		_l("少俠若二者皆無，請勿在山門前久留。", speaker_id, portrait_path),
-		_l("……知道了。", liuyu_speaker_id, liuyu_portrait_path),
+		_n("你看著眼前那位年輕人直挺挺地守在門前，心知他便是書眠口中的門衛。"),
+		_n("你走上前去，拱手作揖。"),
+		_l("這位大哥有禮。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("在下劉語塵。今日有事，想求見飲月山莊莊主左飲。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("不知大哥可否代為通報一聲？", liuyu_speaker_id, liuyu_portrait_path),
+		_l("劉少俠有禮。在下顧石，奉命守在此處。", speaker_id, portrait_path),
+		_l("只是莊主近日不見外客。少俠若無莊主手令或山莊信物，顧某不能替你放行。", speaker_id, portrait_path),
+		_l("原來如此……是在下唐突了。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("書眠說得沒錯。這位顧石果然不是三言兩語便能說動的人。", liuyu_speaker_id, liuyu_portrait_path),
+		_l("先回山下看看，或許能找到讓他願意聽我說話的契機。", liuyu_speaker_id, liuyu_portrait_path),
 	]
 
 
-func _build_deliver_lunchbox_stage_1_lines() -> Array:
+func _build_repeat_before_lunchbox_lines() -> Array:
 	return [
-		_l("飲月山莊今日不接外客。少俠請回。", speaker_id, portrait_path),
-		_l("我來送東西。", liuyu_speaker_id, liuyu_portrait_path),
-		_l("送東西？", speaker_id, portrait_path),
-		_n("劉語塵取出食盒，停在顧石槍尖之外。"),
-		_l("竹林入口有位老太，托我將這便當送給她兒子。", liuyu_speaker_id, liuyu_portrait_path),
-		_l("她說，他名喚顧石。", liuyu_speaker_id, liuyu_portrait_path),
-		_n("顧石握槍的手微微一緊，又很快鬆開。"),
-		_l("……我娘？", speaker_id, portrait_path),
+		_l("劉少俠，還請留步。", speaker_id, portrait_path),
+		_l("顧某職責所在，眼下仍沒有替你通報的理由。", speaker_id, portrait_path),
+		_l("繼續追問也不會有結果。先回山下找找線索吧。", liuyu_speaker_id, liuyu_portrait_path),
+	]
+
+
+func _build_deliver_lunchbox_stage_1_lines(already_met: bool) -> Array:
+	var lines: Array = []
+	if already_met:
+		lines.append_array([
+			_l("劉少俠，你又回來了。", speaker_id, portrait_path),
+			_l("這次不是為了求見而來。", liuyu_speaker_id, liuyu_portrait_path),
+			_l("方才在山下遇見令堂。她託我將這份便當交給你。", liuyu_speaker_id, liuyu_portrait_path),
+			_l("……我娘？", speaker_id, portrait_path),
+		])
+	else:
+		lines.append_array([
+			_n("你看著眼前那位直挺挺守在門前的年輕人，想起阿婆方才的囑託。"),
+			_l("請問閣下可是顧石兄？", liuyu_speaker_id, liuyu_portrait_path),
+			_l("正是在下。少俠是……？", speaker_id, portrait_path),
+			_l("在下劉語塵。", liuyu_speaker_id, liuyu_portrait_path),
+			_l("方才在竹林入口遇見令堂，她託我將這份便當交給你。", liuyu_speaker_id, liuyu_portrait_path),
+		])
+
+	lines.append_array([
 		_l("她人在哪？", speaker_id, portrait_path),
 		_l("樹下歇著。精神尚可，脾氣也尚可。", liuyu_speaker_id, liuyu_portrait_path),
 		_l("……看樣子她沒事。", speaker_id, portrait_path),
@@ -177,7 +207,8 @@ func _build_deliver_lunchbox_stage_1_lines() -> Array:
 		_l("(顧石輕輕搖了頭笑了笑)", speaker_id, portrait_path),
 		_l("若你方才說自己只是純粹好心，我反倒不信。", speaker_id, portrait_path),
 		_n("(顧石似乎願意再聽你說幾句。)"),
-	]
+	])
+	return lines
 
 
 func _build_stage_2_evidence_lines() -> Array:
@@ -481,6 +512,7 @@ func _get_evidence_count() -> int:
 func _clear_pending_actions() -> void:
 	_pending_flags_after_close.clear()
 	_pending_objective_after_close = ""
+	_pending_main_stage_after_close = 0
 	_pending_remove_item_id = ""
 	_pending_remove_item_amount = 0
 
@@ -492,6 +524,14 @@ func _queue_flag(flag_name: String) -> void:
 
 func _queue_objective(text: String) -> void:
 	_pending_objective_after_close = text
+
+
+func _queue_stage_3_if_needed(objective: String) -> void:
+	if _is_current_main_001_stage(QuestManager.STAGE_YH_GO_TO_MANOR):
+		_pending_main_stage_after_close = QuestManager.STAGE_YH_MANOR_GATE
+		_pending_objective_after_close = objective
+	else:
+		_queue_objective(objective)
 
 
 func _queue_remove_item(item_id: String, amount: int = 1) -> void:
@@ -506,7 +546,9 @@ func _apply_pending_actions() -> void:
 	if _pending_remove_item_id != "" and _pending_remove_item_amount > 0:
 		_remove_item_safely(_pending_remove_item_id, _pending_remove_item_amount)
 
-	if _pending_objective_after_close != "":
+	if _pending_main_stage_after_close > 0:
+		_advance_main_quest_safely(_pending_main_stage_after_close, _pending_objective_after_close)
+	elif _pending_objective_after_close != "":
 		_set_main_objective_safely(_pending_objective_after_close)
 
 	_clear_pending_actions()
@@ -521,6 +563,9 @@ func _has_item_safely(item_id: String) -> bool:
 	if inv and inv.has_method("has_item"):
 		return inv.has_item(item_id)
 
+	if InventorySync and InventorySync.has_method("has_item"):
+		return InventorySync.has_item(item_id, 1)
+
 	# 若專案目前還沒有 InventoryManager，至少不讓顧石腳本報錯。
 	return false
 
@@ -534,6 +579,21 @@ func _remove_item_safely(item_id: String, amount: int = 1) -> void:
 	inv = get_node_or_null("/root/GameRoot/InventoryManager")
 	if inv and inv.has_method("remove_item"):
 		inv.remove_item(item_id, amount)
+		return
+
+	if InventorySync and InventorySync.has_method("consume_item"):
+		InventorySync.consume_item(item_id, amount, true)
+
+
+func _advance_main_quest_safely(stage: int, objective: String = "") -> void:
+	var qm := get_node_or_null("/root/QuestManager")
+	if qm and qm.has_method("advance_main_quest"):
+		qm.advance_main_quest(stage, objective)
+		return
+
+	qm = get_node_or_null("/root/GameRoot/QuestManager")
+	if qm and qm.has_method("advance_main_quest"):
+		qm.advance_main_quest(stage, objective)
 
 
 func _set_main_objective_safely(text: String) -> void:
@@ -633,6 +693,20 @@ func reset_dialog_state():
 	dialog_lines = _build_lines_for_stage(_get_main_stage_safely())
 	_clear_pending_actions()
 	animated_sprite.play("idle_left_down")
+
+
+func _is_current_main_001_stage(stage_value: int) -> bool:
+	var qm := get_node_or_null("/root/QuestManager")
+	if qm and qm.has_method("get_main_quest_state"):
+		var state: Dictionary = qm.get_main_quest_state()
+		return String(state.get("id", "")) == "main_001" and int(state.get("stage", 1)) == stage_value
+
+	qm = get_node_or_null("/root/GameRoot/QuestManager")
+	if qm and qm.has_method("get_main_quest_state"):
+		var state2: Dictionary = qm.get_main_quest_state()
+		return String(state2.get("id", "")) == "main_001" and int(state2.get("stage", 1)) == stage_value
+
+	return false
 
 
 func _get_main_stage_safely() -> int:

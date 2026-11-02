@@ -35,6 +35,7 @@ const ITEM_DEFS := {
 	"quest_green_beans_raw": {"name": "生四季豆", "desc": "阿茂菜攤買來的生四季豆。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"quest_green_beans_fried": {"name": "炸熟四季豆", "desc": "炸過一遍、可直接再料理上桌的四季豆。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"quest_valley_shadow_grass": {"name": "谷影草", "desc": "生於谷邊陰影與濕氣交界的藥草。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
+	"item_gushi_lunchbox": {"name": "阿婆的便當", "desc": "竹林郊外的阿婆託你送給飲月山莊門衛顧石的便當。飯菜仍帶著一點溫度。", "type": "quest", "use_scope": "none", "use_action": "none", "can_sell": false, "is_quest_item": true},
 	"wep_wood_sword": {"name": "木劍", "desc": "入門木劍。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 1}},
 	"wep_short_blade": {"name": "短刀", "desc": "短柄單刀。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_2", "weapon_type": "刀", "stats": {"atk": 2}},
 	"wep_qingfeng_sword": {"name": "青鋒劍", "desc": "均衡劍器。", "type": "equipment", "use_scope": "world", "use_action": "equip", "equip_slot": "weapon_1", "weapon_type": "劍", "stats": {"atk": 3}},
@@ -139,6 +140,8 @@ const ITEM_DEFS := {
 		"use_action": "consume",
 		"effect": "fire_talisman",
 		"amount": 15,
+		"turns": 3,
+		"apply_log": "烈火符光燃起，攻勢隨焰勢暴漲。",
 		"enemy_damage": 30,
 		"target_scope": "all_single",
 	},
@@ -455,8 +458,9 @@ static func get_effect_display_text(item_def: Dictionary) -> String:
 				int(item_def.get("turns", 3))
 			]
 		"fire_talisman":
-			return "對我方使用時，攻擊提升 %d；對敵方使用時，造成 %d 點傷害" % [
+			return "對我方使用時，攻擊提升 %d，持續 %d 回合；對敵方使用時，造成 %d 點傷害" % [
 				int(item_def.get("amount", 0)),
+				int(item_def.get("turns", 3)),
 				int(item_def.get("enemy_damage", 0))
 			]
 		"apply_battle_buff":
