@@ -4,8 +4,8 @@ extends Control
 ## phase 2 punches in 開始 and holds a beat. The art is the delivered ink-and-gold pieces (assets/UI/card_stage/title/)
 ## and the number is built from the number sheet (BattleNumberFont). If any piece of art is missing `available()` is
 ## false and the caller shows plain text instead; nothing here ever waits on a texture.
-## Skip: space, ESC or the left mouse button ends it at once (the input is not consumed: it still does its own job).
-## Presentation only; it never blocks the battle.
+## Skip: space, ESC or the left mouse button advances the title; the press is consumed so it cannot also issue a command.
+## The turn scheduler waits for `finished` before letting any actor act.
 
 const BattleNumberFont = preload("res://scripts/presentation/BattleNumberFont.gd")
 
@@ -121,9 +121,6 @@ func _skip_to_phase2() -> void:
 func _input(event: InputEvent) -> void:
 	if phase == 3:
 		return
-	# A press right as a phase appears is most likely the one that was for the battle log, not for the title.
-	if float(Time.get_ticks_msec() - _phase_started_ms) < ROUND_TITLE_INPUT_GRACE * 1000.0:
-		return
 	var pressed: bool = false
 	if event is InputEventKey:
 		var key: InputEventKey = event
@@ -131,8 +128,14 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton:
 		var mouse: InputEventMouseButton = event
 		pressed = mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT
-	if pressed:
-		skip()
+	if not pressed:
+		return
+	# Consume even a press inside the grace window: it must never reach the card behind the title.
+	get_viewport().set_input_as_handled()
+	# A press right as a phase appears is most likely the one that was for the battle log, not for the title.
+	if float(Time.get_ticks_msec() - _phase_started_ms) < ROUND_TITLE_INPUT_GRACE * 1000.0:
+		return
+	skip()
 
 
 func _finish() -> void:

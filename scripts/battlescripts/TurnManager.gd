@@ -19,6 +19,10 @@ var is_waiting_for_player = false
 var round_roster: Array = []
 var acted_this_round: Dictionary = {}
 var round_end_emitted = false
+## Enabled by the battle controller once its round-start callback is connected.
+var round_intro_barrier_enabled: bool = false
+## The controller releases this after the round title and any round-start presentation finish.
+var round_intro_pending: bool = false
 
 # 外部資料來源（從 BattleController 注入）
 var player_party: Array = []
@@ -55,6 +59,7 @@ var round_in_progress = false
 # 初始化並開始第一回合
 func start_battle(players: Array, enemies: Array, guest: Dictionary = {}) -> void:
 	guest_actor = guest
+	round_intro_pending = false
 	player_party = players
 	enemy_party = enemies
 	_assign_battle_order_indices()
@@ -82,6 +87,10 @@ func start_new_round() -> void:
 	_clear_left_stamps()
 	_chick_queue.clear()
 	_build_round_roster()
+	# A signal callback that awaits a title does not pause its emitter. Hold the scheduler here
+	# so neither an enemy turn nor a player command can start under the title.
+	var wait_for_intro: bool = round_intro_barrier_enabled
+	round_intro_pending = wait_for_intro
 	emit_signal("round_started", round_count)
 
 	turn_queue.clear()
@@ -90,11 +99,22 @@ func start_new_round() -> void:
 	turn_queue.sort_custom(Callable(self, "_compare_speed"))
 	current_index = 0
 
-	call_deferred("next_turn")
+	if not wait_for_intro:
+		call_deferred("next_turn")
+
+
+func complete_round_intro(round_number: int) -> void:
+	if not round_intro_pending or round_number != round_count or not round_in_progress:
+		return
+	round_intro_pending = false
+	if not _is_battle_ending():
+		call_deferred("next_turn")
 
 # 執行下一位角色行動
 func next_turn() -> void:
 	if _is_battle_ending():
+		return
+	if round_intro_pending:
 		return
 	if is_waiting_for_player:
 		print("🛑 尚未完成玩家回合，禁止進入下一角色")

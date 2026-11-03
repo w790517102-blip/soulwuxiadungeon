@@ -12,6 +12,8 @@ const MAIN_COMMANDS: Array = [["skill", "出招", "btn_skill", true], ["inner_fo
 const BUTTON_DIR := "res://assets/UI/card_stage/"
 const BUTTON_SIZE := Vector2(150, 108)
 const LOG_BAR_TEXTURE := "res://assets/UI/card_stage/log_bar.webp"
+## A deliberate reading beat after 開始 disappears, before the first card may act.
+const ROUND_START_BREATH_SECONDS := 0.45
 
 var command_menu: PanelContainer
 const HINT_NO_CARD := "將游標移動到卡片上"
@@ -255,8 +257,27 @@ func show_action_caption(text: String) -> void:
 
 ## "第 N 回合開始" in the middle of the screen (an announcement, not a number popup).
 func announce_round(round_number: int) -> void:
+	# The previous turn's marker or command state must not remain interactive under the title.
+	on_action_selection = false
+	_hide_command_menu()
+	if action_panel != null:
+		action_panel.hide()
+	if stage != null:
+		stage.clear_active_actor()
+		stage.input_enabled = false
+		stage.command_tray.set_enabled(false)
 	if stage_enabled and event_presenter != null:
 		event_presenter.announce_round(round_number)
+
+
+## Finish the actual title first, then leave a short beat before releasing the scheduler.
+func wait_for_round_intro() -> void:
+	if not stage_enabled or event_presenter == null:
+		return
+	var title: Node = event_presenter.current_round_title()
+	if title != null:
+		await title.finished
+		await get_tree().create_timer(ROUND_START_BREATH_SECONDS).timeout
 
 
 func _build_inspect() -> void:

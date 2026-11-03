@@ -226,6 +226,7 @@ func _init_battle_safe() -> void:
 	turn_manager.turn_ended.connect(_on_turn_ended)
 	turn_manager.round_started.connect(_on_round_started)
 	turn_manager.round_ended.connect(_on_round_ended)
+	turn_manager.round_intro_barrier_enabled = true
 	print("✅ BattleController 完成初始化，等待外部 start_battle(context)。")
 
 func start_battle(context: Dictionary) -> void:
@@ -1784,7 +1785,14 @@ func _on_round_started(round_number: int) -> void:
 	_log("第 %d 回合開始！" % round_number)
 	if battle_ui != null and battle_ui.has_method("announce_round"):
 		battle_ui.announce_round(round_number)
+	if battle_ui != null and battle_ui.has_method("wait_for_round_intro"):
+		await battle_ui.wait_for_round_intro()
+	if battle_finished or _ending or round_number != turn_manager.round_count:
+		return
 	await _apply_encounter_round_start(round_number)
+	if battle_finished or _ending:
+		return
+	turn_manager.complete_round_intro(round_number)
 
 func _on_round_ended(_round_number: int) -> void:
 	if battle_finished:
