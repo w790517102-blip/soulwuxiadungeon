@@ -92,6 +92,8 @@ func begin_turn(actor: Dictionary) -> void:
 	if combat_controller and (bool(combat_controller.get("battle_finished")) or bool(combat_controller.get("_ending"))):
 		return
 	stage.set_active_actor(actor)
+	if stage_enabled and not bool(actor.get("is_enemy", false)) and not bool(actor.get("is_stage_entity", false)) and not bool(actor.get("is_guest", false)):
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_player_turn_ready")
 
 
 ## Called by the preview/stage controller when an enemy starts acting.
@@ -155,6 +157,8 @@ func _on_active_card_clicked(actor: Dictionary) -> void:
 
 
 func _show_command_menu() -> void:
+	if not command_menu.visible:
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_skill_select", 10.0)
 	# 機關按鈕：身上機關有 TRIGGER 才出現（沒裝備、或被動機關都不顯示）
 	_command_buttons["mechanism"].visible = not MechanismTrigger.get_trigger(current_actor).is_empty()
 	if combat_controller:
@@ -633,6 +637,12 @@ func play_sheath_block(target: Dictionary, entity: Object) -> void:
 func play_enemy_area_fx(attacker: Dictionary, skill: Dictionary, events: Array) -> void:
 	if stage_enabled and stage and stage.has_method("present_enemy_area"):
 		await stage.present_enemy_area(attacker, skill, events)
+
+
+## An area skill without its own sweep FX still needs the support card to visibly intercept.
+func play_enemy_area_interceptions(attacker: Dictionary, events: Array) -> void:
+	if stage_enabled and stage:
+		await stage.present_enemy_area_interceptions(attacker, events)
 
 
 func has_enemy_area_fx(skill: Dictionary) -> bool:

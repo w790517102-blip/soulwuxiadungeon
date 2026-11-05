@@ -373,6 +373,7 @@ func attack_motion(target_position: Vector3) -> void:
 	_motion_tween = create_tween()
 	_motion_tween.tween_property(self, "position", windup_position, 0.12)
 	_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(-0.07, -toward * 0.10, toward * 0.05), 0.12)
+	_motion_tween.tween_callback(_play_attack_voice)
 	_motion_tween.tween_property(self, "position", strike_position, 0.17).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	_motion_tween.parallel().tween_property(self, "rotation", strike_rotation, 0.17)
 	_motion_tween.tween_interval(0.06)
@@ -383,6 +384,7 @@ func attack_motion(target_position: Vector3) -> void:
 
 func hit_reaction(heavy: bool = false) -> void:
 	_kill_motion()
+	_play_hurt_voice()
 	hit_landed.emit(self, heavy)
 	_flash(Color(0.8, 0.08, 0.035, 0.52))
 	var away: float = -_toward()
@@ -598,10 +600,27 @@ func cast_return() -> void:
 
 ## Emitted the moment a hit reaction starts, wherever it came from (single, area, support...).
 signal hit_landed(card, heavy)
+var _attack_voice_critical: bool = false
 
 
-## Thrusts toward the target and STAYS there at the peak (the caller strikes while the card
-## holds, then calls lunge_return). Returns when the peak is reached.
+func prepare_attack_voice(result: Dictionary) -> void:
+	_attack_voice_critical = bool(result.get("crit", false))
+	for strike: Dictionary in result.get("strikes", []):
+		_attack_voice_critical = _attack_voice_critical or bool(strike.get("crit", false))
+
+
+func _play_attack_voice() -> void:
+	if actor_id == "liuyu" and not is_enemy:
+		var key: String = "SE_liuyu_critical_shout" if _attack_voice_critical else "SE_liuyu_attack_shout"
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, key)
+	_attack_voice_critical = false
+
+
+func _play_hurt_voice() -> void:
+	if is_enemy and actor_id == "bamboo_macaque":
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_macaque_hurt", 6.0)
+
+
 func lunge_to(target_position: Vector3, reach_scale: float = 1.0) -> void:
 	_kill_motion()
 	var toward: float = _toward()
@@ -614,6 +633,7 @@ func lunge_to(target_position: Vector3, reach_scale: float = 1.0) -> void:
 	_motion_tween = create_tween()
 	_motion_tween.tween_property(self, "position", windup_position, 0.12)
 	_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(-0.07, -toward * 0.10, toward * 0.05), 0.12)
+	_motion_tween.tween_callback(_play_attack_voice)
 	_motion_tween.tween_property(self, "position", strike_position, 0.17).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	_motion_tween.parallel().tween_property(self, "rotation", strike_rotation, 0.17)
 	await _wait_for_motion(_motion_tween)
@@ -908,6 +928,7 @@ func shudder(seconds: float, amplitude: float) -> void:
 ## instant, then springs back to its place.
 func shove(push: Vector3, tilt: float, hold: float) -> void:
 	_kill_motion()
+	_play_hurt_voice()
 	_motion_tween = create_tween()
 	_motion_tween.tween_property(self, "position", home_position + push, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_motion_tween.parallel().tween_property(self, "rotation", home_rotation + Vector3(0.0, 0.0, tilt), 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)

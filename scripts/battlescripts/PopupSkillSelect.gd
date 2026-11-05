@@ -144,6 +144,7 @@ func show_skills(
 	_align_costs_next_frame()
 
 func _on_SkillList_item_selected(index: int) -> void:
+	preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_card_command_open", 10.0)
 	selected_index = index
 	var skill: Dictionary = available_skills[index]
 	var reason: String = String(unusable_reasons[index]) if index < unusable_reasons.size() else ""
@@ -168,10 +169,12 @@ func _on_SkillList_item_selected(index: int) -> void:
 
 func _on_Confirm_pressed() -> void:
 	if selected_index >= 0 and not confirm_button.disabled:
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_skill_confirm", 10.0)
 		emit_signal("skill_selected", available_skills[selected_index])
 		hide()
 
 func _on_Cancel_pressed() -> void:
+	preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_action_cancel", 10.0)
 	emit_signal("selection_cancelled")
 	hide()
 

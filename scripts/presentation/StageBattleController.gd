@@ -6,10 +6,20 @@ func _uses_contact_se(skill_data: Dictionary) -> bool:
 	return String(skill_data.get("id", "")) == "basic_attack" or String(skill_data.get("fx_style", "")) == "water_bullet"
 
 
+func _uses_liuyu_single_sword_se(user: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> bool:
+	return String(user.get("id", "")) == "liuyu" and not bool(user.get("is_enemy", false)) \
+		and _resolve_weapon_se_key(user, skill) == "sword" \
+		and bool(result.get("hit", true)) and not bool(result.get("blocked", false)) \
+		and not bool(result.get("target_defending", target.get("defending", false))) \
+		and int(result.get("_played_strike_count", (result.get("strikes", []) as Array).size())) <= 1 \
+		and String(skill.get("target_scope", "single")) in ["single", "enemy_single"]
+
+
 func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
 	# These sounds wait for their visible contact point; damage was already calculated.
 	if battle_ui != null and bool(battle_ui.get("stage_enabled")) and (
 			_uses_contact_se(skill_data)
+			or _uses_liuyu_single_sword_se(user, target, skill_data, result)
 			or _is_liuchen_lianjue_four_hit(user, skill_data, int(result.get("_played_strike_count", 0)))
 	):
 		return
@@ -17,6 +27,9 @@ func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_dat
 
 
 func _play_contact_se(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+	if _uses_liuyu_single_sword_se(attacker, target, skill_data, result):
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_liuyu_sword_attack")
+		return
 	super._play_attack_se_from_result(attacker, target, skill_data, result)
 
 
@@ -31,7 +44,7 @@ func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data
 		if four_hit_contact:
 			contact_result = result.duplicate()
 			contact_result["_played_strike_count"] = strikes.size()
-		if _uses_contact_se(skill_data) or four_hit_contact:
+		if _uses_contact_se(skill_data) or four_hit_contact or _uses_liuyu_single_sword_se(attacker, target, skill_data, result):
 			contact_se = _play_contact_se.bind(attacker, target, skill_data, contact_result)
 			battle_ui.stage.attack_contact.connect(contact_se, CONNECT_ONE_SHOT)
 		await battle_ui.stage.present_attack(attacker, target, skill_data, result)

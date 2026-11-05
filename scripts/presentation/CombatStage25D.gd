@@ -185,6 +185,9 @@ func refresh_statuses(allies: Array, enemies: Array) -> void:
 		refresh_actor(actor)
 
 
+signal attack_contact
+
+
 func present_attack(attacker: Dictionary, target: Dictionary, _skill: Dictionary, result: Dictionary) -> void:
 	var source := card_for(attacker)
 	var destination := card_for(target)
@@ -210,6 +213,7 @@ func present_attack(attacker: Dictionary, target: Dictionary, _skill: Dictionary
 
 func _react_at_impact(card: Node3D, target: Dictionary, hit: bool, heavy: bool) -> void:
 	await get_tree().create_timer(0.32).timeout
+	attack_contact.emit()
 	if not hit or not is_instance_valid(card):
 		return
 	if bool(target.get("defending", false)):

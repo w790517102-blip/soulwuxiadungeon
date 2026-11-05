@@ -176,6 +176,8 @@ func _update_defeats() -> void:
 		if String(actor.get("family", "")) == "yumei":
 			await card.defeat_yumei(_start_yumei_fire.bind(card))
 		else:
+			if String(actor.get("id", "")) == "bamboo_macaque":
+				preload("res://scripts/presentation/CardStageSound.gd").play(card, "SE_macaque_defeat")
 			await card.defeat_animal()
 		busy = false
 		return
@@ -595,10 +597,11 @@ func _update_order(delta: float) -> void:
 	var signature: String = "|".join(keys) + "#" + _entity_signature()
 	if signature == _order_signature or not _cards_idle():
 		return
-	var first: bool = _order_signature.is_empty()
 	_order_signature = signature
 	hover_key = ""
-	apply_order(keys, not first)
+	# The first queue sync and a removed support card are visible reflows too.
+	# Both must slide from the cards' current transforms instead of teleporting.
+	apply_order(keys, true)
 
 
 # --- Stage entities (echoes, cover, tarot... : cards that are not actors) -----------------
@@ -1150,6 +1153,25 @@ func _intervention_for_result(result: Dictionary) -> Dictionary:
 	return {}
 
 
+## A sacrificed card meets the blow just beyond the leading actor, not in the gap
+## between two protected allies. This moves only the visual card, never its ADB slot.
+func _substitute_front_destination(support_card: Node3D, enemy_side: bool) -> Vector3:
+	var side: float = -1.0 if enemy_side else 1.0
+	var front: Node3D = null
+	for card: Node3D in cards.values():
+		if not card.visible or card.is_enemy != enemy_side:
+			continue
+		if front == null or side * card.position.x > side * front.position.x:
+			front = card
+	if front == null:
+		return support_card.position
+	return Vector3(
+		front.position.x + side * (front.card_size.x * 0.5 + support_card.card_size.x * 0.5 + 0.12),
+		front.position.y,
+		maxf(front.position.z, support_card.position.z) + 0.7
+	)
+
+
 ## Enemy intent, support-card draw-out, collision and return/break share one route.
 ## The protected actor never receives an ordinary hit, dodge or guard reaction.
 func _present_active_intervention(attacker: Dictionary, target: Dictionary, skill: Dictionary, intervention: Dictionary) -> void:
@@ -1164,7 +1186,8 @@ func _present_active_intervention(attacker: Dictionary, target: Dictionary, skil
 	command_tray.set_enabled(false)
 	# The lunge first reveals whom the enemy intended to strike.
 	await source.lunge_to(protected.home_position, 0.35)
-	await support_card.fly_to_intercept(source.position, protected.position, String(style.get("motion", "sacrifice")))
+	var destination: Variant = _substitute_front_destination(support_card, protected.is_enemy) if kind == "substitute_talisman" else null
+	await support_card.fly_to_intercept(source.position, protected.position, String(style.get("motion", "sacrifice")), destination)
 	var side: float = 1.0 if protected.position.x >= source.position.x else -1.0
 	var origin: Vector3 = source.position + Vector3(side * source.card_size.x * 0.42, source.card_size.y * 0.05, 0.8)
 	var impact: Vector3 = support_card.position + Vector3(0.0, support_card.card_size.y * 0.05, 0.5)
@@ -1193,8 +1216,9 @@ func _present_active_intervention(attacker: Dictionary, target: Dictionary, skil
 		await collision.finished
 	if String(style.get("resolution")) == "return":
 		await support_card.return_from_intercept()
-	# A sacrificial card stays at the collision point until _spend_substitutes()
-	# awaits its full crack / shard sequence and unregisters it.
+	else:
+		await support_card.play_break()
+	# Logical consumption/unregistration still belongs to _spend_substitutes().
 	await source.lunge_return()
 	busy = false
 
@@ -1278,18 +1302,28 @@ func show_area_popups(events: Array, first_delay: float, gap: float) -> void:
 	if event_presenter == null or not is_instance_valid(event_presenter):
 		return
 	var entries: Array = []
+	var shown_interceptors: Dictionary = {}
 	for event_any: Variant in events:
 		var event: Dictionary = event_any
+		var blocker_id: String = String(event.get("blocker_entity_id", ""))
+		if not bool(event.get("hit", true)) and String(event.get("blocker_type", "")) == "substitute_talisman" and blocker_id != "":
+			if shown_interceptors.has(blocker_id):
+				continue
+			shown_interceptors[blocker_id] = true
 		entries.append({"target": event.target, "strike": {
 			"hit": bool(event.get("hit", true)), "crit": bool(event.get("crit", false)), "damage": int(event.get("damage", 1)),
 			"element_advantage": bool(event.get("element_advantage", false)),
 			"blocked": bool(event.get("blocked", String(event.get("blocker_type", "")) != "")), "blocker_type": String(event.get("blocker_type", "")),
+			"blocker_entity_id": blocker_id,
 			"damage_prevented": bool(event.get("damage_prevented", false)),
 		}})
 	event_presenter.schedule_run(entries, first_delay, gap)
 
 
 func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> void:
+	var voice_card: Node3D = card_for(attacker)
+	if voice_card != null:
+		voice_card.prepare_attack_voice(result)
 	var intervention: Dictionary = _intervention_for_result(result)
 	_show_attack_popups(target, skill, result, intervention)
 	if not intervention.is_empty():
@@ -1357,6 +1391,7 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 			StageHitEffects.slash(fx_root, cut_centre, cut_length, direction)
 		# The target is struck as the cut lands (late in the draw), then reacts.
 		await get_tree().create_timer(cut_wait).timeout
+		attack_contact.emit()
 		if bool(target.get("defending", false)):
 			destination.guard_motion()
 		else:
@@ -1822,6 +1857,7 @@ func present_punch_events(attacker: Dictionary, events: Array, show_popups: bool
 	var source := card_for(attacker)
 	if source == null or events.is_empty():
 		return
+	source.prepare_attack_voice({"strikes": events})
 	busy = true
 	command_tray.set_enabled(false)
 	var first_card := card_for((events[0] as Dictionary).target)
@@ -2805,38 +2841,9 @@ func present_enemy_area(attacker: Dictionary, skill: Dictionary, events: Array) 
 	var centre: Vector3 = middle + Vector3(0.0, biggest.y * 0.02, 0.5)
 	var side: float = 1.0 if middle.x >= source.home_position.x else -1.0
 	await source.lunge_to(middle, STAFF_REACH)
-	# A swept blow can also be intercepted. Draw each support card out of its
-	# visual slot without changing the queue's actual topology.
-	var drawn_interventions: Dictionary = {}
-	var protection_groups: Dictionary = {}
-	for event: Dictionary in events:
-		if bool(event.get("hit", true)):
-			continue
-		var kind: String = String(event.get("blocker_type", ""))
-		if not INTERVENTION_STYLES.has(kind):
-			continue
-		var blocker_id: String = String(event.get("blocker_entity_id", ""))
-		if blocker_id == "":
-			continue
-		var protected: Node3D = card_for(event.target)
-		if protected == null:
-			continue
-		var group: Dictionary = protection_groups.get(blocker_id, {"kind": kind, "positions": []})
-		(group.positions as Array).append(protected.position)
-		protection_groups[blocker_id] = group
-	for blocker_id: String in protection_groups.keys():
-		var token: Node3D = entity_cards.get(blocker_id)
-		if token == null:
-			continue
-		var group: Dictionary = protection_groups[blocker_id]
-		var protected_middle: Vector3 = Vector3.ZERO
-		for protected_position: Vector3 in group.positions:
-			protected_middle += protected_position
-		protected_middle /= float((group.positions as Array).size())
-		var kind: String = String(group.kind)
-		var style: Dictionary = INTERVENTION_STYLES[kind]
-		await token.fly_to_intercept(source.position, protected_middle, String(style.get("motion", "sacrifice")))
-		drawn_interventions[blocker_id] = kind
+	# A swept blow can also be intercepted. The same draw-out is used by area
+	# attacks without a dedicated sweep FX.
+	var drawn_interventions: Dictionary = await _draw_area_interceptors(source, events)
 	var params: Dictionary = StaffSweepFX.defaults()
 	params["origin_offset"] = source.home_position - centre
 	params["camera_offset"] = camera.global_position - fx_root.to_global(centre)
@@ -2860,6 +2867,100 @@ func present_enemy_area(attacker: Dictionary, skill: Dictionary, events: Array) 
 			var token: Node3D = entity_cards.get(blocker_id)
 			if token != null:
 				await token.return_from_intercept()
+		else:
+			var token: Node3D = entity_cards.get(blocker_id)
+			if token != null:
+				await token.play_break()
+	await source.lunge_return()
+	busy = false
+
+
+## Shared AoE draw-out: only visual positions move; ADB order and adjacency stay intact.
+func _draw_area_interceptors(source: Node3D, events: Array) -> Dictionary:
+	var drawn: Dictionary = {}
+	var groups: Dictionary = {}
+	for event: Dictionary in events:
+		if bool(event.get("hit", true)):
+			continue
+		var kind: String = String(event.get("blocker_type", ""))
+		var blocker_id: String = String(event.get("blocker_entity_id", ""))
+		if not INTERVENTION_STYLES.has(kind) or blocker_id == "":
+			continue
+		var protected: Node3D = card_for(event.target)
+		if protected == null:
+			continue
+		var group: Dictionary = groups.get(blocker_id, {"kind": kind, "positions": [], "enemy_side": protected.is_enemy})
+		(group.positions as Array).append(protected.position)
+		groups[blocker_id] = group
+	for blocker_id: String in groups.keys():
+		var token: Node3D = entity_cards.get(blocker_id)
+		if token == null:
+			continue
+		var group: Dictionary = groups[blocker_id]
+		var protected_middle: Vector3 = Vector3.ZERO
+		for protected_position: Vector3 in group.positions:
+			protected_middle += protected_position
+		protected_middle /= float((group.positions as Array).size())
+		var kind: String = String(group.kind)
+		var style: Dictionary = INTERVENTION_STYLES[kind]
+		var destination: Variant = _substitute_front_destination(token, bool(group.enemy_side)) if kind == "substitute_talisman" else null
+		await token.fly_to_intercept(source.position, protected_middle, String(style.get("motion", "sacrifice")), destination)
+		drawn[blocker_id] = kind
+	return drawn
+
+
+## Generic area attacks (such as 激流葬) previously skipped the interception
+## presenter, so the talisman vanished without ever flying in front of the party.
+func present_enemy_area_interceptions(attacker: Dictionary, events: Array) -> void:
+	var source: Node3D = card_for(attacker)
+	if source == null:
+		return
+	var middle: Vector3 = Vector3.ZERO
+	var count: int = 0
+	for event: Dictionary in events:
+		var protected: Node3D = card_for(event.target)
+		if protected != null:
+			middle += protected.position
+			count += 1
+	if count == 0:
+		return
+	middle /= float(count)
+	busy = true
+	command_tray.set_enabled(false)
+	await source.lunge_to(middle, STAFF_REACH)
+	var drawn: Dictionary = await _draw_area_interceptors(source, events)
+	var blocked_events: Array = events.filter(func(event: Dictionary) -> bool:
+		return not bool(event.get("hit", true)) and drawn.has(String(event.get("blocker_entity_id", "")))
+	)
+	show_area_popups(blocked_events, 0.0, 0.0)
+	var collisions: Array = []
+	for blocker_id: String in drawn.keys():
+		var token: Node3D = entity_cards.get(blocker_id)
+		if token == null:
+			continue
+		var style: Dictionary = INTERVENTION_STYLES[String(drawn[blocker_id])]
+		var impact: Vector3 = token.position + Vector3(0.0, token.card_size.y * 0.05, 0.5)
+		_hit_spark(impact, token.card_size.y * 0.55, false)
+		_intervention_warp(impact, token, style)
+		collisions.append(token.intercept_impact(String(style.get("motion", "sacrifice"))))
+	if not collisions.is_empty():
+		attack_contact.emit()
+		_intervention_camera_kick()
+		await _intervention_slowmo()
+	for collision_any: Variant in collisions:
+		var collision: Tween = collision_any
+		if collision.is_running():
+			await collision.finished
+	for blocker_id: String in drawn.keys():
+		var kind: String = String(drawn[blocker_id])
+		if String((INTERVENTION_STYLES[kind] as Dictionary).get("resolution")) == "return":
+			var token: Node3D = entity_cards.get(blocker_id)
+			if token != null:
+				await token.return_from_intercept()
+		else:
+			var token: Node3D = entity_cards.get(blocker_id)
+			if token != null:
+				await token.play_break()
 	await source.lunge_return()
 	busy = false
 
@@ -3016,6 +3117,8 @@ func _enemy_region() -> Rect2:
 func present_substitute_break(entity: Object) -> void:
 	var card: Node3D = entity_cards.get(String(entity.get("entity_id")))
 	if card == null or not card.has_method("play_break"):
+		return
+	if card.get("_break_complete") == true:
 		return
 	busy = true
 	await card.play_break()

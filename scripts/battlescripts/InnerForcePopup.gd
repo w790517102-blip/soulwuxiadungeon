@@ -124,5 +124,6 @@ func _on_confirm_pressed() -> void:
 
 
 func _on_cancel_pressed() -> void:
+	preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_action_cancel", 10.0)
 	hide()
 	emit_signal("selection_cancelled")

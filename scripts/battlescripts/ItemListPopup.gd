@@ -83,5 +83,6 @@ func _on_confirm_pressed():
 		quantity_label.text = ""
 
 func _on_cancel_pressed():
+	preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_action_cancel", 10.0)
 	selection_cancelled.emit()
 	hide()

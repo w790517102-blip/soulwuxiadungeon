@@ -2258,20 +2258,24 @@ func _perform_enemy_aoe_action(enemy: Dictionary, skill: Dictionary, inner_force
 	# A skill with its own effect style (尾巴掃擊 uses the staff's sweep) plays that instead of the
 	# plain lunge, and shows the blows itself.
 	var styled_area: bool = battle_ui != null and battle_ui.has_method("has_enemy_area_fx") and bool(battle_ui.has_enemy_area_fx(skill))
+	var events: Array = []
+	var has_interception: bool = false
+	for row in results:
+		var row_result: Dictionary = row.get("result", {})
+		var blocker_type: String = String(row_result.get("blocker_type", ""))
+		var blocker_id: String = String(row_result.get("blocker_entity_id", ""))
+		for strike_any: Variant in row_result.get("strikes", []):
+			var strike: Dictionary = strike_any
+			if String(strike.get("blocker_type", "")) in ["substitute_talisman", "sheath_card"]:
+				blocker_type = String(strike.get("blocker_type", ""))
+				blocker_id = String(strike.get("blocker_entity_id", ""))
+				break
+		has_interception = has_interception or (not bool(row_result.get("hit", true)) and blocker_id != "")
+		events.append({"target": row.get("target", {}), "hit": bool(row_result.get("hit", true)), "crit": bool(row_result.get("crit", false)), "damage": int(row_result.get("damage", 0)), "element_advantage": bool(row_result.get("element_advantage", false)), "blocker_type": blocker_type, "blocker_entity_id": blocker_id})
 	if styled_area:
-		var events: Array = []
-		for row in results:
-			var row_result: Dictionary = row.get("result", {})
-			var blocker_type: String = String(row_result.get("blocker_type", ""))
-			var blocker_id: String = String(row_result.get("blocker_entity_id", ""))
-			for strike_any: Variant in row_result.get("strikes", []):
-				var strike: Dictionary = strike_any
-				if String(strike.get("blocker_type", "")) in ["substitute_talisman", "sheath_card"]:
-					blocker_type = String(strike.get("blocker_type", ""))
-					blocker_id = String(strike.get("blocker_entity_id", ""))
-					break
-			events.append({"target": row.get("target", {}), "hit": bool(row_result.get("hit", true)), "crit": bool(row_result.get("crit", false)), "damage": int(row_result.get("damage", 0)), "element_advantage": bool(row_result.get("element_advantage", false)), "blocker_type": blocker_type, "blocker_entity_id": blocker_id})
 		await battle_ui.play_enemy_area_fx(enemy, skill, events)
+	elif has_interception and battle_ui != null and battle_ui.has_method("play_enemy_area_interceptions") and bool(battle_ui.get("stage_enabled")):
+		await battle_ui.play_enemy_area_interceptions(enemy, events)
 	elif battle_ui and battle_ui.has_method("play_attack_motion"):
 		battle_ui.play_attack_motion(enemy)
 		await get_tree().create_timer(0.35).timeout

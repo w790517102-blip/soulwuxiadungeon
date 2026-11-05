@@ -90,6 +90,8 @@ func close() -> void:
 
 
 func cancel_layer() -> void:
+	if state in [State.CONFIRMING, State.PICKING]:
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_action_cancel", 10.0)
 	if state == State.CONFIRMING:
 		selected = {}
 		state = State.PICKING

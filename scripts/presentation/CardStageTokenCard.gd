@@ -6,11 +6,9 @@ extends Node3D
 ## interaction_priority, set_home(), refresh(entity). Presentation only.
 
 const FONT = preload("res://assets/fonts/DotGothic16-Regular.ttf")
-const BurnShader = preload("res://scripts/presentation/shaders/card_burn.gdshader")
-const GhostFire = preload("res://scripts/presentation/CardStageGhostFire.gd")
 const ShardBurst = preload("res://scripts/presentation/CardStageShardBurst.gd")
-const TangramSeams = preload("res://scripts/presentation/CardStageTangramSeams.gd")
-const TangramBurst = preload("res://scripts/presentation/CardStageTangramBurst.gd")
+const SpatialSeams = preload("res://scripts/presentation/CardStageSpatialSeams.gd")
+const SpatialBurst = preload("res://scripts/presentation/CardStageSpatialBurst.gd")
 const CANVAS := Vector2(300, 490)
 const GOLD := Color("c9a565")
 const PAPER := Color("eee4ca")
@@ -38,8 +36,12 @@ var _intercept_return_position: Vector3 = Vector3.ZERO
 var _intercept_return_rotation: Vector3 = Vector3.ZERO
 var _intercept_return_scale: Vector3 = Vector3.ONE
 var _crack_paths: Array = []
-var _burn_sheet: MeshInstance3D = null
 var _shard_burst: Node3D = null
+var _intercept_rim: Node3D = null
+var _substitute_intercepted: bool = false
+var _break_playing: bool = false
+var _break_complete: bool = false
+signal break_finished
 
 
 func configure(target_entity: Object) -> void:
@@ -140,14 +142,14 @@ func _build(config: Dictionary) -> void:
 	card_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_mesh)
 	var back_mesh := BoxMesh.new()
-	back_mesh.size = Vector3(card_size.x * 0.97, card_size.y * 0.97, 0.04)
+	back_mesh.size = Vector3(card_size.x * 0.97, card_size.y * 0.97, 0.02)
 	var back_material := StandardMaterial3D.new()
 	back_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	back_material.albedo_color = Color("2a1f14")
 	back_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	card_back = MeshInstance3D.new()
 	card_back.mesh = back_mesh
-	card_back.position.z = -0.03
+	card_back.position.z = -0.02
 	card_back.material_override = back_material
 	card_back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card_back)
@@ -244,7 +246,7 @@ func relocate(new_home: Vector3, wrap: bool = false, time_scale: float = 1.0) ->
 			position = along
 		_relocate_tween.tween_method(path, 0.0, 1.0, 0.7 * time_scale)
 	else:
-		_relocate_tween.tween_property(self, "position", new_home, 0.4 * time_scale).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_relocate_tween.tween_property(self, "position", new_home, 0.5 * time_scale).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 
 
 func set_fade(amount: float) -> void:
@@ -268,7 +270,7 @@ func hit_shake() -> void:
 
 ## A support card is briefly drawn out of its ADB slot. Only its visual transform moves;
 ## home_position, owner, adjacency and turn order remain untouched.
-func fly_to_intercept(attacker_position: Vector3, protected_position: Vector3, motion_style: String = "sacrifice") -> void:
+func fly_to_intercept(attacker_position: Vector3, protected_position: Vector3, motion_style: String = "sacrifice", visual_destination: Variant = null) -> void:
 	if _tween and _tween.is_valid():
 		_tween.kill()
 	_intercept_return_position = position
@@ -276,13 +278,22 @@ func fly_to_intercept(attacker_position: Vector3, protected_position: Vector3, m
 	_intercept_return_scale = scale
 	var interception: Vector3 = attacker_position.lerp(protected_position, 0.56 if motion_style == "sacrifice" else 0.72)
 	interception.z = maxf(attacker_position.z, protected_position.z) + 0.65
-	var draw_out: Vector3 = position.lerp(interception, 0.12) + Vector3(0.0, 0.2, 0.38)
-	var tilt: float = -0.16 if motion_style == "parry" else 0.08
-	_tween = create_tween()
-	_tween.tween_property(self, "position", draw_out, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_tween.parallel().tween_property(self, "scale", _intercept_return_scale * 1.1, 0.07)
-	_tween.parallel().tween_property(self, "rotation:z", _intercept_return_rotation.z + tilt, 0.07)
-	_tween.tween_property(self, "position", interception, 0.12 if motion_style == "sacrifice" else 0.15).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if visual_destination is Vector3:
+		interception = visual_destination
+	var start: Vector3 = position
+	var tilt: float = -0.20 if motion_style == "parry" else 0.12
+	var flight_seconds: float = 0.27 if motion_style == "sacrifice" else 0.30
+	_tween = create_tween().set_parallel(true)
+	if entity != null and String(entity.get("entity_type")) == "substitute_talisman":
+		_set_intercept_rim(0.0)
+		_tween.tween_method(_set_intercept_rim, 0.0, 1.0, flight_seconds)
+	# One accelerating flight avoids the old two-tween velocity reset. The short arc
+	# draws the card out of its slot; the collision animation supplies the hard stop.
+	_tween.tween_method(func(progress: float) -> void:
+		position = start.lerp(interception, progress) + Vector3(0.0, 0.28, 0.52) * sin(progress * PI)
+	, 0.0, 1.0, flight_seconds).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	_tween.tween_property(self, "scale", _intercept_return_scale * 1.14, flight_seconds).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	_tween.tween_property(self, "rotation:z", _intercept_return_rotation.z + tilt, flight_seconds).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 	await _tween.finished
 
 
@@ -291,6 +302,19 @@ func fly_to_intercept(attacker_position: Vector3, protected_position: Vector3, m
 func intercept_impact(motion_style: String = "sacrifice") -> Tween:
 	if _tween and _tween.is_valid():
 		_tween.kill()
+	if entity != null and String(entity.get("entity_type")) == "substitute_talisman":
+		_substitute_intercepted = true
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_substitute_intercept", 8.0)
+		_set_intercept_rim(1.5)
+		# The reference braces against the blow before its diagonal cut opens.
+		var brace: Vector3 = position
+		_flash.color = Color(1.0, 0.91, 0.60, 0.65)
+		_tween = create_tween()
+		_tween.tween_property(self, "position", brace + Vector3(0.10 if is_enemy else -0.10, 0.0, -0.05), 0.06)
+		_tween.tween_property(self, "position", brace, 0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_tween.parallel().tween_property(_flash, "color:a", 0.0, 0.12)
+		_tween.tween_interval(0.52)
+		return _tween
 	var centre: Vector3 = position
 	_flash.color = Color(0.85, 0.94, 1.0, 0.95) if motion_style == "parry" else Color(1.0, 0.95, 0.8, 0.85)
 	_tween = create_tween()
@@ -301,6 +325,37 @@ func intercept_impact(motion_style: String = "sacrifice") -> Tween:
 	if motion_style == "parry":
 		_tween.parallel().tween_property(self, "rotation:z", _intercept_return_rotation.z - 0.28, 0.16)
 	return _tween
+
+
+## Gold frame belongs to the intercepting card and remains depth-tested against the row.
+func _set_intercept_rim(strength: float) -> void:
+	if _intercept_rim == null:
+		_intercept_rim = Node3D.new()
+		add_child(_intercept_rim)
+		for layer: int in range(2):
+			var width: float = card_size.x * (0.055 if layer == 0 else 0.012)
+			for edge: int in range(4):
+				var horizontal: bool = edge < 2
+				var sign_value: float = -1.0 if edge % 2 == 0 else 1.0
+				var quad := QuadMesh.new()
+				quad.size = Vector2(card_size.x, width) if horizontal else Vector2(width, card_size.y)
+				var material := StandardMaterial3D.new()
+				material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				material.cull_mode = BaseMaterial3D.CULL_DISABLED
+				material.albedo_color = Color(1.0, 0.82, 0.32, 0.0)
+				material.emission_enabled = true
+				material.emission = Color(1.0, 0.65, 0.12)
+				var mesh := MeshInstance3D.new()
+				mesh.mesh = quad
+				mesh.material_override = material
+				mesh.position = Vector3(0.0, sign_value * card_size.y * 0.49, 0.045) if horizontal else Vector3(sign_value * card_size.x * 0.49, 0.0, 0.045)
+				mesh.set_meta("rim_alpha", 0.22 if layer == 0 else 0.95)
+				_intercept_rim.add_child(mesh)
+	for mesh: MeshInstance3D in _intercept_rim.get_children():
+		var material: StandardMaterial3D = mesh.material_override
+		material.albedo_color.a = clampf(float(mesh.get_meta("rim_alpha")) * strength, 0.0, 1.0)
+		material.emission_energy_multiplier = strength * 1.4
 
 
 ## A sheath card parries and returns; a substitute never calls this because it breaks instead.
@@ -314,37 +369,49 @@ func return_from_intercept() -> void:
 	await _tween.finished
 
 
-## The substitute has unseen cuts in it, like a tangram: light shines out of them one cut after another and swells,
-## then the card falls apart along them into its seven pieces, leaves its broken paper visible for one beat, and burns
-## for two seconds using the boss card's fire shader.
+## A sequence of crossing spatial slashes opens on the substitute, then the sliced face shears apart.
+## The intact face disappears at the cut; the action ends only after the fragments settle and fade.
 func play_break() -> void:
-	# The cuts are light in 3D (additive quads standing in front of the card, drawn like the 真．石破天驚拳 meteors),
-	# not a 2D overlay.
-	var seams := TangramSeams.new()
+	# Story cleanup later consumes the logical charge; it must not replay this sequence.
+	if _break_complete:
+		return
+	if _break_playing:
+		await break_finished
+		return
+	_break_playing = true
+	var seams := SpatialSeams.new()
 	add_child(seams)
 	seams.position = Vector3(0.0, card_mesh.position.y, 0.08)
 	seams.setup(card_size)
 	var light := create_tween().set_parallel(true)
-	light.tween_property(seams, "progress", 1.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	light.tween_property(seams, "glow", 1.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var cut_seconds: float = 0.18 if _substitute_intercepted else 0.45
+	light.tween_property(seams, "progress", 1.0, cut_seconds).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	light.tween_property(seams, "glow", 1.0, cut_seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	await light.finished
-	# the light swells to a flash through every cut, and the pieces come apart
+	if not _substitute_intercepted:
+		await get_tree().create_timer(0.35).timeout
 	var flash := create_tween()
-	flash.tween_property(seams, "glow", 2.4, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	flash.tween_property(seams, "glow", 1.5, 0.12 if _substitute_intercepted else 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	await flash.finished
-	_shatter_tangram()
+	_shatter_spatial()
+	# Remove the intact mesh itself. Geometry transparency alone can still leave the
+	# viewport texture visible in this card's 3D material during the shatter.
+	card_mesh.hide()
+	card_back.hide()
+	if _intercept_rim != null:
+		_intercept_rim.hide()
 	var dim := create_tween()
-	dim.tween_property(seams, "glow", 0.0, 0.2)
+	dim.tween_property(seams, "glow", 0.0, 0.28)
 	dim.tween_callback(seams.queue_free)
-	var paper_fade := create_tween()
-	paper_fade.tween_method(set_fade, 0.0, 0.35, 0.25)
-	await get_tree().create_timer(1.0).timeout
-	await _burn_after_break(2.0)
+	await _shard_burst.tree_exited
+	_break_complete = true
+	_break_playing = false
+	break_finished.emit()
 
 
-## The shell comes apart along the tangram cuts.
-func _shatter_tangram() -> void:
-	_shard_burst = TangramBurst.new()
+## The shell separates along the spatial slashes, rather than forming a seven-piece tangram.
+func _shatter_spatial() -> void:
+	_shard_burst = SpatialBurst.new()
 	get_parent().add_child(_shard_burst)
 	_shard_burst.set("rest_seconds", 0.4)
 	_shard_burst.set("fade_seconds", 0.6)
@@ -355,7 +422,7 @@ func _shatter_tangram() -> void:
 		Color(0.14, 0.11, 0.10, 0.94),
 	]
 	var floor_y: float = to_global(Vector3(0.0, -card_size.y * 0.5 + 0.02, 0.0)).y
-	_shard_burst.setup_tangram(self, card_size, floor_y, paper_and_ink)
+	_shard_burst.setup_spatial(self, card_size, floor_y, paper_and_ink)
 
 
 ## The older radial star of triangles (kept for reference / other uses).
@@ -406,40 +473,6 @@ func _set_crack_progress(progress: float) -> void:
 			line.add_point(path[index])
 		if last_full < path.size() - 1:
 			line.add_point(path[last_full].lerp(path[last_full + 1], distance - float(last_full)))
-
-
-func _burn_after_break(seconds: float) -> void:
-	var quad := QuadMesh.new()
-	quad.size = card_size
-	_burn_sheet = MeshInstance3D.new()
-	_burn_sheet.name = "BurnSheet"
-	_burn_sheet.mesh = quad
-	var material := ShaderMaterial.new()
-	material.shader = BurnShader
-	material.set_shader_parameter("face_tex", card_viewport.get_texture())
-	material.set_shader_parameter("window", Vector4(22.0 / CANVAS.x, 62.0 / CANVAS.y, 278.0 / CANVAS.x, 402.0 / CANVAS.y))
-	material.set_shader_parameter("seed", randf() * 10.0)
-	material.set_shader_parameter("flame_core", Color(1.0, 0.83, 0.55, 1.0))
-	material.set_shader_parameter("flame_edge", Color(0.95, 0.13, 0.035, 1.0))
-	material.render_priority = 5
-	_burn_sheet.material_override = material
-	_burn_sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_burn_sheet.position = card_mesh.position + Vector3(0.0, 0.0, 0.04)
-	_burn_sheet.sorting_offset = 0.5
-	add_child(_burn_sheet)
-	var fire: Node3D = GhostFire.new()
-	add_child(fire)
-	fire.position = Vector3(0.0, 0.0, 0.18)
-	fire.set("palette", "red")
-	fire.play(card_size, seconds, 0.0)
-	var burn_tween := create_tween().set_parallel(true)
-	burn_tween.tween_method(func(value: float) -> void:
-		material.set_shader_parameter("burn", value), 0.0, 1.0, seconds)
-	burn_tween.tween_method(func(value: float) -> void:
-		material.set_shader_parameter("time_value", value), 0.0, seconds, seconds)
-	burn_tween.tween_method(set_fade, 0.35, 1.0, 0.25).set_delay(seconds - 0.25)
-	burn_tween.tween_property(_burn_sheet, "transparency", 1.0, 0.25).set_delay(seconds - 0.25)
-	await burn_tween.finished
 
 
 func _style_label(label: Label, size: int, color: Color) -> void:
@@ -503,6 +536,8 @@ func play_draw(wielder: Node3D, _staging: Vector3 = Vector3.ZERO) -> void:
 	# Fully out: it spins once around in the plane of the card (a twirl of the scabbard), then waits to
 	# be put into the row.
 	_tween.tween_interval(0.08)
+	_tween.tween_callback(func() -> void:
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_sheath_spin_insert"))
 	_tween.tween_property(self, "rotation:z", TAU, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_tween.tween_callback(func() -> void:
 		rotation.z = 0.0)
