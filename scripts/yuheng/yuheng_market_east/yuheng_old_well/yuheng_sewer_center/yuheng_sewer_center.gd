@@ -795,7 +795,7 @@ func show_map_name():
 		push_warning("MapNamePopup 找不到！請確認 CanvasLayer 裡有加 Label")
 
 func _on_to_yuheng_old_well_body_entered(body: Node2D):
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("To_yuheng_old_well") as Area2D):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -806,7 +806,7 @@ func _on_to_yuheng_old_well_body_entered(body: Node2D):
 
 
 func _on_to_yuheng_sewer_secrect_room_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("To_yuheng_sewer_secrect_room") as Area2D):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -817,7 +817,7 @@ func _on_to_yuheng_sewer_secrect_room_body_entered(body: Node2D) -> void:
 
 
 func _on_to_yuheng_sewer_talisman_room_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("To_yuheng_sewer_talisman_room") as Area2D):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -828,7 +828,7 @@ func _on_to_yuheng_sewer_talisman_room_body_entered(body: Node2D) -> void:
 
 
 func _on_to_yuheng_sewer_alchemy_room_body_shape_entered(body_rid: RID, body: Node2D, body_shape_index: int, local_shape_index: int) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("To_yuheng_sewer_alchemy_room") as Area2D):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -839,7 +839,7 @@ func _on_to_yuheng_sewer_alchemy_room_body_shape_entered(body_rid: RID, body: No
 
 
 func _on_to_yuheng_sewer_final_room_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("To_yuheng_sewer_final_room") as Area2D):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()
@@ -850,7 +850,7 @@ func _on_to_yuheng_sewer_final_room_body_entered(body: Node2D) -> void:
 
 
 func _on_to_yuheng_sewer_music_room_body_entered(body: Node2D) -> void:
-	if body.name == "LiuYu":
+	if MapTransitionGuard.can_transition(body, get_node_or_null("To_yuheng_sewer_music_room") as Area2D):
 		overlay.visible = true
 		overlay.modulate.a = 0.0
 		var tween = overlay.create_tween()

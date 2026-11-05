@@ -87,7 +87,7 @@ func _guard_map_exit_until_player_leaves(area: Area2D, player: Node2D) -> void:
 	print("[MapTransitionGuard] disarmed overlapping exit=", area.name, " player_pos=", player.global_position)
 
 func _collect_map_exit_areas(node: Node, out: Array[Area2D]) -> void:
-	if node is Area2D and String(node.name).begins_with("to_"):
+	if node is Area2D and String(node.name).to_lower().begins_with("to_"):
 		out.append(node)
 	for child in node.get_children():
 		_collect_map_exit_areas(child, out)
@@ -122,6 +122,11 @@ func change_map_to(path: String):
 		$LiuYu.can_move = true
 	var new_scene = load(path).instantiate()
 	$CurrentScene.add_child(new_scene)
+	# 新場景一加進來，劉語塵就先到出生點：否則他還站在上一張圖的出口位置，那個座標在新場景裡可能壓著別的出口
+	# （例如下水道中央房的調音室出口），下一個物理幀就會被傳走。
+	var early_spawn := new_scene.get_node_or_null("SpawnPoints/%s" % spawn_point_name) as Node2D
+	if early_spawn:
+		$LiuYu.global_position = early_spawn.global_position
 
 	# ✅ 移動流語客到指定出生點（如果有）
 	await get_tree().process_frame
