@@ -31,10 +31,11 @@ C 的 Reference Zone 只是距離的幾何依據，不是要踩進去的觸碰�
 - 同一次按住最多互動一次；互動結束後要放開再按。
 - 一按 WASD 就取消滑鼠移動與尚未完成的靠近互動。
 - 點在介面（CanvasLayer 上的 Control）、對話中、選單中、轉場鎖定、`can_move` 為 false（劇情鎖定）時都不產生移動或互動。
+- **手繪地圖出口例外**：劉語塵從外走進出口蛋白區時即通行，不要求這次滑鼠按下始於出口蛋黃；蛋黃仍可點擊尋路。首次出現時若角色已站在出口蛋白區，需先離開再進入，避免進場立即折返。普通 NPC／物件維持「先點蛋黃才互動」。
 
 ## 游標
 `InteractionResolver.CURSOR_KINDS`：`talk`、`inspect`。圖檔放 `assets/UI/cursor/cursor_talk.png`、`cursor_inspect.png`（目前專案沒有這些圖，沒圖就用內建的手指游標）。
 
 ## 遷移方式
 在場景腳本裡替 NPC 加一個 `InteractionTarget`（設定 `handler`、`availability`），並刪掉該 NPC 自己監聽 Space 的程式碼——**同一個 NPC 不能新舊兩套同時回應**。
-目前只有飲月山莊白天的白書眠與左飲（`yin_yue_manor_room(day).gd`）遷移；其他 NPC、自動劇情觸發區、傳送入口都維持原樣。
+目前只有飲月山莊白天的白書眠與左飲（`yin_yue_manor_room(day).gd`）遷移；其他 NPC 與自動劇情觸發區仍維持原樣。場景 metadata 手繪的地圖出口由 `ObjectInteractionAdapter` 建立 `InteractionTarget`，並以蛋白區進入事件為通行入口；舊出口 `Area2D` 保留偵測但不再重複呼叫同一個出口函式。

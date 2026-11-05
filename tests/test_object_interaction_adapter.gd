@@ -97,6 +97,7 @@ func _run() -> void:
 			_check(et != null and et.cursor_kind == "exit" and et.selection_polygon.size() >= 3 and et.zone_polygon.size() >= 3, "%s exit %s is a zone target with the exit cursor" % [mp.get_file(), id])
 		ms.queue_free()
 		await process_frame
+	await _test_exit_without_room_lock()
 
 	# 多邊形工具：矩形擴張後每邊多 distance
 	var rect := PackedVector2Array([Vector2(0, 0), Vector2(100, 0), Vector2(100, 50), Vector2(0, 50)])
@@ -104,3 +105,29 @@ func _run() -> void:
 	_check(is_equal_approx(grown.position.x, -30.0) and is_equal_approx(grown.size.x, 160.0) and is_equal_approx(grown.size.y, 110.0), "a 100x50 rectangle grows to 160x110")
 	print("PASS: object interaction adapter" if _failures == 0 else "FAILED: %d" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+func _test_exit_without_room_lock() -> void:
+	var room_script := GDScript.new()
+	room_script.source_code = "extends Node2D\nvar calls := 0\nfunc leave(_body: Node2D) -> void:\n\tcalls += 1\n"
+	_check(room_script.reload() == OK, "fixture room script loads")
+	var room := Node2D.new()
+	room.set_script(room_script)
+	room.set_meta(ObjectInteractionAdapter.EXIT_YOLK_META, PackedVector2Array([Vector2(-20, -20), Vector2(20, -20), Vector2(20, 20), Vector2(-20, 20)]))
+	room.set_meta(ObjectInteractionAdapter.EXIT_WHITE_META, PackedVector2Array([Vector2(-30, -30), Vector2(30, -30), Vector2(30, 30), Vector2(-30, 30)]))
+	room.set_meta(ObjectInteractionAdapter.EXIT_METHOD_META, "leave")
+	var area := Area2D.new()
+	room.add_child(area)
+	var legacy_callback := Callable(room, "leave")
+	area.body_entered.connect(legacy_callback)
+	root.add_child(room)
+	_check(ObjectInteractionAdapter.adopt_scene(room) == 1, "exit fixture is adopted")
+	var target := room.get_node_or_null(ObjectInteractionAdapter.EXIT_NODE_NAME) as InteractionTarget
+	_check(target != null and target.activate_on_enter, "hand-drawn exit is marked for entry")
+	_check(not area.body_entered.is_connected(legacy_callback) and area.monitoring, "legacy entry signal is disconnected while Area2D monitoring remains active")
+	if target != null:
+		var player := Node2D.new()
+		await target.handler.call(player)
+		_check(int(room.get("calls")) == 1, "exit handler works when the room has no interaction_locked property")
+	room.queue_free()
+	await process_frame

@@ -79,6 +79,7 @@ const SE_SEARCH_DIRS := [
 ]
 const SE_EXTENSIONS := [".ogg", ".wav", ".mp3"]
 const SE_VARIANT_MAX := 4
+const FIST_DODGE_SE_GAIN_DB := 4.0
 ## Names of the statuses a support skill can cleanse, for the log line.
 const SUPPORT_CLEANSE_NAMES := {"confuse": "混亂"}
 ## 鞘擊音效：從持鞘卡開始動作，到鞘尾碰上目標的時間（蓄勢 0.08 秒、前踏 0.14 秒、之後揮擊命中）。
@@ -392,6 +393,15 @@ func _battle_bgm_key_from_path(path: String) -> String:
 	return path.get_file().get_basename()
 
 
+func _is_liuchen_lianjue_four_hit(actor: Dictionary, skill_data: Dictionary, played_strikes: int) -> bool:
+	if played_strikes != 4 or String(skill_data.get("id", "")) != "skill_lianjuejian":
+		return false
+	var pairing := _resolve_pairing_bonus(actor, skill_data)
+	return String(pairing.get("inner_force_id", "")) == "liuchen_jue" \
+		and String(pairing.get("skill_id", "")) == "skill_lianjuejian" \
+		and int((pairing.get("effects", {}) as Dictionary).get("strike_count_delta", 0)) == 1
+
+
 func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
 	if not _can_play_se():
 		return
@@ -399,30 +409,33 @@ func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_dat
 	var dodged := bool(result.get("dodged", not hit))
 	var is_crit := bool(result.get("crit", false))
 	var target_guarding := bool(result.get("target_defending", target.get("defending", false)))
+	var weapon_key := _resolve_weapon_se_key(user, skill_data)
 
-	# 1) onguard 最高優先
-	if hit and target_guarding:
-		_play_named_se_with_fallback(["SE_hit_onguard"])
+	# A blocked hit is not an evade. Layer the guard impact over the attacker's weapon sound.
+	if bool(result.get("blocked", false)) or (hit and target_guarding):
+		_play_guard_impact_se(weapon_key)
 		return
 
 	# 2) evade / miss
 	if not hit:
-		if dodged:
-			_play_named_se_with_fallback(["SE_evade", "SE_%s_miss" % _resolve_weapon_se_key(user, skill_data)])
-		else:
-			_play_named_se_with_fallback(["SE_%s_miss" % _resolve_weapon_se_key(user, skill_data), "SE_evade"])
+		_play_named_se_with_fallback(
+			["SE_%s_miss" % weapon_key, "SE_evade", "SE_fist_miss"],
+			FIST_DODGE_SE_GAIN_DB if dodged and weapon_key == "fist" else 0.0
+		)
+		return
+	if _is_liuchen_lianjue_four_hit(user, skill_data, int(result.get("_played_strike_count", 0))):
+		_play_named_se_with_fallback(["SE_liuchen_lianjue_4hit", "SE_sword_multi"])
 		return
 
 	# 3) crit
 	if is_crit:
-		var w_crit := "SE_%s_crit" % _resolve_weapon_se_key(user, skill_data)
-		var w_power := "SE_%s_power" % _resolve_weapon_se_key(user, skill_data)
-		var w_hit := "SE_%s_hit" % _resolve_weapon_se_key(user, skill_data)
+		var w_crit := "SE_%s_crit" % weapon_key
+		var w_power := "SE_%s_power" % weapon_key
+		var w_hit := "SE_%s_hit" % weapon_key
 		_play_named_se_with_fallback([w_crit, w_power, w_hit])
 		return
 
 	# 4) weapon + mode
-	var weapon_key := _resolve_weapon_se_key(user, skill_data)
 	var mode := _resolve_skill_se_mode(skill_data)
 	match mode:
 		"aoe":
@@ -471,17 +484,53 @@ func _play_support_se(kind: String, effect: String = "") -> void:
 		_:
 			_play_named_se_with_fallback(["SE_heal"])
 
-func _play_named_se_with_fallback(base_keys: Array) -> void:
+func _play_named_se_with_fallback(base_keys: Array, gain_db: float = 0.0) -> void:
 	if not _can_play_se():
 		return
+	var stream := _find_named_se_with_fallback(base_keys)
+	if stream != null:
+		if gain_db > 0.0:
+			_play_overlay_se(stream, gain_db)
+		else:
+			_play_stream_on_se_player(stream)
+
+func _find_named_se_with_fallback(base_keys: Array) -> AudioStream:
 	for key_any in base_keys:
 		var key := String(key_any).strip_edges()
 		if key == "":
 			continue
 		var stream := _find_se_stream_for_base(key)
 		if stream != null:
-			_play_stream_on_se_player(stream)
-			return
+			return stream
+	return null
+
+func _play_guard_impact_se(weapon_key: String) -> void:
+	var weapon_stream := _find_named_se_with_fallback(["SE_%s_hit" % weapon_key, "SE_fist_hit"])
+	var guard_stream := _find_named_se_with_fallback(["SE_hit_onguard"])
+	if weapon_stream != null:
+		_play_stream_on_se_player(weapon_stream)
+	if guard_stream != null:
+		_play_overlay_se(guard_stream)
+
+func _play_overlay_se(stream: AudioStream, gain_db: float = 0.0) -> void:
+	if battle_se_player is AudioStreamPlayer:
+		var primary := battle_se_player as AudioStreamPlayer
+		var layer := AudioStreamPlayer.new()
+		layer.bus = primary.bus
+		layer.volume_db = primary.volume_db + gain_db
+		primary.add_child(layer)
+		layer.stream = stream
+		layer.finished.connect(layer.queue_free)
+		layer.play()
+	elif battle_se_player is AudioStreamPlayer2D:
+		var primary_2d := battle_se_player as AudioStreamPlayer2D
+		var layer_2d := AudioStreamPlayer2D.new()
+		layer_2d.bus = primary_2d.bus
+		layer_2d.volume_db = primary_2d.volume_db + gain_db
+		primary_2d.add_child(layer_2d)
+		layer_2d.stream = stream
+		layer_2d.finished.connect(layer_2d.queue_free)
+		layer_2d.play()
 
 func _find_se_stream_for_base(base_key: String) -> AudioStream:
 	if base_key == "":
@@ -585,6 +634,8 @@ func _resolve_weapon_se_key(actor: Dictionary, skill_data: Dictionary) -> String
 	var forced_key := String(skill_data.get("se_weapon_key", "")).strip_edges()
 	if forced_key != "":
 		return forced_key
+	if String(skill_data.get("id", "")) == "basic_attack" or String(skill_data.get("fx_style", "")) == "water_bullet":
+		return "fist"
 	var wt := String(skill_data.get("weapon_type", "")).strip_edges()
 	if wt == "":
 		wt = String(actor.get("weapon_1", "拳")).strip_edges()
@@ -998,7 +1049,9 @@ func _emit_enemy_spoken_line(enemy: Dictionary, text: String) -> void:
 func _emit_dodge_actor_line(result: Dictionary, target: Dictionary) -> void:
 	if target.is_empty():
 		return
-	if bool(result.get("hit", true)):
+	# A support card can stop a Hit before it reaches the actor. That result is
+	# hit=false, but it is not a dodge and must not move the protected card.
+	if bool(result.get("hit", true)) or not bool(result.get("dodged", false)) or bool(result.get("blocked", false)):
 		return
 	var actor_id := str(target.get("id", ""))
 	if actor_id == "":
@@ -1446,9 +1499,11 @@ func _compose_multi_strike_entry(actor: Dictionary, target: Dictionary, skill_da
 func _emit_multi_strike_feedback(actor: Dictionary, target: Dictionary, skill_data: Dictionary, strikes: Array) -> void:
 	var any_hit := false
 	var any_crit := false
+	var all_dodged: bool = not strikes.is_empty()
 	var strongest: Dictionary = {}
 	for strike_any: Variant in strikes:
 		var strike: Dictionary = strike_any
+		all_dodged = all_dodged and bool(strike.get("dodged", false)) and not bool(strike.get("blocked", false))
 		if not bool(strike.get("hit", true)):
 			continue
 		any_hit = true
@@ -1457,14 +1512,15 @@ func _emit_multi_strike_feedback(actor: Dictionary, target: Dictionary, skill_da
 			strongest = strike
 	var first: Dictionary = strikes[0] if not strikes.is_empty() else {}
 	_play_attack_se_from_result(actor, target, skill_data, {
-		"hit": any_hit, "dodged": not any_hit, "crit": any_crit,
+		"hit": any_hit, "dodged": all_dodged, "crit": any_crit,
 		"target_defending": bool(first.get("target_defending", target.get("defending", false))),
+		"_played_strike_count": strikes.size(),
 	})
 	if any_crit:
 		_emit_crit_admire_line({"hit": true, "crit": true}, actor)
 	elif any_hit:
 		_emit_major_hit_reaction_from_result(strongest, target)
-	else:
+	elif all_dodged:
 		_emit_dodge_actor_line(first, target)
 
 

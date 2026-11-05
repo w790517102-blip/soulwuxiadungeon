@@ -114,7 +114,7 @@ static func _adopt_talisman_room(room: Node) -> int:
 	return count
 
 
-## 場景根節點上手畫的出口（游標是出口箭頭）。出口原本的 Area2D 照舊（走進去一樣會離開），這裡只多一層滑鼠點擊＋走到蛋白區才離開。
+## 場景根節點上手畫的出口（游標是出口箭頭）。進入蛋白區就會通行；蛋黃區仍可供滑鼠點擊尋路。
 ## 一個出口：exit_yolk／exit_white／exit_method／exit_name。多個出口：exit_ids（PackedStringArray）＋每個 id 一組 exit_<id>_yolk／_white／_method／_name。
 static func _adopt_room_exits(room: Node) -> int:
 	var ids: Array = [""]
@@ -142,7 +142,11 @@ static func _adopt_room_exit(room: Node, id: String) -> bool:
 	var room_ref: WeakRef = weakref(room)
 	var handler := func(player: Node2D) -> void:
 		var r: Node = room_ref.get_ref()
-		if r == null or bool(r.get("interaction_locked")) or bool(r.get_meta(EXIT_BUSY_META, false)):
+		if r == null or r.get("interaction_locked") == true or r.get_meta(EXIT_BUSY_META, false) == true:
+			return
+		# Hand-drawn exits must obey the same arrival grace and scene-change lock as Area2D exits.
+		var game_root := r.get_node_or_null("/root/GameRoot")
+		if game_root != null and game_root.has_method("can_use_map_transition") and not game_root.can_use_map_transition(player):
 			return
 		r.set_meta(EXIT_BUSY_META, true)      # 淡出途中再點不重複觸發
 		if Callable(r, method).get_argument_count() == 4:
@@ -157,7 +161,21 @@ static func _adopt_room_exit(room: Node, id: String) -> bool:
 	if target == null:
 		return false
 	target.name = node_name
+	target.activate_on_enter = true
+	# Hand-drawn exit whites are now the single entry trigger. Keep the old Area2D
+	# monitoring for MapTransitionGuard, but disconnect its overlapping enter signal.
+	_disconnect_legacy_exit_signals(room, method)
 	return true
+
+
+static func _disconnect_legacy_exit_signals(room: Node, method: String) -> void:
+	for node: Node in room.find_children("*", "Area2D", true, false):
+		var area: Area2D = node as Area2D
+		for signal_value: Signal in [area.body_entered, area.body_shape_entered]:
+			for connection: Dictionary in signal_value.get_connections():
+				var callback: Callable = connection["callable"]
+				if callback.get_object() == room and String(callback.get_method()) == method:
+					signal_value.disconnect(callback)
 
 
 static func _attach(owner_node: Node, area: Area2D, handler: Callable, display_name: String) -> bool:

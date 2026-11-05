@@ -17,7 +17,7 @@ var _music_tween: Tween = null
 var map_transition_locked := false
 const MAP_EXIT_REQUIRES_EXIT_META := "map_transition_requires_exit"
 ## 到達新場景後，出口鎖住這麼多秒（防呆：剛進來就被按住的滑鼠、或出生點附近的出口帶走）。
-const ARRIVAL_EXIT_GRACE_SEC := 1.5
+const ARRIVAL_EXIT_GRACE_SEC := 1.0
 var _arrival_grace_until_msec := 0
 
 @onready var music_player = $MusicPlayer  # 音樂播放器節點

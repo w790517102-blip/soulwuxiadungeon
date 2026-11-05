@@ -8,8 +8,8 @@ class_name InteractionTarget
 #   1. 碰撞區（Physical Collision）：NPC／物件自己的 CollisionShape2D，只負責物理阻擋。這個元件完全不看它。
 #   2. 蛋黃區（Mouse Selection Zone）：滑鼠指到哪裡算「選中」它。預設是畫面上看到的角色外框；也可以用 selection_rect／selection_polygon
 #      另外指定（獨立選取形狀）。滑鼠進入蛋黃區：游標變互動圖示、成為 Hover 目標；點擊才會建立互動意圖。Hover 本身不啟動對話。
-#   3. 蛋白區（Interaction Range）：劉語塵「已經靠近到可以執行互動」的資格，不是觸發事件的 Area2D。三種模式見下。
-#      劉語塵走進蛋白區不會自動對話；滑鼠進入蛋白區也不會變互動圖示。只有玩家明確提出互動命令（點蛋黃區、或按 Space）才會用到它。
+#   3. 蛋白區（Interaction Range）：劉語塵「已經靠近到可以執行互動」的資格。三種模式見下。
+#      一般 NPC／物件走進蛋白區不會自動對話；只有手繪地圖出口啟用 activate_on_enter，進入即通行。
 #
 # 蛋白區的三種距離模式（mode）：
 #   SPECIAL_AREA（A）手工繪製的特殊互動位置（白箋居櫃檯前、隔窗、必須站在指定位置的機關）：劉語塵必須在 special_area 這個 Area2D 裡。
@@ -17,7 +17,7 @@ class_name InteractionTarget
 #   ZONE（C）Reference Zone 邊界距離：劉語塵腳底到 Reference Zone（矩形／多邊形）最近位置的距離小於 interaction_radius。
 #            大型、長形的目標用；Reference Zone 只是蛋白區的幾何依據，不是蛋黃區，也不是戰鬥碰撞箱。
 #
-# 不需要特殊區域的 NPC 不用再畫 Area2D；需要特殊位置的場景保留原本的 Area2D（A）。這個元件不取代自動劇情觸發區或傳送入口。
+# 不需要特殊區域的 NPC 不用再畫 Area2D；需要特殊位置的場景保留原本的 Area2D（A）。自動劇情觸發區仍走原流程。
 # ------------------------------------------------------------
 
 enum Mode { SPECIAL_AREA, RADIUS, ZONE }
@@ -54,6 +54,8 @@ signal interacted(player: Node2D)
 @export var require_clear_path: bool = false
 @export_flags_2d_physics var path_block_mask: int = 1
 @export var enabled: bool = true
+## 只有地圖出口等明確的通行區會啟用：角色從外走進蛋白區就執行一次，不要求滑鼠先點蛋黃。
+@export var activate_on_enter: bool = false
 ## Space 要求臉朝向蛋黃區：劉語塵的八方向面向，和「腳底到蛋黃區中心」的方向夾角不能超過 facing_max_angle_deg（八方向每格 45 度，所以預設 45）。
 ## 只管空白鍵；滑鼠點擊蛋黃區本來就表達了對象，不看面向。
 @export var require_facing: bool = false

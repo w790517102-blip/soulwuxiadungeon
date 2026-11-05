@@ -1183,6 +1183,7 @@ func _present_active_intervention(attacker: Dictionary, target: Dictionary, skil
 		await trail.play(origin, impact, true)
 		trail.queue_free()
 	# Every weapon's attack path terminates on the support card, never on the actor behind it.
+	attack_contact.emit()
 	_hit_spark(impact, support_card.card_size.y * (0.75 if String(style.get("impact")) == "metal" else 0.55), false)
 	_intervention_warp(impact, support_card, style)
 	var collision: Tween = support_card.intercept_impact(String(style.get("motion", "sacrifice")))
@@ -1342,6 +1343,7 @@ func present_attack(attacker: Dictionary, target: Dictionary, skill: Dictionary,
 	# starting before the previous one has finished.
 	var strikes: Array = result.get("strikes", [])
 	if USE_BLADE_SLASH and strikes.size() > 1:
+		attack_contact.emit()
 		await _play_sword_flurry(destination, target, strikes, cut_centre, cut_length, direction, saber)
 	elif hit:
 		var cut_wait: float = 0.1
@@ -2755,6 +2757,7 @@ func _present_water_bullet(attacker: Dictionary, target: Dictionary, result: Dic
 	if not landed:
 		aim += Vector3(side * 1.4, 0.3, -0.4)
 	var fx := WaterBulletFX.play_between(fx_root, tip, aim, destination.card_size, params)
+	fx.impact.connect(func() -> void: attack_contact.emit(), CONNECT_ONE_SHOT)
 	if landed:
 		fx.impact.connect(_water_impact.bind(destination))
 	else:

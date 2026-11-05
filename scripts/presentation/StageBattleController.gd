@@ -2,11 +2,42 @@ extends "res://scripts/battlescripts/BattleController.gd"
 
 # Presentation-only override. Calculation, targeting, statuses, turn hand-off,
 # rewards and story return remain inherited from the production controller.
+func _uses_contact_se(skill_data: Dictionary) -> bool:
+	return String(skill_data.get("id", "")) == "basic_attack" or String(skill_data.get("fx_style", "")) == "water_bullet"
+
+
+func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+	# These sounds wait for their visible contact point; damage was already calculated.
+	if battle_ui != null and bool(battle_ui.get("stage_enabled")) and (
+			_uses_contact_se(skill_data)
+			or _is_liuchen_lianjue_four_hit(user, skill_data, int(result.get("_played_strike_count", 0)))
+	):
+		return
+	super._play_attack_se_from_result(user, target, skill_data, result)
+
+
+func _play_contact_se(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+	super._play_attack_se_from_result(attacker, target, skill_data, result)
+
+
 func _play_attack_cinematic(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> Array:
 	if battle_ui == null or not bool(battle_ui.get("stage_enabled")):
 		return await super._play_attack_cinematic(attacker, target, skill_data, result)
 	if not target.is_empty():
+		var contact_se: Callable = Callable()
+		var contact_result: Dictionary = result
+		var strikes: Array = result.get("strikes", [])
+		var four_hit_contact := _is_liuchen_lianjue_four_hit(attacker, skill_data, strikes.size())
+		if four_hit_contact:
+			contact_result = result.duplicate()
+			contact_result["_played_strike_count"] = strikes.size()
+		if _uses_contact_se(skill_data) or four_hit_contact:
+			contact_se = _play_contact_se.bind(attacker, target, skill_data, contact_result)
+			battle_ui.stage.attack_contact.connect(contact_se, CONNECT_ONE_SHOT)
 		await battle_ui.stage.present_attack(attacker, target, skill_data, result)
+		if contact_se.is_valid() and battle_ui.stage.attack_contact.is_connected(contact_se):
+			battle_ui.stage.attack_contact.disconnect(contact_se)
+			contact_se.call()
 	_update_ui_for_actor(target)
 	_update_ui_for_actor(attacker)
 	return result.get("log", [])

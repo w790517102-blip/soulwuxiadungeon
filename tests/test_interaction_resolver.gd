@@ -27,6 +27,7 @@ func _run() -> void:
 	await _test_clear_path_and_side()
 	await _test_single_interaction()
 	await _test_intents()
+	await _test_exit_entry()
 	_test_three_layers_and_facing()
 	await _test_overlapping_real_zones()
 
@@ -476,6 +477,70 @@ func _test_intents() -> void:
 	# 蛋白區不影響蛋黃區：劉語塵站在蛋白區裡，滑鼠沒碰蛋黃區 → 沒有 Hover
 	_fake_player.global_position = Vector2(800, 330)
 	_expect(edge.in_interaction_range(_fake_player) and _resolver_script.pick_hover(Vector2(800, 380), [edge]) == null, "inside the interaction range with the mouse off the selection zone: no hover")
+	_fake_root.free()
+	_fake_root = null
+
+
+func _test_exit_entry() -> void:
+	var resolver: Node = _make_game_stage()
+	var gate: InteractionTarget = _target(_npc("Passage", Vector2(150, 300)), InteractionTarget.Mode.ZONE, 0.0)
+	gate.use_sprite_feet = false
+	gate.cursor_kind = "exit"
+	gate.activate_on_enter = true
+	gate.selection_rect = Rect2(-20, -40, 40, 80)
+	gate.zone_rect = Rect2(-20, -40, 40, 80)
+	var npc: InteractionTarget = _target(_npc("Bystander", Vector2(280, 300)), InteractionTarget.Mode.RADIUS, 90.0)
+	var calls := {"exit": 0, "npc": 0}
+	gate.handler = func(_p: Node2D) -> void: calls["exit"] += 1
+	npc.handler = func(_p: Node2D) -> void: calls["npc"] += 1
+	# A spawn already inside an exit must first leave; otherwise scene loading can bounce back.
+	_fake_player.global_position = Vector2(150, 300)
+	_step(resolver)
+	_expect(int(calls["exit"]) == 0, "spawned inside an exit does not immediately warp")
+	_fake_player.global_position = Vector2(0, 300)
+	_step(resolver)
+	# Ordinary MOVE may cross an exit even though its press began on plain ground.
+	resolver.mouse_world_override = Vector2(500, 300)
+	resolver.call("_on_left_pressed")
+	for i in 150:
+		_step(resolver)
+		if int(calls["exit"]) > 0:
+			break
+	_expect(int(calls["exit"]) == 1 and int(calls["npc"]) == 0, "ground-origin drag enters the exit white once without interacting with NPCs")
+	for i in 20:
+		_step(resolver)
+	_expect(int(calls["exit"]) == 1, "remaining inside the exit does not repeatedly warp")
+	resolver.call("_on_left_released")
+	# Clicking the yolk while already in the white remains a valid explicit command.
+	resolver.mouse_world_override = Vector2(150, 300)
+	resolver.call("_on_left_pressed")
+	_step(resolver)
+	_expect(int(calls["exit"]) == 2, "clicking the exit while already inside still invokes it")
+	resolver.call("_on_left_released")
+	_fake_player.global_position = Vector2(0, 300)
+	_step(resolver)
+	_fake_player.global_position = Vector2(150, 300)
+	_step(resolver)
+	_expect(int(calls["exit"]) == 3, "entering an exit also works without a held mouse button")
+	# The arrival grace blocks every hand-drawn exit, without consuming the player's movement.
+	var root_script := GDScript.new()
+	root_script.source_code = "extends Node2D\nvar exit_allowed := true\nfunc can_use_map_transition(_body: Node, _area: Area2D = null) -> bool:\n\treturn exit_allowed\n"
+	root_script.reload()
+	_fake_root.set_script(root_script)
+	_fake_root.set("exit_allowed", false)
+	_fake_player.global_position = Vector2(0, 300)
+	_step(resolver)
+	_fake_player.global_position = Vector2(150, 300)
+	_step(resolver)
+	_expect(int(calls["exit"]) == 3, "arrival grace blocks entry into a hand-drawn exit")
+	_fake_root.set("exit_allowed", true)
+	_step(resolver)
+	_expect(int(calls["exit"]) == 3, "exit does not fire just because arrival grace expired while inside")
+	_fake_player.global_position = Vector2(0, 300)
+	_step(resolver)
+	_fake_player.global_position = Vector2(150, 300)
+	_step(resolver)
+	_expect(int(calls["exit"]) == 4, "exit works after the player leaves and re-enters")
 	_fake_root.free()
 	_fake_root = null
 

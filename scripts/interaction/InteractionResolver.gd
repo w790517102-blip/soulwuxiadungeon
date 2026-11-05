@@ -8,7 +8,7 @@ extends Node
 #      而且互動進行中（對話、選項、劇情、黑幕、選單）不接受新的互動。
 #   2. 滑鼠：Hover 選目標、游標切換、左鍵按住朝滑鼠方向移動（八方向、放開即停）、鎖定目標靠近後互動。
 #   3. 空白鍵：依劉語塵腳底到各目標有效區域的距離選唯一目標。
-# 沒有遷移的舊 NPC（自己監聽 Space 的腳本、Area2D 劇情觸發區、傳送入口）不受影響，仍然照舊運作。
+# 沒有遷移的舊 NPC 與 Area2D 劇情觸發區不受影響；手繪地圖出口由 ObjectInteractionAdapter 接管。
 #
 # 輸入鎖定沿用既有機制，不另外建旗標：劉語塵的 can_move、DialogManager.dialog_active、GlobalState 的 menu_locked／menu_open、
 # GameRoot.is_map_transition_locked()、get_tree().paused（系統選單開著時整棵樹暫停）。
@@ -39,6 +39,7 @@ var _right_held := false
 var _mouse_move_active: bool = false
 var _locked_target: InteractionTarget = null
 var _interaction_running: bool = false
+var _exit_inside: Dictionary = {}
 
 
 # ------------------------------------------------------------
@@ -251,7 +252,7 @@ func _on_space_pressed() -> void:
 ##   - 按在某個目標的蛋黃區 → INTERACT_APPROACH：鎖定那個目標，靠近到它的蛋白區才互動（只互動它）。
 ##   - 按在普通地面（沒有目標的蛋黃區）→ MOVE：只移動。之後不管走過多少目標的蛋白區、滑鼠滑進誰的蛋黃區，都還是 MOVE，不會自動變成互動；
 ##     要互動必須放開之後重新點擊目標的蛋黃區。
-## 蛋白區本身從來不觸發任何事：它只是「已經提出互動命令之後，能不能執行」的距離資格。
+## 普通 NPC／物件的蛋白區只是「已提出互動命令後能否執行」的距離資格；手繪地圖出口是通行例外。
 func _on_left_pressed() -> void:
 	_left_held = true
 	_start_mouse_intent()
@@ -328,6 +329,7 @@ func _cancel_mouse_intent() -> void:
 func cancel_mouse_intent_for_scene_change() -> void:
 	_mouse_down = false
 	_cancel_mouse_intent()
+	_exit_inside.clear()
 	var player := _player()
 	if player != null:
 		player.set("mouse_move_direction", Vector2.ZERO)
@@ -340,6 +342,7 @@ func _physics_process(_delta: float) -> void:
 	var player := _player()
 	if player == null:
 		return
+	_check_exit_entries(player)
 	if not _mouse_move_active:
 		player.set("mouse_move_direction", Vector2.ZERO)
 		return
@@ -371,6 +374,34 @@ func _physics_process(_delta: float) -> void:
 		# 實際移動方向永遠精準跟著滑鼠；動畫朝向的防閃爍緩衝在 liu_yu.gd（用 mouse_aim_direction）
 		player.set("mouse_move_direction", InteractionGeometry.quantize_8(to_mouse))
 		player.set("mouse_aim_direction", to_mouse.normalized())
+
+
+## Exits are physical passageways: enter their white once to travel, regardless of
+## where a held mouse press began. NPCs and ordinary objects retain click-to-interact.
+func _check_exit_entries(player: Node2D) -> void:
+	var seen: Dictionary = {}
+	var entered: InteractionTarget = null
+	for target_any: Node in _targets():
+		var target: InteractionTarget = target_any as InteractionTarget
+		if target == null or not target.activate_on_enter:
+			continue
+		var key: int = target.get_instance_id()
+		seen[key] = true
+		var inside: bool = target.in_interaction_range(player)
+		var previously_inside: bool = inside if not _exit_inside.has(key) else _exit_inside[key] == true
+		_exit_inside[key] = inside
+		if inside and not previously_inside and entered == null and target.is_available():
+			entered = target
+	for key: Variant in _exit_inside.keys():
+		if not seen.has(key):
+			_exit_inside.erase(key)
+	if entered == null or not exploration_input_allowed():
+		return
+	var transition_root := get_node_or_null("/root/GameRoot")
+	if transition_root != null and transition_root.has_method("can_use_map_transition") and not transition_root.can_use_map_transition(player):
+		return
+	_cancel_mouse_intent()
+	_run_interaction(entered)
 
 
 func _process(_delta: float) -> void:
