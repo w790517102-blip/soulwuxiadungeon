@@ -1190,24 +1190,40 @@ func _present_active_intervention(attacker: Dictionary, target: Dictionary, skil
 	# The lunge first reveals whom the enemy intended to strike.
 	await source.lunge_to(protected.home_position, 0.35)
 	var destination: Variant = _substitute_front_destination(support_card, protected.is_enemy) if kind == "substitute_talisman" else null
-	await support_card.fly_to_intercept(source.position, protected.position, String(style.get("motion", "sacrifice")), destination)
+	var substitute: bool = kind == "substitute_talisman"
+	if substitute:
+		# Attack FX and the audio-timed draw-out run together, meeting at 0.27s.
+		support_card.fly_to_intercept(source.position, protected.position, String(style.get("motion", "sacrifice")), destination)
+	else:
+		await support_card.fly_to_intercept(source.position, protected.position, String(style.get("motion", "sacrifice")), destination)
 	var side: float = 1.0 if protected.position.x >= source.position.x else -1.0
 	var origin: Vector3 = source.position + Vector3(side * source.card_size.x * 0.42, source.card_size.y * 0.05, 0.8)
-	var impact: Vector3 = support_card.position + Vector3(0.0, support_card.card_size.y * 0.05, 0.5)
+	var impact: Vector3 = (destination as Vector3 if substitute else support_card.position) + Vector3(0.0, support_card.card_size.y * 0.05, 0.5)
 	if _is_water_bullet(skill):
-		var water_fx := WaterBulletFX.play_between(fx_root, origin, impact, support_card.card_size, WaterBulletFX.defaults())
+		var water_params: Dictionary = WaterBulletFX.defaults()
+		if substitute:
+			water_params["flight_time"] = 0.27
+		var water_fx := WaterBulletFX.play_between(fx_root, origin, impact, support_card.card_size, water_params)
 		await water_fx.impact
 	elif _is_spear_attack(skill):
 		var params: Dictionary = SpearThrustFX.defaults()
 		params["penetration_extension"] = 0.0
 		params["penetration_fade_time"] = 0.0
+		if substitute:
+			params["thrust_speed"] = 0.27 / float(params["effect_time"])
 		var spear_fx := SpearThrustFX.play_between(fx_root, origin, impact, support_card.card_size, params)
 		await spear_fx.impact
 	else:
 		var trail: Node3D = SwordTrail.new()
 		fx_root.add_child(trail)
-		await trail.play(origin, impact, true)
-		trail.queue_free()
+		if substitute:
+			trail.finished.connect(trail.queue_free, CONNECT_ONE_SHOT)
+			trail.play(origin, impact, true, 0.27)
+			await trail.impact
+		else:
+			await trail.play(origin, impact, true)
+			trail.queue_free()
+	await support_card.wait_for_intercept_arrival()
 	# Every weapon's attack path terminates on the support card, never on the actor behind it.
 	attack_contact.emit()
 	_hit_spark(impact, support_card.card_size.y * (0.75 if String(style.get("impact")) == "metal" else 0.55), false)
@@ -2855,6 +2871,7 @@ func present_enemy_area(attacker: Dictionary, skill: Dictionary, events: Array) 
 	var body_swing := create_tween().set_parallel(true)
 	body_swing.tween_property(source, "position:x", source.position.x + side * 0.4, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await fx.impact
+	await _wait_for_area_interceptors(drawn_interventions)
 	show_area_popups(events, 0.0, 0.0)
 	var collisions: Array = _area_impacts(events, side, middle)
 	if not collisions.is_empty():
@@ -2907,9 +2924,19 @@ func _draw_area_interceptors(source: Node3D, events: Array) -> Dictionary:
 		var kind: String = String(group.kind)
 		var style: Dictionary = INTERVENTION_STYLES[kind]
 		var destination: Variant = _substitute_front_destination(token, bool(group.enemy_side)) if kind == "substitute_talisman" else null
-		await token.fly_to_intercept(source.position, protected_middle, String(style.get("motion", "sacrifice")), destination)
+		if kind == "substitute_talisman":
+			token.fly_to_intercept(source.position, protected_middle, String(style.get("motion", "sacrifice")), destination)
+		else:
+			await token.fly_to_intercept(source.position, protected_middle, String(style.get("motion", "sacrifice")), destination)
 		drawn[blocker_id] = kind
 	return drawn
+
+
+func _wait_for_area_interceptors(drawn: Dictionary) -> void:
+	for blocker_id: String in drawn.keys():
+		var token: Node3D = entity_cards.get(blocker_id)
+		if token != null:
+			await token.wait_for_intercept_arrival()
 
 
 ## Generic area attacks (such as 激流葬) previously skipped the interception
@@ -2932,6 +2959,7 @@ func present_enemy_area_interceptions(attacker: Dictionary, events: Array) -> vo
 	command_tray.set_enabled(false)
 	await source.lunge_to(middle, STAFF_REACH)
 	var drawn: Dictionary = await _draw_area_interceptors(source, events)
+	await _wait_for_area_interceptors(drawn)
 	var blocked_events: Array = events.filter(func(event: Dictionary) -> bool:
 		return not bool(event.get("hit", true)) and drawn.has(String(event.get("blocker_entity_id", "")))
 	)

@@ -42,6 +42,13 @@ var _substitute_intercepted: bool = false
 var _break_playing: bool = false
 var _break_complete: bool = false
 signal break_finished
+## User-authored timing in 新替身卡擋刀.mp4; preserve its untrimmed audio clock.
+const SUBSTITUTE_FLIGHT_AUDIO_CUE: float = 0.18
+const SUBSTITUTE_CUT_AUDIO_CUE: float = 0.27
+const SUBSTITUTE_SHATTER_AUDIO_CUE: float = 1.0
+var _intercept_audio_started_usec: int = 0
+var _intercept_flying: bool = false
+signal intercept_arrived
 
 
 func configure(target_entity: Object) -> void:
@@ -283,8 +290,16 @@ func fly_to_intercept(attacker_position: Vector3, protected_position: Vector3, m
 	var start: Vector3 = position
 	var tilt: float = -0.20 if motion_style == "parry" else 0.12
 	var flight_seconds: float = 0.27 if motion_style == "sacrifice" else 0.30
+	var substitute: bool = entity != null and String(entity.get("entity_type")) == "substitute_talisman"
+	if substitute:
+		_intercept_flying = true
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_substitute_intercept", 10.0)
+		_intercept_audio_started_usec = Time.get_ticks_usec()
+		await _wait_for_intercept_audio_cue(SUBSTITUTE_FLIGHT_AUDIO_CUE)
+		flight_seconds = SUBSTITUTE_CUT_AUDIO_CUE - SUBSTITUTE_FLIGHT_AUDIO_CUE
 	_tween = create_tween().set_parallel(true)
-	if entity != null and String(entity.get("entity_type")) == "substitute_talisman":
+	if substitute:
+		_tween.set_ignore_time_scale(true)
 		_set_intercept_rim(0.0)
 		_tween.tween_method(_set_intercept_rim, 0.0, 1.0, flight_seconds)
 	# One accelerating flight avoids the old two-tween velocity reset. The short arc
@@ -295,6 +310,13 @@ func fly_to_intercept(attacker_position: Vector3, protected_position: Vector3, m
 	_tween.tween_property(self, "scale", _intercept_return_scale * 1.14, flight_seconds).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 	_tween.tween_property(self, "rotation:z", _intercept_return_rotation.z + tilt, flight_seconds).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 	await _tween.finished
+	_intercept_flying = false
+	intercept_arrived.emit()
+
+
+func wait_for_intercept_arrival() -> void:
+	if _intercept_flying:
+		await intercept_arrived
 
 
 ## The attack stops here, not on the character behind this card. Returns the actual
@@ -304,16 +326,18 @@ func intercept_impact(motion_style: String = "sacrifice") -> Tween:
 		_tween.kill()
 	if entity != null and String(entity.get("entity_type")) == "substitute_talisman":
 		_substitute_intercepted = true
-		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_substitute_intercept", 10.0)
+		if _intercept_audio_started_usec == 0:
+			preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_substitute_intercept", 10.0)
+			_intercept_audio_started_usec = Time.get_ticks_usec()
 		_set_intercept_rim(1.5)
 		# The reference braces against the blow before its diagonal cut opens.
 		var brace: Vector3 = position
 		_flash.color = Color(1.0, 0.91, 0.60, 0.65)
-		_tween = create_tween()
+		_tween = create_tween().set_ignore_time_scale(true)
 		_tween.tween_property(self, "position", brace + Vector3(0.10 if is_enemy else -0.10, 0.0, -0.05), 0.06)
-		_tween.tween_property(self, "position", brace, 0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		_tween.parallel().tween_property(_flash, "color:a", 0.0, 0.12)
-		_tween.tween_interval(0.52)
+		_tween.tween_property(self, "position", brace, 0.03).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_tween.parallel().tween_property(_flash, "color:a", 0.0, 0.09)
+		play_break()
 		return _tween
 	var centre: Vector3 = position
 	_flash.color = Color(0.85, 0.94, 1.0, 0.95) if motion_style == "parry" else Color(1.0, 0.95, 0.8, 0.85)
@@ -371,6 +395,13 @@ func return_from_intercept() -> void:
 
 ## A sequence of crossing spatial slashes opens on the substitute, then the sliced face shears apart.
 ## The intact face disappears at the cut; the action ends only after the fragments settle and fade.
+func _wait_for_intercept_audio_cue(seconds: float) -> void:
+	# Audio runs in real time even during the collision slow motion.
+	while is_inside_tree() and _intercept_audio_started_usec > 0 \
+			and float(Time.get_ticks_usec() - _intercept_audio_started_usec) / 1000000.0 < seconds:
+		await get_tree().process_frame
+
+
 func play_break() -> void:
 	# Story cleanup later consumes the logical charge; it must not replay this sequence.
 	if _break_complete:
@@ -379,20 +410,27 @@ func play_break() -> void:
 		await break_finished
 		return
 	_break_playing = true
+	if _substitute_intercepted:
+		await _wait_for_intercept_audio_cue(SUBSTITUTE_CUT_AUDIO_CUE)
 	var seams := SpatialSeams.new()
 	add_child(seams)
 	seams.position = Vector3(0.0, card_mesh.position.y, 0.08)
 	seams.setup(card_size)
 	var light := create_tween().set_parallel(true)
-	var cut_seconds: float = 0.18 if _substitute_intercepted else 0.45
+	var cut_seconds: float = 0.45
+	if _substitute_intercepted:
+		light.set_ignore_time_scale(true)
+		cut_seconds = maxf(0.001, SUBSTITUTE_SHATTER_AUDIO_CUE - float(Time.get_ticks_usec() - _intercept_audio_started_usec) / 1000000.0)
 	light.tween_property(seams, "progress", 1.0, cut_seconds).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	light.tween_property(seams, "glow", 1.0, cut_seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	await light.finished
-	if not _substitute_intercepted:
+	if _substitute_intercepted:
+		await _wait_for_intercept_audio_cue(SUBSTITUTE_SHATTER_AUDIO_CUE)
+	else:
 		await get_tree().create_timer(0.35).timeout
-	var flash := create_tween()
-	flash.tween_property(seams, "glow", 1.5, 0.12 if _substitute_intercepted else 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	await flash.finished
+		var flash := create_tween()
+		flash.tween_property(seams, "glow", 1.5, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		await flash.finished
 	_shatter_spatial()
 	# Remove the intact mesh itself. Geometry transparency alone can still leave the
 	# viewport texture visible in this card's 3D material during the shatter.

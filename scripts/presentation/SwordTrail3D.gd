@@ -6,9 +6,11 @@ var last_endpoint: Vector3 = Vector3.ZERO
 var _ribbon: MeshInstance3D
 var _material: StandardMaterial3D
 var _playing: bool = false
+signal impact
+signal finished
 
 
-func play(from: Vector3, target: Vector3, hit: bool) -> void:
+func play(from: Vector3, target: Vector3, hit: bool, hit_flight_seconds: float = 0.32) -> void:
 	if _playing:
 		return
 	_playing = true
@@ -22,15 +24,17 @@ func play(from: Vector3, target: Vector3, hit: bool) -> void:
 		endpoint += Vector3(horizontal_sign * 3.2, 0.28, -3.0)
 	last_endpoint = endpoint
 	var flight: Tween = create_tween()
-	flight.tween_method(_advance.bind(from, target, endpoint, hit), 0.0, 1.0, 0.32 if hit else 0.57).set_trans(Tween.TRANS_LINEAR)
+	flight.tween_method(_advance.bind(from, target, endpoint, hit), 0.0, 1.0, hit_flight_seconds if hit else 0.57).set_trans(Tween.TRANS_LINEAR)
 	await flight.finished
 	if hit:
 		_spawn_impact(target)
+	impact.emit()
 	var fade: Tween = create_tween()
 	fade.tween_property(_material, "albedo_color:a", 0.0, 0.24)
 	await fade.finished
 	_playing = false
 	_ribbon.visible = false
+	finished.emit()
 
 
 func _setup_ribbon() -> void:

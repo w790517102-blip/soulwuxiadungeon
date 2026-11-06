@@ -115,7 +115,8 @@ func _check_interventions(fixture: Node) -> void:
 	_expect(protected.position.is_equal_approx(protected_home), "substitute protects actor without ordinary hit motion")
 	_expect(stage.order_keys() == order_before, "substitute flight does not reorder the ADB")
 	_expect(stage.busy, "interception and break share the same blocking presentation")
-	await create_timer(0.2).timeout
+	while substitute_card.find_children("*", "Node3D", false, false).all(func(child: Node) -> bool: return child.get_script() != SpatialSeams) and Time.get_ticks_msec() < break_deadline:
+		await process_frame
 	_expect(stage.busy, "break remains a blocking action while spatial slashes and fragments play")
 	var cut_found: bool = false
 	for child: Node in substitute_card.get_children():
