@@ -99,7 +99,7 @@ func _check_phase2_interception(fixture: Node) -> void:
 	for child: Node in token.get_children():
 		if child is AudioStreamPlayer and child.stream.resource_path.ends_with("SE_substitute_intercept.ogg"):
 			intercept_sound_found = true
-			_expect(is_equal_approx(child.volume_db, 2.698), "interception sound gains 8 dB over the battle baseline")
+			_expect(is_equal_approx(child.volume_db, 4.698), "interception sound gains 10 dB over the battle baseline")
 	_expect(intercept_sound_found, "new audio starts on the substitute collision")
 	while stage.busy and Time.get_ticks_msec() < timeout:
 		await process_frame
@@ -108,8 +108,10 @@ func _check_phase2_interception(fixture: Node) -> void:
 		front = guest_card
 	if protected.position.x > front.position.x:
 		front = protected
-	_expect(token.position.x > front.position.x + (front.card_size.x + token.card_size.x) * 0.5,
+	_expect(token.position.x > front.position.x + stage._half_extent(front),
 		"substitute reaches the front of a party with ZuoYin")
+	_expect(token.position.x < front.position.x + (front.card_size.x + token.card_size.x) * 0.5,
+		"substitute stays close to the leading card instead of using full unturned widths")
 	_expect(protected.position.is_equal_approx(protected_home), "protected actor does not dodge")
 	_expect(guest_card.position.is_equal_approx(guest_home), "guest remains in his ADB slot")
 	_expect(stage.order_keys() == order_before, "interception does not reorder the Phase 2 ADB")
@@ -122,7 +124,7 @@ func _check_phase2_interception(fixture: Node) -> void:
 	token = stage.spawn_stage_entity_card(talisman, token_home)
 	(events[1] as Dictionary)["blocker_entity_id"] = "test_phase2_tail_substitute"
 	await stage.present_enemy_area(enemy, {"fx_style": "staff_sweep"}, events)
-	_expect(token.position.x > front.position.x + (front.card_size.x + token.card_size.x) * 0.5,
+	_expect(token.position.x > front.position.x + stage._half_extent(front),
 		"tail sweep still sends the substitute to the front with the guest present")
 	_expect(stage.order_keys() == order_before, "tail sweep leaves the Phase 2 ADB unchanged")
 	_expect(token._break_complete and not token.card_mesh.visible, "tail sweep also waits for the complete shatter")

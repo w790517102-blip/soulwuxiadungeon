@@ -304,7 +304,7 @@ func intercept_impact(motion_style: String = "sacrifice") -> Tween:
 		_tween.kill()
 	if entity != null and String(entity.get("entity_type")) == "substitute_talisman":
 		_substitute_intercepted = true
-		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_substitute_intercept", 8.0)
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_substitute_intercept", 10.0)
 		_set_intercept_rim(1.5)
 		# The reference braces against the blow before its diagonal cut opens.
 		var brace: Vector3 = position

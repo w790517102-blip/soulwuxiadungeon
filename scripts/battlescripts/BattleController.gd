@@ -1513,6 +1513,7 @@ func _emit_multi_strike_feedback(actor: Dictionary, target: Dictionary, skill_da
 	var first: Dictionary = strikes[0] if not strikes.is_empty() else {}
 	_play_attack_se_from_result(actor, target, skill_data, {
 		"hit": any_hit, "dodged": all_dodged, "crit": any_crit,
+		"strikes": strikes,
 		"target_defending": bool(first.get("target_defending", target.get("defending", false))),
 		"_played_strike_count": strikes.size(),
 	})

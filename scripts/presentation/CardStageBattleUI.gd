@@ -92,8 +92,6 @@ func begin_turn(actor: Dictionary) -> void:
 	if combat_controller and (bool(combat_controller.get("battle_finished")) or bool(combat_controller.get("_ending"))):
 		return
 	stage.set_active_actor(actor)
-	if stage_enabled and not bool(actor.get("is_enemy", false)) and not bool(actor.get("is_stage_entity", false)) and not bool(actor.get("is_guest", false)):
-		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_player_turn_ready")
 
 
 ## Called by the preview/stage controller when an enemy starts acting.
@@ -158,7 +156,7 @@ func _on_active_card_clicked(actor: Dictionary) -> void:
 
 func _show_command_menu() -> void:
 	if not command_menu.visible:
-		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_skill_select", 10.0)
+		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_player_turn_ready")
 	# 機關按鈕：身上機關有 TRIGGER 才出現（沒裝備、或被動機關都不顯示）
 	_command_buttons["mechanism"].visible = not MechanismTrigger.get_trigger(current_actor).is_empty()
 	if combat_controller:
@@ -181,6 +179,7 @@ func _hide_command_menu() -> void:
 
 
 func _on_card_command(command: String) -> void:
+	preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_skill_select", 10.0)
 	_hide_command_menu()
 	dispatch_stage_command(command)
 

@@ -3,6 +3,7 @@ extends SceneTree
 ## distinct return/break endings, and no hand-off while a break is still visible.
 
 const EntityFactory = preload("res://scripts/battlescripts/StageEntityFactory.gd")
+const SpatialSeams = preload("res://scripts/presentation/CardStageSpatialSeams.gd")
 
 var _failures: Array[String] = []
 var _assertions: int = 0
@@ -99,41 +100,56 @@ func _check_interventions(fixture: Node) -> void:
 	var substitute: RefCounted = _entity("substitute_talisman", "test_substitute", String(ally.get("id", "")))
 	var substitute_home: Vector3 = protected_home + Vector3(-1.0, 0.0, 0.15)
 	var substitute_card: Node3D = stage.spawn_stage_entity_card(substitute, substitute_home)
+	_expect(is_equal_approx(substitute_card.card_back.mesh.size.z, 0.02) and is_equal_approx(substitute_card.card_back.position.z, -0.02), "support card face and backing form a thinner stack")
 	var substitute_result: Dictionary = {"hit": false, "blocked": true, "blocker_type": "substitute_talisman", "blocker_entity_id": "test_substitute"}
 	_expect(stage._intervention_for_result({"strikes": [substitute_result]}).get("type") == "substitute_talisman", "multi-strike metadata also resolves the substitute")
 	_expect(stage._intervention_for_result({"hit": false, "strikes": [substitute_result, substitute_result]}).get("type") == "substitute_talisman", "fully intercepted multi-strike can use the shared support-card route")
 	_expect(stage._intervention_for_result({"hit": true, "strikes": [substitute_result, {"hit": true, "damage": 10}]}).is_empty(), "mixed multi-strike damage must not be portrayed as full protection")
-	await stage.present_attack(enemy, ally, spear, substitute_result)
+	stage.present_attack(enemy, ally, spear, substitute_result)
+	var break_deadline: int = Time.get_ticks_msec() + 8000
+	while not substitute_card._break_playing and Time.get_ticks_msec() < break_deadline:
+		await process_frame
 	_expect(not substitute_card.position.is_equal_approx(substitute_home), "sacrificial card stays at interception point until break")
+	_expect(substitute_card.position.x > protected.position.x + stage._half_extent(protected), "substitute stands just beyond the leading ally's turned face")
+	_expect(stage.entity_screen_rect("test_substitute").get_center().x > stage.card_screen_rect(ally).get_center().x, "substitute stands to the right of the leading ally in the camera view")
 	_expect(protected.position.is_equal_approx(protected_home), "substitute protects actor without ordinary hit motion")
 	_expect(stage.order_keys() == order_before, "substitute flight does not reorder the ADB")
-	stage.present_substitute_break(substitute)
+	_expect(stage.busy, "interception and break share the same blocking presentation")
 	await create_timer(0.2).timeout
-	_expect(stage.busy, "break remains a blocking action while cracks and shards play")
-	await create_timer(2.0).timeout
-	_expect(stage.busy and substitute_card._burn_sheet == null, "substitute remains on stage through the light-in-the-cuts phase and the break")
-	var shards: Node3D = substitute_card._shard_burst
-	_expect(shards != null and shards.piece_count() == 7, "substitute falls apart along its tangram cuts into seven pieces")
-	if shards != null and shards.get_child_count() > 0:
-		var shard_colour: Color = (shards.get_child(0).material_override as StandardMaterial3D).albedo_color
-		_expect(shard_colour.b <= shard_colour.r, "substitute shards use paper and ink rather than violet")
-	await create_timer(1.2).timeout
-	_expect(stage.busy and substitute_card._burn_sheet != null, "burn sheet starts after the one-second broken-paper pause")
-	if substitute_card._burn_sheet != null:
-		var burn_material: ShaderMaterial = substitute_card._burn_sheet.material_override
-		var flame_edge: Color = burn_material.get_shader_parameter("flame_edge")
-		_expect(flame_edge.r > flame_edge.b * 3.0, "substitute burn front is red, not purple")
-	var red_fire_found: bool = false
+	_expect(stage.busy, "break remains a blocking action while spatial slashes and fragments play")
+	var cut_found: bool = false
 	for child: Node in substitute_card.get_children():
-		if child.has_method("ray_burst") and String(child.get("palette")) == "red":
-			red_fire_found = true
-	_expect(red_fire_found, "substitute sparks and fire rays use the red palette")
+		if child.get_script() == SpatialSeams:
+			cut_found = true
+			var cut: MeshInstance3D = child._beams[0].layers[0]
+			var cut_material: StandardMaterial3D = cut.material_override as StandardMaterial3D
+			_expect(not cut_material.no_depth_test and cut_material.render_priority == 0, "spatial cuts are sorted behind a nearer ally card")
+			break
+	_expect(cut_found, "substitute break creates spatial cuts")
+	await create_timer(1.2).timeout
+	_expect(stage.busy, "substitute remains blocking while the cut fragments are visible")
+	var shards: Node3D = substitute_card._shard_burst
+	_expect(shards != null and shards.piece_count() > 7, "spatial slashes leave more than seven irregular fragments")
+	_expect(not substitute_card.card_mesh.visible and not substitute_card.card_back.visible, "intact substitute face and back disappear when the pieces separate")
+	if shards != null and shards.get_child_count() > 0:
+		var shard_material: StandardMaterial3D = shards.get_child(0).material_override as StandardMaterial3D
+		var shard_colour: Color = shard_material.albedo_color
+		_expect(shard_colour.b <= shard_colour.r, "substitute shards use paper and ink rather than violet")
+		_expect(shard_material.albedo_texture != null, "spatial fragments keep the cut card artwork")
+		_expect(shard_material.render_priority == 0, "spatial fragments remain depth-sorted with other cards")
+	var burn_found: bool = false
+	for child: Node in substitute_card.get_children():
+		if child.name == "BurnSheet" or child.has_method("ray_burst"):
+			burn_found = true
+	_expect(not burn_found, "spatially shattered substitute does not ignite or recreate a burn sheet")
+	var shard_ref: WeakRef = weakref(shards) if shards != null else null
 	var guard: int = 0
-	while stage.busy and guard < 600:
+	while stage.busy and Time.get_ticks_msec() < break_deadline:
 		await process_frame
 		guard += 1
 	_expect(not stage.busy, "break eventually releases the action")
-	_expect(substitute_card.card_mesh.transparency > 0.9, "card is fully gone before the action is released")
+	_expect(shard_ref != null and shard_ref.get_ref() == null, "the stage waits for every fragment to vanish before hand-off")
+	_expect(not substitute_card.card_mesh.visible, "card is fully gone before the action is released")
 	stage.remove_stage_entity_card(substitute)
 	await process_frame
 	await _check_two_actor_area(fixture, ally, enemy)
@@ -173,5 +189,9 @@ func _check_two_actor_area(fixture: Node, ally: Dictionary, enemy: Dictionary) -
 		await process_frame
 		guard += 1
 	_expect(not token.position.is_equal_approx(token_home), "one substitute steps forward between the sweep and both protected actors")
+	var front: Node3D = first_card if first_card.position.x > second_card.position.x else second_card
+	_expect(token.position.x > front.position.x + stage._half_extent(front), "shared substitute blocks just beyond the leading card's turned face")
+	var front_actor: Dictionary = ally if front == first_card else second
+	_expect(stage.entity_screen_rect("test_shared_substitute").get_center().x > stage.card_screen_rect(front_actor).get_center().x, "shared substitute remains to the right of the front ally in the camera view")
 	_expect(is_equal_approx(Engine.time_scale, 1.0), "shared interception restores normal game speed")
 	stage.remove_stage_entity_card(substitute)

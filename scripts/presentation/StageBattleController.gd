@@ -6,6 +6,24 @@ func _uses_contact_se(skill_data: Dictionary) -> bool:
 	return String(skill_data.get("id", "")) == "basic_attack" or String(skill_data.get("fx_style", "")) == "water_bullet"
 
 
+## The substitute's recorded collision already includes its impact. Do not layer
+## the old weapon/guard (or whole-action miss) sound over that recording.
+func _substitute_owns_impact_sound(result: Dictionary) -> bool:
+	if bool(result.get("hit", false)):
+		return false
+	if bool(result.get("blocked", false)):
+		return String(result.get("blocker_type", "")) == "substitute_talisman"
+	var found: bool = false
+	for strike: Dictionary in result.get("strikes", []):
+		if bool(strike.get("hit", false)):
+			return false
+		if bool(strike.get("blocked", false)):
+			if String(strike.get("blocker_type", "")) != "substitute_talisman":
+				return false
+			found = true
+	return found
+
+
 func _uses_liuyu_single_sword_se(user: Dictionary, target: Dictionary, skill: Dictionary, result: Dictionary) -> bool:
 	return String(user.get("id", "")) == "liuyu" and not bool(user.get("is_enemy", false)) \
 		and _resolve_weapon_se_key(user, skill) == "sword" \
@@ -16,6 +34,8 @@ func _uses_liuyu_single_sword_se(user: Dictionary, target: Dictionary, skill: Di
 
 
 func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+	if battle_ui != null and bool(battle_ui.get("stage_enabled")) and _substitute_owns_impact_sound(result):
+		return
 	# These sounds wait for their visible contact point; damage was already calculated.
 	if battle_ui != null and bool(battle_ui.get("stage_enabled")) and (
 			_uses_contact_se(skill_data)
@@ -27,9 +47,11 @@ func _play_attack_se_from_result(user: Dictionary, target: Dictionary, skill_dat
 
 
 func _play_contact_se(attacker: Dictionary, target: Dictionary, skill_data: Dictionary, result: Dictionary) -> void:
+	if _substitute_owns_impact_sound(result):
+		return
 	if _uses_liuyu_single_sword_se(attacker, target, skill_data, result):
 		preload("res://scripts/presentation/CardStageSound.gd").play(self, "SE_liuyu_sword_attack")
-		return
+	# Keep the original weapon impact underneath the new LiuYu recording.
 	super._play_attack_se_from_result(attacker, target, skill_data, result)
 
 

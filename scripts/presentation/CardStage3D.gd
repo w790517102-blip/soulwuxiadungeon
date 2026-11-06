@@ -1165,8 +1165,11 @@ func _substitute_front_destination(support_card: Node3D, enemy_side: bool) -> Ve
 			front = card
 	if front == null:
 		return support_card.position
+	# Use the visible width of the turned cards. Full face widths pushed the
+	# talisman unnecessarily far into the exchange zone.
+	var clearance: float = _half_extent(front) + _half_extent(support_card) * 1.14 + 0.12
 	return Vector3(
-		front.position.x + side * (front.card_size.x * 0.5 + support_card.card_size.x * 0.5 + 0.12),
+		front.position.x + side * clearance,
 		front.position.y,
 		maxf(front.position.z, support_card.position.z) + 0.7
 	)
